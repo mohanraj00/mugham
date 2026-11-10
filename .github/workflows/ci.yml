@@ -42,6 +42,11 @@ jobs:
           python-version: 3.14.6
       - name: Validate the shared harness layout, the links and the workflow pins
         run: python3 -B tools/check_project.py
+      - name: Run the tests of the project tools
+        run: python3 -B -m unittest discover -s tests
+      # Two builds of one commit must give the same bytes. See docs/decisions/0001-build-tools.md.
+      - name: Build two times and compare the bytes
+        run: python3 -B tools/build.py --check
   actionlint:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
