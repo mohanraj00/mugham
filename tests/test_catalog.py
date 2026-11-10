@@ -169,6 +169,9 @@ class FillTest(unittest.TestCase):
         bad = changed(grid, ('data', 'cards', 0, 'data', 'due'), 'soon')
         self.assertIn('data.cards[0].data.due: must be a date as YYYY-MM-DD', self.errors(bad))
 
+    def test_an_integral_float_is_an_integer(self):
+        self.assertEqual(self.errors(changed(FILL, ('data', 'renewals'), 2.0)), [])
+
     def test_a_fill_that_is_not_an_object(self):
         self.assertEqual(self.errors([]), ['(fill): must be an object'])
 

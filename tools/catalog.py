@@ -52,6 +52,9 @@ def is_type(value, name):
     if name == 'boolean':
         return isinstance(value, bool)
     if name == 'integer':
+        # As in JSON Schema 2020-12, 1.0 is an integer. A browser cannot tell 1.0 from 1 after JSON.parse.
+        if isinstance(value, float):
+            return math.isfinite(value) and value.is_integer()
         return isinstance(value, int) and not isinstance(value, bool)
     if name == 'number':
         return isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value)
