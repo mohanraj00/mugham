@@ -85,10 +85,17 @@ class Session {
 async function startChrome(profile) {
   const chrome = spawn(CHROME, ['--headless=new', '--remote-debugging-port=0', '--user-data-dir=' + profile,
     '--no-first-run', '--no-default-browser-check', '--disable-extensions', '--disable-background-networking',
-    '--disable-sync', '--disable-component-update', '--metrics-recording-only', 'about:blank'], { stdio: 'ignore' });
+    '--disable-sync', '--disable-component-update', '--metrics-recording-only', 'about:blank'],
+  { stdio: ['ignore', 'ignore', 'pipe'] });
+  // Keep the end of the Chrome errors. If Chrome does not start, the report gives them.
+  let errors = '';
+  let exited = false;
+  chrome.stderr.on('data', (chunk) => { errors = (errors + chunk).slice(-2000); });
+  chrome.on('exit', () => { exited = true; });
+  chrome.on('error', (error) => { errors += error.message; exited = true; });
   const portFile = join(profile, 'DevToolsActivePort');
-  for (let i = 0; i < 100 && !existsSync(portFile); i += 1) await sleep(100);
-  if (!existsSync(portFile)) throw new Error('Chrome did not start: ' + CHROME);
+  for (let i = 0; i < 100 && !existsSync(portFile) && !exited; i += 1) await sleep(100);
+  if (!existsSync(portFile)) throw new Error(`Chrome did not start: ${CHROME}: ${errors.trim().slice(-600)}`);
   const [port, path] = readFileSync(portFile, 'utf8').trim().split('\n');
   const socket = new WebSocket(`ws://127.0.0.1:${port}${path}`);
   await new Promise((done, fail) => { socket.onopen = done; socket.onerror = () => fail(new Error('no DevTools socket')); });
