@@ -1,6 +1,6 @@
 # 0001: Build tools and the dependency rule
 
-Status: proposed. The owner decides. Issue: mohanraj00/mugham#1.
+Status: accepted, 2026-11-10. Issue: mohanraj00/mugham#1.
 
 ## Context
 
@@ -68,4 +68,6 @@ The reasons:
 
 ## Decision
 
-The owner writes the choice here. Until then, the project adds no tool.
+2026-11-10: the owner accepted Option A in the session of this change. The platforms are Python 3.14.6, Node.js 25.8.0 and one pinned version of Chrome. The project has no development dependency.
+
+The build reads only the files that Git tracks in `src/`, `catalog/` and `LICENSE`. Thus a local file that Git does not track never goes into the package.
