@@ -1,0 +1,104 @@
+name: CI
+# The ci-ok skeleton. Copy this file to .github/workflows/ci.yml of the project, then put the project jobs in it.
+# Replace the SHA of the gates action with a full SHA of mohanraj00/.github on main.
+# A docs-only PR skips the project jobs, and ci-ok still passes. The check job always runs.
+# Do not use paths-ignore, because a required check can then stay pending.
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions: {}
+jobs:
+  changes:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      code: ${{ steps.classify.outputs.code }}
+    steps:
+      # The classify step reads .github/gates.json from the base branch, so a PR cannot mark its own change as docs.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.base.sha || github.sha }}
+          persist-credentials: false
+      - id: classify
+        uses: mohanraj00/.github/gates@3af13286de74e18657601060d200a7b9cc667c8d # mohanraj00/.github at 3af1328
+        with:
+          check: classify
+  # The project check always runs. Add a suite job for the kit when it has source code.
+  shared-project:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: 3.14.6
+      - name: Validate the shared harness layout, the links and the workflow pins
+        run: python3 -B tools/check_project.py
+  actionlint:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # One exact version. The SHA-256 value is from the checksums file of the actionlint release.
+      - name: Install actionlint
+        env:
+          ACTIONLINT_VERSION: 1.7.7
+          ACTIONLINT_SHA256: 023070a287cd8cccd71515fedc843f1985bf96c436b7effaecce67290e7e0757
+        run: |
+          mkdir "$RUNNER_TEMP/actionlint"
+          curl --fail --silent --show-error --location --proto '=https' --output "$RUNNER_TEMP/actionlint/actionlint.tgz" \
+            "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
+          echo "$ACTIONLINT_SHA256  $RUNNER_TEMP/actionlint/actionlint.tgz" | sha256sum --check --strict
+          tar --extract --gzip --file "$RUNNER_TEMP/actionlint/actionlint.tgz" --directory "$RUNNER_TEMP/actionlint" actionlint
+          echo "$RUNNER_TEMP/actionlint" >> "$GITHUB_PATH"
+      - name: Parse each workflow
+        run: actionlint .github/workflows/*.yml
+  # The gate regression cases (an unaccepted fork, a record for an old head or base, an incomplete file list, a review
+  # of another commit) are tests of the pinned gates action. Run them at the same SHA as the gates in each change.
+  # tools/check_project.py requires one SHA for each use of mohanraj00/.github.
+  shared-gates:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: mohanraj00/.github
+          ref: 3af13286de74e18657601060d200a7b9cc667c8d
+          persist-credentials: false
+      - name: Run the gate regression tests of the pinned gates action
+        run: python3 -B -I -m unittest discover -s tests -p test_gate.py
+  # The required check. Add each project job to needs. A skipped job passes. A failed or cancelled job fails.
+  ci-ok:
+    needs: [changes, shared-project, actionlint, shared-gates]
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    permissions: {}
+    steps:
+      - name: Collect the project jobs
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: |
+          python3 -B -I -c '
+          import json, os, sys
+          needs = json.loads(os.environ["NEEDS"])
+          bad = sorted(k for k, v in needs.items() if v["result"] not in ("success", "skipped"))
+          if needs.get("changes", {}).get("result") != "success":
+              bad = sorted(set(bad) | {"changes"})
+          print("\n".join("%s: %s" % (k, v["result"]) for k, v in sorted(needs.items())))
+          sys.exit("Failed jobs: " + ", ".join(bad) if bad else 0)
+          '

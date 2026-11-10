@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "code": ["src/*", "catalog/*", "examples/*", "tests/*", "tools/*", "Makefile", ".github/workflows/ci.yml"],
+  "security_sources": ["src/render/*", "src/actions/*", "src/offline/*", "tools/*.py"],
+  "not_security": ["*/test_*", "tests/*"],
+  "boundaries": ["tools/*", "src/render/*", "src/actions/*", "src/offline/*"],
+  "level1": ["tools/claude_review.py", "catalog/schema/*", "docs/contracts/*"],
+  "generated": []
+}

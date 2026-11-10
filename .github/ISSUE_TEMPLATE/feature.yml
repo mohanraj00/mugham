@@ -1,0 +1,19 @@
+name: Capability
+description: Propose a component, a panel or a change to the envelope or the catalog.
+title: ""
+labels: [enhancement]
+body:
+  - type: textarea
+    id: capability
+    attributes:
+      label: Capability and neutral example
+      description: Describe the capability and give a synthetic example. Do not name a real product, customer or person.
+    validations:
+      required: true
+  - type: textarea
+    id: criteria
+    attributes:
+      label: Completion criteria
+      description: List the tests or checks that show the capability works.
+    validations:
+      required: true
