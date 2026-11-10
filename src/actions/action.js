@@ -59,6 +59,15 @@ export class ActionState {
     return this.#request;
   }
 
+  // After done or error, the action can start again. The message says why. A pending action cannot reopen,
+  // because its receipt has not come back.
+  reopen(message = '') {
+    if (this.#state !== 'done' && this.#state !== 'error') return false;
+    this.#state = 'default';
+    this.#message = [...String(message)].slice(0, MAX_MESSAGE).join('');
+    return true;
+  }
+
   // Returns true if the receipt belongs to the pending request. Only a valid receipt changes the state.
   receipt(value) {
     if (!this.#request || this.#state !== 'pending' || value === null || typeof value !== 'object') return false;

@@ -161,6 +161,29 @@ check('editable-form: submit sends the values', submits.length === 1 && submits[
 check('editable-form: pending until the receipt', form.dataset.state === 'pending');
 form.receipt({ id: submits[0].id, ok: true });
 check('editable-form: done after the receipt', form.dataset.state === 'done');
+// An edit while the request is pending: the receipt confirms only the old values.
+const stale = mount('editable-form', FORM);
+const staleSubmits = [];
+stale.addEventListener('mu-action', (event) => staleSubmits.push(event.detail));
+stale.action = { tool: 'library.update_loan' };
+const staleInput = stale.shadowRoot.querySelector('mu-field').shadowRoot.querySelector('input');
+const staleStatus = () => stale.shadowRoot.querySelector('[role="status"]').textContent;
+stale.shadowRoot.querySelector('form').requestSubmit();
+staleInput.value = 'C-2';
+staleInput.dispatchEvent(new Event('input', { bubbles: true, composed: true }));
+stale.receipt({ id: staleSubmits[0].id, ok: true });
+check('editable-form: an edit while pending does not show done', stale.dataset.state === 'default'
+  && staleStatus().includes('Save again'), `${stale.dataset.state} ${staleStatus()}`);
+stale.shadowRoot.querySelector('form').requestSubmit();
+check('editable-form: the next save sends the edit', staleSubmits.length === 2 && staleSubmits[1].arguments.shelf === 'C-2',
+  JSON.stringify(staleSubmits));
+stale.receipt({ id: staleSubmits[1]?.id, ok: true });
+check('editable-form: done after the receipt of the edit', stale.dataset.state === 'done', stale.dataset.state);
+staleInput.value = 'D-3';
+staleInput.dispatchEvent(new Event('input', { bubbles: true, composed: true }));
+check('editable-form: an edit after done lets the form save again', stale.dataset.state === 'default'
+  && !staleStatus().startsWith('Done'), `${stale.dataset.state} ${staleStatus()}`);
+
 const pinned = mount('editable-form', { ...FORM, fields: [field('loan_id', 'Loan', 'L-9999')] });
 const pinnedSubmits = [];
 pinned.addEventListener('mu-action', (event) => pinnedSubmits.push(event.detail));

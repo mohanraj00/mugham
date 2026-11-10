@@ -52,3 +52,17 @@ test('a binding of null disables the action', () => {
   assert.equal(action.state, 'disabled');
   assert.equal(action.start(), null);
 });
+
+test('only a done or an error action can reopen', () => {
+  const action = new ActionState();
+  action.bind({ tool: 'library.renew' });
+  assert.equal(action.reopen(), false);
+  const request = action.start();
+  assert.equal(action.reopen(), false);
+  assert.equal(action.state, 'pending');
+  action.receipt({ id: request.id, ok: true });
+  assert.equal(action.reopen('Save again.'), true);
+  assert.equal(action.state, 'default');
+  assert.equal(action.message, 'Save again.');
+  assert.notEqual(action.start(), null);
+});

@@ -37,6 +37,8 @@ const ACTION_CSS = sheet(`
   }
 `);
 
+const STALE = 'Saved the values from before your last edit. Save again to send the edit.';
+
 // The text of each state. A pending action never shows as done.
 const STATUS = { default: '', disabled: '', pending: 'Pending', done: 'Done', error: 'Not done' };
 
@@ -60,8 +62,21 @@ class ActionElement extends MuElement {
 
   receipt(value) {
     const accepted = this.#action.receipt(value);
+    // A receipt confirms only the values of its request. If the data changed after the request, the
+    // element does not show done. It asks for a new request.
+    if (accepted && this.#action.state === 'done' && this.stale()) this.#action.reopen(STALE);
     if (accepted) this.#update();
     return accepted;
+  }
+
+  // A subclass returns true if its data changed after the last request.
+  stale() {
+    return false;
+  }
+
+  // An edit after a receipt makes the data new. Then the action can start again.
+  reopen() {
+    if (this.#action.reopen()) this.#update();
   }
 
   state(data) {
@@ -161,6 +176,11 @@ export class MuEditableForm extends ActionElement {
   `)];
 
   #fields = [];
+  #sent = null;
+
+  stale() {
+    return JSON.stringify(this.values()) !== this.#sent;
+  }
 
   // A form also needs a unique name for each field, so that the values have keys.
   check(data) {
@@ -175,6 +195,7 @@ export class MuEditableForm extends ActionElement {
   }
 
   render(data) {
+    this.#sent = null;
     this.#fields = data.fields.map((item) => {
       const node = document.createElement('mu-field');
       node.fill = item;
@@ -184,9 +205,13 @@ export class MuEditableForm extends ActionElement {
     const submit = el('button', { type: 'submit', part: 'button' }, data.submit_label);
     const form = el('form', { 'aria-label': data.title, part: 'form' },
       el('p', { class: 'title' }, data.title), ...this.#fields, el('div', {}, submit), status);
+    // An edit after done makes the values new, so the form can save again.
+    form.addEventListener('mu-edit', () => this.reopen());
     form.addEventListener('submit', (event) => {
       event.preventDefault();
-      this.send(this.values());
+      const values = this.values();
+      this.#sent = JSON.stringify(values);
+      this.send(values);
     });
     // Each input is in the shadow root of its mu-field, so the browser does not connect it to this form.
     // Thus Enter in a field submits the form here, as Enter does in a plain form.
