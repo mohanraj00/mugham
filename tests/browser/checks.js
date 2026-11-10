@@ -75,6 +75,13 @@ const refusedField = mount('field', VALID.field);
 refusedField.fill = fill('field', { label: 7 });
 check('field: a refused field gives no value', refusedField.value === null, refusedField.value);
 
+// A blank label gives no accessible name, so the contract refuses it.
+for (const name of ['button', 'field', 'stack', 'grid']) {
+  const blank = mount(name, { ...VALID[name], label: '' });
+  check(`${name}: refuses a blank label`, blank.dataset.state === 'refused'
+    && blank.shadowRoot.textContent.includes('data.label: fewer than 1 characters'), blank.shadowRoot.textContent);
+}
+
 const disabled = mount('button', { label: 'Return', disabled: true });
 check('button: disabled state', disabled.dataset.state === 'disabled' && disabled.shadowRoot.querySelector('button').disabled);
 
