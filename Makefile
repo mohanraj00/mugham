@@ -6,3 +6,4 @@ check:
 	$(PYTHON) -B tools/check_project.py
 	$(PYTHON) -B -m unittest discover -s tests
 	$(PYTHON) -B tools/build.py --check
+	$(PYTHON) -B tools/catalog.py

@@ -47,6 +47,9 @@ jobs:
       # Two builds of one commit must give the same bytes. See docs/decisions/0001-build-tools.md.
       - name: Build two times and compare the bytes
         run: python3 -B tools/build.py --check
+      # Each contract in catalog/ must agree with contract format 1. See catalog/schema/README.md.
+      - name: Validate the component contracts
+        run: python3 -B tools/catalog.py
   actionlint:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
