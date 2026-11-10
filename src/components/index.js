@@ -188,6 +188,14 @@ export class MuEditableForm extends ActionElement {
       event.preventDefault();
       this.send(this.values());
     });
+    // Each input is in the shadow root of its mu-field, so the browser does not connect it to this form.
+    // Thus Enter in a field submits the form here, as Enter does in a plain form.
+    form.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter' || event.isComposing || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+      if (event.target.localName !== 'mu-field') return;
+      event.preventDefault();
+      form.requestSubmit(submit);
+    });
     this.attach(submit, status);
     return [form];
   }

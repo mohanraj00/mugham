@@ -10,6 +10,7 @@
       "type": "text",
       "label": "Title",
       "required": true,
+      "min_length": 1,
       "max_length": 120
     },
     "fields": {

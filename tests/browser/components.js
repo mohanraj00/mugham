@@ -198,5 +198,14 @@ target.action = { tool: 'library.renew' };
 let presses = 0;
 target.addEventListener('mu-action', (event) => { presses += 1; target.receipt({ id: event.detail.id, ok: false }); });
 keyboard.append(target);
+// The runner presses Enter in a field of this form. The form must submit one time.
+const enterForm = document.createElement('mu-editable-form');
+enterForm.fill = fill('editable-form', FORM);
+enterForm.action = { tool: 'library.update_loan' };
+let formSubmits = 0;
+enterForm.addEventListener('mu-action', () => { formSubmits += 1; });
+keyboard.append(enterForm);
+window.muFocusField = () => { enterForm.shadowRoot.querySelector('mu-field').shadowRoot.querySelector('input').focus(); return true; };
+window.muFormSubmits = () => formSubmits;
 window.muPresses = () => presses;
 window.muChecks = { mode, results };

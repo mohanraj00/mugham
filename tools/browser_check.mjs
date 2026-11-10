@@ -190,6 +190,12 @@ async function main() {
         await key(session, sessionId, ' ', 'Space', 32, ' ');
         const presses = await evaluate(session, sessionId, 'window.muPresses()');
         report.keyboard.push({ page, step: 'Enter and Space press the button', ok: presses === 2, detail: presses });
+        if (await evaluate(session, sessionId, 'typeof window.muFocusField === "function"')) {
+          await evaluate(session, sessionId, 'window.muFocusField()');
+          await key(session, sessionId, 'Enter', 'Enter', 13, '\r');
+          const submits = await evaluate(session, sessionId, 'window.muFormSubmits()');
+          report.keyboard.push({ page, step: 'Enter in a field submits the form', ok: submits === 1, detail: submits });
+        }
       }
     }
 
