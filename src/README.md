@@ -16,4 +16,4 @@ If the fill has an error, the element shows a refusal as text and keeps no data.
 
 ## Checks
 
-`make check` runs the checks. `tools/browser_check.mjs` starts headless Chrome and runs `tests/browser/primitives.html` in four media modes: light, dark, forced colors and reduced motion. It also reads the accessibility tree and sends real key events. CI uses Chrome for Testing 157.0.8103.50. The CI step checks the SHA-256 of the archive and the version before the check runs.
+`make check` runs the checks. `tools/browser_check.mjs` starts headless Chrome and runs `tests/browser/primitives.html` in four media modes: light, dark, forced colors and reduced motion. It also reads the accessibility tree and sends real key events. CI uses Chrome for Testing 157.0.8103.50. The CI step checks the SHA-256 of the archive and the version before the check runs. An AppArmor profile for that binary only lets the Chrome sandbox run on Ubuntu 24.04.

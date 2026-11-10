@@ -88,6 +88,16 @@ jobs:
           version="$("$RUNNER_TEMP/chrome-linux64/chrome" --version | sed 's/[[:space:]]*$//')"
           echo "$version"
           [ "$version" = "Google Chrome for Testing $CHROME_VERSION" ]
+      # Ubuntu 24.04 blocks unprivileged user namespaces with AppArmor, and the Chrome sandbox needs them.
+      # This profile permits them for the pinned Chrome binary only. The sandbox stays on.
+      # See https://chromium.googlesource.com/chromium/src/+/main/docs/security/apparmor-userns-restrictions.md
+      - name: Permit the Chrome sandbox for the pinned binary
+        run: |
+          set -euo pipefail
+          printf '%s\n' 'abi <abi/4.0>,' 'include <tunables/global>' \
+            "profile chrome-for-testing $RUNNER_TEMP/chrome-linux64/chrome flags=(unconfined) {" \
+            '  userns,' '}' | sudo tee /etc/apparmor.d/chrome-for-testing > /dev/null
+          sudo apparmor_parser -r /etc/apparmor.d/chrome-for-testing
       - name: Run the accessibility and rendering check in headless Chrome
         run: CHROME="$RUNNER_TEMP/chrome-linux64/chrome" node tools/browser_check.mjs
   actionlint:
