@@ -82,7 +82,8 @@ export class MuField extends MuElement {
   #input = null;
 
   get value() {
-    return this.#input ? this.#input.value : null;
+    // A refused field keeps no data.
+    return this.fill && this.#input ? this.#input.value : null;
   }
 
   state(data) {

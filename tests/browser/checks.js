@@ -37,7 +37,11 @@ for (const name of Object.keys(TAGS)) {
   node.fill = fill('banner', {});
   check(`${name}: refuses an undeclared component`, node.dataset.state === 'refused', node.dataset.state);
   node.fill = fill(name === 'text' ? 'button' : 'text', name === 'text' ? VALID.button : VALID.text);
-  check(`${name}: refuses a fill of a different component`, node.dataset.state === 'refused', node.dataset.state);
+  check(`${name}: refuses a fill of a different component`, node.dataset.state === 'refused'
+    && node.shadowRoot.textContent.includes(`component: must be ${name}`), node.shadowRoot.textContent);
+  node.fill = fill(name === 'text' ? 'button' : 'text', { label: 7, text: 7 });
+  check(`${name}: names the component first for a bad fill of a different component`,
+    node.shadowRoot.textContent.includes(`component: must be ${name}`), node.shadowRoot.textContent);
 }
 
 // Markup in each text field shows as text and makes no element.
@@ -67,6 +71,9 @@ field.addEventListener('mu-edit', () => { edits += 1; });
 input.value = 'C-2';
 input.dispatchEvent(new Event('input'));
 check('field: an edit sends one mu-edit event', edits === 1 && field.value === 'C-2');
+const refusedField = mount('field', VALID.field);
+refusedField.fill = fill('field', { label: 7 });
+check('field: a refused field gives no value', refusedField.value === null, refusedField.value);
 
 const disabled = mount('button', { label: 'Return', disabled: true });
 check('button: disabled state', disabled.dataset.state === 'disabled' && disabled.shadowRoot.querySelector('button').disabled);

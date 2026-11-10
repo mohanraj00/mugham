@@ -156,7 +156,7 @@ async function main() {
         // The accessibility tree that a screen reader reads.
         const { nodes } = await session.send('Accessibility.getFullAXTree', {}, sessionId);
         const named = nodes.filter((node) => !node.ignored).map((node) => [node.role?.value, node.name?.value]);
-        for (const [role, name] of EXPECTED_AX.slice(0, 1)) {
+        for (const [role, name] of EXPECTED_AX.slice(0, 2)) {
           const ok = named.some(([r, n]) => r === role && n === name);
           report.accessibility.push({ role, name, ok });
           if (!ok) report.errors.push(`accessibility: no ${role} named ${name}`);

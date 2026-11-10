@@ -23,8 +23,9 @@ export class MuElement extends HTMLElement {
   // A fill is data only. If it has an error, the element shows a refusal as text and keeps no data.
   set fill(value) {
     const name = this.constructor.component;
-    const errors = fillErrors(value, CATALOG);
-    if (errors.length === 0 && value.component !== name) errors.push(`component: must be ${name}`);
+    // A fill of a different component is refused for that reason first.
+    const other = value !== null && typeof value === 'object' && !Array.isArray(value) && value.component !== name;
+    const errors = other ? [`component: must be ${name}`] : fillErrors(value, CATALOG);
     const root = this.shadowRoot;
     if (errors.length) {
       this.#fill = null;

@@ -54,7 +54,7 @@ class TokensTest(unittest.TestCase):
     def test_the_css_file_agrees_with_the_tokens(self):
         self.assertEqual(tokens.CSS.read_text(encoding='utf-8'), tokens.css(self.data))
 
-    def test_the_css_has_both_themes_and_forced_colors(self):
+    def test_the_css_has_both_themes_and_reduced_motion(self):
         css = tokens.css(self.data)
         self.assertIn('--mu-color-text: #1b1d21;', css)
         self.assertIn('@media (prefers-color-scheme: dark)', css)
