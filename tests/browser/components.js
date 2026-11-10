@@ -66,6 +66,9 @@ check('card-grid: refuses a bad nested fact', nested.dataset.state === 'refused'
   && nested.shadowRoot.textContent.includes('data.cards[0].data.facts[0].data.value: must be a string'), nested.shadowRoot.textContent);
 const unnamed = mount('editable-form', { ...FORM, fields: [fill('field', { label: 'Shelf code' })] });
 check('editable-form: refuses a field without a name', unnamed.dataset.state === 'refused', unnamed.shadowRoot.textContent);
+const blankSubmit = mount('editable-form', { ...FORM, submit_label: '' });
+check('editable-form: refuses a blank submit label', blankSubmit.dataset.state === 'refused'
+  && blankSubmit.shadowRoot.textContent.includes('data.submit_label: fewer than 1 characters'), blankSubmit.shadowRoot.textContent);
 const twice = mount('editable-form', { ...FORM, fields: [field('shelf', 'A', ''), field('shelf', 'B', '')] });
 check('editable-form: refuses two fields with one name', twice.dataset.state === 'refused', twice.shadowRoot.textContent);
 const empty = mount('card-grid', { label: 'Loans', cards: [] });

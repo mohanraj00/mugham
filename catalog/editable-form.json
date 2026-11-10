@@ -29,6 +29,7 @@
       "type": "text",
       "label": "Submit label",
       "required": true,
+      "min_length": 1,
       "max_length": 40
     }
   },
