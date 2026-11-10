@@ -63,6 +63,13 @@ def is_type(value, name):
     raise ValueError('unknown schema type ' + name)
 
 
+def python_pattern(pattern):
+    """In a JSON schema, $ at the end matches only at the end. In Python, it also matches before a final newline."""
+    if pattern.endswith('$') and not pattern.endswith('\\$'):
+        return pattern[:-1] + r'\Z'
+    return pattern
+
+
 def canonical(value):
     return json.dumps(value, sort_keys=True)
 
@@ -99,7 +106,7 @@ def schema_errors(value, schema, root=None, path='', label='(value)'):
             errors.append('%s: fewer than %d characters' % (at, schema['minLength']))
         if 'maxLength' in schema and len(value) > schema['maxLength']:
             errors.append('%s: more than %d characters' % (at, schema['maxLength']))
-        if 'pattern' in schema and not re.search(schema['pattern'], value):
+        if 'pattern' in schema and not re.search(python_pattern(schema['pattern']), value):
             errors.append('%s: does not agree with the pattern %s' % (at, schema['pattern']))
     if is_type(value, 'number'):
         if 'minimum' in schema and value < schema['minimum']:
