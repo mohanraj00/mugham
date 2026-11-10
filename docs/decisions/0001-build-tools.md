@@ -21,7 +21,7 @@ The kit uses web standards, for example custom elements, ES modules and CSS cust
 
 ### Option A: no third-party tool
 
-- Build: a Python standard library script, `tools/build.py`. It copies the source files in sorted order into `dist/`. It writes a manifest with the SHA-256 value of each file. It writes a tar archive with fixed owners, fixed modes and a fixed time from `SOURCE_DATE_EPOCH`. The source is plain JavaScript modules, so the build has no compile step.
+- Build: a Python standard library script, `tools/build.py`. It puts the source files in sorted order into one tar archive, `mugham.tar`. The archive has a manifest with the SHA-256 value of each file, fixed owners, fixed modes and a fixed time from `SOURCE_DATE_EPOCH`. The source is plain JavaScript modules, so the build has no compile step.
 - Contract tests: the built-in runner of Node.js, `node --test`. A contract file is JSON. A Python standard library script validates each contract against the schema in `catalog/schema/`.
 - Accessibility checks: a small project script drives headless Chrome through the Chrome DevTools Protocol, with the WebSocket client of Node.js. It reads the accessibility tree, sends key events, and turns on forced colors and reduced motion through emulation. CI pins one Chrome version.
 - Advantages: no development dependency and no lock file. Each line of tool code is in this project and has a review.
@@ -69,5 +69,7 @@ The reasons:
 ## Decision
 
 2026-11-10: the owner accepted Option A in the session of this change. The platforms are Python 3.14.6, Node.js 25.8.0 and one pinned version of Chrome. The project has no development dependency.
+
+The build also uses Git to list the tracked files. Each checkout already has Git, so the record does not pin a Git version. The local check used Chrome 157.0.8103.39. CI does not pin a Chrome version yet. A later change adds the pin.
 
 The build reads only the files that Git tracks in `src/`, `catalog/` and `LICENSE`. Thus a local file that Git does not track never goes into the package.

@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+import shutil
 import tarfile
 import tempfile
 import unittest
@@ -73,6 +74,47 @@ class BuildTest(unittest.TestCase):
 
     def test_check_passes_for_a_clean_tree(self):
         self.assertEqual(build.check(self.root, epoch=0, stream=io.StringIO()), 0)
+
+    def test_check_fails_and_keeps_both_archives_if_the_bytes_differ(self):
+        real = build.build
+        calls = []
+
+        def unstable(root, out, epoch):
+            calls.append(out)
+            return real(root, out, epoch + len(calls))
+        stream = io.StringIO()
+        try:
+            build.build = unstable
+            self.assertEqual(build.check(self.root, epoch=0, stream=stream), 1)
+        finally:
+            build.build = real
+        report = json.loads(stream.getvalue())
+        self.assertFalse(report['passed'])
+        self.assertEqual(len(report['kept']), 2)
+        for path in report['kept']:
+            self.assertTrue(Path(path).is_file())
+        shutil.rmtree(Path(report['kept'][0]).parents[1])
+
+    def test_source_date_epoch_from_the_environment(self):
+        os.environ['SOURCE_DATE_EPOCH'] = '1234'
+        try:
+            self.assertEqual(build.source_date_epoch(self.root), 1234)
+        finally:
+            del os.environ['SOURCE_DATE_EPOCH']
+
+    def test_source_date_epoch_is_0_with_no_commit(self):
+        saved = os.environ.pop('SOURCE_DATE_EPOCH', None)
+        try:
+            self.assertEqual(build.source_date_epoch(self.root), 0)
+        finally:
+            if saved is not None:
+                os.environ['SOURCE_DATE_EPOCH'] = saved
+
+    def test_output_that_is_a_file_is_refused(self):
+        out = self.out('file')
+        out.write_text('x')
+        with self.assertRaises(SystemExit):
+            build.build(self.root, out, epoch=0)
 
     def test_output_directory_must_be_empty(self):
         out = self.out('one')

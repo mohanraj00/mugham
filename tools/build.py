@@ -8,6 +8,7 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+import shutil
 import tarfile
 import tempfile
 
@@ -19,8 +20,8 @@ ARCHIVE = 'mugham.tar'
 
 def tracked_files(root):
     """Return the paths that Git tracks under INPUTS, in sorted order."""
-    result = subprocess.run(['git', '-C', str(root), 'ls-files', '-z', '--', *INPUTS],
-                            check=True, capture_output=True)
+    # Git writes its errors to stderr, so a failure stays visible.
+    result = subprocess.run(['git', '-C', str(root), 'ls-files', '-z', '--', *INPUTS], check=True, stdout=subprocess.PIPE)
     names = sorted({name.decode('utf-8') for name in result.stdout.split(b'\0') if name})
     for name in names:
         path = root / name
@@ -42,8 +43,8 @@ def member(name, data, epoch):
 def build(root, out, epoch):
     """Write out/mugham.tar from the tracked inputs of root and return its path."""
     out = Path(out)
-    if out.exists() and any(out.iterdir()):
-        raise SystemExit('build: the output directory is not empty: %s' % out)
+    if out.exists() and (not out.is_dir() or any(out.iterdir())):
+        raise SystemExit('build: the output is not an empty directory: %s' % out)
     out.mkdir(parents=True, exist_ok=True)
     files = {name: (root / name).read_bytes() for name in tracked_files(root)}
     manifest = {'format': 1, 'files': {name: hashlib.sha256(data).hexdigest() for name, data in files.items()}}
@@ -59,11 +60,15 @@ def build(root, out, epoch):
 
 def check(root, epoch, stream=sys.stdout):
     """Build two times into two empty directories and compare the bytes."""
-    with tempfile.TemporaryDirectory() as work:
-        digests = [hashlib.sha256(build(root, Path(work) / name, epoch).read_bytes()).hexdigest()
-                   for name in ('one', 'two')]
+    work = Path(tempfile.mkdtemp(prefix='mugham-build-'))
+    archives = [build(root, work / name, epoch) for name in ('one', 'two')]
+    digests = [hashlib.sha256(archive.read_bytes()).hexdigest() for archive in archives]
     same = digests[0] == digests[1]
+    # If the bytes differ, keep both archives, so that a person can compare them.
+    if same:
+        shutil.rmtree(work)
     print(json.dumps({'passed': same, 'sha256': digests, 'source_date_epoch': epoch,
+                      'kept': [] if same else [str(archive) for archive in archives],
                       'scope': 'Two local builds of the tracked inputs. No comparison with a build on a different machine.'},
                      indent=2), file=stream)
     return 0 if same else 1
@@ -72,7 +77,11 @@ def check(root, epoch, stream=sys.stdout):
 def source_date_epoch(root):
     if 'SOURCE_DATE_EPOCH' in os.environ:
         return int(os.environ['SOURCE_DATE_EPOCH'])
-    result = subprocess.run(['git', '-C', str(root), 'log', '-1', '--format=%ct'], check=True, capture_output=True, text=True)
+    # A repository with no commit has no commit time. Then the time is 0.
+    result = subprocess.run(['git', '-C', str(root), 'log', '-1', '--format=%ct'], stdout=subprocess.PIPE,
+                            stderr=subprocess.DEVNULL, text=True)
+    if result.returncode != 0:
+        return 0
     return int(result.stdout.strip() or 0)
 
 
