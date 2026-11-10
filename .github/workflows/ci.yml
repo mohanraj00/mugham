@@ -84,7 +84,8 @@ jobs:
             "https://storage.googleapis.com/chrome-for-testing-public/$CHROME_VERSION/linux64/chrome-linux64.zip"
           echo "$CHROME_SHA256  $archive" | sha256sum -c -
           unzip -q "$archive" -d "$RUNNER_TEMP"
-          version="$("$RUNNER_TEMP/chrome-linux64/chrome" --version)"
+          # Chrome writes a space after the version. Remove it before the comparison.
+          version="$("$RUNNER_TEMP/chrome-linux64/chrome" --version | sed 's/[[:space:]]*$//')"
           echo "$version"
           [ "$version" = "Google Chrome for Testing $CHROME_VERSION" ]
       - name: Run the accessibility and rendering check in headless Chrome
