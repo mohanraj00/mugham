@@ -184,6 +184,14 @@ class FillTest(unittest.TestCase):
     def test_an_integral_float_is_an_integer(self):
         self.assertEqual(self.errors(changed(FILL, ('data', 'renewals'), 2.0)), [])
 
+    def test_a_very_large_integer_gives_an_error_and_no_crash(self):
+        self.assertTrue(catalog.is_type(10 ** 400, 'number'))
+        self.assertFalse(catalog.is_type(float('inf'), 'number'))
+        self.assertIn('data.renewals: more than the maximum 3',
+                      self.errors(changed(FILL, ('data', 'renewals'), 10 ** 400)))
+        fill = catalog.parse_json('{"component": "loan-card", "version": "0.1.0", "data": {"title": "x", "renewals": 1%s}, "actions": []}' % ('0' * 400))
+        self.assertIn('data.renewals: more than the maximum 3', self.errors(fill))
+
     def test_a_fill_that_is_not_an_object(self):
         self.assertEqual(self.errors([]), ['(fill): must be an object'])
 

@@ -57,7 +57,10 @@ def is_type(value, name):
             return math.isfinite(value) and value.is_integer()
         return isinstance(value, int) and not isinstance(value, bool)
     if name == 'number':
-        return isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value)
+        # A Python integer has no size limit. math.isfinite() cannot convert a very large one to a float.
+        if isinstance(value, float):
+            return math.isfinite(value)
+        return isinstance(value, int) and not isinstance(value, bool)
     if name == 'null':
         return value is None
     raise ValueError('unknown schema type ' + name)
