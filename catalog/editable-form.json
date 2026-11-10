@@ -41,13 +41,21 @@
   "tokens": [
     "color.surface",
     "color.text",
+    "color.text-muted",
     "color.border",
+    "color.accent",
+    "color.on-accent",
+    "color.danger",
+    "color.focus",
+    "space.1",
     "space.2",
     "space.3",
     "space.4",
     "radius.2",
     "type.body",
-    "type.weight-strong"
+    "type.caption",
+    "type.weight-strong",
+    "motion.fast"
   ],
   "accessibility": {
     "role": "form",

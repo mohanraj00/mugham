@@ -1,6 +1,7 @@
 // In-page checks of the catalog components. Each expected result comes from the contracts in catalog/
 // and from the constitution: an action shows as done only after its receipt comes back.
 import { define } from '../../src/components/index.js';
+import { CATALOG } from '../../src/render/catalog.js';
 
 define();
 
@@ -68,7 +69,23 @@ check('editable-form: refuses a field without a name', unnamed.dataset.state ===
 const twice = mount('editable-form', { ...FORM, fields: [field('shelf', 'A', ''), field('shelf', 'B', '')] });
 check('editable-form: refuses two fields with one name', twice.dataset.state === 'refused', twice.shadowRoot.textContent);
 const empty = mount('card-grid', { label: 'Loans', cards: [] });
-check('card-grid: empty state', empty.dataset.state === 'empty' && empty.shadowRoot.textContent.includes('No cards.'));
+check('card-grid: empty state', empty.dataset.state === 'empty' && empty.shadowRoot.textContent.includes('No cards.')
+  && !empty.shadowRoot.querySelector('ul'), empty.shadowRoot.innerHTML.slice(0, 160));
+
+// The styles use only the tokens that the contract declares. The shared base sheet gives the focus ring.
+const declared = (name) => new Set(CATALOG[name].tokens.map((token) => '--mu-' + token.replace('.', '-')));
+for (const name of Object.keys(TAGS)) {
+  const node = mount(name, VALID[name]);
+  const [base, ...own] = node.shadowRoot.adoptedStyleSheets;
+  const used = new Set(own.flatMap((item) => [...item.cssRules].map((rule) => rule.cssText))
+    .join(' ').match(/--mu-[a-z0-9-]+/g) ?? []);
+  const extra = [...used].filter((token) => !declared(name).has(token));
+  check(`${name}: the styles use only declared tokens`, extra.length === 0, extra.join(' '));
+  if (CATALOG[name].tokens.includes('color.focus')) {
+    const ring = [...base.cssRules].some((rule) => rule.cssText.includes(':focus-visible') && rule.cssText.includes('--mu-color-focus'));
+    check(`${name}: the focus ring uses color.focus`, ring);
+  }
+}
 
 // Markup in each text field, also in nested fills, shows as text and makes no element.
 const MARKED = {
@@ -115,6 +132,17 @@ check('action-button: done only after the receipt', button.dataset.state === 'pe
   && button.receipt({ id: events[1].id, ok: true, message: 'Renewed to 15 December 2026.' })
   && button.dataset.state === 'done' && status() === 'Done: Renewed to 15 December 2026.', status());
 check('action-button: a late receipt does nothing', !button.receipt({ id: events[1].id, ok: false }) && button.dataset.state === 'done');
+let written = false;
+try { button.action.state = 'default'; written = true; } catch { written = false; }
+check('action-button: a script cannot write the state', !written && button.action.state === 'done' && button.dataset.state === 'done');
+button.action = null;
+check('action-button: a binding of null disables the button', button.dataset.state === 'disabled'
+  && control.getAttribute('aria-disabled') === 'true' && status() === '', `${button.dataset.state} ${status()}`);
+button.action = { tool: 'library.renew' };
+button.fill = fill('action-button', { label: 'Renew', style: 'x' });
+const before = events.length;
+button.send();
+check('action-button: a refused button sends no request', button.dataset.state === 'refused' && events.length === before);
 
 // The editable form submits the edited values as one action.
 const form = mount('editable-form', FORM);
@@ -130,6 +158,16 @@ check('editable-form: submit sends the values', submits.length === 1 && submits[
 check('editable-form: pending until the receipt', form.dataset.state === 'pending');
 form.receipt({ id: submits[0].id, ok: true });
 check('editable-form: done after the receipt', form.dataset.state === 'done');
+const pinned = mount('editable-form', { ...FORM, fields: [field('loan_id', 'Loan', 'L-9999')] });
+const pinnedSubmits = [];
+pinned.addEventListener('mu-action', (event) => pinnedSubmits.push(event.detail));
+pinned.action = { tool: 'library.update_loan', arguments: { loan_id: 'L-0001' } };
+pinned.shadowRoot.querySelector('form').requestSubmit();
+check('editable-form: a field cannot change a bound argument', pinnedSubmits.length === 1
+  && pinnedSubmits[0].arguments.loan_id === 'L-0001', JSON.stringify(pinnedSubmits));
+const formStyle = getComputedStyle(pinned.shadowRoot.querySelector('form'));
+check('editable-form: the form has the card border', formStyle.borderTopStyle === 'solid'
+  && parseFloat(formStyle.borderTopWidth) >= 1, `${formStyle.borderTopStyle} ${formStyle.borderTopWidth}`);
 
 // Media modes.
 const mode = new URLSearchParams(location.search).get('mode') || 'light';

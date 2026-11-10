@@ -20,44 +20,53 @@ export function bindingErrors(binding) {
 export class ActionState {
   #binding = null;
   #request = null;
-  state = 'disabled';
-  message = '';
+  #state = 'disabled';
+  #message = '';
+
+  get state() {
+    return this.#state;
+  }
+
+  get message() {
+    return this.#message;
+  }
 
   bind(binding) {
     if (binding === null) {
       this.#binding = null;
       this.#request = null;
-      this.state = 'disabled';
-      this.message = '';
+      this.#state = 'disabled';
+      this.#message = '';
       return [];
     }
     const errors = bindingErrors(binding);
     if (errors.length) return errors;
     this.#binding = Object.freeze({ tool: binding.tool, arguments: Object.freeze({ ...(binding.arguments ?? {}) }) });
     this.#request = null;
-    this.state = 'default';
-    this.message = '';
+    this.#state = 'default';
+    this.#message = '';
     return [];
   }
 
-  // Returns a request, or null if the action cannot start now.
+  // Returns a request, or null if the action cannot start now. The extra values come from a fill,
+  // so they cannot change an argument that the application binds: the bound arguments come last.
   start(extra = {}) {
-    if (!this.#binding || this.state === 'pending' || this.state === 'done') return null;
+    if (!this.#binding || this.#state === 'pending' || this.#state === 'done') return null;
     this.#request = Object.freeze({ id: crypto.randomUUID(), tool: this.#binding.tool,
-      arguments: Object.freeze({ ...this.#binding.arguments, ...extra }) });
-    this.state = 'pending';
-    this.message = '';
+      arguments: Object.freeze({ ...extra, ...this.#binding.arguments }) });
+    this.#state = 'pending';
+    this.#message = '';
     return this.#request;
   }
 
   // Returns true if the receipt belongs to the pending request. Only a valid receipt changes the state.
   receipt(value) {
-    if (!this.#request || this.state !== 'pending' || value === null || typeof value !== 'object') return false;
+    if (!this.#request || this.#state !== 'pending' || value === null || typeof value !== 'object') return false;
     if (value.id !== this.#request.id || typeof value.ok !== 'boolean') return false;
     const message = value.message ?? '';
     if (typeof message !== 'string' || [...message].length > MAX_MESSAGE) return false;
-    this.state = value.ok ? 'done' : 'error';
-    this.message = message;
+    this.#state = value.ok ? 'done' : 'error';
+    this.#message = message;
     this.#request = null;
     return true;
   }

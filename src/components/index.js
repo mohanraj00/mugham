@@ -7,7 +7,7 @@ import { el, sheet } from '../render/dom.js';
 const FIELD_NAME = /^[a-z][a-z0-9]*(_[a-z0-9]+)*$/;
 const CARD_CSS = sheet(`
   :host { display: block; }
-  article {
+  article, form {
     background: var(--mu-color-surface); color: var(--mu-color-text); font: var(--mu-type-body);
     border: 1px solid var(--mu-color-border); border-radius: var(--mu-radius-2); padding: var(--mu-space-4);
     display: flex; flex-direction: column; gap: var(--mu-space-2); height: 100%;
@@ -17,7 +17,7 @@ const CARD_CSS = sheet(`
   dl { margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: var(--mu-space-2) var(--mu-space-3); }
   dd { margin: 0; }
   .actions { display: flex; flex-wrap: wrap; gap: var(--mu-space-2); }
-  @media (forced-colors: active) { article { border-color: CanvasText; } .muted, dt { color: CanvasText; } }
+  @media (forced-colors: active) { article, form { border-color: CanvasText; } .muted, dt { color: CanvasText; } }
 `);
 const ACTION_CSS = sheet(`
   :host { display: inline-flex; flex-direction: column; gap: var(--mu-space-1); }
@@ -47,6 +47,7 @@ class ActionElement extends MuElement {
   #status = null;
   #control = null;
 
+  // The state of the action can only be read. Only bind(), start() and receipt() change it.
   get action() {
     return this.#action;
   }
@@ -54,12 +55,12 @@ class ActionElement extends MuElement {
   set action(binding) {
     const errors = this.#action.bind(binding);
     if (errors.length) throw new TypeError('action: ' + errors.join('; '));
-    this.update();
+    this.#update();
   }
 
   receipt(value) {
     const accepted = this.#action.receipt(value);
-    if (accepted) this.update();
+    if (accepted) this.#update();
     return accepted;
   }
 
@@ -70,18 +71,18 @@ class ActionElement extends MuElement {
   attach(control, status) {
     this.#control = control;
     this.#status = status;
-    this.update();
+    this.#update();
   }
 
   send(extra) {
     if (this.dataset.state === 'refused' || !this.fill) return;
     const request = this.#action.start(extra);
     if (!request) return;
-    this.update();
+    this.#update();
     this.dispatchEvent(new CustomEvent('mu-action', { bubbles: true, composed: true, detail: request }));
   }
 
-  update() {
+  #update() {
     if (!this.fill || !this.#control) return;
     const state = this.#action.state;
     this.dataset.state = state;
@@ -139,14 +140,16 @@ export class MuCardGrid extends MuElement {
     return data.cards.length ? 'default' : 'empty';
   }
 
+  // An empty grid shows only the empty text, and no empty list.
   render(data) {
+    if (data.cards.length === 0) return [el('p', { class: 'empty', part: 'empty' }, 'No cards.')];
     const list = el('ul', { 'aria-label': data.label, part: 'list' });
     for (const item of data.cards) {
       const card = document.createElement('mu-card');
       card.fill = item;
       list.append(el('li', {}, card));
     }
-    return [list, data.cards.length ? null : el('p', { class: 'empty' }, 'No cards.')];
+    return [list];
   }
 }
 

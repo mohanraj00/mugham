@@ -23,6 +23,6 @@ A kit contract declares no tool. The application binds the tool and the fixed ar
 button.action = { tool: 'library.renew', arguments: { loan_id: 'L-0001' } };
 ```
 
-A fill gives only data, so a model cannot select a tool. On a press, the element sends a `mu-action` event with an id, the tool and the arguments, and shows `Pending`. The application sends the request to its API. When the receipt comes back, the application calls `element.receipt({ id, ok, message })`. Only then does the element show `Done` or `Not done`. The element ignores a receipt with a different id.
+A fill gives only data, so a model cannot select a tool. On a press, the element sends a `mu-action` event with an id, the tool and the arguments, and shows `Pending`. The application sends the request to its API. When the receipt comes back, the application calls `element.receipt({ id, ok, message })`. Only then does the element show `Done` or `Not done`. The element ignores a receipt with a different id. The editable form adds the field values to the arguments, but a field value cannot change a bound argument. A script can read `element.action.state`, but it cannot write it.
 
 An application can write its own contract with an `actions` block. The kit does not render such contracts in v0.1.
