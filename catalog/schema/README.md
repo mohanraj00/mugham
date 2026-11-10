@@ -22,7 +22,7 @@ A contract is one JSON file in `catalog/`, for example `catalog/card.json`. The 
 | `actions` | Optional. The actions that the component can propose. |
 | `states` | The states of the component. |
 | `tokens` | The design tokens that the component uses. |
-| `accessibility` | The role, the accessible name, the keys, and support for forced colors and reduced motion. |
+| `accessibility` | The role, the accessible name (not for the role `none`), the keys, and support for forced colors and reduced motion. |
 
 ### Field types
 
@@ -48,7 +48,7 @@ An action has a `tool`, a `label`, `arguments` and `confirm`. The contract sets 
 1. The `name` agrees with the file name.
 2. The states include `default`.
 3. If the contract has actions, the states include `pending`, `done` and `error`. The kit shows an action as done only after the receipt comes back.
-4. If the accessible name comes from a field, that field is a required text field.
+4. A component with the role `none` has no accessible name. Each other role needs one. If the accessible name comes from a field, that field is a required text field.
 5. `min_length` is not more than `max_length`, and `minimum` is not more than `maximum`.
 6. Each component field names a contract in the catalog. A contract cannot contain itself, directly or through other contracts.
 

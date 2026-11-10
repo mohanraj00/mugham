@@ -95,6 +95,14 @@ class ContractTest(unittest.TestCase):
         self.assertIn('accessibility.name: the field must be a required text field',
                       self.errors(changed(LOAN, ('accessibility', 'name'), {'field': 'missing'})))
 
+    def test_rule_4_role_none_has_no_name(self):
+        self.assertIn('accessibility.name: a component with the role none has no accessible name',
+                      self.errors(changed(LOAN, ('accessibility', 'role'), 'none')))
+        self.assertIn('accessibility.name: a component with a role needs an accessible name',
+                      self.errors(changed(LOAN, ('accessibility', 'name'), KeyError)))
+        plain = changed(changed(LOAN, ('accessibility', 'role'), 'none'), ('accessibility', 'name'), KeyError)
+        self.assertEqual(self.errors(plain), [])
+
     def test_rule_5_limits(self):
         self.assertIn('data.title: min_length is more than max_length',
                       self.errors(changed(LOAN, ('data', 'title', 'min_length'), 81)))

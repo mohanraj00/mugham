@@ -40,7 +40,7 @@
     },
     "accessibility": {
       "type": "object",
-      "required": ["role", "name", "keyboard", "forced_colors", "reduced_motion"],
+      "required": ["role", "keyboard", "forced_colors", "reduced_motion"],
       "additionalProperties": false,
       "properties": {
         "role": {"enum": ["article", "button", "form", "group", "list", "region", "status", "textbox", "none"]},

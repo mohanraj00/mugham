@@ -177,7 +177,12 @@ def contract_errors(contract, filename=None, catalog=None):
         errors.append('states: must include default')
     if contract.get('actions') and not {'pending', 'done', 'error'} <= states:
         errors.append('states: a contract with actions must include pending, done and error')
-    name = contract['accessibility']['name']
+    accessibility = contract['accessibility']
+    name = accessibility.get('name', {})
+    if accessibility['role'] == 'none' and 'name' in accessibility:
+        errors.append('accessibility.name: a component with the role none has no accessible name')
+    if accessibility['role'] != 'none' and 'name' not in accessibility:
+        errors.append('accessibility.name: a component with a role needs an accessible name')
     if 'field' in name:
         field = contract['data'].get(name['field'])
         if not field or field['type'] != 'text' or not field['required']:
