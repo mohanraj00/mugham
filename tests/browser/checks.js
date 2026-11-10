@@ -71,6 +71,11 @@ field.addEventListener('mu-edit', () => { edits += 1; });
 input.value = 'C-2';
 input.dispatchEvent(new Event('input'));
 check('field: an edit sends one mu-edit event', edits === 1 && field.value === 'C-2');
+const limit = CATALOG.field.data.value.max_length;
+input.value = 'x'.repeat(limit + 500);
+input.dispatchEvent(new Event('input'));
+check('field: an edit stays in the contract limit', input.maxLength === limit && field.value.length === limit
+  && edits === 2, `${input.maxLength} ${field.value.length} ${edits}`);
 const refusedField = mount('field', VALID.field);
 refusedField.fill = fill('field', { label: 7 });
 check('field: a refused field gives no value', refusedField.value === null, refusedField.value);

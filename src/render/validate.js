@@ -10,7 +10,16 @@ const TYPE_NAMES = { object: 'an object', array: 'a list', string: 'a string', b
 const MAX_DEPTH = 8;
 const DATE = /^([0-9]{4})-([0-9]{2})-([0-9]{2})$/;
 const own = (object, key) => Object.prototype.hasOwnProperty.call(object, key);
-const length = (text) => [...text].length;
+// Count the code points of text, but stop after limit + 1. Thus a very long text gets its error
+// quickly, and the count makes no copy of the text.
+const length = (text, limit = Infinity) => {
+  let count = 0;
+  for (const _ of text) {
+    count += 1;
+    if (count > limit) break;
+  }
+  return count;
+};
 
 function isObject(value) {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -61,8 +70,9 @@ export function schemaErrors(value, schema, root = schema, path = '', label = '(
   if (own(schema, 'type') && !isType(value, schema.type)) return [`${at}: must be ${TYPE_NAMES[schema.type]}`];
   const errors = [];
   if (typeof value === 'string') {
-    if (length(value) < (schema.minLength ?? 0)) errors.push(`${at}: fewer than ${schema.minLength} characters`);
-    if (own(schema, 'maxLength') && length(value) > schema.maxLength) errors.push(`${at}: more than ${schema.maxLength} characters`);
+    const count = length(value, own(schema, 'maxLength') ? schema.maxLength : (schema.minLength ?? 0));
+    if (count < (schema.minLength ?? 0)) errors.push(`${at}: fewer than ${schema.minLength} characters`);
+    if (own(schema, 'maxLength') && count > schema.maxLength) errors.push(`${at}: more than ${schema.maxLength} characters`);
     if (own(schema, 'pattern') && !new RegExp(schema.pattern, 'u').test(value)) {
       errors.push(`${at}: does not agree with the pattern ${schema.pattern}`);
     }
@@ -116,8 +126,8 @@ function valueErrors(value, field, path, catalog, depth) {
   switch (field.type) {
     case 'text':
       if (typeof value !== 'string') return [`${path}: must be a string`];
-      if (length(value) > field.max_length) return [`${path}: more than ${field.max_length} characters`];
-      if (length(value) < (field.min_length ?? 0)) return [`${path}: fewer than ${field.min_length} characters`];
+      if (length(value, field.max_length) > field.max_length) return [`${path}: more than ${field.max_length} characters`];
+      if (length(value, field.max_length) < (field.min_length ?? 0)) return [`${path}: fewer than ${field.min_length} characters`];
       return [];
     case 'number':
     case 'integer':

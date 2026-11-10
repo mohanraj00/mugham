@@ -1,6 +1,7 @@
 // The first primitives: text, button, field, stack and grid. Each one has a contract in catalog/.
 import { MuElement } from './base.js';
 import { el, sheet } from '../render/dom.js';
+import { CATALOG } from '../render/catalog.js';
 
 const GAPS = { small: 'var(--mu-space-1)', medium: 'var(--mu-space-2)', large: 'var(--mu-space-4)' };
 const COLUMNS = { narrow: 'var(--mu-size-column-narrow)', medium: 'var(--mu-size-column-medium)', wide: 'var(--mu-size-column-wide)' };
@@ -99,7 +100,13 @@ export class MuField extends MuElement {
       'aria-describedby': described || false });
     input.value = data.value ?? '';
     input.disabled = Boolean(data.disabled);
+    // The contract limits the value. maxLength counts UTF-16 units, so it never permits more code points
+    // than the limit. A value from a script or a paste can still be longer, so the handler cuts it.
+    const limit = CATALOG.field.data.value.max_length;
+    input.maxLength = limit;
     input.addEventListener('input', () => {
+      const points = [...input.value];
+      if (points.length > limit) input.value = points.slice(0, limit).join('');
       this.dispatchEvent(new CustomEvent('mu-edit', { bubbles: true, composed: true,
         detail: { field: 'value', value: input.value } }));
     });
