@@ -1,0 +1,2 @@
+body { margin: 0; padding: var(--mu-space-4); background: var(--mu-color-surface); color: var(--mu-color-text); font: var(--mu-type-body); }
+@media (forced-colors: active) { body { background: Canvas; color: CanvasText; } }

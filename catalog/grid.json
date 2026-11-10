@@ -1,0 +1,56 @@
+{
+  "format": 1,
+  "name": "grid",
+  "version": "0.1.0",
+  "kind": "primitive",
+  "description": "A labeled group that puts its child elements in columns of equal width.",
+  "ai_content": false,
+  "data": {
+    "label": {
+      "type": "text",
+      "label": "Label",
+      "required": true,
+      "max_length": 80
+    },
+    "min_column": {
+      "type": "enum",
+      "label": "Minimum column width",
+      "required": false,
+      "values": [
+        "narrow",
+        "medium",
+        "wide"
+      ]
+    },
+    "gap": {
+      "type": "enum",
+      "label": "Gap",
+      "required": false,
+      "values": [
+        "small",
+        "medium",
+        "large"
+      ]
+    }
+  },
+  "states": [
+    "default"
+  ],
+  "tokens": [
+    "space.1",
+    "space.2",
+    "space.4",
+    "size.column-narrow",
+    "size.column-medium",
+    "size.column-wide"
+  ],
+  "accessibility": {
+    "role": "group",
+    "name": {
+      "field": "label"
+    },
+    "keyboard": [],
+    "forced_colors": true,
+    "reduced_motion": true
+  }
+}

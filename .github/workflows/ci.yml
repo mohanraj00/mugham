@@ -50,6 +50,33 @@ jobs:
       # Each contract in catalog/ must agree with contract format 1. See catalog/schema/README.md.
       - name: Validate the component contracts
         run: python3 -B tools/catalog.py
+  # The kit suite runs for each change that is not docs-only.
+  suite:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: 3.14.6
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 25.8.0
+      - name: Check the design tokens
+        run: python3 -B tools/tokens.py
+      - name: Run the tests of the browser validator
+        run: node --test 'tests/**/*.test.mjs'
+      # The Chrome of the runner image. The check prints its version.
+      - name: Run the accessibility and rendering check in headless Chrome
+        env:
+          CHROME: google-chrome
+        run: node tools/browser_check.mjs
   actionlint:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -91,7 +118,7 @@ jobs:
         run: python3 -B -I -m unittest discover -s tests -p test_gate.py
   # The required check. Add each project job to needs. A skipped job passes. A failed or cancelled job fails.
   ci-ok:
-    needs: [changes, shared-project, actionlint, shared-gates]
+    needs: [changes, shared-project, suite, actionlint, shared-gates]
     if: always()
     runs-on: ubuntu-24.04
     timeout-minutes: 2

@@ -1,0 +1,60 @@
+{
+  "format": 1,
+  "name": "button",
+  "version": "0.1.0",
+  "kind": "primitive",
+  "description": "A button. It sends a press event to the code that contains it. It does not send an action.",
+  "ai_content": false,
+  "data": {
+    "label": {
+      "type": "text",
+      "label": "Label",
+      "required": true,
+      "max_length": 40
+    },
+    "disabled": {
+      "type": "boolean",
+      "label": "Disabled",
+      "required": false
+    },
+    "emphasis": {
+      "type": "enum",
+      "label": "Emphasis",
+      "required": false,
+      "values": [
+        "primary",
+        "secondary"
+      ]
+    }
+  },
+  "states": [
+    "default",
+    "disabled"
+  ],
+  "tokens": [
+    "color.accent",
+    "color.on-accent",
+    "color.surface",
+    "color.border",
+    "color.focus",
+    "space.2",
+    "space.3",
+    "radius.2",
+    "type.body",
+    "motion.fast"
+  ],
+  "accessibility": {
+    "role": "button",
+    "name": {
+      "field": "label"
+    },
+    "keyboard": [
+      "Tab",
+      "Shift+Tab",
+      "Enter",
+      "Space"
+    ],
+    "forced_colors": true,
+    "reduced_motion": true
+  }
+}
