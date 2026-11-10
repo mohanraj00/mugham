@@ -17,5 +17,5 @@ The GitHub milestones hold the issues of each release.
 
 ## Next
 
-1. Choose the build tools of the kit. The kit has no third-party runtime dependency.
+1. Choose the build tools of the kit. The kit has no third-party runtime dependency. See [decision 0001](decisions/0001-build-tools.md).
 2. Write the contract format and the first contracts.
