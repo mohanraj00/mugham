@@ -6,6 +6,12 @@
   "description": "A labeled text input. A person edits the value.",
   "ai_content": false,
   "data": {
+    "name": {
+      "type": "text",
+      "label": "Name",
+      "required": false,
+      "max_length": 40
+    },
     "label": {
       "type": "text",
       "label": "Label",

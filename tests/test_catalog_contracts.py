@@ -1,0 +1,86 @@
+"""Each contract in catalog/ accepts a valid fill and refuses invalid fills. The fills are synthetic."""
+from pathlib import Path
+import sys
+import unittest
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'tools'))
+import catalog  # noqa: E402
+
+CATALOG, ERRORS = catalog.load_catalog(catalog.ROOT / 'catalog')
+
+
+def fill(component, data):
+    return {'component': component, 'version': '0.1.0', 'data': data}
+
+
+FACT = fill('fact', {'label': 'Shelf', 'value': 'B-14'})
+CARD = fill('card', {'title': 'Field guide to moss', 'date': '2026-12-01', 'date_label': 'Due', 'facts': [FACT, FACT]})
+VALID = {
+    'text': {'text': 'Weather at sea', 'variant': 'caption'},
+    'button': {'label': 'Renew', 'emphasis': 'secondary', 'disabled': False},
+    'field': {'name': 'shelf', 'label': 'Shelf code', 'value': 'B-14', 'hint': 'A letter and a number.'},
+    'stack': {'label': 'Loan details', 'direction': 'row', 'gap': 'small'},
+    'grid': {'label': 'Reading list', 'min_column': 'wide'},
+    'fact': FACT['data'],
+    'card': CARD['data'],
+    'action-button': {'label': 'Renew', 'description': 'Renew the loan for two weeks.'},
+    'editable-form': {'title': 'Loan details', 'submit_label': 'Save', 'fields': [fill('field', {'name': 'shelf', 'label': 'Shelf code'})]},
+    'card-grid': {'label': 'Loans', 'cards': [CARD]},
+}
+
+
+class CatalogContractTest(unittest.TestCase):
+    def test_the_catalog_is_valid_and_complete(self):
+        self.assertEqual(ERRORS, [])
+        self.assertEqual(sorted(CATALOG), sorted(VALID))
+
+    def test_each_contract_accepts_a_valid_fill(self):
+        for name, data in VALID.items():
+            with self.subTest(name=name):
+                self.assertEqual(catalog.fill_errors(fill(name, data), CATALOG), [])
+
+    def test_each_contract_refuses_an_undeclared_field(self):
+        for name, data in VALID.items():
+            with self.subTest(name=name):
+                self.assertEqual(catalog.fill_errors(fill(name, {**data, 'html': '<b>x</b>'}), CATALOG),
+                                 ['data.html: the contract does not declare this field'])
+
+    def test_each_required_field_is_required(self):
+        for name, contract in CATALOG.items():
+            for key, field in contract['data'].items():
+                if not field['required']:
+                    continue
+                with self.subTest(name=name, field=key):
+                    data = {k: v for k, v in VALID[name].items() if k != key}
+                    self.assertIn('data.%s: a required field is missing' % key, catalog.fill_errors(fill(name, data), CATALOG))
+
+    def test_each_text_field_has_a_limit(self):
+        for name, contract in CATALOG.items():
+            for key, field in contract['data'].items():
+                if field['type'] != 'text':
+                    continue
+                with self.subTest(name=name, field=key):
+                    data = {**VALID[name], key: 'x' * (field['max_length'] + 1)}
+                    self.assertIn('data.%s: more than %d characters' % (key, field['max_length']),
+                                  catalog.fill_errors(fill(name, data), CATALOG))
+
+    def test_markup_in_each_text_field_is_accepted_as_text(self):
+        for name, contract in CATALOG.items():
+            for key, field in contract['data'].items():
+                if field['type'] == 'text':
+                    with self.subTest(name=name, field=key):
+                        value = '<img src=x onerror=alert(1)>'[:field['max_length']]
+                        self.assertEqual(catalog.fill_errors(fill(name, {**VALID[name], key: value}), CATALOG), [])
+
+    def test_a_nested_fill_of_a_different_component_is_refused(self):
+        self.assertIn('data.cards[0].component: must be card',
+                      catalog.fill_errors(fill('card-grid', {'label': 'Loans', 'cards': [FACT]}), CATALOG))
+
+    def test_a_kit_component_declares_no_tool(self):
+        # The application binds each tool in code. A fill cannot select one. See catalog/README.md.
+        for name, contract in CATALOG.items():
+            self.assertNotIn('actions', contract, name)
+
+
+if __name__ == '__main__':
+    unittest.main()

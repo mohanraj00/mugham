@@ -26,6 +26,7 @@ export class MuElement extends HTMLElement {
     // A fill of a different component is refused for that reason first.
     const other = value !== null && typeof value === 'object' && !Array.isArray(value) && value.component !== name;
     const errors = other ? [`component: must be ${name}`] : fillErrors(value, CATALOG);
+    if (errors.length === 0) errors.push(...this.check(value.data));
     const root = this.shadowRoot;
     if (errors.length) {
       this.#fill = null;
@@ -37,6 +38,11 @@ export class MuElement extends HTMLElement {
     this.#fill = structuredClone(value);
     this.dataset.state = this.state(this.#fill.data);
     root.replaceChildren(...this.render(this.#fill.data));
+  }
+
+  // A subclass can refuse a fill for a rule that the contract format cannot give.
+  check() {
+    return [];
   }
 
   state() {

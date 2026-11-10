@@ -45,9 +45,10 @@ for (const name of Object.keys(TAGS)) {
 }
 
 // Markup in each text field shows as text and makes no element.
-for (const [name, contract] of Object.entries(CATALOG)) {
+for (const [name, contract] of Object.entries(CATALOG).filter(([key]) => key in TAGS)) {
   for (const [key, field] of Object.entries(contract.data)) {
-    if (field.type !== 'text') continue;
+    // The field name is a key for the form values. The kit does not show it.
+    if (field.type !== 'text' || (name === 'field' && key === 'name')) continue;
     const value = MARKUP.slice(0, field.max_length);
     const node = mount(name, { ...VALID[name], [key]: value });
     const root = node.shadowRoot;

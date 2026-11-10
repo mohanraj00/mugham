@@ -1,0 +1,48 @@
+{
+  "format": 1,
+  "name": "card-grid",
+  "version": "0.1.0",
+  "kind": "component",
+  "description": "A labeled list of cards in columns of equal width.",
+  "ai_content": true,
+  "data": {
+    "label": {
+      "type": "text",
+      "label": "Label",
+      "required": true,
+      "max_length": 80
+    },
+    "cards": {
+      "type": "list",
+      "label": "Cards",
+      "required": true,
+      "max_items": 100,
+      "items": {
+        "type": "component",
+        "label": "Card",
+        "required": true,
+        "name": "card"
+      }
+    }
+  },
+  "states": [
+    "default",
+    "empty"
+  ],
+  "tokens": [
+    "space.2",
+    "space.4",
+    "size.column-medium",
+    "color.text-muted",
+    "type.caption"
+  ],
+  "accessibility": {
+    "role": "list",
+    "name": {
+      "field": "label"
+    },
+    "keyboard": [],
+    "forced_colors": true,
+    "reduced_motion": true
+  }
+}
