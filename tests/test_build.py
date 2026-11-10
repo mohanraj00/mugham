@@ -10,6 +10,7 @@ import shutil
 import tarfile
 import tempfile
 import unittest
+from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'tools'))
 import build  # noqa: E402
@@ -96,11 +97,40 @@ class BuildTest(unittest.TestCase):
         shutil.rmtree(Path(report['kept'][0]).parents[1])
 
     def test_source_date_epoch_from_the_environment(self):
-        os.environ['SOURCE_DATE_EPOCH'] = '1234'
-        try:
+        with mock.patch.dict(os.environ, {'SOURCE_DATE_EPOCH': '1234'}):
             self.assertEqual(build.source_date_epoch(self.root), 1234)
-        finally:
-            del os.environ['SOURCE_DATE_EPOCH']
+
+    def test_source_date_epoch_that_is_not_a_number_is_refused(self):
+        for value in ['', 'soon', '-1', '1.5']:
+            with mock.patch.dict(os.environ, {'SOURCE_DATE_EPOCH': value}), self.assertRaises(SystemExit):
+                build.source_date_epoch(self.root)
+
+    def test_source_date_epoch_from_the_last_commit(self):
+        git(self.root, '-c', 'user.name=Test', '-c', 'user.email=test@example.invalid', 'commit', '-q', '-m', 'x')
+        expected = subprocess.run(['git', '-C', str(self.root), 'log', '-1', '--format=%ct'],
+                                  check=True, capture_output=True, text=True).stdout.strip()
+        with mock.patch.dict(os.environ):
+            os.environ.pop('SOURCE_DATE_EPOCH', None)
+            self.assertEqual(build.source_date_epoch(self.root), int(expected))
+
+    def test_a_git_error_stops_the_build(self):
+        with mock.patch.dict(os.environ):
+            os.environ.pop('SOURCE_DATE_EPOCH', None)
+            with self.assertRaises(SystemExit) as caught:
+                build.source_date_epoch(Path(self.tmp.name) / 'not-a-repo')
+        self.assertIn('git cannot read HEAD', str(caught.exception))
+
+    def test_a_tracked_file_that_is_not_on_the_disk_is_refused(self):
+        (self.root / 'src/kit/a.js').unlink()
+        with self.assertRaises(SystemExit) as caught:
+            build.tracked_files(self.root)
+        self.assertIn('not on the disk', str(caught.exception))
+
+    def test_check_and_out_together_are_refused(self):
+        with mock.patch.object(sys, 'argv', ['build.py', '--check', '--out', str(self.out('one'))]), \
+                mock.patch('sys.stderr', io.StringIO()), self.assertRaises(SystemExit) as caught:
+            build.main()
+        self.assertEqual(caught.exception.code, 2)
 
     def test_source_date_epoch_is_0_with_no_commit(self):
         saved = os.environ.pop('SOURCE_DATE_EPOCH', None)

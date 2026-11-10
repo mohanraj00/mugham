@@ -25,6 +25,8 @@ def tracked_files(root):
     names = sorted({name.decode('utf-8') for name in result.stdout.split(b'\0') if name})
     for name in names:
         path = root / name
+        if not path.exists() and not path.is_symlink():
+            raise SystemExit('build: the file is not on the disk: ' + name)
         if path.is_symlink() or not path.is_file():
             raise SystemExit('build: not a regular file: ' + name)
     return names
@@ -76,13 +78,20 @@ def check(root, epoch, stream=sys.stdout):
 
 def source_date_epoch(root):
     if 'SOURCE_DATE_EPOCH' in os.environ:
-        return int(os.environ['SOURCE_DATE_EPOCH'])
-    # A repository with no commit has no commit time. Then the time is 0.
-    result = subprocess.run(['git', '-C', str(root), 'log', '-1', '--format=%ct'], stdout=subprocess.PIPE,
-                            stderr=subprocess.DEVNULL, text=True)
-    if result.returncode != 0:
+        value = os.environ['SOURCE_DATE_EPOCH'].strip()
+        if not value.isascii() or not value.isdigit():
+            raise SystemExit('build: SOURCE_DATE_EPOCH must be a number of seconds')
+        return int(value)
+    # A repository with no commit has no commit time. Then the time is 0. Each other Git error stops the build.
+    head = subprocess.run(['git', '-C', str(root), 'rev-parse', '--verify', '-q', 'HEAD'],
+                          stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True)
+    if head.returncode == 1 and not head.stderr:
         return 0
-    return int(result.stdout.strip() or 0)
+    if head.returncode != 0:
+        raise SystemExit('build: git cannot read HEAD: ' + head.stderr.strip())
+    result = subprocess.run(['git', '-C', str(root), 'log', '-1', '--format=%ct'], check=True,
+                            stdout=subprocess.PIPE, text=True)
+    return int(result.stdout.strip())
 
 
 def main():
@@ -90,6 +99,8 @@ def main():
     parser.add_argument('--out', help='an empty output directory')
     parser.add_argument('--check', action='store_true', help='build two times and compare the bytes')
     args = parser.parse_args()
+    if args.check and args.out:
+        parser.error('give --out or --check, not the two')
     epoch = source_date_epoch(ROOT)
     if args.check:
         return check(ROOT, epoch)

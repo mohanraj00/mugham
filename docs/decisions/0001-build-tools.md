@@ -64,7 +64,7 @@ The reasons:
 
 ## The build check
 
-`make check` runs `tools/build.py` two times into two empty directories, with the same `SOURCE_DATE_EPOCH`. It compares the bytes of the two archives. CI runs the same check on Linux. A later check can compare the archive of CI with the archive of a local build.
+`make check` runs `tools/build.py --check` one time. That command builds the archive two times into two empty temporary directories, with the same `SOURCE_DATE_EPOCH`. Then it compares the bytes of the two archives. CI runs the same check on Linux. A later check can compare the archive of CI with the archive of a local build.
 
 ## Decision
 
