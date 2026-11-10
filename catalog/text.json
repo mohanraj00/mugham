@@ -36,9 +36,6 @@
   ],
   "accessibility": {
     "role": "none",
-    "name": {
-      "field": "text"
-    },
     "keyboard": [],
     "forced_colors": true,
     "reduced_motion": true
