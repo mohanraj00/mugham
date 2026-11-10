@@ -78,6 +78,14 @@ class ContractTest(unittest.TestCase):
                 found = self.errors(changed(LOAN, path, value))
                 self.assertTrue(any(error.startswith(where) for error in found), found)
 
+    def test_a_constant_compares_by_value(self):
+        for value in [1.0, 1e0]:
+            with self.subTest(value=value):
+                self.assertNotIn('format: must be 1', self.errors(changed(LOAN, ('format',), value)))
+        self.assertIn('format: must be 1', self.errors(changed(LOAN, ('format',), True)))
+        self.assertTrue(catalog.canonical([1.0, {'a': 2.0}]) == catalog.canonical([1, {'a': 2}]))
+        self.assertTrue(catalog.canonical(True) != catalog.canonical(1))
+
     def test_rule_1_name_agrees_with_file_name(self):
         self.assertIn('name: must agree with the file name other.json',
                       catalog.contract_errors(LOAN, 'other.json'))

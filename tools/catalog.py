@@ -74,7 +74,16 @@ def python_pattern(pattern):
 
 
 def canonical(value):
-    return json.dumps(value, sort_keys=True)
+    """Return a key that compares JSON values by value. 1.0 and 1 are equal. True and 1 are not."""
+    def normal(item):
+        if isinstance(item, float) and item.is_integer():
+            return int(item)
+        if isinstance(item, dict):
+            return {key: normal(child) for key, child in item.items()}
+        if isinstance(item, list):
+            return [normal(child) for child in item]
+        return item
+    return json.dumps(normal(value), sort_keys=True)
 
 
 def schema_errors(value, schema, root=None, path='', label='(value)'):
