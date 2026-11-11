@@ -1,5 +1,6 @@
 # Run the checks that AGENTS.md names.
 PYTHON ?= python3
+NODE ?= node
 
 .PHONY: check
 check:
@@ -7,3 +8,6 @@ check:
 	$(PYTHON) -B -m unittest discover -s tests
 	$(PYTHON) -B tools/build.py --check
 	$(PYTHON) -B tools/catalog.py
+	$(PYTHON) -B tools/tokens.py
+	$(NODE) --test 'tests/**/*.test.mjs'
+	$(NODE) tools/browser_check.mjs

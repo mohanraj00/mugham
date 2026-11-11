@@ -1,0 +1,72 @@
+{
+  "format": 1,
+  "name": "field",
+  "version": "0.1.0",
+  "kind": "primitive",
+  "description": "A labeled text input. A person edits the value.",
+  "ai_content": false,
+  "data": {
+    "label": {
+      "type": "text",
+      "label": "Label",
+      "required": true,
+      "min_length": 1,
+      "max_length": 80
+    },
+    "value": {
+      "type": "text",
+      "label": "Value",
+      "required": false,
+      "max_length": 2000,
+      "editable": true
+    },
+    "hint": {
+      "type": "text",
+      "label": "Hint",
+      "required": false,
+      "max_length": 200
+    },
+    "error": {
+      "type": "text",
+      "label": "Error",
+      "required": false,
+      "max_length": 200
+    },
+    "disabled": {
+      "type": "boolean",
+      "label": "Disabled",
+      "required": false
+    }
+  },
+  "states": [
+    "default",
+    "disabled",
+    "error"
+  ],
+  "tokens": [
+    "color.surface",
+    "color.text",
+    "color.text-muted",
+    "color.border",
+    "color.focus",
+    "color.danger",
+    "space.1",
+    "space.2",
+    "radius.1",
+    "type.body",
+    "type.caption",
+    "motion.fast"
+  ],
+  "accessibility": {
+    "role": "textbox",
+    "name": {
+      "field": "label"
+    },
+    "keyboard": [
+      "Tab",
+      "Shift+Tab"
+    ],
+    "forced_colors": true,
+    "reduced_motion": true
+  }
+}

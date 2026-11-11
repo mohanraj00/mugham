@@ -1,0 +1,43 @@
+{
+  "format": 1,
+  "name": "text",
+  "version": "0.1.0",
+  "kind": "primitive",
+  "description": "A run of text. The kit always shows the value as text, never as markup.",
+  "ai_content": false,
+  "data": {
+    "text": {
+      "type": "text",
+      "label": "Text",
+      "required": true,
+      "max_length": 10000
+    },
+    "variant": {
+      "type": "enum",
+      "label": "Variant",
+      "required": false,
+      "values": [
+        "body",
+        "strong",
+        "caption"
+      ]
+    }
+  },
+  "states": [
+    "default",
+    "empty"
+  ],
+  "tokens": [
+    "color.text",
+    "color.text-muted",
+    "type.body",
+    "type.caption",
+    "type.weight-strong"
+  ],
+  "accessibility": {
+    "role": "none",
+    "keyboard": [],
+    "forced_colors": true,
+    "reduced_motion": true
+  }
+}

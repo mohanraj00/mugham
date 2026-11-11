@@ -1,0 +1,1527 @@
+{
+ "note": "Shared cases for tools/catalog.py and src/render/validate.js. tests/test_vectors.py checks that the Python validator gives each expected list.",
+ "catalog": {
+  "loan-card": {
+   "format": 1,
+   "name": "loan-card",
+   "version": "0.1.0",
+   "kind": "component",
+   "description": "A synthetic library loan.",
+   "ai_content": true,
+   "data": {
+    "title": {
+     "type": "text",
+     "label": "Title",
+     "required": true,
+     "max_length": 80
+    },
+    "due": {
+     "type": "date",
+     "label": "Due date",
+     "required": true
+    },
+    "renewals": {
+     "type": "integer",
+     "label": "Renewals",
+     "required": false,
+     "minimum": 0,
+     "maximum": 3
+    },
+    "status": {
+     "type": "enum",
+     "label": "Status",
+     "required": false,
+     "values": [
+      "on_loan",
+      "late"
+     ]
+    },
+    "facts": {
+     "type": "list",
+     "label": "Facts",
+     "required": false,
+     "max_items": 2,
+     "items": {
+      "type": "text",
+      "label": "Fact",
+      "required": true,
+      "max_length": 40
+     }
+    }
+   },
+   "actions": {
+    "renew": {
+     "tool": "library.renew",
+     "label": "Renew",
+     "confirm": false,
+     "arguments": {
+      "loan_id": {
+       "type": "text",
+       "label": "Loan",
+       "required": true,
+       "max_length": 20
+      }
+     }
+    }
+   },
+   "states": [
+    "default",
+    "pending",
+    "done",
+    "error"
+   ],
+   "tokens": [
+    "color.surface",
+    "space.2"
+   ],
+   "accessibility": {
+    "role": "article",
+    "name": {
+     "field": "title"
+    },
+    "keyboard": [
+     "Tab"
+    ],
+    "forced_colors": true,
+    "reduced_motion": true
+   }
+  },
+  "loan-grid": {
+   "format": 1,
+   "name": "loan-grid",
+   "version": "0.1.0",
+   "kind": "component",
+   "description": "A grid of loans.",
+   "ai_content": false,
+   "data": {
+    "label": {
+     "type": "text",
+     "label": "Label",
+     "required": true,
+     "max_length": 40
+    },
+    "cards": {
+     "type": "list",
+     "label": "Loans",
+     "required": true,
+     "max_items": 3,
+     "items": {
+      "type": "component",
+      "label": "Loan",
+      "required": true,
+      "name": "loan-card"
+     }
+    }
+   },
+   "states": [
+    "default",
+    "empty"
+   ],
+   "tokens": [],
+   "accessibility": {
+    "role": "list",
+    "name": {
+     "field": "label"
+    },
+    "keyboard": [],
+    "forced_colors": true,
+    "reduced_motion": true
+   }
+  }
+ },
+ "cases": [
+  {
+   "name": "valid loan",
+   "fill": {
+    "component": "loan-card",
+    "version": "0.1.0",
+    "data": {
+     "title": "Field guide to moss",
+     "due": "2026-12-01",
+     "renewals": 1,
+     "facts": [
+      "Shelf 4",
+      "Floor 2"
+     ]
+    },
+    "actions": [
+     {
+      "action": "renew",
+      "arguments": {
+       "loan_id": "L-0001"
+      }
+     }
+    ]
+   },
+   "errors": []
+  },
+  {
+   "name": "undeclared component",
+   "fill": {
+    "component": "banner",
+    "version": "0.1.0",
+    "data": {
+     "title": "Field guide to moss",
+     "due": "2026-12-01",
+     "renewals": 1,
+     "facts": [
+      "Shelf 4",
+      "Floor 2"
+     ]
+    },
+    "actions": [
+     {
+      "action": "renew",
+      "arguments": {
+       "loan_id": "L-0001"
+      }
+     }
+    ]
+   },
+   "errors": [
+    "component: no contract has the name banner"
+   ]
+  },
+  {
+   "name": "final newline in name",
+   "fill": {
+    "component": "loan-card\n",
+    "version": "0.1.0",
+    "data": {
+     "title": "Field guide to moss",
+     "due": "2026-12-01",
+     "renewals": 1,
+     "facts": [
+      "Shelf 4",
+      "Floor 2"
+     ]
+    },
+    "actions": [
+     {
+      "action": "renew",
+      "arguments": {
+       "loan_id": "L-0001"
+      }
+     }
+    ]
+   },
+   "errors": [
+    "component: does not agree with the pattern ^[a-z][a-z0-9]*(-[a-z0-9]+)*$"
+   ]
+  },
+  {
+   "name": "not an object",
+   "fill": [],
+   "errors": [
+    "(fill): must be an object"
+   ]
+  },
+  {
+   "name": "null fill",
+   "fill": null,
+   "errors": [
+    "(fill): must be an object"
+   ]
+  },
+  {
+   "name": "integral float",
+   "fill": {
+    "component": "loan-card",
+    "version": "0.1.0",
+    "data": {
+     "title": "Field guide to moss",
+     "due": "2026-12-01",
+     "renewals": 2.0,
+     "facts": [
+      "Shelf 4",
+      "Floor 2"
+     ]
+    },
+    "actions": [
+     {
+      "action": "renew",
+      "arguments": {
+       "loan_id": "L-0001"
+      }
+     }
+    ]
+   },
+   "errors": []
+  },
+  {
+   "name": "version = \"0.2.0\"",
+   "fill": {
+    "component": "loan-card",
+    "version": "0.2.0",
+    "data": {
+     "title": "Field guide to moss",
+     "due": "2026-12-01",
+     "renewals": 1,
+     "facts": [
+      "Shelf 4",
+      "Floor 2"
+     ]
+    },
+    "actions": [
+     {
+      "action": "renew",
+      "arguments": {
+       "loan_id": "L-0001"
+      }
+     }
+    ]
+   },
+   "errors": [
+    "version: must be 0.1.0"
+   ]
+  },
+  {
+   "name": "data.script = \"x\"",
+   "fill": {
+    "component": "loan-card",
+    "version": "0.1.0",
+    "data": {
+     "title": "Field guide to moss",
+     "due": "2026-12-01",
+     "renewals": 1,
+     "facts": [
+      "Shelf 4",
+      "Floor 2"
+     ],
+     "script": "x"
+    },
+    "actions": [
+     {
+      "action": "renew",
+      "arguments": {
+       "loan_id": "L-0001"
+      }
+     }
+    ]
+   },
+   "errors": [
+    "data.script: the contract does not declare this field"
+   ]
+  },
+  {
+   "name": "data.title = removed",
+   "fill": {
+    "component": "loan-card",
+    "version": "0.1.0",
+    "data": {
+     "due": "2026-12-01",
+     "renewals": 1,
+     "facts": [
+      "Shelf 4",
+      "Floor 2"
+     ]
+    },
+    "actions": [
+     {
+      "action": "renew",
+      "arguments": {
+       "loan_id": "L-0001"
+      }
+     }
+    ]
+   },
+   "errors": [
+    "data.title: a required field is missing"
+   ]
+  },
+  {
+   "name": "data.title = \"xxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+   "fill": {
+    "component": "loan-card",
+    "version": "0.1.0",
+    "data": {
+     "title": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+     "due": "2026-12-01",
+     "renewals": 1,
+     "facts": [
+      "Shelf 4",
+      "Floor 2"
+     ]
+    },
+    "actions": [
+     {
+      "action": "renew",
+      "arguments": {
+       "loan_id": "L-0001"
+      }
+     }
+    ]
+   },
+   "errors": [
+    "data.title: more than 80 characters"
+   ]
+  },
+  {
+   "name": "data.title = 7",
+   "fill": {
+    "component": "loan-card",
+    "version": "0.1.0",
+    "data": {
+     "title": 7,
+     "due": "2026-12-01",
+     "renewals": 1,
+     "facts": [
+      "Shelf 4",
+      "Floor 2"
+     ]
+    },
+    "actions": [
+     {
+      "action": "renew",
+      "arguments": {
+       "loan_id": "L-0001"
+      }
+     }
+    ]
+   },
+   "errors": [
+    "data.title: must be a string"
+   ]
+  },
+  {
+   "name": "data.due = \"2026-02-30\"",
+   "fill": {
+    "component": "loan-card",
+    "version": "0.1.0",
+    "data": {
+     "title": "Field guide to moss",
+     "due": "2026-02-30",
+     "renewals": 1,
+     "facts": [
+      "Shelf 4",
+      "Floor 2"
+     ]
+    },
+    "actions": [
+     {
+      "action": "renew",
+      "arguments": {
+       "loan_id": "L-0001"
+      }
+     }
+    ]
+   },
+   "errors": [
+    "data.due: must be a date as YYYY-MM-DD"
+   ]
+  },
+  {
+   "name": "data.due = \"2026-2-3\"",
+   "fill": {
+    "component": "loan-card",
+    "version": "0.1.0",
+    "data": {
+     "title": "Field guide to moss",
+     "due": "2026-2-3",
+     "renewals": 1,
+     "facts": [
+      "Shelf 4",
+      "Floor 2"
+     ]
+    },
+    "actions": [
+     {
+      "action": "renew",
+      "arguments": {
+       "loan_id": "L-0001"
+      }
+     }
+    ]
+   },
+   "errors": [
+    "data.due: must be a date as YYYY-MM-DD"
+   ]
+  },
+  {
+   "name": "data.due = \"0000-01-01\"",
+   "fill": {
+    "component": "loan-card",
+    "version": "0.1.0",
+    "data": {
+     "title": "Field guide to moss",
+     "due": "0000-01-01",
+     "renewals": 1,
+     "facts": [
+      "Shelf 4",
+      "Floor 2"
+     ]
+    },
+    "actions": [
+     {
+      "action": "renew",
+      "arguments": {
+       "loan_id": "L-0001"
+      }
+     }
+    ]
+   },
+   "errors": [
+    "data.due: must be a date as YYYY-MM-DD"
+   ]
+  },
+  {
+   "name": "data.due = \"2024-02-29\"",
+   "fill": {
+    "component": "loan-card",
+    "version": "0.1.0",
+    "data": {
+     "title": "Field guide to moss",
+     "due": "2024-02-29",
+     "renewals": 1,
+     "facts": [
+      "Shelf 4",
+      "Floor 2"
+     ]
+    },
+    "actions": [
+     {
+      "action": "renew",
+      "arguments": {
+       "loan_id": "L-0001"
+      }
+     }
+    ]
+   },
+   "errors": []
+  },
+  {
+   "name": "data.renewals = true",
+   "fill": {
+    "component": "loan-card",
+    "version": "0.1.0",
+    "data": {
+     "title": "Field guide to moss",
+     "due": "2026-12-01",
+     "renewals": true,
+     "facts": [
+      "Shelf 4",
+      "Floor 2"
+     ]
+    },
+    "actions": [
+     {
+      "action": "renew",
+      "arguments": {
+       "loan_id": "L-0001"
+      }
+     }
+    ]
+   },
+   "errors": [
+    "data.renewals: must be an integer"
+   ]
+  },
+  {
+   "name": "data.renewals = 1.5",
+   "fill": {
+    "component": "loan-card",
+    "version": "0.1.0",
+    "data": {
+     "title": "Field guide to moss",
+     "due": "2026-12-01",
+     "renewals": 1.5,
+     "facts": [
+      "Shelf 4",
+      "Floor 2"
+     ]
+    },
+    "actions": [
+     {
+      "action": "renew",
+      "arguments": {
+       "loan_id": "L-0001"
+      }
+     }
+    ]
+   },
+   "errors": [
+    "data.renewals: must be an integer"
+   ]
+  },
+  {
+   "name": "data.renewals = 9",
+   "fill": {
+    "component": "loan-card",
+    "version": "0.1.0",
+    "data": {
+     "title": "Field guide to moss",
+     "due": "2026-12-01",
+     "renewals": 9,
+     "facts": [
+      "Shelf 4",
+      "Floor 2"
+     ]
+    },
+    "actions": [
+     {
+      "action": "renew",
+      "arguments": {
+       "loan_id": "L-0001"
+      }
+     }
+    ]
+   },
+   "errors": [
+    "data.renewals: more than the maximum 3"
+   ]
+  },
+  {
+   "name": "data.status = \"lost\"",
+   "fill": {
+    "component": "loan-card",
+    "version": "0.1.0",
+    "data": {
+     "title": "Field guide to moss",
+     "due": "2026-12-01",
+     "renewals": 1,
+     "facts": [
+      "Shelf 4",
+      "Floor 2"
+     ],
+     "status": "lost"
+    },
+    "actions": [
+     {
+      "action": "renew",
+      "arguments": {
+       "loan_id": "L-0001"
+      }
+     }
+    ]
+   },
+   "errors": [
+    "data.status: must be one of on_loan, late"
+   ]
+  },
+  {
+   "name": "data.facts = [\"a\", \"b\", \"c\"]",
+   "fill": {
+    "component": "loan-card",
+    "version": "0.1.0",
+    "data": {
+     "title": "Field guide to moss",
+     "due": "2026-12-01",
+     "renewals": 1,
+     "facts": [
+      "a",
+      "b",
+      "c"
+     ]
+    },
+    "actions": [
+     {
+      "action": "renew",
+      "arguments": {
+       "loan_id": "L-0001"
+      }
+     }
+    ]
+   },
+   "errors": [
+    "data.facts: more than 2 items"
+   ]
+  },
+  {
+   "name": "data.facts = [\"a\", 5]",
+   "fill": {
+    "component": "loan-card",
+    "version": "0.1.0",
+    "data": {
+     "title": "Field guide to moss",
+     "due": "2026-12-01",
+     "renewals": 1,
+     "facts": [
+      "a",
+      5
+     ]
+    },
+    "actions": [
+     {
+      "action": "renew",
+      "arguments": {
+       "loan_id": "L-0001"
+      }
+     }
+    ]
+   },
+   "errors": [
+    "data.facts[1]: must be a string"
+   ]
+  },
+  {
+   "name": "actions.0.action = \"delete\"",
+   "fill": {
+    "component": "loan-card",
+    "version": "0.1.0",
+    "data": {
+     "title": "Field guide to moss",
+     "due": "2026-12-01",
+     "renewals": 1,
+     "facts": [
+      "Shelf 4",
+      "Floor 2"
+     ]
+    },
+    "actions": [
+     {
+      "action": "delete",
+      "arguments": {
+       "loan_id": "L-0001"
+      }
+     }
+    ]
+   },
+   "errors": [
+    "actions[0].action: the contract does not declare this action"
+   ]
+  },
+  {
+   "name": "actions.0.arguments.tool = \"shell\"",
+   "fill": {
+    "component": "loan-card",
+    "version": "0.1.0",
+    "data": {
+     "title": "Field guide to moss",
+     "due": "2026-12-01",
+     "renewals": 1,
+     "facts": [
+      "Shelf 4",
+      "Floor 2"
+     ]
+    },
+    "actions": [
+     {
+      "action": "renew",
+      "arguments": {
+       "loan_id": "L-0001",
+       "tool": "shell"
+      }
+     }
+    ]
+   },
+   "errors": [
+    "actions[0].arguments.tool: the action does not declare this argument"
+   ]
+  },
+  {
+   "name": "actions.0.arguments.loan_id = removed",
+   "fill": {
+    "component": "loan-card",
+    "version": "0.1.0",
+    "data": {
+     "title": "Field guide to moss",
+     "due": "2026-12-01",
+     "renewals": 1,
+     "facts": [
+      "Shelf 4",
+      "Floor 2"
+     ]
+    },
+    "actions": [
+     {
+      "action": "renew",
+      "arguments": {}
+     }
+    ]
+   },
+   "errors": [
+    "actions[0].arguments.loan_id: a required argument is missing"
+   ]
+  },
+  {
+   "name": "actions.0.tool = \"shell.run\"",
+   "fill": {
+    "component": "loan-card",
+    "version": "0.1.0",
+    "data": {
+     "title": "Field guide to moss",
+     "due": "2026-12-01",
+     "renewals": 1,
+     "facts": [
+      "Shelf 4",
+      "Floor 2"
+     ]
+    },
+    "actions": [
+     {
+      "action": "renew",
+      "arguments": {
+       "loan_id": "L-0001"
+      },
+      "tool": "shell.run"
+     }
+    ]
+   },
+   "errors": [
+    "actions[0]: unknown key tool"
+   ]
+  },
+  {
+   "name": "style = \"x\"",
+   "fill": {
+    "component": "loan-card",
+    "version": "0.1.0",
+    "data": {
+     "title": "Field guide to moss",
+     "due": "2026-12-01",
+     "renewals": 1,
+     "facts": [
+      "Shelf 4",
+      "Floor 2"
+     ]
+    },
+    "actions": [
+     {
+      "action": "renew",
+      "arguments": {
+       "loan_id": "L-0001"
+      }
+     }
+    ],
+    "style": "x"
+   },
+   "errors": [
+    "style: unknown key"
+   ]
+  },
+  {
+   "name": "data.__proto__ = {\"x\": 1}",
+   "fill": {
+    "component": "loan-card",
+    "version": "0.1.0",
+    "data": {
+     "title": "Field guide to moss",
+     "due": "2026-12-01",
+     "renewals": 1,
+     "facts": [
+      "Shelf 4",
+      "Floor 2"
+     ],
+     "__proto__": {
+      "x": 1
+     }
+    },
+    "actions": [
+     {
+      "action": "renew",
+      "arguments": {
+       "loan_id": "L-0001"
+      }
+     }
+    ]
+   },
+   "errors": [
+    "data.__proto__: the contract does not declare this field"
+   ]
+  },
+  {
+   "name": "data.constructor = \"x\"",
+   "fill": {
+    "component": "loan-card",
+    "version": "0.1.0",
+    "data": {
+     "title": "Field guide to moss",
+     "due": "2026-12-01",
+     "renewals": 1,
+     "facts": [
+      "Shelf 4",
+      "Floor 2"
+     ],
+     "constructor": "x"
+    },
+    "actions": [
+     {
+      "action": "renew",
+      "arguments": {
+       "loan_id": "L-0001"
+      }
+     }
+    ]
+   },
+   "errors": [
+    "data.constructor: the contract does not declare this field"
+   ]
+  },
+  {
+   "name": "actions = [{\"action\": \"toString\", \"argum",
+   "fill": {
+    "component": "loan-card",
+    "version": "0.1.0",
+    "data": {
+     "title": "Field guide to moss",
+     "due": "2026-12-01",
+     "renewals": 1,
+     "facts": [
+      "Shelf 4",
+      "Floor 2"
+     ]
+    },
+    "actions": [
+     {
+      "action": "toString",
+      "arguments": {}
+     }
+    ]
+   },
+   "errors": [
+    "actions[0].action: does not agree with the pattern ^[a-z][a-z0-9]*(_[a-z0-9]+)*$"
+   ]
+  },
+  {
+   "name": "data.title = \"\\ud83d\\ude00\\ud83d\\ude00\\ud83",
+   "fill": {
+    "component": "loan-card",
+    "version": "0.1.0",
+    "data": {
+     "title": "😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀",
+     "due": "2026-12-01",
+     "renewals": 1,
+     "facts": [
+      "Shelf 4",
+      "Floor 2"
+     ]
+    },
+    "actions": [
+     {
+      "action": "renew",
+      "arguments": {
+       "loan_id": "L-0001"
+      }
+     }
+    ]
+   },
+   "errors": []
+  },
+  {
+   "name": "data.title = \"\\ud83d\\ude00\\ud83d\\ude00\\ud83",
+   "fill": {
+    "component": "loan-card",
+    "version": "0.1.0",
+    "data": {
+     "title": "😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀",
+     "due": "2026-12-01",
+     "renewals": 1,
+     "facts": [
+      "Shelf 4",
+      "Floor 2"
+     ]
+    },
+    "actions": [
+     {
+      "action": "renew",
+      "arguments": {
+       "loan_id": "L-0001"
+      }
+     }
+    ]
+   },
+   "errors": [
+    "data.title: more than 80 characters"
+   ]
+  },
+  {
+   "name": "markup stays text: <img src=x onerror=alert(1)>",
+   "fill": {
+    "component": "loan-card",
+    "version": "0.1.0",
+    "data": {
+     "title": "<img src=x onerror=alert(1)>",
+     "due": "2026-12-01",
+     "renewals": 1,
+     "facts": [
+      "Shelf 4",
+      "Floor 2"
+     ]
+    },
+    "actions": [
+     {
+      "action": "renew",
+      "arguments": {
+       "loan_id": "L-0001"
+      }
+     }
+    ]
+   },
+   "errors": []
+  },
+  {
+   "name": "markup stays text: <script>alert(1)</script>",
+   "fill": {
+    "component": "loan-card",
+    "version": "0.1.0",
+    "data": {
+     "title": "<script>alert(1)</script>",
+     "due": "2026-12-01",
+     "renewals": 1,
+     "facts": [
+      "Shelf 4",
+      "Floor 2"
+     ]
+    },
+    "actions": [
+     {
+      "action": "renew",
+      "arguments": {
+       "loan_id": "L-0001"
+      }
+     }
+    ]
+   },
+   "errors": []
+  },
+  {
+   "name": "markup stays text: &lt;b&gt;",
+   "fill": {
+    "component": "loan-card",
+    "version": "0.1.0",
+    "data": {
+     "title": "&lt;b&gt;",
+     "due": "2026-12-01",
+     "renewals": 1,
+     "facts": [
+      "Shelf 4",
+      "Floor 2"
+     ]
+    },
+    "actions": [
+     {
+      "action": "renew",
+      "arguments": {
+       "loan_id": "L-0001"
+      }
+     }
+    ]
+   },
+   "errors": []
+  },
+  {
+   "name": "markup stays text: javascript:alert(1)",
+   "fill": {
+    "component": "loan-card",
+    "version": "0.1.0",
+    "data": {
+     "title": "javascript:alert(1)",
+     "due": "2026-12-01",
+     "renewals": 1,
+     "facts": [
+      "Shelf 4",
+      "Floor 2"
+     ]
+    },
+    "actions": [
+     {
+      "action": "renew",
+      "arguments": {
+       "loan_id": "L-0001"
+      }
+     }
+    ]
+   },
+   "errors": []
+  },
+  {
+   "name": "nested valid",
+   "fill": {
+    "component": "loan-grid",
+    "version": "0.1.0",
+    "data": {
+     "label": "Loans",
+     "cards": [
+      {
+       "component": "loan-card",
+       "version": "0.1.0",
+       "data": {
+        "title": "Field guide to moss",
+        "due": "2026-12-01",
+        "renewals": 1,
+        "facts": [
+         "Shelf 4",
+         "Floor 2"
+        ]
+       },
+       "actions": [
+        {
+         "action": "renew",
+         "arguments": {
+          "loan_id": "L-0001"
+         }
+        }
+       ]
+      },
+      {
+       "component": "loan-card",
+       "version": "0.1.0",
+       "data": {
+        "title": "Field guide to moss",
+        "due": "2026-12-01",
+        "renewals": 1,
+        "facts": [
+         "Shelf 4",
+         "Floor 2"
+        ]
+       },
+       "actions": [
+        {
+         "action": "renew",
+         "arguments": {
+          "loan_id": "L-0001"
+         }
+        }
+       ]
+      }
+     ]
+    }
+   },
+   "errors": []
+  },
+  {
+   "name": "nested wrong component",
+   "fill": {
+    "component": "loan-grid",
+    "version": "0.1.0",
+    "data": {
+     "label": "Loans",
+     "cards": [
+      {
+       "component": "loan-grid",
+       "version": "0.1.0",
+       "data": {
+        "title": "Field guide to moss",
+        "due": "2026-12-01",
+        "renewals": 1,
+        "facts": [
+         "Shelf 4",
+         "Floor 2"
+        ]
+       },
+       "actions": [
+        {
+         "action": "renew",
+         "arguments": {
+          "loan_id": "L-0001"
+         }
+        }
+       ]
+      },
+      {
+       "component": "loan-grid",
+       "version": "0.1.0",
+       "data": {
+        "title": "Field guide to moss",
+        "due": "2026-12-01",
+        "renewals": 1,
+        "facts": [
+         "Shelf 4",
+         "Floor 2"
+        ]
+       },
+       "actions": [
+        {
+         "action": "renew",
+         "arguments": {
+          "loan_id": "L-0001"
+         }
+        }
+       ]
+      }
+     ]
+    }
+   },
+   "errors": [
+    "data.cards[0].component: must be loan-card",
+    "data.cards[1].component: must be loan-card"
+   ]
+  },
+  {
+   "name": "nested bad date",
+   "fill": {
+    "component": "loan-grid",
+    "version": "0.1.0",
+    "data": {
+     "label": "Loans",
+     "cards": [
+      {
+       "component": "loan-card",
+       "version": "0.1.0",
+       "data": {
+        "title": "Field guide to moss",
+        "due": "soon",
+        "renewals": 1,
+        "facts": [
+         "Shelf 4",
+         "Floor 2"
+        ]
+       },
+       "actions": [
+        {
+         "action": "renew",
+         "arguments": {
+          "loan_id": "L-0001"
+         }
+        }
+       ]
+      },
+      {
+       "component": "loan-card",
+       "version": "0.1.0",
+       "data": {
+        "title": "Field guide to moss",
+        "due": "soon",
+        "renewals": 1,
+        "facts": [
+         "Shelf 4",
+         "Floor 2"
+        ]
+       },
+       "actions": [
+        {
+         "action": "renew",
+         "arguments": {
+          "loan_id": "L-0001"
+         }
+        }
+       ]
+      }
+     ]
+    }
+   },
+   "errors": [
+    "data.cards[0].data.due: must be a date as YYYY-MM-DD",
+    "data.cards[1].data.due: must be a date as YYYY-MM-DD"
+   ]
+  },
+  {
+   "name": "nested not an object",
+   "fill": {
+    "component": "loan-grid",
+    "version": "0.1.0",
+    "data": {
+     "label": "Loans",
+     "cards": [
+      "card",
+      {
+       "component": "loan-card",
+       "version": "0.1.0",
+       "data": {
+        "title": "Field guide to moss",
+        "due": "2026-12-01",
+        "renewals": 1,
+        "facts": [
+         "Shelf 4",
+         "Floor 2"
+        ]
+       },
+       "actions": [
+        {
+         "action": "renew",
+         "arguments": {
+          "loan_id": "L-0001"
+         }
+        }
+       ]
+      }
+     ]
+    }
+   },
+   "errors": [
+    "data.cards[0]: must be an object"
+   ]
+  },
+  {
+   "name": "action named constructor",
+   "fill": {
+    "component": "loan-card",
+    "version": "0.1.0",
+    "data": {
+     "title": "Field guide to moss",
+     "due": "2026-12-01",
+     "renewals": 1,
+     "facts": [
+      "Shelf 4",
+      "Floor 2"
+     ]
+    },
+    "actions": [
+     {
+      "action": "constructor",
+      "arguments": {}
+     }
+    ]
+   },
+   "errors": [
+    "actions[0].action: the contract does not declare this action"
+   ]
+  },
+  {
+   "name": "too many actions gives one size error",
+   "fill": {
+    "component": "loan-card",
+    "version": "0.1.0",
+    "data": {
+     "title": "Field guide to moss",
+     "due": "2026-12-01",
+     "renewals": 1,
+     "facts": [
+      "Shelf 4",
+      "Floor 2"
+     ]
+    },
+    "actions": [
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null
+    ]
+   },
+   "errors": [
+    "actions: more than 10 items"
+   ]
+  },
+  {
+   "name": "a fill with 11 unknown keys gets one error",
+   "fill": {
+    "component": "loan-card",
+    "version": "0.1.0",
+    "data": {
+     "title": "Field guide to moss",
+     "due": "2026-12-01",
+     "renewals": 1,
+     "facts": [
+      "Shelf 4",
+      "Floor 2"
+     ]
+    },
+    "actions": [
+     {
+      "action": "renew",
+      "arguments": {
+       "loan_id": "L-0001"
+      }
+     }
+    ],
+    "x0": 1,
+    "x1": 1,
+    "x2": 1,
+    "x3": 1,
+    "x4": 1,
+    "x5": 1,
+    "x6": 1,
+    "x7": 1,
+    "x8": 1,
+    "x9": 1,
+    "x10": 1
+   },
+   "errors": [
+    "(fill): more than 10 unknown keys"
+   ]
+  },
+  {
+   "name": "a fill with 10 unknown keys gets an error for each key",
+   "fill": {
+    "component": "loan-card",
+    "version": "0.1.0",
+    "data": {
+     "title": "Field guide to moss",
+     "due": "2026-12-01",
+     "renewals": 1,
+     "facts": [
+      "Shelf 4",
+      "Floor 2"
+     ]
+    },
+    "actions": [
+     {
+      "action": "renew",
+      "arguments": {
+       "loan_id": "L-0001"
+      }
+     }
+    ],
+    "x0": 1,
+    "x1": 1,
+    "x2": 1,
+    "x3": 1,
+    "x4": 1,
+    "x5": 1,
+    "x6": 1,
+    "x7": 1,
+    "x8": 1,
+    "x9": 1
+   },
+   "errors": [
+    "x0: unknown key",
+    "x1: unknown key",
+    "x2: unknown key",
+    "x3: unknown key",
+    "x4: unknown key",
+    "x5: unknown key",
+    "x6: unknown key",
+    "x7: unknown key",
+    "x8: unknown key",
+    "x9: unknown key"
+   ]
+  },
+  {
+   "name": "an action with 11 unknown keys gets one error",
+   "fill": {
+    "component": "loan-card",
+    "version": "0.1.0",
+    "data": {
+     "title": "Field guide to moss",
+     "due": "2026-12-01",
+     "renewals": 1,
+     "facts": [
+      "Shelf 4",
+      "Floor 2"
+     ]
+    },
+    "actions": [
+     {
+      "action": "renew",
+      "arguments": {
+       "loan_id": "L-0001"
+      },
+      "x0": 1,
+      "x1": 1,
+      "x2": 1,
+      "x3": 1,
+      "x4": 1,
+      "x5": 1,
+      "x6": 1,
+      "x7": 1,
+      "x8": 1,
+      "x9": 1,
+      "x10": 1
+     }
+    ]
+   },
+   "errors": [
+    "actions[0]: more than 10 unknown keys"
+   ]
+  },
+  {
+   "name": "an unknown key of 50 characters shows as its first 40 characters",
+   "fill": {
+    "component": "loan-card",
+    "version": "0.1.0",
+    "data": {
+     "title": "Field guide to moss",
+     "due": "2026-12-01",
+     "renewals": 1,
+     "facts": [
+      "Shelf 4",
+      "Floor 2"
+     ]
+    },
+    "actions": [
+     {
+      "action": "renew",
+      "arguments": {
+       "loan_id": "L-0001"
+      }
+     }
+    ],
+    "qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq": 1
+   },
+   "errors": [
+    "qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq...: unknown key"
+   ]
+  },
+  {
+   "name": "an undeclared field of 50 characters shows as its first 40 characters",
+   "fill": {
+    "component": "loan-card",
+    "version": "0.1.0",
+    "data": {
+     "title": "Field guide to moss",
+     "due": "2026-12-01",
+     "renewals": 1,
+     "facts": [
+      "Shelf 4",
+      "Floor 2"
+     ],
+     "qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq": 1
+    },
+    "actions": [
+     {
+      "action": "renew",
+      "arguments": {
+       "loan_id": "L-0001"
+      }
+     }
+    ]
+   },
+   "errors": [
+    "data.qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq...: the contract does not declare this field"
+   ]
+  },
+  {
+   "name": "an undeclared argument of 50 characters shows as its first 40 characters",
+   "fill": {
+    "component": "loan-card",
+    "version": "0.1.0",
+    "data": {
+     "title": "Field guide to moss",
+     "due": "2026-12-01",
+     "renewals": 1,
+     "facts": [
+      "Shelf 4",
+      "Floor 2"
+     ]
+    },
+    "actions": [
+     {
+      "action": "renew",
+      "arguments": {
+       "loan_id": "L-0001",
+       "qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq": 1
+      }
+     }
+    ]
+   },
+   "errors": [
+    "actions[0].arguments.qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq...: the action does not declare this argument"
+   ]
+  },
+  {
+   "name": "an undeclared field of 40 characters shows in full",
+   "fill": {
+    "component": "loan-card",
+    "version": "0.1.0",
+    "data": {
+     "title": "Field guide to moss",
+     "due": "2026-12-01",
+     "renewals": 1,
+     "facts": [
+      "Shelf 4",
+      "Floor 2"
+     ],
+     "qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq": 1
+    },
+    "actions": [
+     {
+      "action": "renew",
+      "arguments": {
+       "loan_id": "L-0001"
+      }
+     }
+    ]
+   },
+   "errors": [
+    "data.qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq: the contract does not declare this field"
+   ]
+  }
+ ]
+}

@@ -50,6 +50,56 @@ jobs:
       # Each contract in catalog/ must agree with contract format 1. See catalog/schema/README.md.
       - name: Validate the component contracts
         run: python3 -B tools/catalog.py
+  # The kit suite runs for each change that is not docs-only.
+  suite:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: 3.14.6
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 25.8.0
+      - name: Check the design tokens
+        run: python3 -B tools/tokens.py
+      - name: Run the tests of the browser validator
+        run: node --test 'tests/**/*.test.mjs'
+      # A pinned Chrome for Testing build. The step refuses the archive if its SHA-256 is different.
+      - name: Download the pinned Chrome
+        env:
+          CHROME_VERSION: 157.0.8103.50
+          CHROME_SHA256: d17167bc092eb495a3b768c7467f27e35f625aa03834233a1663af67dcb668c9
+        run: |
+          set -euo pipefail
+          archive="$RUNNER_TEMP/chrome-linux64.zip"
+          curl -fsSL --retry 3 -o "$archive" \
+            "https://storage.googleapis.com/chrome-for-testing-public/$CHROME_VERSION/linux64/chrome-linux64.zip"
+          echo "$CHROME_SHA256  $archive" | sha256sum -c -
+          unzip -q "$archive" -d "$RUNNER_TEMP"
+          # Chrome writes a space after the version. Remove it before the comparison.
+          version="$("$RUNNER_TEMP/chrome-linux64/chrome" --version | sed 's/[[:space:]]*$//')"
+          echo "$version"
+          [ "$version" = "Google Chrome for Testing $CHROME_VERSION" ]
+      # Ubuntu 24.04 blocks unprivileged user namespaces with AppArmor, and the Chrome sandbox needs them.
+      # This profile permits them for the pinned Chrome binary only. The sandbox stays on.
+      # See https://chromium.googlesource.com/chromium/src/+/main/docs/security/apparmor-userns-restrictions.md
+      - name: Permit the Chrome sandbox for the pinned binary
+        run: |
+          set -euo pipefail
+          printf '%s\n' 'abi <abi/4.0>,' 'include <tunables/global>' \
+            "profile chrome-for-testing $RUNNER_TEMP/chrome-linux64/chrome flags=(unconfined) {" \
+            '  userns,' '}' | sudo tee /etc/apparmor.d/chrome-for-testing > /dev/null
+          sudo apparmor_parser -r /etc/apparmor.d/chrome-for-testing
+      - name: Run the accessibility and rendering check in headless Chrome
+        run: CHROME="$RUNNER_TEMP/chrome-linux64/chrome" node tools/browser_check.mjs
   actionlint:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -91,7 +141,7 @@ jobs:
         run: python3 -B -I -m unittest discover -s tests -p test_gate.py
   # The required check. Add each project job to needs. A skipped job passes. A failed or cancelled job fails.
   ci-ok:
-    needs: [changes, shared-project, actionlint, shared-gates]
+    needs: [changes, shared-project, suite, actionlint, shared-gates]
     if: always()
     runs-on: ubuntu-24.04
     timeout-minutes: 2

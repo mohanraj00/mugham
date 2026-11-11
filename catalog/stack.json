@@ -1,0 +1,53 @@
+{
+  "format": 1,
+  "name": "stack",
+  "version": "0.1.0",
+  "kind": "primitive",
+  "description": "A labeled group that puts its child elements in one column or one row.",
+  "ai_content": false,
+  "data": {
+    "label": {
+      "type": "text",
+      "label": "Label",
+      "required": true,
+      "min_length": 1,
+      "max_length": 80
+    },
+    "direction": {
+      "type": "enum",
+      "label": "Direction",
+      "required": false,
+      "values": [
+        "column",
+        "row"
+      ]
+    },
+    "gap": {
+      "type": "enum",
+      "label": "Gap",
+      "required": false,
+      "values": [
+        "small",
+        "medium",
+        "large"
+      ]
+    }
+  },
+  "states": [
+    "default"
+  ],
+  "tokens": [
+    "space.1",
+    "space.2",
+    "space.4"
+  ],
+  "accessibility": {
+    "role": "group",
+    "name": {
+      "field": "label"
+    },
+    "keyboard": [],
+    "forced_colors": true,
+    "reduced_motion": true
+  }
+}

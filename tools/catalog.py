@@ -16,7 +16,16 @@ KEYWORDS = {'$schema', '$id', '$defs', '$ref', 'title', 'description', 'type', '
 TYPE_NAMES = {'object': 'an object', 'array': 'a list', 'string': 'a string', 'boolean': 'true or false',
               'integer': 'an integer', 'number': 'a number', 'null': 'null'}
 MAX_DEPTH = 8
+# The maximum number of unknown keys that get one error each. More unknown keys get one error in all.
+MAX_UNKNOWN = 10
+# A declared name has 40 characters at most. An error shows only the first 40 characters of a longer key,
+# because the size of a key can have no limit.
+MAX_NAME = 40
 DATE = re.compile(r'[0-9]{4}-[0-9]{2}-[0-9]{2}')
+
+
+def shown(key):
+    return key[:MAX_NAME] + '...' if len(key) > MAX_NAME else key
 
 
 def parse_json(text):
@@ -129,7 +138,8 @@ def schema_errors(value, schema, root=None, path='', label='(value)'):
         if len(value) < schema.get('minItems', 0):
             errors.append('%s: fewer than %d items' % (at, schema['minItems']))
         if 'maxItems' in schema and len(value) > schema['maxItems']:
-            errors.append('%s: more than %d items' % (at, schema['maxItems']))
+            # Do not read the items of a list that is too long. Its size can have no limit.
+            return errors + ['%s: more than %d items' % (at, schema['maxItems'])]
         if schema.get('uniqueItems') and len({canonical(item) for item in value}) != len(value):
             errors.append('%s: the items are not unique' % at)
         if 'items' in schema:
@@ -139,20 +149,29 @@ def schema_errors(value, schema, root=None, path='', label='(value)'):
         if len(value) < schema.get('minProperties', 0):
             errors.append('%s: fewer than %d keys' % (at, schema['minProperties']))
         if 'maxProperties' in schema and len(value) > schema['maxProperties']:
-            errors.append('%s: more than %d keys' % (at, schema['maxProperties']))
+            # Do not read the keys of an object that is too large. Its size can have no limit.
+            return errors + ['%s: more than %d keys' % (at, schema['maxProperties'])]
+        # An object with no maxProperties can have very many unknown keys. Do not make an error for each of them.
+        properties = schema.get('properties', {})
+        if schema.get('additionalProperties') is False:
+            unknown = 0
+            for key in value:
+                if key not in properties:
+                    unknown += 1
+                    if unknown > MAX_UNKNOWN:
+                        return errors + ['%s: more than %d unknown keys' % (at, MAX_UNKNOWN)]
         for key in schema.get('required', []):
             if key not in value:
                 errors.append('%s: missing key %s' % (at, key))
-        properties = schema.get('properties', {})
         for key in value:
-            child = '%s.%s' % (path, key) if path else key
+            child = '%s.%s' % (path, shown(key)) if path else shown(key)
             if 'propertyNames' in schema:
                 errors += ['%s: the key name %s' % (child, error.split(': ', 1)[1])
                            for error in schema_errors(key, schema['propertyNames'], root, child, label)]
             if key in properties:
                 errors += schema_errors(value[key], properties[key], root, child, label)
             elif schema.get('additionalProperties') is False:
-                errors.append('%s: unknown key %s' % (path, key) if path else '%s: unknown key' % key)
+                errors.append('%s: unknown key %s' % (path, shown(key)) if path else '%s: unknown key' % shown(key))
             elif isinstance(schema.get('additionalProperties'), dict):
                 errors += schema_errors(value[key], schema['additionalProperties'], root, child, label)
     return errors
@@ -298,7 +317,7 @@ def fill_errors(fill, catalog, path='', depth=0):
     data = fill['data']
     for key in data:
         if key not in contract['data']:
-            errors.append('%sdata.%s: the contract does not declare this field' % (prefix, key))
+            errors.append('%sdata.%s: the contract does not declare this field' % (prefix, shown(key)))
     for key, field in contract['data'].items():
         if key in data:
             errors += value_errors(data[key], field, '%sdata.%s' % (prefix, key), catalog, depth)
@@ -314,7 +333,7 @@ def fill_errors(fill, catalog, path='', depth=0):
         arguments = item['arguments']
         for key in arguments:
             if key not in action['arguments']:
-                errors.append('%s.arguments.%s: the action does not declare this argument' % (at, key))
+                errors.append('%s.arguments.%s: the action does not declare this argument' % (at, shown(key)))
         for key, field in action['arguments'].items():
             if key in arguments:
                 errors += value_errors(arguments[key], field, '%s.arguments.%s' % (at, key), catalog, depth)
