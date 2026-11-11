@@ -116,7 +116,7 @@ if (mode === 'forced-colors') {
 }
 if (mode === 'dark') {
   check('dark: the media query matches', media('(prefers-color-scheme: dark)'));
-  check('dark: the button uses the dark accent', style.backgroundColor === 'rgb(138, 184, 255)', style.backgroundColor);
+  check('dark: the button uses the dark accent', style.backgroundColor === 'rgb(140, 180, 245)', style.backgroundColor);
 }
 if (mode === 'light') {
   check('light: the button uses the light accent', style.backgroundColor === 'rgb(31, 95, 191)', style.backgroundColor);

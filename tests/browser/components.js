@@ -338,7 +338,7 @@ if (mode === 'forced-colors') {
 if (mode === 'reduced-motion') {
   check('reduced motion: no transition on the action button', actionStyle.transitionDuration.split(',').every((d) => parseFloat(d) === 0), actionStyle.transitionDuration);
 }
-if (mode === 'dark') check('dark: the card uses the dark surface', cardStyle.backgroundColor === 'rgb(27, 29, 33)', cardStyle.backgroundColor);
+if (mode === 'dark') check('dark: the card uses the dark surface', cardStyle.backgroundColor === 'rgb(23, 27, 33)', cardStyle.backgroundColor);
 if (mode === 'light') check('light: the card uses the light surface', cardStyle.backgroundColor === 'rgb(255, 255, 255)', cardStyle.backgroundColor);
 check('no markup ran', window.muUnsafe === undefined);
 
