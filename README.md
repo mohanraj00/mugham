@@ -1,3 +1,8 @@
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/brand/logos/mugham-lockup-dark.svg">
+  <img src="docs/brand/logos/mugham-lockup.svg" alt="mugham" width="224" height="64">
+</picture>
+
 # mugham
 
 Mugham is a UI kit and a workbench for AI applications. The name is the Tamil word for "face".
@@ -22,6 +27,10 @@ The first workbench panels connect to these projects:
 - [aavanam](https://github.com/mohanraj00/aavanam): snapshots, `compare` and `impact`.
 - [nookku](https://github.com/mohanraj00/nookku): test verdicts and findings.
 - [koodam](https://github.com/mohanraj00/koodam): spend, budgets and deployment.
+
+## Brand
+
+The logo files, the colors and the type rules are in [docs/brand/](docs/brand/README.md).
 
 ## Contribute
 
