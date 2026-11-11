@@ -70,6 +70,10 @@ check('editable-form: refuses a field without a name', unnamed.dataset.state ===
 const blankSubmit = mount('editable-form', { ...FORM, submit_label: '' });
 check('editable-form: refuses a blank submit label', blankSubmit.dataset.state === 'refused'
   && blankSubmit.shadowRoot.textContent.includes('data.submit_label: fewer than 1 characters'), blankSubmit.shadowRoot.textContent);
+// A form with no field has no application label that tells what the request does.
+const noFields = mount('editable-form', { ...FORM, submit_label: 'View details', fields: [] });
+check('editable-form: refuses a form with no field', noFields.dataset.state === 'refused'
+  && noFields.shadowRoot.textContent.includes('data.fields: the form needs at least one field'), noFields.shadowRoot.textContent);
 const twice = mount('editable-form', { ...FORM, fields: [field('shelf', 'A', ''), field('shelf', 'B', '')] });
 check('editable-form: refuses two fields with one name', twice.dataset.state === 'refused', twice.shadowRoot.textContent);
 const empty = mount('card-grid', { label: 'Loans', cards: [] });
