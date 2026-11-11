@@ -10,8 +10,9 @@ ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / 'src' / 'tokens' / 'tokens.json'
 CSS = ROOT / 'src' / 'tokens' / 'tokens.css'
 NAME = re.compile(r'[a-z]+(\.[a-z0-9]+(-[a-z0-9]+)*){1,3}')
-# A token value is a short list of CSS words: colors, lengths, times, weights and font names. No functions.
-VALUE = re.compile(r'[#a-zA-Z0-9.,/ -]{1,80}')
+# A token value is a short list of CSS words: colors, lengths, times, weights and font names. No functions
+# and no quotes. A font stack of the brand needs more than 80 characters, so the limit is 120.
+VALUE = re.compile(r'[#a-zA-Z0-9.,/ -]{1,120}')
 HEX = re.compile(r'#[0-9a-f]{6}')
 
 

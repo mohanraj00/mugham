@@ -55,7 +55,25 @@ The kit loads no font from a network, because it has no third-party runtime depe
 
 ## Tokens in the kit
 
-[tokens.json](tokens.json) is the source for the kit tokens of [issue 2](https://github.com/mohanraj00/mugham/issues/2). The first kit tokens are in review now. A later PR maps the brand values into them. This PR does not change the kit tokens or the primitives.
+The kit tokens in `src/tokens/tokens.json` take their values from [tokens.json](tokens.json). A test in `tests/test_tokens.py` compares the two files. This table gives the source of each kit token:
+
+| Kit token | Brand token |
+| --- | --- |
+| `color.surface` | `surface` |
+| `color.text` | `ink` |
+| `color.text-muted` | `ink-muted` |
+| `color.border` | `border-strong`, because a kit border is the edge of a control and needs 3:1 |
+| `color.accent` | `accent` |
+| `color.on-accent` | `on-accent` |
+| `color.focus` | `focus` |
+| `color.danger` | `error` |
+| `space.1` to `space.4` | `space-1` to `space-4` |
+| `radius.1` | `radius-sm` |
+| `radius.2` | `radius-md` |
+| `type.body` | `text-body` |
+| `type.caption` | `text-meta` |
+
+The kit sizes are in rem, with 16px for each rem. A kit token value cannot have quotes, so the font names in a kit type token have no quotes. A font name with a space is also valid CSS with no quotes. The other brand tokens have no kit token yet. A component that needs one adds it to the kit tokens.
 
 ## Voice
 
