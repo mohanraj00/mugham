@@ -42,7 +42,7 @@ const form = make('mu-editable-form', fill('editable-form', { title: 'Change a l
   fill('field', { name: 'shelf', label: 'Shelf code', value: 'B-14', hint: 'A letter and a number.' }),
   fill('field', { name: 'note', label: 'Note', value: '' }),
 ] }));
-form.action = { tool: 'library.update_loan', arguments: { loan_id: 'L-0001' }, editable: ['shelf', 'note'] };
+form.action = { tool: 'library.update_loan', arguments: { loan_id: 'L-0001' }, editable: { shelf: 'Shelf code', note: 'Note' } };
 
 document.addEventListener('mu-action', service);
 document.getElementById('main').append(card, grid, form);

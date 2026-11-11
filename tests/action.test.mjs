@@ -9,21 +9,26 @@ test('a binding needs a valid tool name and scalar arguments', () => {
   assert.deepEqual(bindingErrors({ tool: 'Run Anything' }), ['the tool name is not valid']);
   assert.deepEqual(bindingErrors({ tool: 'library.renew', arguments: { loan: { id: 1 } } }),
     ['each argument must be a string, a number or true or false']);
-  assert.deepEqual(bindingErrors({ tool: 'library.renew', editable: ['shelf', 'note_text'] }), []);
-  assert.deepEqual(bindingErrors({ tool: 'library.renew', editable: 'shelf' }), ['editable must be a list of field names']);
-  assert.deepEqual(bindingErrors({ tool: 'library.renew', editable: ['Shelf Code'] }), ['editable must be a list of field names']);
+  const LIST = ['editable must map each field name to its label'];
+  assert.deepEqual(bindingErrors({ tool: 'library.renew', editable: { shelf: 'Shelf code', note_text: 'Note' } }), []);
+  assert.deepEqual(bindingErrors({ tool: 'library.renew', editable: 'shelf' }), LIST);
+  assert.deepEqual(bindingErrors({ tool: 'library.renew', editable: ['shelf'] }), LIST);
+  assert.deepEqual(bindingErrors({ tool: 'library.renew', editable: { 'Shelf Code': 'Shelf code' } }), LIST);
+  assert.deepEqual(bindingErrors({ tool: 'library.renew', editable: { shelf: '' } }), LIST);
+  assert.deepEqual(bindingErrors({ tool: 'library.renew', editable: { shelf: 'S'.repeat(81) } }), LIST);
 });
 
-test('an extra value needs a name that the binding lists as editable', () => {
+test('an extra value needs a name that the binding gives as editable', () => {
   const action = new ActionState();
-  action.bind({ tool: 'library.update_loan', editable: ['shelf'] });
-  assert.deepEqual(action.editable, ['shelf']);
+  action.bind({ tool: 'library.update_loan', editable: { shelf: 'Shelf code' } });
+  assert.deepEqual({ ...action.editable }, { shelf: 'Shelf code' });
+  assert.equal(action.start({ constructor: 'C-2' }), null);
   assert.equal(action.start({ shelf: 'C-2', approved: true }), null);
   assert.equal(action.state, 'default');
   assert.deepEqual({ ...action.start({ shelf: 'C-2' }).arguments }, { shelf: 'C-2' });
   const plain = new ActionState();
   plain.bind({ tool: 'library.update_loan' });
-  assert.deepEqual(plain.editable, []);
+  assert.deepEqual({ ...plain.editable }, {});
   assert.equal(plain.start({ shelf: 'C-2' }), null);
 });
 
@@ -38,7 +43,7 @@ test('the state and the message can only be read', () => {
 
 test('a value from a fill cannot change a bound argument', () => {
   const action = new ActionState();
-  action.bind({ tool: 'library.update_loan', arguments: { loan_id: 'L-0001' }, editable: ['loan_id', 'shelf'] });
+  action.bind({ tool: 'library.update_loan', arguments: { loan_id: 'L-0001' }, editable: { loan_id: 'Loan', shelf: 'Shelf code' } });
   const request = action.start({ loan_id: 'L-9999', shelf: 'C-2' });
   assert.deepEqual({ ...request.arguments }, { loan_id: 'L-0001', shelf: 'C-2' });
 });

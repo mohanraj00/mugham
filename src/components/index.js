@@ -193,10 +193,14 @@ export class MuEditableForm extends ActionElement {
     const names = data.fields.map((item) => item.data.name);
     if (!names.every((name) => typeof name === 'string' && FIELD_NAME.test(name))) return ['data.fields: each field needs a name'];
     if (new Set(names).size !== names.length) return ['data.fields: the field names must be unique'];
-    // The application lists the names that a request can carry. A fill cannot add a different argument.
+    // The application gives the names that a request can carry, and the label of each name.
+    // A fill cannot add a different argument or show a different meaning for an argument.
     const editable = this.action.editable;
-    const other = editable && names.find((name) => !editable.includes(name));
+    if (!editable) return [];
+    const other = names.find((name) => !Object.hasOwn(editable, name));
     if (other) return [`data.fields: the application does not accept the field ${other}`];
+    const relabeled = data.fields.find((item) => item.data.label !== editable[item.data.name]);
+    if (relabeled) return [`data.fields: the label of the field ${relabeled.data.name} is not the label of the application`];
     return [];
   }
 
@@ -205,8 +209,10 @@ export class MuEditableForm extends ActionElement {
     if (this.fill && this.check(this.fill.data).length) this.fill = this.fill;
   }
 
+  // A person cannot edit a disabled field, so its value does not go in the request.
   values() {
-    return Object.fromEntries(this.#fields.map((node) => [node.fill.data.name, node.value ?? '']));
+    return Object.fromEntries(this.#fields.filter((node) => !node.fill.data.disabled)
+      .map((node) => [node.fill.data.name, node.value ?? '']));
   }
 
   render(data) {
@@ -237,6 +243,8 @@ export class MuEditableForm extends ActionElement {
       form.requestSubmit(submit);
     });
     this.attach(submit, status);
+    // A new fill has new values. A receipt from before the fill does not confirm them, so the form can save again.
+    this.reopen();
     return [form];
   }
 }
