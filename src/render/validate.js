@@ -10,6 +10,19 @@ const TYPE_NAMES = { object: 'an object', array: 'a list', string: 'a string', b
 const MAX_DEPTH = 8;
 // The maximum number of unknown keys that get one error each. More unknown keys get one error in all.
 const MAX_UNKNOWN = 10;
+// A declared name has 40 characters at most. An error shows only the first 40 characters of a longer key,
+// because the size of a key can have no limit.
+const MAX_NAME = 40;
+const shown = (key) => {
+  let start = '';
+  let count = 0;
+  for (const character of key) {
+    count += 1;
+    if (count > MAX_NAME) return start + '...';
+    start += character;
+  }
+  return key;
+};
 const DATE = /^([0-9]{4})-([0-9]{2})-([0-9]{2})$/;
 const own = (object, key) => Object.prototype.hasOwnProperty.call(object, key);
 // Count the code points of text, but stop after limit + 1. Thus a very long text gets its error
@@ -109,14 +122,14 @@ export function schemaErrors(value, schema, root = schema, path = '', label = '(
       if (!own(value, key)) errors.push(`${at}: missing key ${key}`);
     }
     for (const key of keys) {
-      const child = path ? `${path}.${key}` : key;
+      const child = path ? `${path}.${shown(key)}` : shown(key);
       if (own(schema, 'propertyNames')) {
         for (const error of schemaErrors(key, schema.propertyNames, root, child, label)) {
           errors.push(`${child}: the key name ${error.split(': ').slice(1).join(': ')}`);
         }
       }
       if (own(properties, key)) errors.push(...schemaErrors(value[key], properties[key], root, child, label));
-      else if (schema.additionalProperties === false) errors.push(path ? `${path}: unknown key ${key}` : `${key}: unknown key`);
+      else if (schema.additionalProperties === false) errors.push(path ? `${path}: unknown key ${shown(key)}` : `${shown(key)}: unknown key`);
       else if (isObject(schema.additionalProperties)) errors.push(...schemaErrors(value[key], schema.additionalProperties, root, child, label));
     }
   }
@@ -176,7 +189,7 @@ export function fillErrors(fill, catalog, path = '', depth = 0) {
   if (fill.version !== contract.version) return [`${prefix}version: must be ${contract.version}`];
   const data = fill.data;
   for (const key of Object.keys(data)) {
-    if (!own(contract.data, key)) errors.push(`${prefix}data.${key}: the contract does not declare this field`);
+    if (!own(contract.data, key)) errors.push(`${prefix}data.${shown(key)}: the contract does not declare this field`);
   }
   for (const [key, field] of Object.entries(contract.data)) {
     if (own(data, key)) errors.push(...valueErrors(data[key], field, `${prefix}data.${key}`, catalog, depth));
@@ -192,7 +205,7 @@ export function fillErrors(fill, catalog, path = '', depth = 0) {
     }
     const args = item.arguments;
     for (const key of Object.keys(args)) {
-      if (!own(action.arguments, key)) errors.push(`${at}.arguments.${key}: the action does not declare this argument`);
+      if (!own(action.arguments, key)) errors.push(`${at}.arguments.${shown(key)}: the action does not declare this argument`);
     }
     for (const [key, field] of Object.entries(action.arguments)) {
       if (own(args, key)) errors.push(...valueErrors(args[key], field, `${at}.arguments.${key}`, catalog, depth));

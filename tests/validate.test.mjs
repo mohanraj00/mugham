@@ -72,3 +72,16 @@ for (const [where, expected] of [['a fill', '(fill): more than 10 unknown keys']
     assert.deepEqual(JSON.parse(run.stdout), [expected]);
   });
 }
+
+// A key of 5,000,000 characters must not go into the error text. The error shows only its first 40 characters.
+test('a very long key name gets a short error', () => {
+  const contract = vectors.catalog['loan-card'];
+  const name = 'q'.repeat(5000000);
+  const fill = { component: 'loan-card', version: contract.version,
+    data: { title: 'A', due: '2026-12-01', renewals: 1, facts: [], [name]: 1 }, [name]: 1 };
+  const errors = fillErrors(fill, vectors.catalog);
+  assert.deepEqual(errors, [`${'q'.repeat(40)}...: unknown key`]);
+  fill.actions = [{ action: 'renew', arguments: { loan_id: 'L-0001', [name]: 1 } }];
+  delete fill[name];
+  for (const error of fillErrors(fill, vectors.catalog)) assert.ok(error.length < 120, error.slice(0, 120));
+});

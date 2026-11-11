@@ -1410,6 +1410,118 @@
    "errors": [
     "actions[0]: more than 10 unknown keys"
    ]
+  },
+  {
+   "name": "an unknown key of 50 characters shows as its first 40 characters",
+   "fill": {
+    "component": "loan-card",
+    "version": "0.1.0",
+    "data": {
+     "title": "Field guide to moss",
+     "due": "2026-12-01",
+     "renewals": 1,
+     "facts": [
+      "Shelf 4",
+      "Floor 2"
+     ]
+    },
+    "actions": [
+     {
+      "action": "renew",
+      "arguments": {
+       "loan_id": "L-0001"
+      }
+     }
+    ],
+    "qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq": 1
+   },
+   "errors": [
+    "qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq...: unknown key"
+   ]
+  },
+  {
+   "name": "an undeclared field of 50 characters shows as its first 40 characters",
+   "fill": {
+    "component": "loan-card",
+    "version": "0.1.0",
+    "data": {
+     "title": "Field guide to moss",
+     "due": "2026-12-01",
+     "renewals": 1,
+     "facts": [
+      "Shelf 4",
+      "Floor 2"
+     ],
+     "qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq": 1
+    },
+    "actions": [
+     {
+      "action": "renew",
+      "arguments": {
+       "loan_id": "L-0001"
+      }
+     }
+    ]
+   },
+   "errors": [
+    "data.qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq...: the contract does not declare this field"
+   ]
+  },
+  {
+   "name": "an undeclared argument of 50 characters shows as its first 40 characters",
+   "fill": {
+    "component": "loan-card",
+    "version": "0.1.0",
+    "data": {
+     "title": "Field guide to moss",
+     "due": "2026-12-01",
+     "renewals": 1,
+     "facts": [
+      "Shelf 4",
+      "Floor 2"
+     ]
+    },
+    "actions": [
+     {
+      "action": "renew",
+      "arguments": {
+       "loan_id": "L-0001",
+       "qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq": 1
+      }
+     }
+    ]
+   },
+   "errors": [
+    "actions[0].arguments.qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq...: the action does not declare this argument"
+   ]
+  },
+  {
+   "name": "an undeclared field of 40 characters shows in full",
+   "fill": {
+    "component": "loan-card",
+    "version": "0.1.0",
+    "data": {
+     "title": "Field guide to moss",
+     "due": "2026-12-01",
+     "renewals": 1,
+     "facts": [
+      "Shelf 4",
+      "Floor 2"
+     ],
+     "qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq": 1
+    },
+    "actions": [
+     {
+      "action": "renew",
+      "arguments": {
+       "loan_id": "L-0001"
+      }
+     }
+    ]
+   },
+   "errors": [
+    "data.qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq: the contract does not declare this field"
+   ]
   }
  ]
 }
