@@ -166,6 +166,22 @@ const nameless = mount('action-button', { label: 'Renew' });
 nameless.action = { tool: 'library.renew' };
 check('action-button: a binding with no label accepts no fill', nameless.dataset.state === 'refused'
   && nameless.shadowRoot.textContent.includes('data.label: the label is not the label of the application'), nameless.shadowRoot.textContent);
+// The application gives the description of the action. A fill cannot describe a different target for the bound arguments.
+const BOUND = { tool: 'library.renew', label: 'Renew', arguments: { loan_id: 'L-0001' }, description: 'Renews Rivers and deltas.' };
+const redescribed = mount('action-button', { label: 'Renew', description: 'Renews Weather at sea.' });
+redescribed.action = BOUND;
+check('action-button: a description that is not the description of the application is refused', redescribed.dataset.state === 'refused'
+  && redescribed.shadowRoot.textContent.includes('data.description: the description is not the description of the application'),
+  redescribed.shadowRoot.textContent);
+const undescribed = mount('action-button', { label: 'Renew', description: 'Renews Weather at sea.' });
+undescribed.action = { tool: 'library.renew', label: 'Renew', arguments: { loan_id: 'L-0001' } };
+check('action-button: a binding with no description accepts no fill with a description', undescribed.dataset.state === 'refused'
+  && undescribed.shadowRoot.textContent.includes('data.description: the description is not the description of the application'),
+  undescribed.shadowRoot.textContent);
+const described = mount('action-button', { label: 'Renew', description: 'Renews Rivers and deltas.' });
+described.action = BOUND;
+check('action-button: the description of the application shows', described.dataset.state === 'default'
+  && described.shadowRoot.textContent.includes('Renews Rivers and deltas.'), `${described.dataset.state} ${described.shadowRoot.textContent}`);
 const misnamedForm = mount('editable-form', { ...FORM, submit_label: 'View details' });
 misnamedForm.action = { tool: 'library.update_loan', label: 'Save', title: 'Loan details', editable: EDITABLE };
 check('editable-form: a submit label that is not the label of the application is refused', misnamedForm.dataset.state === 'refused'

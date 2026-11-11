@@ -7,6 +7,8 @@ const MAX_EDITABLE = 50;
 const MAX_LABEL = 80;
 // The editable-form contract gives a title of 120 characters at most.
 const MAX_TITLE = 120;
+// The action-button contract gives a description of 200 characters at most.
+const MAX_DESCRIPTION = 200;
 
 // Returns true if the text has more than max characters. The loop stops at max + 1, so a very long text
 // does not make a copy of all its characters.
@@ -48,6 +50,9 @@ export function bindingErrors(binding) {
   // The application gives the title of a form, so a fill cannot show a different target for the bound arguments.
   if (binding.title !== undefined && (typeof binding.title !== 'string' || binding.title.length === 0
     || longer(binding.title, MAX_TITLE))) errors.push('the title must be a text of 1 to 120 characters');
+  // The application gives the description of an action, so a fill cannot describe a different target.
+  if (binding.description !== undefined && (typeof binding.description !== 'string' || binding.description.length === 0
+    || longer(binding.description, MAX_DESCRIPTION))) errors.push('the description must be a text of 1 to 200 characters');
   // The application gives the label of each editable field, so a fill cannot change what a field means.
   const editable = binding.editable ?? {};
   const entries = editable !== null && typeof editable === 'object' && !Array.isArray(editable) ? Object.entries(editable) : null;
@@ -85,6 +90,12 @@ export class ActionState {
     return this.#binding ? this.#binding.title : null;
   }
 
+  // The description of an action button. The application gives it in the binding. A binding with no
+  // description gives an empty text. Without a binding, the value is null.
+  get description() {
+    return this.#binding ? this.#binding.description : null;
+  }
+
   // The names of the extra values that a request can carry, each with its label. The application gives
   // them in the binding. Without a binding, the value is null.
   get editable() {
@@ -101,7 +112,7 @@ export class ActionState {
     }
     const errors = bindingErrors(binding);
     if (errors.length) return errors;
-    this.#binding = Object.freeze({ tool: binding.tool, label: binding.label ?? '', title: binding.title ?? '', arguments: Object.freeze({ ...(binding.arguments ?? {}) }),
+    this.#binding = Object.freeze({ tool: binding.tool, label: binding.label ?? '', title: binding.title ?? '', description: binding.description ?? '', arguments: Object.freeze({ ...(binding.arguments ?? {}) }),
       editable: Object.freeze(Object.assign(Object.create(null), binding.editable ?? {})) });
     this.#request = null;
     this.#state = 'default';

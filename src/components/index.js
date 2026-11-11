@@ -132,6 +132,18 @@ export class MuActionButton extends ActionElement {
   static focus = true;
   static styles = [ACTION_CSS];
 
+  // The description can name the target of the bound arguments. Thus the application gives it, and a fill
+  // with a different description is refused. A binding with no description accepts no fill with a description.
+  check(data) {
+    const errors = super.check(data);
+    if (errors.length) return errors;
+    const description = this.action.description;
+    if (description !== null && (data.description ?? '') !== description) {
+      return ['data.description: the description is not the description of the application'];
+    }
+    return [];
+  }
+
   render(data) {
     const status = el('span', { class: 'status', role: 'status', 'aria-live': 'polite', part: 'status' });
     const button = el('button', { type: 'button', part: 'button' }, data.label);

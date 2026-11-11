@@ -19,6 +19,11 @@ test('a binding needs a valid tool name and scalar arguments', () => {
   assert.deepEqual(bindingErrors({ tool: 'library.renew', title: 'T'.repeat(120) }), []);
   assert.deepEqual(bindingErrors({ tool: 'library.renew', title: 'T'.repeat(121) }), TITLE);
   assert.deepEqual(bindingErrors({ tool: 'library.renew', title: 7 }), TITLE);
+  const DESCRIPTION = ['the description must be a text of 1 to 200 characters'];
+  assert.deepEqual(bindingErrors({ tool: 'library.renew', description: 'D'.repeat(200) }), []);
+  assert.deepEqual(bindingErrors({ tool: 'library.renew', description: '' }), DESCRIPTION);
+  assert.deepEqual(bindingErrors({ tool: 'library.renew', description: 'D'.repeat(201) }), DESCRIPTION);
+  assert.deepEqual(bindingErrors({ tool: 'library.renew', description: 7 }), DESCRIPTION);
   const LIST = ['editable must map each field name to its label'];
   assert.deepEqual(bindingErrors({ tool: 'library.renew', editable: { shelf: 'Shelf code', note_text: 'Note' } }), []);
   assert.deepEqual(bindingErrors({ tool: 'library.renew', editable: 'shelf' }), LIST);
@@ -130,7 +135,7 @@ test('a very long text gets its error with no copy of the text', async () => {
     action.bind({ tool: 'library.renew' });
     const request = action.start();
     const results = [action.receipt({ id: request.id, ok: true, message: long }), action.state,
-      bindingErrors({ tool: 'library.renew', label: long, title: long, editable: { shelf: long } })];
+      bindingErrors({ tool: 'library.renew', label: long, title: long, description: long, editable: { shelf: long } })];
     action.receipt({ id: request.id, ok: false });
     action.reopen(long);
     results.push([...action.message].length);
@@ -138,5 +143,15 @@ test('a very long text gets its error with no copy of the text', async () => {
   const run = spawnSync(process.execPath, ['--max-old-space-size=64', '--input-type=module', '-e', code], { encoding: 'utf8' });
   assert.equal(run.status, 0, run.stderr.slice(0, 400));
   assert.deepEqual(JSON.parse(run.stdout), [false, 'pending', ['the label must be a text of 1 to 80 characters',
-    'the title must be a text of 1 to 120 characters', 'editable must map each field name to its label'], 200]);
+    'the title must be a text of 1 to 120 characters', 'the description must be a text of 1 to 200 characters',
+    'editable must map each field name to its label'], 200]);
+});
+
+test('the description comes from the binding', () => {
+  const action = new ActionState();
+  assert.equal(action.description, null);
+  action.bind({ tool: 'library.renew' });
+  assert.equal(action.description, '');
+  action.bind({ tool: 'library.renew', description: 'Renews the loan of Rivers and deltas.' });
+  assert.equal(action.description, 'Renews the loan of Rivers and deltas.');
 });
