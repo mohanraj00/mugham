@@ -216,6 +216,18 @@ class CatalogFolderTest(unittest.TestCase):
             (folder / 'broken.json').write_text('{')
             self.assertTrue(catalog.load_catalog(folder)[1][0].startswith('broken.json: not valid JSON'))
 
+    def test_a_bad_reference_in_a_referenced_contract_gives_errors_and_no_crash(self):
+        broken = copy.deepcopy(LOAN)
+        broken['data']['part'] = {'type': 'component', 'label': 'Part', 'required': False, 'name': []}
+        with tempfile.TemporaryDirectory() as work:
+            folder = Path(work)
+            (folder / 'loan-card.json').write_text(json.dumps(broken))
+            (folder / 'loan-grid.json').write_text(json.dumps(GRID))
+            contracts, errors = catalog.load_catalog(folder)
+        self.assertEqual(contracts, {})
+        self.assertTrue(any(error.startswith('loan-card.json: data.part.name') for error in errors), errors)
+        self.assertIn('loan-grid.json: data.cards.items: no valid contract has the name loan-card', errors)
+
     def test_the_project_catalog_is_valid(self):
         self.assertEqual(catalog.load_catalog(catalog.ROOT / 'catalog')[1], [])
 

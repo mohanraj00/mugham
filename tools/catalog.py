@@ -177,8 +177,11 @@ def references(contract):
     return [(path, field['name']) for path, field in fields_of(contract) if field['type'] == 'component']
 
 
-def contract_errors(contract, filename=None, catalog=None):
-    """Return the errors of one contract. If catalog is given, also check the component fields."""
+def contract_errors(contract, filename=None, catalog=None, invalid=()):
+    """Return the errors of one contract. If catalog is given, also check the component fields.
+
+    invalid holds the names of contracts that exist but have errors.
+    """
     errors = schema_errors(contract, CONTRACT_SCHEMA, label='(contract)')
     if errors:
         return errors
@@ -206,7 +209,9 @@ def contract_errors(contract, filename=None, catalog=None):
             errors.append(path + ': minimum is more than maximum')
     if catalog is not None:
         for path, target in references(contract):
-            if target not in catalog:
+            if target in invalid:
+                errors.append('%s: no valid contract has the name %s' % (path, target))
+            elif target not in catalog:
                 errors.append('%s: no contract has the name %s' % (path, target))
             elif reaches(catalog, target, contract['name']):
                 errors.append('%s: the contract contains itself through %s' % (path, target))
@@ -219,7 +224,7 @@ def reaches(catalog, start, goal):
         name = todo.pop()
         if name == goal:
             return True
-        if name in seen or name not in catalog:
+        if not isinstance(name, str) or name in seen or name not in catalog:
             continue
         seen.add(name)
         try:
@@ -327,11 +332,16 @@ def load_catalog(folder):
             contracts[path.name] = parse_json(path.read_text(encoding='utf-8'))
         except (OSError, UnicodeDecodeError, ValueError) as error:
             errors.append('%s: not valid JSON (%s)' % (path.name, error))
-    by_name = {contract['name']: contract for contract in contracts.values()
-               if isinstance(contract, dict) and isinstance(contract.get('name'), str)}
+    # Check the shape of each contract first. The reference check then reads only contracts with a valid shape.
+    shaped = {}
+    for filename, contract in contracts.items():
+        if not contract_errors(contract, filename):
+            shaped[contract['name']] = contract
+    named = {contract['name'] for contract in contracts.values()
+             if isinstance(contract, dict) and isinstance(contract.get('name'), str)}
     valid = {}
     for filename, contract in contracts.items():
-        found = contract_errors(contract, filename, by_name)
+        found = contract_errors(contract, filename, shaped, named - set(shaped))
         errors += ['%s: %s' % (filename, error) for error in found]
         if not found:
             valid[contract['name']] = contract
