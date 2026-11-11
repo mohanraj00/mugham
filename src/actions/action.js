@@ -8,6 +8,29 @@ const MAX_LABEL = 80;
 // The editable-form contract gives a title of 120 characters at most.
 const MAX_TITLE = 120;
 
+// Returns true if the text has more than max characters. The loop stops at max + 1, so a very long text
+// does not make a copy of all its characters.
+function longer(text, max) {
+  let count = 0;
+  for (const character of text) {
+    count += 1;
+    if (count > max) return true;
+  }
+  return false;
+}
+
+// Returns the first max characters of the text, with no copy of the remaining characters.
+function first(text, max) {
+  let start = '';
+  let count = 0;
+  for (const character of text) {
+    count += 1;
+    if (count > max) break;
+    start += character;
+  }
+  return start;
+}
+
 function scalar(value) {
   return typeof value === 'string' || typeof value === 'boolean' || (typeof value === 'number' && Number.isFinite(value));
 }
@@ -21,15 +44,15 @@ export function bindingErrors(binding) {
   else if (!Object.values(args).every(scalar)) errors.push('each argument must be a string, a number or true or false');
   // The application gives the label of the action, so a fill cannot show a different meaning for the tool.
   if (binding.label !== undefined && (typeof binding.label !== 'string' || binding.label.length === 0
-    || [...binding.label].length > MAX_LABEL)) errors.push('the label must be a text of 1 to 80 characters');
+    || longer(binding.label, MAX_LABEL))) errors.push('the label must be a text of 1 to 80 characters');
   // The application gives the title of a form, so a fill cannot show a different target for the bound arguments.
   if (binding.title !== undefined && (typeof binding.title !== 'string' || binding.title.length === 0
-    || [...binding.title].length > MAX_TITLE)) errors.push('the title must be a text of 1 to 120 characters');
+    || longer(binding.title, MAX_TITLE))) errors.push('the title must be a text of 1 to 120 characters');
   // The application gives the label of each editable field, so a fill cannot change what a field means.
   const editable = binding.editable ?? {};
   const entries = editable !== null && typeof editable === 'object' && !Array.isArray(editable) ? Object.entries(editable) : null;
   if (!entries || entries.length > MAX_EDITABLE || !entries.every(([name, label]) => FIELD_NAME.test(name)
-    && typeof label === 'string' && label.length > 0 && [...label].length <= MAX_LABEL)) errors.push('editable must map each field name to its label');
+    && typeof label === 'string' && label.length > 0 && !longer(label, MAX_LABEL))) errors.push('editable must map each field name to its label');
   // A form shows the editable value, so a bound value for the same name would go in the request unseen.
   const overlap = entries && args !== null && typeof args === 'object' ? entries.find(([name]) => Object.hasOwn(args, name)) : null;
   if (overlap) errors.push(`a bound argument cannot be editable: ${overlap[0]}`);
@@ -104,7 +127,7 @@ export class ActionState {
   reopen(message = '') {
     if (this.#state !== 'done' && this.#state !== 'error') return false;
     this.#state = 'default';
-    this.#message = [...String(message)].slice(0, MAX_MESSAGE).join('');
+    this.#message = first(String(message), MAX_MESSAGE);
     return true;
   }
 
@@ -113,7 +136,7 @@ export class ActionState {
     if (!this.#request || this.#state !== 'pending' || value === null || typeof value !== 'object') return false;
     if (value.id !== this.#request.id || typeof value.ok !== 'boolean') return false;
     const message = value.message ?? '';
-    if (typeof message !== 'string' || [...message].length > MAX_MESSAGE) return false;
+    if (typeof message !== 'string' || longer(message, MAX_MESSAGE)) return false;
     this.#state = value.ok ? 'done' : 'error';
     this.#message = message;
     this.#request = null;

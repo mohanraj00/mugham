@@ -118,3 +118,25 @@ test('the title comes from the binding', () => {
   action.bind({ tool: 'library.update_loan', title: 'Loan details' });
   assert.equal(action.title, 'Loan details');
 });
+
+// An array of the code points of a text of 5,000,000 characters needs about 140 MB here. The heap limit is 64 MB.
+// Thus each length check must count the characters with no copy of the text.
+test('a very long text gets its error with no copy of the text', async () => {
+  const { spawnSync } = await import('node:child_process');
+  const code = `
+    const { ActionState, bindingErrors } = await import(${JSON.stringify(new URL('../src/actions/action.js', import.meta.url).href)});
+    const long = '\\u{1F600}'.repeat(5000000);
+    const action = new ActionState();
+    action.bind({ tool: 'library.renew' });
+    const request = action.start();
+    const results = [action.receipt({ id: request.id, ok: true, message: long }), action.state,
+      bindingErrors({ tool: 'library.renew', label: long, title: long, editable: { shelf: long } })];
+    action.receipt({ id: request.id, ok: false });
+    action.reopen(long);
+    results.push([...action.message].length);
+    console.log(JSON.stringify(results));`;
+  const run = spawnSync(process.execPath, ['--max-old-space-size=64', '--input-type=module', '-e', code], { encoding: 'utf8' });
+  assert.equal(run.status, 0, run.stderr.slice(0, 400));
+  assert.deepEqual(JSON.parse(run.stdout), [false, 'pending', ['the label must be a text of 1 to 80 characters',
+    'the title must be a text of 1 to 120 characters', 'editable must map each field name to its label'], 200]);
+});
