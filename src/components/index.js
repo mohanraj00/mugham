@@ -57,6 +57,7 @@ class ActionElement extends MuElement {
   set action(binding) {
     const errors = this.#action.bind(binding);
     if (errors.length) throw new TypeError('action: ' + errors.join('; '));
+    this.rebound();
     this.#update();
   }
 
@@ -68,6 +69,9 @@ class ActionElement extends MuElement {
     if (accepted) this.#update();
     return accepted;
   }
+
+  // A subclass can check its fill again after a new binding.
+  rebound() {}
 
   // A subclass returns true if its data changed after the last request.
   stale() {
@@ -89,10 +93,12 @@ class ActionElement extends MuElement {
     this.#update();
   }
 
-  send(extra) {
+  // The started function runs only for an accepted request, before the element sends the event.
+  send(extra, started) {
     if (this.dataset.state === 'refused' || !this.fill) return;
     const request = this.#action.start(extra);
     if (!request) return;
+    started?.(request);
     this.#update();
     this.dispatchEvent(new CustomEvent('mu-action', { bubbles: true, composed: true, detail: request }));
   }
@@ -187,7 +193,16 @@ export class MuEditableForm extends ActionElement {
     const names = data.fields.map((item) => item.data.name);
     if (!names.every((name) => typeof name === 'string' && FIELD_NAME.test(name))) return ['data.fields: each field needs a name'];
     if (new Set(names).size !== names.length) return ['data.fields: the field names must be unique'];
+    // The application lists the names that a request can carry. A fill cannot add a different argument.
+    const editable = this.action.editable;
+    const other = editable && names.find((name) => !editable.includes(name));
+    if (other) return [`data.fields: the application does not accept the field ${other}`];
     return [];
+  }
+
+  // A new binding can refuse a fill that the form shows now.
+  rebound() {
+    if (this.fill && this.check(this.fill.data).length) this.fill = this.fill;
   }
 
   values() {
@@ -210,8 +225,8 @@ export class MuEditableForm extends ActionElement {
     form.addEventListener('submit', (event) => {
       event.preventDefault();
       const values = this.values();
-      this.#sent = JSON.stringify(values);
-      this.send(values);
+      // Keep the values only for an accepted request. A refused submit does not change them.
+      this.send(values, () => { this.#sent = JSON.stringify(values); });
     });
     // Each input is in the shadow root of its mu-field, so the browser does not connect it to this form.
     // Thus Enter in a field submits the form here, as Enter does in a plain form.

@@ -151,7 +151,7 @@ check('action-button: a refused button sends no request', button.dataset.state =
 const form = mount('editable-form', FORM);
 const submits = [];
 form.addEventListener('mu-action', (event) => submits.push(event.detail));
-form.action = { tool: 'library.update_loan', arguments: { loan_id: 'L-0001' } };
+form.action = { tool: 'library.update_loan', arguments: { loan_id: 'L-0001' }, editable: ['shelf', 'branch'] };
 const shelf = form.shadowRoot.querySelector('mu-field').shadowRoot.querySelector('input');
 shelf.value = 'C-2';
 shelf.dispatchEvent(new Event('input'));
@@ -165,7 +165,7 @@ check('editable-form: done after the receipt', form.dataset.state === 'done');
 const stale = mount('editable-form', FORM);
 const staleSubmits = [];
 stale.addEventListener('mu-action', (event) => staleSubmits.push(event.detail));
-stale.action = { tool: 'library.update_loan' };
+stale.action = { tool: 'library.update_loan', editable: ['shelf', 'branch'] };
 const staleInput = stale.shadowRoot.querySelector('mu-field').shadowRoot.querySelector('input');
 const staleStatus = () => stale.shadowRoot.querySelector('[role="status"]').textContent;
 stale.shadowRoot.querySelector('form').requestSubmit();
@@ -187,10 +187,49 @@ check('editable-form: an edit after done lets the form save again', stale.datase
 const pinned = mount('editable-form', { ...FORM, fields: [field('loan_id', 'Loan', 'L-9999')] });
 const pinnedSubmits = [];
 pinned.addEventListener('mu-action', (event) => pinnedSubmits.push(event.detail));
-pinned.action = { tool: 'library.update_loan', arguments: { loan_id: 'L-0001' } };
+pinned.action = { tool: 'library.update_loan', arguments: { loan_id: 'L-0001' }, editable: ['loan_id'] };
 pinned.shadowRoot.querySelector('form').requestSubmit();
 check('editable-form: a field cannot change a bound argument', pinnedSubmits.length === 1
   && pinnedSubmits[0].arguments.loan_id === 'L-0001', JSON.stringify(pinnedSubmits));
+
+// A second submit while the request is pending is refused. It does not change the values of the request.
+const second = mount('editable-form', FORM);
+const secondSubmits = [];
+second.addEventListener('mu-action', (event) => secondSubmits.push(event.detail));
+second.action = { tool: 'library.update_loan', editable: ['shelf', 'branch'] };
+const secondInput = second.shadowRoot.querySelector('mu-field').shadowRoot.querySelector('input');
+second.shadowRoot.querySelector('form').requestSubmit();
+secondInput.value = 'C-2';
+secondInput.dispatchEvent(new Event('input', { bubbles: true, composed: true }));
+second.shadowRoot.querySelector('form').requestSubmit();
+second.receipt({ id: secondSubmits[0]?.id, ok: true });
+check('editable-form: a refused second submit does not make the old receipt done', secondSubmits.length === 1
+  && secondSubmits[0].arguments.shelf === 'B-14' && second.dataset.state === 'default', `${second.dataset.state} ${JSON.stringify(secondSubmits)}`);
+
+// The application lists the field names that a request can carry. A fill cannot add a different argument.
+const SNEAKY = { ...FORM, fields: [...FORM.fields, field('approved', 'Shelf note', 'true')] };
+const refusedText = (node) => node.shadowRoot.textContent;
+const sneaky = mount('editable-form', SNEAKY);
+const sneakySubmits = [];
+sneaky.addEventListener('mu-action', (event) => sneakySubmits.push(event.detail));
+sneaky.action = { tool: 'library.update_loan', editable: ['shelf', 'branch'] };
+sneaky.shadowRoot.querySelector('form')?.requestSubmit();
+check('editable-form: a fill before the binding with an unlisted field is refused', sneaky.dataset.state === 'refused'
+  && refusedText(sneaky).includes('data.fields: the application does not accept the field approved') && sneakySubmits.length === 0,
+  `${sneaky.dataset.state} ${refusedText(sneaky)}`);
+const late = document.createElement('mu-editable-form');
+stage.append(late);
+late.action = { tool: 'library.update_loan', editable: ['shelf', 'branch'] };
+late.fill = fill('editable-form', SNEAKY);
+check('editable-form: a fill after the binding with an unlisted field is refused', late.dataset.state === 'refused'
+  && refusedText(late).includes('the field approved'), `${late.dataset.state} ${refusedText(late)}`);
+const unlisted = document.createElement('mu-editable-form');
+stage.append(unlisted);
+unlisted.action = { tool: 'library.update_loan' };
+unlisted.fill = fill('editable-form', FORM);
+check('editable-form: a binding with no editable list accepts no field', unlisted.dataset.state === 'refused'
+  && refusedText(unlisted).includes('the field shelf'), `${unlisted.dataset.state} ${refusedText(unlisted)}`);
+
 const formStyle = getComputedStyle(pinned.shadowRoot.querySelector('form'));
 check('editable-form: the form has the card border', formStyle.borderTopStyle === 'solid'
   && parseFloat(formStyle.borderTopWidth) >= 1, `${formStyle.borderTopStyle} ${formStyle.borderTopWidth}`);
@@ -227,7 +266,7 @@ keyboard.append(target);
 // The runner presses Enter in a field of this form. The form must submit one time.
 const enterForm = document.createElement('mu-editable-form');
 enterForm.fill = fill('editable-form', FORM);
-enterForm.action = { tool: 'library.update_loan' };
+enterForm.action = { tool: 'library.update_loan', editable: ['shelf', 'branch'] };
 let formSubmits = 0;
 enterForm.addEventListener('mu-action', () => { formSubmits += 1; });
 keyboard.append(enterForm);

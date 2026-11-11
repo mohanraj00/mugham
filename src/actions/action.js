@@ -2,6 +2,8 @@
 // A fill never selects the tool. The state is pending until a receipt with the same id comes back.
 const TOOL = /^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)*$/;
 const MAX_MESSAGE = 200;
+const FIELD_NAME = /^[a-z][a-z0-9]*(_[a-z0-9]+)*$/;
+const MAX_EDITABLE = 50;
 
 function scalar(value) {
   return typeof value === 'string' || typeof value === 'boolean' || (typeof value === 'number' && Number.isFinite(value));
@@ -14,6 +16,9 @@ export function bindingErrors(binding) {
   const args = binding.arguments ?? {};
   if (args === null || typeof args !== 'object' || Array.isArray(args)) errors.push('the arguments must be an object');
   else if (!Object.values(args).every(scalar)) errors.push('each argument must be a string, a number or true or false');
+  const editable = binding.editable ?? [];
+  if (!Array.isArray(editable) || editable.length > MAX_EDITABLE
+    || !editable.every((name) => typeof name === 'string' && FIELD_NAME.test(name))) errors.push('editable must be a list of field names');
   return errors;
 }
 
@@ -31,6 +36,12 @@ export class ActionState {
     return this.#message;
   }
 
+  // The names of the extra values that a request can carry. The application gives them in the binding.
+  // Without a binding, the value is null.
+  get editable() {
+    return this.#binding ? this.#binding.editable : null;
+  }
+
   bind(binding) {
     if (binding === null) {
       this.#binding = null;
@@ -41,7 +52,8 @@ export class ActionState {
     }
     const errors = bindingErrors(binding);
     if (errors.length) return errors;
-    this.#binding = Object.freeze({ tool: binding.tool, arguments: Object.freeze({ ...(binding.arguments ?? {}) }) });
+    this.#binding = Object.freeze({ tool: binding.tool, arguments: Object.freeze({ ...(binding.arguments ?? {}) }),
+      editable: Object.freeze([...new Set(binding.editable ?? [])]) });
     this.#request = null;
     this.#state = 'default';
     this.#message = '';
@@ -50,8 +62,10 @@ export class ActionState {
 
   // Returns a request, or null if the action cannot start now. The extra values come from a fill,
   // so they cannot change an argument that the application binds: the bound arguments come last.
+  // Each extra value needs a name that the binding lists as editable.
   start(extra = {}) {
     if (!this.#binding || this.#state === 'pending' || this.#state === 'done') return null;
+    if (Object.keys(extra).some((name) => !this.#binding.editable.includes(name))) return null;
     this.#request = Object.freeze({ id: crypto.randomUUID(), tool: this.#binding.tool,
       arguments: Object.freeze({ ...extra, ...this.#binding.arguments }) });
     this.#state = 'pending';

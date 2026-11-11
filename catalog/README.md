@@ -25,4 +25,12 @@ button.action = { tool: 'library.renew', arguments: { loan_id: 'L-0001' } };
 
 A fill gives only data, so a model cannot select a tool. On a press, the element sends a `mu-action` event with an id, the tool and the arguments, and shows `Pending`. The application sends the request to its API. When the receipt comes back, the application calls `element.receipt({ id, ok, message })`. Only then does the element show `Done` or `Not done`. The element ignores a receipt with a different id. The editable form adds the field values to the arguments, but a field value cannot change a bound argument. A script can read `element.action.state`, but it cannot write it. A receipt confirms only the values of its request. If a person edits a field while the request is pending, the form does not show `Done` after the receipt. It asks for a new save. An edit after `Done` also lets the form save again.
 
+A model can fill an editable form, so a fill can select the field names. Thus the application lists the names that the form can send:
+
+```js
+form.action = { tool: 'library.update_loan', arguments: { loan_id: 'L-0001' }, editable: ['shelf', 'note'] };
+```
+
+The form refuses a fill with a field name that `editable` does not list. This check occurs when the fill or the binding changes. A binding with no `editable` list accepts no field. If a second submit occurs while a request is pending, the form refuses it. The refused submit does not change the values of the pending request.
+
 An application can write its own contract with an `actions` block. The kit does not render such contracts in v0.1.
