@@ -126,7 +126,7 @@ check('action-button: no action without a binding', events.length === 0 && butto
 let thrown = false;
 try { button.action = { tool: 'Run Anything' }; } catch { thrown = true; }
 check('action-button: refuses a tool name that is not valid', thrown && button.dataset.state === 'disabled');
-button.action = { tool: 'library.renew', arguments: { loan_id: 'L-0001' } };
+button.action = { tool: 'library.renew', label: 'Renew', arguments: { loan_id: 'L-0001' } };
 control.click();
 check('action-button: a press sends one request', events.length === 1 && events[0].tool === 'library.renew'
   && events[0].arguments.loan_id === 'L-0001' && typeof events[0].id === 'string', JSON.stringify(events));
@@ -151,17 +151,32 @@ check('action-button: a script cannot write the state', !written && button.actio
 button.action = null;
 check('action-button: a binding of null disables the button', button.dataset.state === 'disabled'
   && control.getAttribute('aria-disabled') === 'true' && status() === '', `${button.dataset.state} ${status()}`);
-button.action = { tool: 'library.renew' };
+button.action = { tool: 'library.renew', label: 'Renew' };
 button.fill = fill('action-button', { label: 'Renew', style: 'x' });
 const before = events.length;
 button.send();
 check('action-button: a refused button sends no request', button.dataset.state === 'refused' && events.length === before);
 
+// The application gives the label of the action. A fill cannot show a different meaning for the bound tool.
+const misnamed = mount('action-button', { label: 'View details' });
+misnamed.action = { tool: 'library.renew', label: 'Renew' };
+check('action-button: a label that is not the label of the application is refused', misnamed.dataset.state === 'refused'
+  && misnamed.shadowRoot.textContent.includes('data.label: the label is not the label of the application'), misnamed.shadowRoot.textContent);
+const nameless = mount('action-button', { label: 'Renew' });
+nameless.action = { tool: 'library.renew' };
+check('action-button: a binding with no label accepts no fill', nameless.dataset.state === 'refused'
+  && nameless.shadowRoot.textContent.includes('data.label: the label is not the label of the application'), nameless.shadowRoot.textContent);
+const misnamedForm = mount('editable-form', { ...FORM, submit_label: 'View details' });
+misnamedForm.action = { tool: 'library.update_loan', label: 'Save', editable: EDITABLE };
+check('editable-form: a submit label that is not the label of the application is refused', misnamedForm.dataset.state === 'refused'
+  && misnamedForm.shadowRoot.textContent.includes('data.submit_label: the label is not the label of the application'),
+  misnamedForm.shadowRoot.textContent);
+
 // The editable form submits the edited values as one action.
 const form = mount('editable-form', FORM);
 const submits = [];
 form.addEventListener('mu-action', (event) => submits.push(event.detail));
-form.action = { tool: 'library.update_loan', arguments: { loan_id: 'L-0001' }, editable: EDITABLE };
+form.action = { tool: 'library.update_loan', label: 'Save', arguments: { loan_id: 'L-0001' }, editable: EDITABLE };
 const shelf = form.shadowRoot.querySelector('mu-field').shadowRoot.querySelector('input');
 shelf.value = 'C-2';
 shelf.dispatchEvent(new Event('input'));
@@ -175,7 +190,7 @@ check('editable-form: done after the receipt', form.dataset.state === 'done');
 const stale = mount('editable-form', FORM);
 const staleSubmits = [];
 stale.addEventListener('mu-action', (event) => staleSubmits.push(event.detail));
-stale.action = { tool: 'library.update_loan', editable: EDITABLE };
+stale.action = { tool: 'library.update_loan', label: 'Save', editable: EDITABLE };
 const staleInput = stale.shadowRoot.querySelector('mu-field').shadowRoot.querySelector('input');
 const staleStatus = () => stale.shadowRoot.querySelector('[role="status"]').textContent;
 stale.shadowRoot.querySelector('form').requestSubmit();
@@ -198,7 +213,7 @@ check('editable-form: an edit after done lets the form save again', stale.datase
 const pinned = mount('editable-form', { ...FORM, fields: [field('loan_id', 'Loan', 'L-9999')] });
 let pinnedError = '';
 try {
-  pinned.action = { tool: 'library.update_loan', arguments: { loan_id: 'L-0001' }, editable: { loan_id: 'Loan' } };
+  pinned.action = { tool: 'library.update_loan', label: 'Save', arguments: { loan_id: 'L-0001' }, editable: { loan_id: 'Loan' } };
 } catch (error) {
   pinnedError = error.message;
 }
@@ -209,7 +224,7 @@ check('editable-form: a binding with a bound argument that is also editable is r
 const second = mount('editable-form', FORM);
 const secondSubmits = [];
 second.addEventListener('mu-action', (event) => secondSubmits.push(event.detail));
-second.action = { tool: 'library.update_loan', editable: EDITABLE };
+second.action = { tool: 'library.update_loan', label: 'Save', editable: EDITABLE };
 const secondInput = second.shadowRoot.querySelector('mu-field').shadowRoot.querySelector('input');
 second.shadowRoot.querySelector('form').requestSubmit();
 secondInput.value = 'C-2';
@@ -225,20 +240,20 @@ const refusedText = (node) => node.shadowRoot.textContent;
 const sneaky = mount('editable-form', SNEAKY);
 const sneakySubmits = [];
 sneaky.addEventListener('mu-action', (event) => sneakySubmits.push(event.detail));
-sneaky.action = { tool: 'library.update_loan', editable: EDITABLE };
+sneaky.action = { tool: 'library.update_loan', label: 'Save', editable: EDITABLE };
 sneaky.shadowRoot.querySelector('form')?.requestSubmit();
 check('editable-form: a fill before the binding with an unlisted field is refused', sneaky.dataset.state === 'refused'
   && refusedText(sneaky).includes('data.fields: the application does not accept the field approved') && sneakySubmits.length === 0,
   `${sneaky.dataset.state} ${refusedText(sneaky)}`);
 const late = document.createElement('mu-editable-form');
 stage.append(late);
-late.action = { tool: 'library.update_loan', editable: EDITABLE };
+late.action = { tool: 'library.update_loan', label: 'Save', editable: EDITABLE };
 late.fill = fill('editable-form', SNEAKY);
 check('editable-form: a fill after the binding with an unlisted field is refused', late.dataset.state === 'refused'
   && refusedText(late).includes('the field approved'), `${late.dataset.state} ${refusedText(late)}`);
 const unlisted = document.createElement('mu-editable-form');
 stage.append(unlisted);
-unlisted.action = { tool: 'library.update_loan' };
+unlisted.action = { tool: 'library.update_loan', label: 'Save' };
 unlisted.fill = fill('editable-form', FORM);
 check('editable-form: a binding with no editable map accepts no field', unlisted.dataset.state === 'refused'
   && refusedText(unlisted).includes('the field shelf'), `${unlisted.dataset.state} ${refusedText(unlisted)}`);
@@ -246,7 +261,7 @@ check('editable-form: a binding with no editable map accepts no field', unlisted
 // The application gives the label of each field. A fill cannot show a different meaning for a name.
 const relabeled = document.createElement('mu-editable-form');
 stage.append(relabeled);
-relabeled.action = { tool: 'library.update_loan', editable: EDITABLE };
+relabeled.action = { tool: 'library.update_loan', label: 'Save', editable: EDITABLE };
 relabeled.fill = fill('editable-form', { ...FORM, fields: [field('shelf', 'Approve the loan', 'B-14')] });
 check('editable-form: a field label that is not the label of the application is refused', relabeled.dataset.state === 'refused'
   && refusedText(relabeled).includes('the label of the field shelf'), `${relabeled.dataset.state} ${refusedText(relabeled)}`);
@@ -255,7 +270,7 @@ const locked = mount('editable-form', { ...FORM, fields: [field('shelf', 'Shelf 
   fill('field', { name: 'branch', label: 'Branch', value: 'South', disabled: true })] });
 const lockedSubmits = [];
 locked.addEventListener('mu-action', (event) => lockedSubmits.push(event.detail));
-locked.action = { tool: 'library.update_loan', editable: EDITABLE };
+locked.action = { tool: 'library.update_loan', label: 'Save', editable: EDITABLE };
 locked.shadowRoot.querySelector('form').requestSubmit();
 check('editable-form: a disabled field sends no value', lockedSubmits.length === 1
   && !Object.hasOwn(lockedSubmits[0].arguments, 'branch'), JSON.stringify(lockedSubmits));
@@ -263,7 +278,7 @@ check('editable-form: a disabled field sends no value', lockedSubmits.length ===
 const refill = mount('editable-form', FORM);
 const refillSubmits = [];
 refill.addEventListener('mu-action', (event) => refillSubmits.push(event.detail));
-refill.action = { tool: 'library.update_loan', editable: EDITABLE };
+refill.action = { tool: 'library.update_loan', label: 'Save', editable: EDITABLE };
 refill.shadowRoot.querySelector('form').requestSubmit();
 refill.receipt({ id: refillSubmits[0]?.id, ok: true });
 refill.fill = fill('editable-form', { ...FORM, fields: [field('shelf', 'Shelf code', 'C-2'), field('branch', 'Branch', 'North')] });
@@ -280,7 +295,7 @@ const mode = new URLSearchParams(location.search).get('mode') || 'light';
 const article = mount('card', LOAN).shadowRoot.querySelector('article');
 const cardStyle = getComputedStyle(article);
 const fresh = mount('action-button', VALID['action-button']);
-fresh.action = { tool: 'library.renew' };
+fresh.action = { tool: 'library.renew', label: 'Renew' };
 const actionStyle = getComputedStyle(fresh.shadowRoot.querySelector('button'));
 const probe = document.createElement('span');
 stage.append(probe);
@@ -300,14 +315,14 @@ check('no markup ran', window.muUnsafe === undefined);
 const keyboard = document.getElementById('keyboard');
 const target = document.createElement('mu-action-button');
 target.fill = fill('action-button', { label: 'Keyboard target' });
-target.action = { tool: 'library.renew' };
+target.action = { tool: 'library.renew', label: 'Keyboard target' };
 let presses = 0;
 target.addEventListener('mu-action', (event) => { presses += 1; target.receipt({ id: event.detail.id, ok: false }); });
 keyboard.append(target);
 // The runner presses Enter in a field of this form. The form must submit one time.
 const enterForm = document.createElement('mu-editable-form');
 enterForm.fill = fill('editable-form', FORM);
-enterForm.action = { tool: 'library.update_loan', editable: EDITABLE };
+enterForm.action = { tool: 'library.update_loan', label: 'Save', editable: EDITABLE };
 let formSubmits = 0;
 enterForm.addEventListener('mu-action', () => { formSubmits += 1; });
 keyboard.append(enterForm);

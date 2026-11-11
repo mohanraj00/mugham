@@ -9,6 +9,9 @@ test('a binding needs a valid tool name and scalar arguments', () => {
   assert.deepEqual(bindingErrors({ tool: 'Run Anything' }), ['the tool name is not valid']);
   assert.deepEqual(bindingErrors({ tool: 'library.renew', arguments: { loan: { id: 1 } } }),
     ['each argument must be a string, a number or true or false']);
+  assert.deepEqual(bindingErrors({ tool: 'library.renew', label: 'Renew' }), []);
+  assert.deepEqual(bindingErrors({ tool: 'library.renew', label: '' }), ['the label must be a text of 1 to 80 characters']);
+  assert.deepEqual(bindingErrors({ tool: 'library.renew', label: 'R'.repeat(81) }), ['the label must be a text of 1 to 80 characters']);
   const LIST = ['editable must map each field name to its label'];
   assert.deepEqual(bindingErrors({ tool: 'library.renew', editable: { shelf: 'Shelf code', note_text: 'Note' } }), []);
   assert.deepEqual(bindingErrors({ tool: 'library.renew', editable: 'shelf' }), LIST);
@@ -30,6 +33,15 @@ test('an extra value needs a name that the binding gives as editable', () => {
   plain.bind({ tool: 'library.update_loan' });
   assert.deepEqual({ ...plain.editable }, {});
   assert.equal(plain.start({ shelf: 'C-2' }), null);
+});
+
+test('the label comes from the binding', () => {
+  const action = new ActionState();
+  assert.equal(action.label, null);
+  action.bind({ tool: 'library.renew' });
+  assert.equal(action.label, '');
+  action.bind({ tool: 'library.renew', label: 'Renew' });
+  assert.equal(action.label, 'Renew');
 });
 
 test('the state and the message can only be read', () => {

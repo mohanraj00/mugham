@@ -70,8 +70,21 @@ class ActionElement extends MuElement {
     return accepted;
   }
 
-  // A subclass can check its fill again after a new binding.
-  rebound() {}
+  // The name of the data field that shows the label of the action.
+  static labelField = 'label';
+
+  // The application gives the label of the action. A fill cannot show a different meaning for the bound tool.
+  check(data) {
+    const label = this.#action.label;
+    const field = this.constructor.labelField;
+    if (label !== null && data[field] !== label) return [`data.${field}: the label is not the label of the application`];
+    return [];
+  }
+
+  // A new binding can refuse a fill that the element shows now.
+  rebound() {
+    if (this.fill && this.check(this.fill.data).length) this.fill = this.fill;
+  }
 
   // A subclass returns true if its data changed after the last request.
   stale() {
@@ -176,6 +189,7 @@ export class MuCardGrid extends MuElement {
 
 export class MuEditableForm extends ActionElement {
   static component = 'editable-form';
+  static labelField = 'submit_label';
   static styles = [CARD_CSS, ACTION_CSS, sheet(`
     :host { display: block; }
     form { display: flex; flex-direction: column; gap: var(--mu-space-3); }
@@ -190,6 +204,8 @@ export class MuEditableForm extends ActionElement {
 
   // A form also needs a unique name for each field, so that the values have keys.
   check(data) {
+    const errors = super.check(data);
+    if (errors.length) return errors;
     // The application labels of the fields tell what the request does. A form with no field that a person can
     // edit sends no such value, because the form does not send a disabled field.
     if (!data.fields.some((item) => !item.data.disabled)) return ['data.fields: the form needs at least one field that a person can edit'];
@@ -205,11 +221,6 @@ export class MuEditableForm extends ActionElement {
     const relabeled = data.fields.find((item) => item.data.label !== editable[item.data.name]);
     if (relabeled) return [`data.fields: the label of the field ${relabeled.data.name} is not the label of the application`];
     return [];
-  }
-
-  // A new binding can refuse a fill that the form shows now.
-  rebound() {
-    if (this.fill && this.check(this.fill.data).length) this.fill = this.fill;
   }
 
   // A person cannot edit a disabled field, so its value does not go in the request.

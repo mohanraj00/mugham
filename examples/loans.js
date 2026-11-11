@@ -29,7 +29,7 @@ const card = make('mu-card', fill('card', {
 }));
 const renew = make('mu-action-button', fill('action-button', { label: 'Renew' }));
 renew.slot = 'actions';
-renew.action = { tool: 'library.renew', arguments: { loan_id: 'L-0001' } };
+renew.action = { tool: 'library.renew', label: 'Renew', arguments: { loan_id: 'L-0001' } };
 card.append(renew);
 
 const grid = make('mu-card-grid', fill('card-grid', { label: 'Current loans', cards: [
@@ -42,7 +42,7 @@ const form = make('mu-editable-form', fill('editable-form', { title: 'Change a l
   fill('field', { name: 'shelf', label: 'Shelf code', value: 'B-14', hint: 'A letter and a number.' }),
   fill('field', { name: 'note', label: 'Note', value: '' }),
 ] }));
-form.action = { tool: 'library.update_loan', arguments: { loan_id: 'L-0001' }, editable: { shelf: 'Shelf code', note: 'Note' } };
+form.action = { tool: 'library.update_loan', label: 'Save', arguments: { loan_id: 'L-0001' }, editable: { shelf: 'Shelf code', note: 'Note' } };
 
 document.addEventListener('mu-action', service);
 document.getElementById('main').append(card, grid, form);
