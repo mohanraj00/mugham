@@ -22,6 +22,9 @@ export function bindingErrors(binding) {
   const entries = editable !== null && typeof editable === 'object' && !Array.isArray(editable) ? Object.entries(editable) : null;
   if (!entries || entries.length > MAX_EDITABLE || !entries.every(([name, label]) => FIELD_NAME.test(name)
     && typeof label === 'string' && label.length > 0 && [...label].length <= MAX_LABEL)) errors.push('editable must map each field name to its label');
+  // A form shows the editable value, so a bound value for the same name would go in the request unseen.
+  const overlap = entries && args !== null && typeof args === 'object' ? entries.find(([name]) => Object.hasOwn(args, name)) : null;
+  if (overlap) errors.push(`a bound argument cannot be editable: ${overlap[0]}`);
   return errors;
 }
 

@@ -42,10 +42,13 @@ test('the state and the message can only be read', () => {
 });
 
 test('a value from a fill cannot change a bound argument', () => {
+  // A form would show the editable value, but the request would carry the bound value. Thus the binding is refused.
+  assert.deepEqual(bindingErrors({ tool: 'library.update_loan', arguments: { loan_id: 'L-0001' },
+    editable: { loan_id: 'Loan', shelf: 'Shelf code' } }), ['a bound argument cannot be editable: loan_id']);
   const action = new ActionState();
-  action.bind({ tool: 'library.update_loan', arguments: { loan_id: 'L-0001' }, editable: { loan_id: 'Loan', shelf: 'Shelf code' } });
-  const request = action.start({ loan_id: 'L-9999', shelf: 'C-2' });
-  assert.deepEqual({ ...request.arguments }, { loan_id: 'L-0001', shelf: 'C-2' });
+  action.bind({ tool: 'library.update_loan', arguments: { loan_id: 'L-0001' }, editable: { shelf: 'Shelf code' } });
+  assert.equal(action.start({ loan_id: 'L-9999', shelf: 'C-2' }), null);
+  assert.deepEqual({ ...action.start({ shelf: 'C-2' }).arguments }, { loan_id: 'L-0001', shelf: 'C-2' });
 });
 
 test('the action is done only after the receipt with the same id', () => {

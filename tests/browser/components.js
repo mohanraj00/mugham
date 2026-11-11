@@ -189,13 +189,16 @@ staleInput.dispatchEvent(new Event('input', { bubbles: true, composed: true }));
 check('editable-form: an edit after done lets the form save again', stale.dataset.state === 'default'
   && !staleStatus().startsWith('Done'), `${stale.dataset.state} ${staleStatus()}`);
 
+// A bound argument cannot also be editable: the form would show one value and send a different value.
 const pinned = mount('editable-form', { ...FORM, fields: [field('loan_id', 'Loan', 'L-9999')] });
-const pinnedSubmits = [];
-pinned.addEventListener('mu-action', (event) => pinnedSubmits.push(event.detail));
-pinned.action = { tool: 'library.update_loan', arguments: { loan_id: 'L-0001' }, editable: { loan_id: 'Loan' } };
-pinned.shadowRoot.querySelector('form').requestSubmit();
-check('editable-form: a field cannot change a bound argument', pinnedSubmits.length === 1
-  && pinnedSubmits[0].arguments.loan_id === 'L-0001', JSON.stringify(pinnedSubmits));
+let pinnedError = '';
+try {
+  pinned.action = { tool: 'library.update_loan', arguments: { loan_id: 'L-0001' }, editable: { loan_id: 'Loan' } };
+} catch (error) {
+  pinnedError = error.message;
+}
+check('editable-form: a binding with a bound argument that is also editable is refused',
+  pinnedError.includes('a bound argument cannot be editable: loan_id'), pinnedError);
 
 // A second submit while the request is pending is refused. It does not change the values of the request.
 const second = mount('editable-form', FORM);
