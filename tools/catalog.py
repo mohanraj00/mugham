@@ -129,7 +129,8 @@ def schema_errors(value, schema, root=None, path='', label='(value)'):
         if len(value) < schema.get('minItems', 0):
             errors.append('%s: fewer than %d items' % (at, schema['minItems']))
         if 'maxItems' in schema and len(value) > schema['maxItems']:
-            errors.append('%s: more than %d items' % (at, schema['maxItems']))
+            # Do not read the items of a list that is too long. Its size can have no limit.
+            return errors + ['%s: more than %d items' % (at, schema['maxItems'])]
         if schema.get('uniqueItems') and len({canonical(item) for item in value}) != len(value):
             errors.append('%s: the items are not unique' % at)
         if 'items' in schema:
@@ -139,7 +140,8 @@ def schema_errors(value, schema, root=None, path='', label='(value)'):
         if len(value) < schema.get('minProperties', 0):
             errors.append('%s: fewer than %d keys' % (at, schema['minProperties']))
         if 'maxProperties' in schema and len(value) > schema['maxProperties']:
-            errors.append('%s: more than %d keys' % (at, schema['maxProperties']))
+            # Do not read the keys of an object that is too large. Its size can have no limit.
+            return errors + ['%s: more than %d keys' % (at, schema['maxProperties'])]
         for key in schema.get('required', []):
             if key not in value:
                 errors.append('%s: missing key %s' % (at, key))

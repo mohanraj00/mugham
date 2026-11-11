@@ -1256,6 +1256,38 @@
    "errors": [
     "actions[0].action: the contract does not declare this action"
    ]
+  },
+  {
+   "name": "too many actions gives one size error",
+   "fill": {
+    "component": "loan-card",
+    "version": "0.1.0",
+    "data": {
+     "title": "Field guide to moss",
+     "due": "2026-12-01",
+     "renewals": 1,
+     "facts": [
+      "Shelf 4",
+      "Floor 2"
+     ]
+    },
+    "actions": [
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null
+    ]
+   },
+   "errors": [
+    "actions: more than 10 items"
+   ]
   }
  ]
 }

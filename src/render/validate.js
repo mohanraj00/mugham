@@ -83,7 +83,8 @@ export function schemaErrors(value, schema, root = schema, path = '', label = '(
   }
   if (Array.isArray(value)) {
     if (value.length < (schema.minItems ?? 0)) errors.push(`${at}: fewer than ${schema.minItems} items`);
-    if (own(schema, 'maxItems') && value.length > schema.maxItems) errors.push(`${at}: more than ${schema.maxItems} items`);
+    // Do not read the items of a list that is too long. Its size can have no limit.
+    if (own(schema, 'maxItems') && value.length > schema.maxItems) return [...errors, `${at}: more than ${schema.maxItems} items`];
     if (schema.uniqueItems && new Set(value.map(canonical)).size !== value.length) errors.push(`${at}: the items are not unique`);
     if (own(schema, 'items')) {
       value.forEach((item, index) => errors.push(...schemaErrors(item, schema.items, root, `${path}[${index}]`, label)));
@@ -92,7 +93,8 @@ export function schemaErrors(value, schema, root = schema, path = '', label = '(
   if (isObject(value)) {
     const keys = Object.keys(value);
     if (keys.length < (schema.minProperties ?? 0)) errors.push(`${at}: fewer than ${schema.minProperties} keys`);
-    if (own(schema, 'maxProperties') && keys.length > schema.maxProperties) errors.push(`${at}: more than ${schema.maxProperties} keys`);
+    // Do not read the keys of an object that is too large. Its size can have no limit.
+    if (own(schema, 'maxProperties') && keys.length > schema.maxProperties) return [...errors, `${at}: more than ${schema.maxProperties} keys`];
     for (const key of schema.required ?? []) {
       if (!own(value, key)) errors.push(`${at}: missing key ${key}`);
     }

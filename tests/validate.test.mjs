@@ -38,3 +38,17 @@ test('a very long text gets its error with no copy of the text', () => {
   assert.equal(run.status, 0, run.stderr.slice(0, 400));
   assert.deepEqual(JSON.parse(run.stdout), [['data.text: more than 10 characters'], []]);
 });
+
+// An error for each item of 1,000,000 actions needs more than the heap limit of 64 MB.
+test('a very long list of actions gets one size error and no error for each item', () => {
+  const code = `
+    const { fillErrors } = await import(${JSON.stringify(new URL('../src/render/validate.js', import.meta.url).href)});
+    const contract = { format: 1, name: 'note', version: '0.1.0', kind: 'primitive', description: 'A note.', ai_content: true,
+      data: { text: { type: 'text', label: 'Text', required: true, max_length: 10 } }, states: ['default'], tokens: [],
+      accessibility: { role: 'none', keyboard: [], forced_colors: true, reduced_motion: true } };
+    const fill = { component: 'note', version: '0.1.0', data: { text: 'A' }, actions: new Array(1000000).fill(null) };
+    console.log(JSON.stringify(fillErrors(fill, { note: contract })));`;
+  const run = spawnSync(process.execPath, ['--max-old-space-size=64', '--input-type=module', '-e', code], { encoding: 'utf8' });
+  assert.equal(run.status, 0, run.stderr.slice(0, 400));
+  assert.deepEqual(JSON.parse(run.stdout), ['actions: more than 10 items']);
+});
