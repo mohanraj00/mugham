@@ -206,6 +206,10 @@ export class MuEditableForm extends ActionElement {
   check(data) {
     const errors = super.check(data);
     if (errors.length) return errors;
+    // The application gives the title. The title names the target of the bound arguments, so a fill cannot
+    // show one target while the request changes a different target.
+    const title = this.action.title;
+    if (title !== null && data.title !== title) return ['data.title: the title is not the title of the application'];
     // The application labels of the fields tell what the request does. A form with no field that a person can
     // edit sends no such value, because the form does not send a disabled field.
     if (!data.fields.some((item) => !item.data.disabled)) return ['data.fields: the form needs at least one field that a person can edit'];

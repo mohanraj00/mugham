@@ -20,6 +20,9 @@ export function bindingErrors(binding) {
   // The application gives the label of the action, so a fill cannot show a different meaning for the tool.
   if (binding.label !== undefined && (typeof binding.label !== 'string' || binding.label.length === 0
     || [...binding.label].length > MAX_LABEL)) errors.push('the label must be a text of 1 to 80 characters');
+  // The application gives the title of a form, so a fill cannot show a different target for the bound arguments.
+  if (binding.title !== undefined && (typeof binding.title !== 'string' || binding.title.length === 0
+    || [...binding.title].length > MAX_LABEL)) errors.push('the title must be a text of 1 to 80 characters');
   // The application gives the label of each editable field, so a fill cannot change what a field means.
   const editable = binding.editable ?? {};
   const entries = editable !== null && typeof editable === 'object' && !Array.isArray(editable) ? Object.entries(editable) : null;
@@ -51,6 +54,12 @@ export class ActionState {
     return this.#binding ? this.#binding.label : null;
   }
 
+  // The title of a form. The application gives it in the binding. A binding with no title gives an empty
+  // text. Without a binding, the value is null.
+  get title() {
+    return this.#binding ? this.#binding.title : null;
+  }
+
   // The names of the extra values that a request can carry, each with its label. The application gives
   // them in the binding. Without a binding, the value is null.
   get editable() {
@@ -67,7 +76,7 @@ export class ActionState {
     }
     const errors = bindingErrors(binding);
     if (errors.length) return errors;
-    this.#binding = Object.freeze({ tool: binding.tool, label: binding.label ?? '', arguments: Object.freeze({ ...(binding.arguments ?? {}) }),
+    this.#binding = Object.freeze({ tool: binding.tool, label: binding.label ?? '', title: binding.title ?? '', arguments: Object.freeze({ ...(binding.arguments ?? {}) }),
       editable: Object.freeze(Object.assign(Object.create(null), binding.editable ?? {})) });
     this.#request = null;
     this.#state = 'default';
