@@ -1,0 +1,76 @@
+{
+  "format": 1,
+  "name": "editable-form",
+  "version": "0.1.0",
+  "kind": "component",
+  "description": "A form with up to 20 text fields. A person edits the values and submits them as one action.",
+  "ai_content": true,
+  "data": {
+    "title": {
+      "type": "text",
+      "label": "Title",
+      "required": true,
+      "min_length": 1,
+      "max_length": 120
+    },
+    "fields": {
+      "type": "list",
+      "label": "Fields",
+      "required": true,
+      "max_items": 20,
+      "items": {
+        "type": "component",
+        "label": "Field",
+        "required": true,
+        "name": "field"
+      }
+    },
+    "submit_label": {
+      "type": "text",
+      "label": "Submit label",
+      "required": true,
+      "min_length": 1,
+      "max_length": 40
+    }
+  },
+  "states": [
+    "default",
+    "disabled",
+    "pending",
+    "done",
+    "error"
+  ],
+  "tokens": [
+    "color.surface",
+    "color.text",
+    "color.text-muted",
+    "color.border",
+    "color.accent",
+    "color.on-accent",
+    "color.danger",
+    "color.focus",
+    "space.1",
+    "space.2",
+    "space.3",
+    "space.4",
+    "radius.2",
+    "type.body",
+    "type.caption",
+    "type.weight-strong",
+    "motion.fast"
+  ],
+  "accessibility": {
+    "role": "form",
+    "name": {
+      "field": "title"
+    },
+    "keyboard": [
+      "Tab",
+      "Shift+Tab",
+      "Enter",
+      "Space"
+    ],
+    "forced_colors": true,
+    "reduced_motion": true
+  }
+}

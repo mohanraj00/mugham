@@ -1,0 +1,156 @@
+// The action path of the kit. An action is a tool name and its arguments. The application binds them in code.
+// A fill never selects the tool. The state is pending until a receipt with the same id comes back.
+const TOOL = /^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)*$/;
+const MAX_MESSAGE = 200;
+const FIELD_NAME = /^[a-z][a-z0-9]*(_[a-z0-9]+)*$/;
+const MAX_EDITABLE = 50;
+const MAX_LABEL = 80;
+// The editable-form contract gives a title of 120 characters at most.
+const MAX_TITLE = 120;
+// The action-button contract gives a description of 200 characters at most.
+const MAX_DESCRIPTION = 200;
+
+// Returns true if the text has more than max characters. The loop stops at max + 1, so a very long text
+// does not make a copy of all its characters.
+function longer(text, max) {
+  let count = 0;
+  for (const character of text) {
+    count += 1;
+    if (count > max) return true;
+  }
+  return false;
+}
+
+// Returns the first max characters of the text, with no copy of the remaining characters.
+function first(text, max) {
+  let start = '';
+  let count = 0;
+  for (const character of text) {
+    count += 1;
+    if (count > max) break;
+    start += character;
+  }
+  return start;
+}
+
+function scalar(value) {
+  return typeof value === 'string' || typeof value === 'boolean' || (typeof value === 'number' && Number.isFinite(value));
+}
+
+export function bindingErrors(binding) {
+  if (binding === null || typeof binding !== 'object' || Array.isArray(binding)) return ['the action must be an object'];
+  const errors = [];
+  if (typeof binding.tool !== 'string' || binding.tool.length > 80 || !TOOL.test(binding.tool)) errors.push('the tool name is not valid');
+  const args = binding.arguments ?? {};
+  if (args === null || typeof args !== 'object' || Array.isArray(args)) errors.push('the arguments must be an object');
+  else if (!Object.values(args).every(scalar)) errors.push('each argument must be a string, a number or true or false');
+  // The application gives the label of the action, so a fill cannot show a different meaning for the tool.
+  if (binding.label !== undefined && (typeof binding.label !== 'string' || binding.label.length === 0
+    || longer(binding.label, MAX_LABEL))) errors.push('the label must be a text of 1 to 80 characters');
+  // The application gives the title of a form, so a fill cannot show a different target for the bound arguments.
+  if (binding.title !== undefined && (typeof binding.title !== 'string' || binding.title.length === 0
+    || longer(binding.title, MAX_TITLE))) errors.push('the title must be a text of 1 to 120 characters');
+  // The application gives the description of an action, so a fill cannot describe a different target.
+  if (binding.description !== undefined && (typeof binding.description !== 'string' || binding.description.length === 0
+    || longer(binding.description, MAX_DESCRIPTION))) errors.push('the description must be a text of 1 to 200 characters');
+  // The application gives the label of each editable field, so a fill cannot change what a field means.
+  const editable = binding.editable ?? {};
+  const entries = editable !== null && typeof editable === 'object' && !Array.isArray(editable) ? Object.entries(editable) : null;
+  if (!entries || entries.length > MAX_EDITABLE || !entries.every(([name, label]) => FIELD_NAME.test(name)
+    && typeof label === 'string' && label.length > 0 && !longer(label, MAX_LABEL))) errors.push('editable must map each field name to its label');
+  // A form shows the editable value, so a bound value for the same name would go in the request unseen.
+  const overlap = entries && args !== null && typeof args === 'object' ? entries.find(([name]) => Object.hasOwn(args, name)) : null;
+  if (overlap) errors.push(`a bound argument cannot be editable: ${overlap[0]}`);
+  return errors;
+}
+
+export class ActionState {
+  #binding = null;
+  #request = null;
+  #state = 'disabled';
+  #message = '';
+
+  get state() {
+    return this.#state;
+  }
+
+  get message() {
+    return this.#message;
+  }
+
+  // The label of the action. The application gives it in the binding. A binding with no label gives an empty
+  // text. Without a binding, the value is null.
+  get label() {
+    return this.#binding ? this.#binding.label : null;
+  }
+
+  // The title of a form. The application gives it in the binding. A binding with no title gives an empty
+  // text. Without a binding, the value is null.
+  get title() {
+    return this.#binding ? this.#binding.title : null;
+  }
+
+  // The description of an action button. The application gives it in the binding. A binding with no
+  // description gives an empty text. Without a binding, the value is null.
+  get description() {
+    return this.#binding ? this.#binding.description : null;
+  }
+
+  // The names of the extra values that a request can carry, each with its label. The application gives
+  // them in the binding. Without a binding, the value is null.
+  get editable() {
+    return this.#binding ? this.#binding.editable : null;
+  }
+
+  bind(binding) {
+    if (binding === null) {
+      this.#binding = null;
+      this.#request = null;
+      this.#state = 'disabled';
+      this.#message = '';
+      return [];
+    }
+    const errors = bindingErrors(binding);
+    if (errors.length) return errors;
+    this.#binding = Object.freeze({ tool: binding.tool, label: binding.label ?? '', title: binding.title ?? '', description: binding.description ?? '', arguments: Object.freeze({ ...(binding.arguments ?? {}) }),
+      editable: Object.freeze(Object.assign(Object.create(null), binding.editable ?? {})) });
+    this.#request = null;
+    this.#state = 'default';
+    this.#message = '';
+    return [];
+  }
+
+  // Returns a request, or null if the action cannot start now. The extra values come from a fill,
+  // so they cannot change an argument that the application binds: the bound arguments come last.
+  // Each extra value needs a name that the binding gives as editable.
+  start(extra = {}) {
+    if (!this.#binding || this.#state === 'pending' || this.#state === 'done') return null;
+    if (Object.keys(extra).some((name) => !Object.hasOwn(this.#binding.editable, name))) return null;
+    this.#request = Object.freeze({ id: crypto.randomUUID(), tool: this.#binding.tool,
+      arguments: Object.freeze({ ...extra, ...this.#binding.arguments }) });
+    this.#state = 'pending';
+    this.#message = '';
+    return this.#request;
+  }
+
+  // After done or error, the action can start again. The message says why. A pending action cannot reopen,
+  // because its receipt has not come back.
+  reopen(message = '') {
+    if (this.#state !== 'done' && this.#state !== 'error') return false;
+    this.#state = 'default';
+    this.#message = first(String(message), MAX_MESSAGE);
+    return true;
+  }
+
+  // Returns true if the receipt belongs to the pending request. Only a valid receipt changes the state.
+  receipt(value) {
+    if (!this.#request || this.#state !== 'pending' || value === null || typeof value !== 'object') return false;
+    if (value.id !== this.#request.id || typeof value.ok !== 'boolean') return false;
+    const message = value.message ?? '';
+    if (typeof message !== 'string' || longer(message, MAX_MESSAGE)) return false;
+    this.#state = value.ok ? 'done' : 'error';
+    this.#message = message;
+    this.#request = null;
+    return true;
+  }
+}

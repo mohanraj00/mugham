@@ -17,7 +17,17 @@ const MODES = {
   'forced-colors': [{ name: 'forced-colors', value: 'active' }],
   'reduced-motion': [{ name: 'prefers-reduced-motion', value: 'reduce' }],
 };
-const EXPECTED_AX = [['button', 'Keyboard target'], ['textbox', 'Shelf code'], ['group', 'Loan details'], ['group', 'Reading list']];
+// Each check page, and the roles and names that its accessibility tree must have in light mode.
+const PAGES = {
+  'tests/browser/primitives.html': [['button', 'Keyboard target'], ['textbox', 'Shelf code']],
+  'tests/browser/components.html': [['button', 'Keyboard target'], ['article', 'Field guide to moss'], ['list', 'Loans'],
+    ['form', 'Loan details'], ['textbox', 'Branch']],
+};
+// Each example page, the number of kit elements, the number of refused elements and the roles and names.
+const EXAMPLES = {
+  'examples/primitives.html': [16, 1, [['button', 'Renew'], ['group', 'Loan details'], ['group', 'Reading list'], ['textbox', 'Shelf code']]],
+  'examples/loans.html': [9, 0, [['article', 'Field guide to moss'], ['button', 'Renew'], ['list', 'Current loans'], ['form', 'Change a loan']]],
+};
 const CHROME = process.env.CHROME || (process.platform === 'darwin'
   ? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' : 'google-chrome');
 const sleep = (ms) => new Promise((done) => setTimeout(done, ms));
@@ -127,12 +137,18 @@ async function open(session, sessionId, url, problems) {
   }
 }
 
+async function axErrors(session, sessionId, expected, where) {
+  const { nodes } = await session.send('Accessibility.getFullAXTree', {}, sessionId);
+  const named = nodes.filter((node) => !node.ignored).map((node) => [node.role?.value, node.name?.value]);
+  return expected.map(([role, name]) => ({ where, role, name, ok: named.some(([r, n]) => r === role && n === name) }));
+}
+
 async function main() {
   const server = await serve();
   const base = `http://127.0.0.1:${server.address().port}`;
   const profile = mkdtempSync(join(tmpdir(), 'mugham-chrome-'));
-  const report = { passed: false, chrome: '', modes: {}, accessibility: [], keyboard: [], example: [], errors: [],
-    scope: 'Headless Chrome on this machine: the primitive checks in four media modes, the accessibility tree, the keyboard and the example page. No screen reader.' };
+  const report = { passed: false, chrome: '', pages: {}, accessibility: [], keyboard: [], examples: [], errors: [],
+    scope: 'Headless Chrome on this machine: the check pages in four media modes, the accessibility tree, the keyboard and the example pages. No screen reader.' };
   let chrome;
   try {
     const started = await startChrome(profile);
@@ -149,58 +165,60 @@ async function main() {
     });
     for (const method of ['Page.enable', 'Runtime.enable', 'Log.enable', 'Accessibility.enable']) await session.send(method, {}, sessionId);
 
-    for (const [mode, features] of Object.entries(MODES)) {
-      await session.send('Emulation.setEmulatedMedia', { features }, sessionId);
-      await open(session, sessionId, `${base}/tests/browser/primitives.html?mode=${mode}`, problems);
-      let checks = null;
-      const before = problems.length;
-      for (let i = 0; i < 100 && !checks && problems.length === before; i += 1) {
-        checks = await evaluate(session, sessionId, 'window.muChecks || null');
-        if (!checks) await sleep(50);
-      }
-      report.modes[mode] = checks ? checks.results : [];
-      if (!checks) report.errors.push(`${mode}: the checks did not run`);
-      for (const item of report.modes[mode]) if (!item.ok) report.errors.push(`${mode}: ${item.name}: ${item.detail}`);
-
-      if (mode === 'light') {
-        // The accessibility tree that a screen reader reads.
-        const { nodes } = await session.send('Accessibility.getFullAXTree', {}, sessionId);
-        const named = nodes.filter((node) => !node.ignored).map((node) => [node.role?.value, node.name?.value]);
-        for (const [role, name] of EXPECTED_AX.slice(0, 2)) {
-          const ok = named.some(([r, n]) => r === role && n === name);
-          report.accessibility.push({ role, name, ok });
-          if (!ok) report.errors.push(`accessibility: no ${role} named ${name}`);
+    for (const [page, expected] of Object.entries(PAGES)) {
+      report.pages[page] = {};
+      for (const [mode, features] of Object.entries(MODES)) {
+        await session.send('Emulation.setEmulatedMedia', { features }, sessionId);
+        const before = problems.length;
+        await open(session, sessionId, `${base}/${page}?mode=${mode}`, problems);
+        let checks = null;
+        for (let i = 0; i < 100 && !checks && problems.length === before; i += 1) {
+          checks = await evaluate(session, sessionId, 'window.muChecks || null');
+          if (!checks) await sleep(50);
         }
+        report.pages[page][mode] = checks ? checks.results : [];
+        if (!checks) report.errors.push(`${page} ${mode}: the checks did not run`);
+        for (const item of report.pages[page][mode]) if (!item.ok) report.errors.push(`${page} ${mode}: ${item.name}: ${item.detail}`);
+        if (mode !== 'light' || !checks) continue;
+        report.accessibility.push(...await axErrors(session, sessionId, expected, page));
         // Keyboard: Tab moves the focus to the first button. Enter and Space press it.
         await evaluate(session, sessionId, 'document.activeElement && document.activeElement.blur(), true');
         await key(session, sessionId, 'Tab', 'Tab', 9);
         const focused = await evaluate(session, sessionId, 'document.activeElement?.shadowRoot?.activeElement?.textContent || ""');
-        report.keyboard.push({ step: 'Tab focuses the first button', ok: focused === 'Keyboard target', detail: focused });
+        report.keyboard.push({ page, step: 'Tab focuses the first button', ok: focused === 'Keyboard target', detail: focused });
         await key(session, sessionId, 'Enter', 'Enter', 13, '\r');
         await key(session, sessionId, ' ', 'Space', 32, ' ');
         const presses = await evaluate(session, sessionId, 'window.muPresses()');
-        report.keyboard.push({ step: 'Enter and Space press the button', ok: presses === 2, detail: presses });
-        for (const step of report.keyboard) if (!step.ok) report.errors.push(`keyboard: ${step.step}: ${step.detail}`);
+        report.keyboard.push({ page, step: 'Enter and Space press the button', ok: presses === 2, detail: presses });
+        if (await evaluate(session, sessionId, 'typeof window.muFocusField === "function"')) {
+          await evaluate(session, sessionId, 'window.muFocusField()');
+          await key(session, sessionId, 'Enter', 'Enter', 13, '\r');
+          const submits = await evaluate(session, sessionId, 'window.muFormSubmits()');
+          report.keyboard.push({ page, step: 'Enter in a field submits the form', ok: submits === 1, detail: submits });
+        }
       }
     }
 
-    // The example page loads with no error, shows each primitive and refuses the one invalid fill.
+    // Each example page loads with no error, shows its kit elements and refuses only the planned fills.
     await session.send('Emulation.setEmulatedMedia', { features: MODES.light }, sessionId);
-    await open(session, sessionId, `${base}/examples/primitives.html`, problems);
-    await sleep(200);
-    const example = await evaluate(session, sessionId, `(() => {
-      const all = [...document.querySelectorAll('mu-text, mu-button, mu-field, mu-stack, mu-grid')];
-      return { elements: all.length, refused: all.filter((node) => node.dataset.state === 'refused').length };
-    })()`);
-    report.example.push({ step: 'the example page shows 16 primitives and refuses 1', ok: example.elements === 16 && example.refused === 1, detail: JSON.stringify(example) });
-    const { nodes } = await session.send('Accessibility.getFullAXTree', {}, sessionId);
-    const named = nodes.filter((node) => !node.ignored).map((node) => [node.role?.value, node.name?.value]);
-    for (const [role, name] of [['button', 'Renew'], ...EXPECTED_AX.slice(1)]) {
-      const ok = named.some(([r, n]) => r === role && n === name);
-      report.accessibility.push({ role, name, ok });
-      if (!ok) report.errors.push(`accessibility: no ${role} named ${name}`);
+    for (const [page, [elements, refused, expected]] of Object.entries(EXAMPLES)) {
+      await open(session, sessionId, `${base}/${page}`, problems);
+      await sleep(200);
+      const found = await evaluate(session, sessionId, `(() => {
+        const all = [];
+        const walk = (root) => { for (const node of root.querySelectorAll('*')) {
+          if (node.tagName.startsWith('MU-')) all.push(node);
+          if (node.shadowRoot) walk(node.shadowRoot);
+        } };
+        walk(document);
+        return { elements: all.length, refused: all.filter((node) => node.dataset.state === 'refused').length };
+      })()`);
+      report.examples.push({ page, step: `${elements} kit elements and ${refused} refused`,
+        ok: found.elements === elements && found.refused === refused, detail: JSON.stringify(found) });
+      report.accessibility.push(...await axErrors(session, sessionId, expected, page));
     }
-    for (const step of report.example) if (!step.ok) report.errors.push(`example: ${step.detail}`);
+    for (const item of report.accessibility) if (!item.ok) report.errors.push(`accessibility: ${item.where}: no ${item.role} named ${item.name}`);
+    for (const step of [...report.keyboard, ...report.examples]) if (!step.ok) report.errors.push(`${step.page}: ${step.step}: ${step.detail}`);
     for (const problem of problems) report.errors.push('page error: ' + problem);
   } catch (error) {
     report.errors.push(String(error.message || error));

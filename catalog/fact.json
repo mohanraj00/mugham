@@ -1,0 +1,37 @@
+{
+  "format": 1,
+  "name": "fact",
+  "version": "0.1.0",
+  "kind": "component",
+  "description": "A label and a value in a card.",
+  "ai_content": true,
+  "data": {
+    "label": {
+      "type": "text",
+      "label": "Label",
+      "required": true,
+      "max_length": 40
+    },
+    "value": {
+      "type": "text",
+      "label": "Value",
+      "required": true,
+      "max_length": 200
+    }
+  },
+  "states": [
+    "default"
+  ],
+  "tokens": [
+    "color.text",
+    "color.text-muted",
+    "type.body",
+    "type.caption"
+  ],
+  "accessibility": {
+    "role": "none",
+    "keyboard": [],
+    "forced_colors": true,
+    "reduced_motion": true
+  }
+}

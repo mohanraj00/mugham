@@ -1,0 +1,58 @@
+{
+  "format": 1,
+  "name": "action-button",
+  "version": "0.1.0",
+  "kind": "component",
+  "description": "A button for one action. The application binds the tool. The button shows done only after the receipt comes back.",
+  "ai_content": false,
+  "data": {
+    "label": {
+      "type": "text",
+      "label": "Label",
+      "required": true,
+      "min_length": 1,
+      "max_length": 40
+    },
+    "description": {
+      "type": "text",
+      "label": "Description",
+      "required": false,
+      "max_length": 200
+    }
+  },
+  "states": [
+    "default",
+    "disabled",
+    "pending",
+    "done",
+    "error"
+  ],
+  "tokens": [
+    "color.accent",
+    "color.on-accent",
+    "color.text-muted",
+    "color.danger",
+    "color.focus",
+    "space.1",
+    "space.2",
+    "space.3",
+    "radius.2",
+    "type.body",
+    "type.caption",
+    "motion.fast"
+  ],
+  "accessibility": {
+    "role": "button",
+    "name": {
+      "field": "label"
+    },
+    "keyboard": [
+      "Tab",
+      "Shift+Tab",
+      "Enter",
+      "Space"
+    ],
+    "forced_colors": true,
+    "reduced_motion": true
+  }
+}
