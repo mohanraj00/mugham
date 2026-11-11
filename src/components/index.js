@@ -190,8 +190,9 @@ export class MuEditableForm extends ActionElement {
 
   // A form also needs a unique name for each field, so that the values have keys.
   check(data) {
-    // The application labels of the fields tell what the request does. A form with no field has no such label.
-    if (data.fields.length === 0) return ['data.fields: the form needs at least one field'];
+    // The application labels of the fields tell what the request does. A form with no field that a person can
+    // edit sends no such value, because the form does not send a disabled field.
+    if (!data.fields.some((item) => !item.data.disabled)) return ['data.fields: the form needs at least one field that a person can edit'];
     const names = data.fields.map((item) => item.data.name);
     if (!names.every((name) => typeof name === 'string' && FIELD_NAME.test(name))) return ['data.fields: each field needs a name'];
     if (new Set(names).size !== names.length) return ['data.fields: the field names must be unique'];

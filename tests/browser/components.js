@@ -73,7 +73,12 @@ check('editable-form: refuses a blank submit label', blankSubmit.dataset.state =
 // A form with no field has no application label that tells what the request does.
 const noFields = mount('editable-form', { ...FORM, submit_label: 'View details', fields: [] });
 check('editable-form: refuses a form with no field', noFields.dataset.state === 'refused'
-  && noFields.shadowRoot.textContent.includes('data.fields: the form needs at least one field'), noFields.shadowRoot.textContent);
+  && noFields.shadowRoot.textContent.includes('data.fields: the form needs at least one field that a person can edit'), noFields.shadowRoot.textContent);
+// A form with only disabled fields sends no value that a person can edit. It is the same as a form with no field.
+const allLocked = mount('editable-form', { ...FORM, submit_label: 'View details',
+  fields: [fill('field', { name: 'shelf', label: 'Shelf code', value: 'B-14', disabled: true })] });
+check('editable-form: refuses a form with only disabled fields', allLocked.dataset.state === 'refused'
+  && allLocked.shadowRoot.textContent.includes('at least one field that a person can edit'), allLocked.shadowRoot.textContent);
 const twice = mount('editable-form', { ...FORM, fields: [field('shelf', 'A', ''), field('shelf', 'B', '')] });
 check('editable-form: refuses two fields with one name', twice.dataset.state === 'refused', twice.shadowRoot.textContent);
 const empty = mount('card-grid', { label: 'Loans', cards: [] });
