@@ -1,6 +1,6 @@
 # Status
 
-2026-11-10. The project starts. It has the governance files and the project standard. It has no source code and no release. [Decision 0001](decisions/0001-build-tools.md) gives the build tools and the dependency rule.
+2026-11-11. The v0.1 issues are closed. The kit has the contract format, the tokens, the primitives and the first catalog components. Release 0.1.0 waits for the owner approval of the tag. [Decision 0001](decisions/0001-build-tools.md) gives the build tools and the dependency rule.
 
 ## Plan
 
@@ -17,4 +17,5 @@ The GitHub milestones hold the issues of each release.
 
 ## Next
 
-1. Write the contract format and the first contracts.
+1. Tag release 0.1.0 after the owner approves it.
+2. Start the v0.2 issues: the message envelope, the thread and the workbench shell.
