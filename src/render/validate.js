@@ -8,6 +8,8 @@ const KEYWORDS = new Set(['$schema', '$id', '$defs', '$ref', 'title', 'descripti
 const TYPE_NAMES = { object: 'an object', array: 'a list', string: 'a string', boolean: 'true or false',
   integer: 'an integer', number: 'a number', null: 'null' };
 const MAX_DEPTH = 8;
+// The maximum number of unknown keys that get one error each. More unknown keys get one error in all.
+const MAX_UNKNOWN = 10;
 const DATE = /^([0-9]{4})-([0-9]{2})-([0-9]{2})$/;
 const own = (object, key) => Object.prototype.hasOwnProperty.call(object, key);
 // Count the code points of text, but stop after limit + 1. Thus a very long text gets its error
@@ -95,10 +97,17 @@ export function schemaErrors(value, schema, root = schema, path = '', label = '(
     if (keys.length < (schema.minProperties ?? 0)) errors.push(`${at}: fewer than ${schema.minProperties} keys`);
     // Do not read the keys of an object that is too large. Its size can have no limit.
     if (own(schema, 'maxProperties') && keys.length > schema.maxProperties) return [...errors, `${at}: more than ${schema.maxProperties} keys`];
+    // An object with no maxProperties can have very many unknown keys. Do not make an error for each of them.
+    const properties = schema.properties ?? {};
+    if (schema.additionalProperties === false) {
+      let unknown = 0;
+      for (const key of keys) {
+        if (!own(properties, key) && ++unknown > MAX_UNKNOWN) return [...errors, `${at}: more than ${MAX_UNKNOWN} unknown keys`];
+      }
+    }
     for (const key of schema.required ?? []) {
       if (!own(value, key)) errors.push(`${at}: missing key ${key}`);
     }
-    const properties = schema.properties ?? {};
     for (const key of keys) {
       const child = path ? `${path}.${key}` : key;
       if (own(schema, 'propertyNames')) {

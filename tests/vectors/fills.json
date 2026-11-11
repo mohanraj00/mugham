@@ -1288,6 +1288,128 @@
    "errors": [
     "actions: more than 10 items"
    ]
+  },
+  {
+   "name": "a fill with 11 unknown keys gets one error",
+   "fill": {
+    "component": "loan-card",
+    "version": "0.1.0",
+    "data": {
+     "title": "Field guide to moss",
+     "due": "2026-12-01",
+     "renewals": 1,
+     "facts": [
+      "Shelf 4",
+      "Floor 2"
+     ]
+    },
+    "actions": [
+     {
+      "action": "renew",
+      "arguments": {
+       "loan_id": "L-0001"
+      }
+     }
+    ],
+    "x0": 1,
+    "x1": 1,
+    "x2": 1,
+    "x3": 1,
+    "x4": 1,
+    "x5": 1,
+    "x6": 1,
+    "x7": 1,
+    "x8": 1,
+    "x9": 1,
+    "x10": 1
+   },
+   "errors": [
+    "(fill): more than 10 unknown keys"
+   ]
+  },
+  {
+   "name": "a fill with 10 unknown keys gets an error for each key",
+   "fill": {
+    "component": "loan-card",
+    "version": "0.1.0",
+    "data": {
+     "title": "Field guide to moss",
+     "due": "2026-12-01",
+     "renewals": 1,
+     "facts": [
+      "Shelf 4",
+      "Floor 2"
+     ]
+    },
+    "actions": [
+     {
+      "action": "renew",
+      "arguments": {
+       "loan_id": "L-0001"
+      }
+     }
+    ],
+    "x0": 1,
+    "x1": 1,
+    "x2": 1,
+    "x3": 1,
+    "x4": 1,
+    "x5": 1,
+    "x6": 1,
+    "x7": 1,
+    "x8": 1,
+    "x9": 1
+   },
+   "errors": [
+    "x0: unknown key",
+    "x1: unknown key",
+    "x2: unknown key",
+    "x3: unknown key",
+    "x4: unknown key",
+    "x5: unknown key",
+    "x6: unknown key",
+    "x7: unknown key",
+    "x8: unknown key",
+    "x9: unknown key"
+   ]
+  },
+  {
+   "name": "an action with 11 unknown keys gets one error",
+   "fill": {
+    "component": "loan-card",
+    "version": "0.1.0",
+    "data": {
+     "title": "Field guide to moss",
+     "due": "2026-12-01",
+     "renewals": 1,
+     "facts": [
+      "Shelf 4",
+      "Floor 2"
+     ]
+    },
+    "actions": [
+     {
+      "action": "renew",
+      "arguments": {
+       "loan_id": "L-0001"
+      },
+      "x0": 1,
+      "x1": 1,
+      "x2": 1,
+      "x3": 1,
+      "x4": 1,
+      "x5": 1,
+      "x6": 1,
+      "x7": 1,
+      "x8": 1,
+      "x9": 1,
+      "x10": 1
+     }
+    ]
+   },
+   "errors": [
+    "actions[0]: more than 10 unknown keys"
+   ]
   }
  ]
 }

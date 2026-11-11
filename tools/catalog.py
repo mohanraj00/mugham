@@ -16,6 +16,8 @@ KEYWORDS = {'$schema', '$id', '$defs', '$ref', 'title', 'description', 'type', '
 TYPE_NAMES = {'object': 'an object', 'array': 'a list', 'string': 'a string', 'boolean': 'true or false',
               'integer': 'an integer', 'number': 'a number', 'null': 'null'}
 MAX_DEPTH = 8
+# The maximum number of unknown keys that get one error each. More unknown keys get one error in all.
+MAX_UNKNOWN = 10
 DATE = re.compile(r'[0-9]{4}-[0-9]{2}-[0-9]{2}')
 
 
@@ -142,10 +144,18 @@ def schema_errors(value, schema, root=None, path='', label='(value)'):
         if 'maxProperties' in schema and len(value) > schema['maxProperties']:
             # Do not read the keys of an object that is too large. Its size can have no limit.
             return errors + ['%s: more than %d keys' % (at, schema['maxProperties'])]
+        # An object with no maxProperties can have very many unknown keys. Do not make an error for each of them.
+        properties = schema.get('properties', {})
+        if schema.get('additionalProperties') is False:
+            unknown = 0
+            for key in value:
+                if key not in properties:
+                    unknown += 1
+                    if unknown > MAX_UNKNOWN:
+                        return errors + ['%s: more than %d unknown keys' % (at, MAX_UNKNOWN)]
         for key in schema.get('required', []):
             if key not in value:
                 errors.append('%s: missing key %s' % (at, key))
-        properties = schema.get('properties', {})
         for key in value:
             child = '%s.%s' % (path, key) if path else key
             if 'propertyNames' in schema:
