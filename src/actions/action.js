@@ -5,6 +5,8 @@ const MAX_MESSAGE = 200;
 const FIELD_NAME = /^[a-z][a-z0-9]*(_[a-z0-9]+)*$/;
 const MAX_EDITABLE = 50;
 const MAX_LABEL = 80;
+// The editable-form contract gives a title of 120 characters at most.
+const MAX_TITLE = 120;
 
 function scalar(value) {
   return typeof value === 'string' || typeof value === 'boolean' || (typeof value === 'number' && Number.isFinite(value));
@@ -22,7 +24,7 @@ export function bindingErrors(binding) {
     || [...binding.label].length > MAX_LABEL)) errors.push('the label must be a text of 1 to 80 characters');
   // The application gives the title of a form, so a fill cannot show a different target for the bound arguments.
   if (binding.title !== undefined && (typeof binding.title !== 'string' || binding.title.length === 0
-    || [...binding.title].length > MAX_LABEL)) errors.push('the title must be a text of 1 to 80 characters');
+    || [...binding.title].length > MAX_TITLE)) errors.push('the title must be a text of 1 to 120 characters');
   // The application gives the label of each editable field, so a fill cannot change what a field means.
   const editable = binding.editable ?? {};
   const entries = editable !== null && typeof editable === 'object' && !Array.isArray(editable) ? Object.entries(editable) : null;

@@ -176,6 +176,12 @@ const retitled = mount('editable-form', { ...FORM, title: 'Loan L-0002' });
 retitled.action = { tool: 'library.update_loan', label: 'Save', title: 'Loan details', arguments: { loan_id: 'L-0001' }, editable: EDITABLE };
 check('editable-form: a title that is not the title of the application is refused', retitled.dataset.state === 'refused'
   && retitled.shadowRoot.textContent.includes('data.title: the title is not the title of the application'), retitled.shadowRoot.textContent);
+// The contract accepts a title of 120 characters. A bound form with such a title works.
+const longTitle = 'T'.repeat(120);
+const longForm = mount('editable-form', { ...FORM, title: longTitle });
+longForm.action = { tool: 'library.update_loan', label: 'Save', title: longTitle, arguments: { loan_id: 'L-0001' }, editable: EDITABLE };
+check('editable-form: a bound form with a title of 120 characters is not refused', longForm.dataset.state === 'default',
+  `${longForm.dataset.state} ${longForm.shadowRoot.textContent.slice(0, 200)}`);
 const untitled = mount('editable-form', FORM);
 untitled.action = { tool: 'library.update_loan', label: 'Save', arguments: { loan_id: 'L-0001' }, editable: EDITABLE };
 check('editable-form: a binding with no title accepts no fill', untitled.dataset.state === 'refused'

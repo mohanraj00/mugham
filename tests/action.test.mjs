@@ -12,10 +12,12 @@ test('a binding needs a valid tool name and scalar arguments', () => {
   assert.deepEqual(bindingErrors({ tool: 'library.renew', label: 'Renew' }), []);
   assert.deepEqual(bindingErrors({ tool: 'library.renew', label: '' }), ['the label must be a text of 1 to 80 characters']);
   assert.deepEqual(bindingErrors({ tool: 'library.renew', label: 'R'.repeat(81) }), ['the label must be a text of 1 to 80 characters']);
-  const TITLE = ['the title must be a text of 1 to 80 characters'];
+  const TITLE = ['the title must be a text of 1 to 120 characters'];
   assert.deepEqual(bindingErrors({ tool: 'library.renew', title: 'Loan details' }), []);
   assert.deepEqual(bindingErrors({ tool: 'library.renew', title: '' }), TITLE);
-  assert.deepEqual(bindingErrors({ tool: 'library.renew', title: 'T'.repeat(81) }), TITLE);
+  // The editable-form contract accepts a title of 120 characters, so the binding accepts the same limit.
+  assert.deepEqual(bindingErrors({ tool: 'library.renew', title: 'T'.repeat(120) }), []);
+  assert.deepEqual(bindingErrors({ tool: 'library.renew', title: 'T'.repeat(121) }), TITLE);
   assert.deepEqual(bindingErrors({ tool: 'library.renew', title: 7 }), TITLE);
   const LIST = ['editable must map each field name to its label'];
   assert.deepEqual(bindingErrors({ tool: 'library.renew', editable: { shelf: 'Shelf code', note_text: 'Note' } }), []);
