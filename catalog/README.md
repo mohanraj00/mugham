@@ -18,6 +18,8 @@ Each JSON file in this folder is the contract of one component. [schema/README.m
 
 The contracts with `ai_content` set to `true` are `card`, `card-grid`, `citation`, `editable-form` and `fact`. Each of them requires the authorship slot. `card`, `card-grid` and `citation` also accept the citation slot. [schema/README.md](schema/README.md#slots) gives the slots.
 
+The thread `mu-thread` has no contract in this folder, because a model does not fill it. A model sends events, and the catalog validates each component part of an event. [src/thread/README.md](../src/thread/README.md) is the contract of the thread.
+
 ## Actions
 
 This section is the one description of the action model. A contract declares no tool, and a fill names no action. The application binds the tool and the fixed arguments in code:

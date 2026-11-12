@@ -1,0 +1,376 @@
+[
+ {
+  "delay_ms": 150,
+  "event": {
+   "type": "TEXT_MESSAGE_START",
+   "messageId": "m-1",
+   "role": "user",
+   "metadata": {
+    "mugham": {
+     "actor": {
+      "type": "human",
+      "id": "u-robin",
+      "name": "Robin"
+     }
+    }
+   }
+  }
+ },
+ {
+  "delay_ms": 120,
+  "event": {
+   "type": "TEXT_MESSAGE_CONTENT",
+   "messageId": "m-1",
+   "delta": "Can I keep the moss guide "
+  }
+ },
+ {
+  "delay_ms": 120,
+  "event": {
+   "type": "TEXT_MESSAGE_CONTENT",
+   "messageId": "m-1",
+   "delta": "for one more week?"
+  }
+ },
+ {
+  "delay_ms": 60,
+  "event": {
+   "type": "TEXT_MESSAGE_END",
+   "messageId": "m-1"
+  }
+ },
+ {
+  "delay_ms": 150,
+  "event": {
+   "type": "TEXT_MESSAGE_START",
+   "messageId": "m-2",
+   "role": "user",
+   "metadata": {
+    "mugham": {
+     "actor": {
+      "type": "human",
+      "id": "u-sam",
+      "name": "Sam"
+     }
+    }
+   }
+  }
+ },
+ {
+  "delay_ms": 120,
+  "event": {
+   "type": "TEXT_MESSAGE_CONTENT",
+   "messageId": "m-2",
+   "delta": "I will ask the agents."
+  }
+ },
+ {
+  "delay_ms": 60,
+  "event": {
+   "type": "TEXT_MESSAGE_END",
+   "messageId": "m-2"
+  }
+ },
+ {
+  "delay_ms": 200,
+  "event": {
+   "type": "RUN_STARTED",
+   "threadId": "t-loans",
+   "runId": "run-1"
+  }
+ },
+ {
+  "delay_ms": 150,
+  "event": {
+   "type": "TEXT_MESSAGE_START",
+   "messageId": "m-3",
+   "role": "assistant",
+   "metadata": {
+    "mugham": {
+     "actor": {
+      "type": "agent",
+      "id": "a-catalog",
+      "name": "Catalog agent"
+     }
+    }
+   }
+  }
+ },
+ {
+  "delay_ms": 120,
+  "event": {
+   "type": "TEXT_MESSAGE_CONTENT",
+   "messageId": "m-3",
+   "delta": "I found the loan. "
+  }
+ },
+ {
+  "delay_ms": 120,
+  "event": {
+   "type": "TEXT_MESSAGE_CONTENT",
+   "messageId": "m-3",
+   "delta": "Here is the card."
+  }
+ },
+ {
+  "delay_ms": 60,
+  "event": {
+   "type": "TEXT_MESSAGE_END",
+   "messageId": "m-3"
+  }
+ },
+ {
+  "delay_ms": 300,
+  "event": {
+   "type": "ACTIVITY_SNAPSHOT",
+   "messageId": "m-4",
+   "activityType": "mugham.fill",
+   "metadata": {
+    "mugham": {
+     "actor": {
+      "type": "agent",
+      "id": "a-catalog",
+      "name": "Catalog agent"
+     }
+    }
+   },
+   "content": {
+    "format": 2,
+    "fill": {
+     "component": "card",
+     "version": "0.1.0",
+     "data": {
+      "title": "Field guide to moss"
+     },
+     "slots": {
+      "authorship": {
+       "type": "agent",
+       "id": "a-catalog",
+       "name": "Catalog agent"
+      }
+     }
+    }
+   }
+  }
+ },
+ {
+  "delay_ms": 300,
+  "event": {
+   "type": "ACTIVITY_SNAPSHOT",
+   "messageId": "m-4",
+   "activityType": "mugham.fill",
+   "metadata": {
+    "mugham": {
+     "actor": {
+      "type": "agent",
+      "id": "a-catalog",
+      "name": "Catalog agent"
+     }
+    }
+   },
+   "content": {
+    "format": 2,
+    "fill": {
+     "component": "card",
+     "version": "0.1.0",
+     "data": {
+      "title": "Field guide to moss",
+      "summary": "A short guide for walks in wet woods.",
+      "date": "2026-12-01",
+      "date_label": "Due",
+      "facts": [
+       {
+        "component": "fact",
+        "version": "0.1.0",
+        "data": {
+         "label": "Shelf",
+         "value": "B-14"
+        }
+       }
+      ]
+     },
+     "slots": {
+      "authorship": {
+       "type": "agent",
+       "id": "a-catalog",
+       "name": "Catalog agent"
+      }
+     }
+    }
+   }
+  }
+ },
+ {
+  "delay_ms": 300,
+  "event": {
+   "type": "ACTIVITY_SNAPSHOT",
+   "messageId": "m-4",
+   "activityType": "mugham.fill",
+   "metadata": {
+    "mugham": {
+     "actor": {
+      "type": "agent",
+      "id": "a-catalog",
+      "name": "Catalog agent"
+     }
+    }
+   },
+   "content": {
+    "format": 2,
+    "fill": {
+     "component": "card",
+     "version": "0.1.0",
+     "data": {
+      "title": "Field guide to moss",
+      "summary": "A short guide for walks in wet woods.",
+      "date": "2026-12-01",
+      "date_label": "Due",
+      "facts": [
+       {
+        "component": "fact",
+        "version": "0.1.0",
+        "data": {
+         "label": "Shelf",
+         "value": "B-14"
+        }
+       },
+       {
+        "component": "fact",
+        "version": "0.1.0",
+        "data": {
+         "label": "Renewals",
+         "value": "1 of 3"
+        }
+       }
+      ]
+     },
+     "slots": {
+      "authorship": {
+       "type": "agent",
+       "id": "a-catalog",
+       "name": "Catalog agent"
+      }
+     }
+    }
+   }
+  }
+ },
+ {
+  "delay_ms": 300,
+  "event": {
+   "type": "ACTIVITY_SNAPSHOT",
+   "messageId": "m-5",
+   "activityType": "mugham.fill",
+   "metadata": {
+    "mugham": {
+     "actor": {
+      "type": "agent",
+      "id": "a-catalog",
+      "name": "Catalog agent"
+     }
+    }
+   },
+   "content": {
+    "format": 2,
+    "fill": {
+     "component": "banner",
+     "version": "0.1.0",
+     "data": {
+      "text": "Read more books"
+     }
+    }
+   }
+  }
+ },
+ {
+  "delay_ms": 100,
+  "event": {
+   "type": "RUN_FINISHED",
+   "threadId": "t-loans",
+   "runId": "run-1"
+  }
+ },
+ {
+  "delay_ms": 200,
+  "event": {
+   "type": "RUN_STARTED",
+   "threadId": "t-loans",
+   "runId": "run-2"
+  }
+ },
+ {
+  "delay_ms": 150,
+  "event": {
+   "type": "TEXT_MESSAGE_START",
+   "messageId": "m-6",
+   "role": "assistant",
+   "metadata": {
+    "mugham": {
+     "actor": {
+      "type": "agent",
+      "id": "a-renew",
+      "name": "Renewal agent"
+     }
+    }
+   }
+  }
+ },
+ {
+  "delay_ms": 120,
+  "event": {
+   "type": "TEXT_MESSAGE_CONTENT",
+   "messageId": "m-6",
+   "delta": "The loan has 2 renewals left. "
+  }
+ },
+ {
+  "delay_ms": 120,
+  "event": {
+   "type": "TEXT_MESSAGE_CONTENT",
+   "messageId": "m-6",
+   "delta": "Press Renew to send the request."
+  }
+ },
+ {
+  "delay_ms": 60,
+  "event": {
+   "type": "TEXT_MESSAGE_END",
+   "messageId": "m-6"
+  }
+ },
+ {
+  "delay_ms": 300,
+  "event": {
+   "type": "ACTIVITY_SNAPSHOT",
+   "messageId": "m-7",
+   "activityType": "mugham.fill",
+   "metadata": {
+    "mugham": {
+     "actor": {
+      "type": "agent",
+      "id": "a-renew",
+      "name": "Renewal agent"
+     }
+    }
+   },
+   "content": {
+    "format": 2,
+    "fill": {
+     "component": "action-button",
+     "version": "0.1.0",
+     "data": {
+      "label": "Renew"
+     }
+    }
+   }
+  }
+ },
+ {
+  "delay_ms": 100,
+  "event": {
+   "type": "RUN_FINISHED",
+   "threadId": "t-loans",
+   "runId": "run-2"
+  }
+ }
+]

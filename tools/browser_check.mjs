@@ -22,6 +22,8 @@ const PAGES = {
   'tests/browser/primitives.html': [['button', 'Keyboard target'], ['textbox', 'Shelf code']],
   'tests/browser/components.html': [['button', 'Keyboard target'], ['article', 'Field guide to moss'], ['list', 'Loans'],
     ['form', 'Loan details'], ['textbox', 'Branch'], ['group', 'Citation'], ['button', 'Open source: Keyboard source']],
+  'tests/browser/thread.html': [['button', 'Keyboard target'], ['list', 'Thread'], ['article', 'Message from Robin, Person'],
+    ['article', 'Message from Renewal agent, Agent']],
 };
 // Each example page, the number of kit elements, the number of refused elements and the roles and names.
 const EXAMPLES = {
@@ -125,7 +127,10 @@ async function key(session, sessionId, name, code, keyCode, text) {
 
 export async function evaluate(session, sessionId, expression) {
   const result = await session.send('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true }, sessionId);
-  if (result.exceptionDetails) throw new Error('page error: ' + result.exceptionDetails.text);
+  if (result.exceptionDetails) {
+    const details = result.exceptionDetails;
+    throw new Error('page error: ' + (details.exception?.description || details.text));
+  }
   return result.result.value;
 }
 
@@ -143,6 +148,79 @@ async function axErrors(session, sessionId, expected, where) {
   const { nodes } = await session.send('Accessibility.getFullAXTree', {}, sessionId);
   const named = nodes.filter((node) => !node.ignored).map((node) => [node.role?.value, node.name?.value]);
   return expected.map(([role, name]) => ({ where, role, name, ok: named.some(([r, n]) => r === role && n === name) }));
+}
+
+// Starts tools/thread_server.py with no delay. It gives the URL of the example on its first line.
+async function threadServer() {
+  const server = spawn(process.env.PYTHON || 'python3', ['-B', join(ROOT, 'tools', 'thread_server.py'), '--port', '0', '--no-delay'],
+    { stdio: ['ignore', 'pipe', 'inherit'] });
+  const url = await new Promise((done, fail) => {
+    let out = '';
+    const timer = setTimeout(() => fail(new Error('tools/thread_server.py did not start')), 10000);
+    server.stdout.on('data', (chunk) => {
+      out += chunk;
+      if (out.includes('\n')) {
+        clearTimeout(timer);
+        done(out.split('\n')[0].trim());
+      }
+    });
+    server.on('exit', () => fail(new Error('tools/thread_server.py stopped')));
+  });
+  return { server, url };
+}
+
+// The thread example through server-sent events: two people, two agents, one refused component and
+// one action. The action shows done only after the receipt of the API comes back.
+async function threadExample(session, sessionId, report) {
+  const page = 'examples/thread.html';
+  const steps = [];
+  const step = (name, ok, detail) => steps.push({ page, step: name, ok: Boolean(ok), detail: JSON.stringify(detail) });
+  const { server, url } = await threadServer();
+  try {
+    await open(session, sessionId, url);
+    const state = () => evaluate(session, sessionId, `(() => {
+      const thread = document.querySelector('mu-thread');
+      const root = thread?.shadowRoot;
+      if (!root) return null;
+      const button = root.querySelector('mu-action-button');
+      return { state: thread.dataset.state,
+        actors: [...root.querySelectorAll('li.message .actor')].map((node) => node.textContent),
+        refusals: [...root.querySelectorAll('.refusal')].map((node) => node.textContent),
+        card: root.querySelector('mu-card')?.shadowRoot.textContent || '',
+        action: button?.dataset.state, status: button?.shadowRoot.querySelector('.status').textContent };
+    })()`);
+    // The module can run after the load event, so the check waits for the element too.
+    let value = await state();
+    for (let i = 0; i < 100 && (!value || value.state === 'idle' || value.state === 'reading'); i += 1) {
+      await sleep(50);
+      value = await state();
+    }
+    const where = value ? value.state : await evaluate(session, sessionId, `[location.href, document.readyState, Boolean(customElements.get('mu-thread'))].join(' ')`);
+    step('the source ends', value?.state === 'ended', where);
+    if (value?.state !== 'ended') return steps;
+    const actors = new Set(value.actors);
+    step('two people and two agents', ['Robin Person', 'Sam Person', 'Catalog agent Agent', 'Renewal agent Agent'].every((name) => actors.has(name)), value.actors);
+    step('the undeclared component is refused', value.refusals.length === 1 && value.refusals[0].includes('banner'), value.refusals);
+    step('the streamed card shows its last snapshot', value.card.includes('Renewals') && value.card.includes('1 of 3'), value.card);
+    step('the action waits for a person', value.action === 'default', value);
+    // The click and the read run in one task, before the response of the API can come back.
+    const pending = await evaluate(session, sessionId, `(() => {
+      const button = document.querySelector('mu-thread').shadowRoot.querySelector('mu-action-button');
+      button.shadowRoot.querySelector('button').click();
+      return { action: button.dataset.state, status: button.shadowRoot.querySelector('.status').textContent };
+    })()`);
+    for (let i = 0; i < 100 && value.action !== 'done' && value.action !== 'error'; i += 1) {
+      await sleep(50);
+      value = await state();
+    }
+    step('the action is pending before the receipt', pending.action === 'pending' && pending.status === 'Pending', pending);
+    step('the receipt of the API makes the action done', value.action === 'done' && /^Done: .*Reference: R-\d{4}$/.test(value.status), value);
+    report.accessibility.push(...await axErrors(session, sessionId, [['list', 'Thread'], ['article', 'Message from Robin, Person'],
+      ['article', 'Message from Catalog agent, Agent'], ['article', 'Message from Renewal agent, Agent'], ['button', 'Renew']], page));
+  } finally {
+    server.kill();
+  }
+  return steps;
 }
 
 async function main() {
@@ -262,6 +340,7 @@ async function main() {
         ok: found.elements === elements && found.refused === refused, detail: JSON.stringify(found) });
       report.accessibility.push(...await axErrors(session, sessionId, expected, page));
     }
+    report.examples.push(...await threadExample(session, sessionId, report));
     for (const item of report.accessibility) if (!item.ok) report.errors.push(`accessibility: ${item.where}: no ${item.role} named ${item.name}`);
     for (const step of [...report.keyboard, ...report.examples]) if (!step.ok) report.errors.push(`${step.page}: ${step.step}: ${step.detail}`);
     for (const problem of problems) report.errors.push('page error: ' + problem);
@@ -271,11 +350,11 @@ async function main() {
     if (chrome) chrome.kill();
     server.close();
     await sleep(200);
-    rmSync(profile, { recursive: true, force: true });
+    rmSync(profile, { recursive: true, force: true, maxRetries: 5 });
   }
   report.passed = report.errors.length === 0;
-  console.log(JSON.stringify(report, null, 2));
-  process.exit(report.passed ? 0 : 1);
+  // Exit only after the report is written. A pipe can take less than the full report at one time.
+  process.stdout.write(JSON.stringify(report, null, 2) + '\n', () => process.exit(report.passed ? 0 : 1));
 }
 
 // Run the check only when Node runs this file. tools/screenshots.mjs imports the helpers.
