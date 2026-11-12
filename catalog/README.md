@@ -14,8 +14,9 @@ Each JSON file in this folder is the contract of one component. [schema/README.m
 | `action-button.json` | `mu-action-button` | component | A button for one action. |
 | `editable-form.json` | `mu-editable-form` | component | Up to 20 fields, submitted as one action. |
 | `card-grid.json` | `mu-card-grid` | component | A labeled list of cards. |
+| `citation.json` | `mu-citation` | component | A source name, a locator as text, an optional quote and an open button. |
 
-The contracts with `ai_content` set to `true` are `card`, `card-grid`, `editable-form` and `fact`. Each of them requires the authorship slot. `card` and `card-grid` also accept the citation slot. [schema/README.md](schema/README.md#slots) gives the slots.
+The contracts with `ai_content` set to `true` are `card`, `card-grid`, `citation`, `editable-form` and `fact`. Each of them requires the authorship slot. `card`, `card-grid` and `citation` also accept the citation slot. [schema/README.md](schema/README.md#slots) gives the slots.
 
 ## Actions
 

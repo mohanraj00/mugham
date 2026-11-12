@@ -21,12 +21,13 @@ const MODES = {
 const PAGES = {
   'tests/browser/primitives.html': [['button', 'Keyboard target'], ['textbox', 'Shelf code']],
   'tests/browser/components.html': [['button', 'Keyboard target'], ['article', 'Field guide to moss'], ['list', 'Loans'],
-    ['form', 'Loan details'], ['textbox', 'Branch']],
+    ['form', 'Loan details'], ['textbox', 'Branch'], ['group', 'Citation'], ['button', 'Open source: Keyboard source']],
 };
 // Each example page, the number of kit elements, the number of refused elements and the roles and names.
 const EXAMPLES = {
   'examples/primitives.html': [16, 1, [['button', 'Renew'], ['group', 'Loan details'], ['group', 'Reading list'], ['textbox', 'Shelf code']]],
   'examples/loans.html': [9, 0, [['article', 'Field guide to moss'], ['button', 'Renew'], ['list', 'Current loans'], ['form', 'Change a loan']]],
+  'examples/citation.html': [3, 1, [['group', 'Citation'], ['button', 'Open source: Synthetic weather notes, page 3'], ['article', 'Message from agent-weather']]],
   'examples/provenance.html': [2, 1, [['article', 'Renewal rule for short loans'], ['button', 'Open source: Synthetic library rules, section 4']]],
 };
 const CHROME = process.env.CHROME || (process.platform === 'darwin'
@@ -191,6 +192,14 @@ async function main() {
         await key(session, sessionId, ' ', 'Space', 32, ' ');
         const presses = await evaluate(session, sessionId, 'window.muPresses()');
         report.keyboard.push({ page, step: 'Enter and Space press the button', ok: presses === 2, detail: presses });
+        // The open button of a citation: Enter and Space press it. Each press sends one mu-open event.
+        if (await evaluate(session, sessionId, 'typeof window.muFocusCitation === "function"')) {
+          await evaluate(session, sessionId, 'window.muFocusCitation()');
+          await key(session, sessionId, 'Enter', 'Enter', 13, '\r');
+          await key(session, sessionId, ' ', 'Space', 32, ' ');
+          const opens = await evaluate(session, sessionId, 'window.muCitationOpens()');
+          report.keyboard.push({ page, step: 'Enter and Space press the open button of a citation', ok: opens === 2, detail: opens });
+        }
         if (await evaluate(session, sessionId, 'typeof window.muFocusField === "function"')) {
           await evaluate(session, sessionId, 'window.muFocusField()');
           await key(session, sessionId, 'Enter', 'Enter', 13, '\r');
