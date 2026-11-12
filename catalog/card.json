@@ -5,6 +5,14 @@
   "kind": "component",
   "description": "A card with a title, an optional summary, an optional date and up to six facts.",
   "ai_content": true,
+  "slots": {
+    "authorship": {
+      "required": true
+    },
+    "citation": {
+      "required": false
+    }
+  },
   "data": {
     "title": {
       "type": "text",

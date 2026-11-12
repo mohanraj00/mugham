@@ -5,6 +5,9 @@ import { define } from '../src/components/index.js';
 define();
 
 const fill = (component, data) => ({ component, version: '0.1.0', data });
+// The page acts as the application, so it gives the authorship of each outer fill.
+const AUTHOR = { authorship: { type: 'agent', id: 'agent-loans', name: 'Loan helper' } };
+const outer = (component, data) => ({ ...fill(component, data), slots: AUTHOR });
 const fact = (label, value) => fill('fact', { label, value });
 const loan = (title, date, shelf) => fill('card', { title, date, date_label: 'Due', facts: [fact('Shelf', shelf), fact('Renewals', '0 of 3')] });
 
@@ -23,7 +26,7 @@ function service(event) {
   }, 600);
 }
 
-const card = make('mu-card', fill('card', {
+const card = make('mu-card', outer('card', {
   title: 'Field guide to moss', summary: 'A short guide for walks in wet woods.', date: '2026-12-01', date_label: 'Due',
   facts: [fact('Shelf', 'B-14'), fact('Renewals', '1 of 3')],
 }));
@@ -32,13 +35,13 @@ renew.slot = 'actions';
 renew.action = { tool: 'library.renew', label: 'Renew', arguments: { loan_id: 'L-0001' } };
 card.append(renew);
 
-const grid = make('mu-card-grid', fill('card-grid', { label: 'Current loans', cards: [
+const grid = make('mu-card-grid', outer('card-grid', { label: 'Current loans', cards: [
   loan('Rivers and deltas', '2026-12-03', 'C-02'),
   loan('A short history of maps', '2026-12-09', 'A-31'),
   loan('Weather at sea', '2026-12-15', 'D-07'),
 ] }));
 
-const form = make('mu-editable-form', fill('editable-form', { title: 'Change a loan', submit_label: 'Save', fields: [
+const form = make('mu-editable-form', outer('editable-form', { title: 'Change a loan', submit_label: 'Save', fields: [
   fill('field', { name: 'shelf', label: 'Shelf code', value: 'B-14', hint: 'A letter and a number.' }),
   fill('field', { name: 'note', label: 'Note', value: '' }),
 ] }));

@@ -5,6 +5,14 @@
   "kind": "component",
   "description": "A labeled list of cards in columns of equal width.",
   "ai_content": true,
+  "slots": {
+    "authorship": {
+      "required": true
+    },
+    "citation": {
+      "required": false
+    }
+  },
   "data": {
     "label": {
       "type": "text",

@@ -15,6 +15,8 @@ Each JSON file in this folder is the contract of one component. [schema/README.m
 | `editable-form.json` | `mu-editable-form` | component | Up to 20 fields, submitted as one action. |
 | `card-grid.json` | `mu-card-grid` | component | A labeled list of cards. |
 
+The contracts with `ai_content` set to `true` are `card`, `card-grid`, `editable-form` and `fact`. Each of them requires the authorship slot. `card` and `card-grid` also accept the citation slot. [schema/README.md](schema/README.md#slots) gives the slots.
+
 ## Actions
 
 This section is the one description of the action model. A contract declares no tool, and a fill names no action. The application binds the tool and the fixed arguments in code:

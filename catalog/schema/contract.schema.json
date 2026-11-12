@@ -12,6 +12,15 @@
     "kind": {"enum": ["primitive", "component"]},
     "description": {"type": "string", "minLength": 1, "maxLength": 300},
     "ai_content": {"type": "boolean"},
+    "slots": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": false,
+      "properties": {
+        "authorship": {"$ref": "#/$defs/slot"},
+        "citation": {"$ref": "#/$defs/slot"}
+      }
+    },
     "data": {
       "type": "object",
       "maxProperties": 40,
@@ -58,6 +67,12 @@
     "name": {"type": "string", "maxLength": 40, "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$"},
     "field_name": {"type": "string", "maxLength": 40, "pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*$"},
     "label": {"type": "string", "minLength": 1, "maxLength": 80},
+    "slot": {
+      "type": "object",
+      "required": ["required"],
+      "additionalProperties": false,
+      "properties": {"required": {"type": "boolean"}}
+    },
     "field": {
       "oneOf": [
         {"$ref": "#/$defs/text_field"},

@@ -4,6 +4,9 @@ Each release has an entry. The newest entry is first.
 
 ## Unreleased
 
+- Contract format 2 gets the authorship slot and the citation slot (#33). A contract declares each slot, and each slot can be required. A fill gives the slots in its `slots` key. The validator refuses a fill that leaves a required slot empty. The kit shows each filled slot as text. A locator is an `https:` address, and it opens only after a person clicks `Open source`. Only the outer fill has slots. Format 2 is not released, so the format number stays `2`.
+- The flag `ai_content` now has an effect. A contract with `ai_content` set to `true` must declare a required authorship slot. Thus the fills of `card`, `card-grid`, `editable-form` and `fact` must name the actor that wrote the content. A fill of these components with no `slots.authorship` is refused.
+- The example page `examples/provenance.html` shows a card with the two slots, and a card that the kit refuses because its authorship slot is empty.
 - The message envelope, version 1, in `docs/contracts/`. It maps AG-UI 1.0, as decision 0002 says. `src/envelope/envelope.js` reads an envelope and an AG-UI stream. Each message has an actor, typed parts and an honest state. `tests/vectors/envelope/` has the conformance cases. `generate.py` in that folder writes them, and `tests/test_envelope_vectors.py` compares them with its output.
 - Contract format 2. Format 1 had an `actions` block in a contract and an `actions` list in a fill, but they had no effect. Format 2 removes them. Each contract now has `"format": 2`. A fill with an `actions` key is refused. The application binds each action in code, as `catalog/README.md` says.
 - An action binding can have a confirm step: `confirm: { message, label }`. `mu-action-button` and `mu-editable-form` then show the step, with the new state `confirm`. They send the action only after a person confirms. Cancel and Escape send no action.

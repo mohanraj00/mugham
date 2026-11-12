@@ -99,6 +99,7 @@ python3 -m http.server 8000
 4. Open an example in the browser. The examples use synthetic data.
    - `http://localhost:8000/examples/primitives.html`: each primitive.
    - `http://localhost:8000/examples/loans.html`: a card, an action button, a card grid and a form.
+   - `http://localhost:8000/examples/provenance.html`: a card with the authorship slot and the citation slot, and a refused card.
 
 To use the kit in your own page, serve `src/` and `catalog/` from one origin, load `src/tokens/tokens.css`, then import `define` from `src/components/index.js` and call it. [src/README.md](src/README.md) gives the steps.
 

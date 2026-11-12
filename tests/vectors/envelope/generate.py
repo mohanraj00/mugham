@@ -20,7 +20,8 @@ def meta(a): return {'mugham':{'actor':a}}
 def env(**k):
     e=dict(H); e.update(k); return e
 FALLBACK='The kit does not know this part type, so it does not show the part.'
-fact=lambda v:{'component':'fact','version':'0.1.0','data':{'label':'Due','value':v}}
+# The contract of fact has ai_content, so its fill names the actor that wrote it (catalog/schema/README.md).
+fact=lambda v:{'component':'fact','version':'0.1.0','data':{'label':'Due','value':v},'slots':{'authorship':{'type':'agent','id':'agent-check'}}}
 PA=actor('human','person-a','Person A'); PB=actor('human','person-b','Person B')
 AP=actor('agent','agent-plan','Planner'); AC=actor('agent','agent-check','Checker')
 

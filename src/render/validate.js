@@ -195,5 +195,16 @@ export function fillErrors(fill, catalog, path = '', depth = 0) {
     if (own(data, key)) errors.push(...valueErrors(data[key], field, `${prefix}data.${key}`, catalog, depth));
     else if (field.required) errors.push(`${prefix}data.${key}: a required field is missing`);
   }
-  return errors;
+  return [...errors, ...slotErrors(fill, contract, prefix, depth)];
+}
+
+// Only the outer fill has slots. A nested fill takes the slots of its outer fill.
+function slotErrors(fill, contract, prefix, depth) {
+  const declared = contract.slots ?? {};
+  if (depth > 0) return own(fill, 'slots') ? [`${prefix}slots: a nested fill takes the slots of its outer fill`] : [];
+  const filled = fill.slots ?? {};
+  return [
+    ...Object.keys(filled).filter((key) => !own(declared, key)).map((key) => `${prefix}slots.${key}: the contract does not declare this slot`),
+    ...Object.entries(declared).filter(([key, slot]) => slot.required && !own(filled, key)).map(([key]) => `${prefix}slots.${key}: a required slot is missing`),
+  ];
 }

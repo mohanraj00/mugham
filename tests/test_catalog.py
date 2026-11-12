@@ -12,6 +12,7 @@ import catalog  # noqa: E402
 LOAN = {
     'format': 2, 'name': 'loan-card', 'version': '0.1.0', 'kind': 'component',
     'description': 'A synthetic library loan.', 'ai_content': True,
+    'slots': {'authorship': {'required': True}, 'citation': {'required': False}},
     'data': {
         'title': {'type': 'text', 'label': 'Title', 'required': True, 'max_length': 80},
         'due': {'type': 'date', 'label': 'Due date', 'required': True},
@@ -34,8 +35,10 @@ GRID = {
     'states': ['default', 'empty'], 'tokens': [],
     'accessibility': {'role': 'list', 'name': {'field': 'label'}, 'keyboard': [], 'forced_colors': True, 'reduced_motion': True},
 }
-FILL = {'component': 'loan-card', 'version': '0.1.0',
-        'data': {'title': 'Field guide to moss', 'due': '2026-12-01', 'renewals': 1, 'facts': ['Shelf 4', 'Floor 2']}}
+NESTED = {'component': 'loan-card', 'version': '0.1.0',
+          'data': {'title': 'Field guide to moss', 'due': '2026-12-01', 'renewals': 1, 'facts': ['Shelf 4', 'Floor 2']}}
+# Only the outer fill has slots. A nested fill takes the slots of its outer fill.
+FILL = {**NESTED, 'slots': {'authorship': {'type': 'agent', 'id': 'agent-check'}}}
 
 
 def changed(base, path, value):
@@ -122,6 +125,18 @@ class ContractTest(unittest.TestCase):
         self.assertIn('data.cards.items: the contract contains itself through loan-grid',
                       catalog.contract_errors(loop, None, {'loan-grid': loop}))
 
+    def test_rule_6_ai_content_needs_a_required_authorship_slot(self):
+        expected = ['slots.authorship: a contract with ai_content must declare a required authorship slot']
+        self.assertEqual(self.errors(changed(LOAN, ('slots',), KeyError)), expected)
+        self.assertEqual(self.errors(changed(LOAN, ('slots', 'authorship'), KeyError)), expected)
+        self.assertEqual(self.errors(changed(LOAN, ('slots', 'authorship', 'required'), False)), expected)
+        self.assertEqual(self.errors(changed(changed(LOAN, ('slots',), KeyError), ('ai_content',), False)), [])
+
+    def test_the_slots_of_a_contract(self):
+        self.assertEqual(self.errors(changed(LOAN, ('slots',), {})), ['slots: fewer than 1 keys'])
+        self.assertEqual(self.errors(changed(LOAN, ('slots', 'stamp'), {'required': True})), ['slots: unknown key stamp'])
+        self.assertEqual(self.errors(changed(LOAN, ('slots', 'citation'), {})), ['slots.citation: missing key required'])
+
     def test_the_validator_refuses_an_unknown_schema_keyword(self):
         with self.assertRaises(ValueError):
             catalog.schema_errors({}, {'type': 'object', 'format': 'email'})
@@ -171,7 +186,7 @@ class FillTest(unittest.TestCase):
             self.assertEqual(json.dumps(fill), before)
 
     def test_nested_component_fills(self):
-        grid = {'component': 'loan-grid', 'version': '0.1.0', 'data': {'label': 'Loans', 'cards': [FILL, FILL]}}
+        grid = {'component': 'loan-grid', 'version': '0.1.0', 'data': {'label': 'Loans', 'cards': [NESTED, NESTED]}}
         self.assertEqual(self.errors(grid), [])
         wrong = changed(grid, ('data', 'cards', 1, 'component'), 'loan-grid')
         self.assertIn('data.cards[1].component: must be loan-card', self.errors(wrong))

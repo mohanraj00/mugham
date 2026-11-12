@@ -17,7 +17,15 @@ const CARD_CSS = sheet(`
   dl { margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: var(--mu-space-2) var(--mu-space-3); }
   dd { margin: 0; }
   .actions { display: flex; flex-wrap: wrap; gap: var(--mu-space-2); }
-  @media (forced-colors: active) { article, form { border-color: CanvasText; } .muted, dt { color: CanvasText; } }
+  .provenance p { margin: 0; overflow-wrap: anywhere; }
+  .provenance button {
+    font: var(--mu-type-caption); min-height: 2.75rem; padding: 0 var(--mu-space-2); cursor: pointer;
+    border: 1px solid var(--mu-color-border); border-radius: var(--mu-radius-2); background: transparent; color: var(--mu-color-text);
+  }
+  @media (forced-colors: active) {
+    article, form { border-color: CanvasText; } .muted, dt { color: CanvasText; }
+    .provenance button { color: ButtonText; border-color: ButtonText; }
+  }
 `);
 const ACTION_CSS = sheet(`
   :host { display: inline-flex; flex-direction: column; gap: var(--mu-space-1); }
@@ -40,6 +48,38 @@ const ACTION_CSS = sheet(`
     .status, .status.error { color: CanvasText; }
   }
 `);
+
+// The filled slots of a fill, as text (catalog/schema/README.md). The locator opens only after a person clicks
+// the button. The element first sends a cancelable mu-open event, so that the application can open the locator.
+function provenance(slots) {
+  const { authorship, citation } = slots ?? {};
+  if (!authorship && !citation) return null;
+  const parts = [];
+  if (authorship) {
+    const name = authorship.name ? ` (${authorship.name})` : '';
+    parts.push(el('p', { class: 'muted', part: 'authorship' }, `Author: ${authorship.type} ${authorship.id}${name}`));
+  }
+  if (citation) {
+    const open = el('button', { type: 'button', part: 'open', 'aria-label': `Open source: ${citation.source}` }, 'Open source');
+    open.addEventListener('click', () => openLocator(open, citation.locator));
+    parts.push(el('p', { class: 'muted', part: 'citation' }, `Source: ${citation.source}`),
+      el('p', { class: 'muted', part: 'locator' }, citation.locator), el('div', {}, open));
+  }
+  return el('div', { class: 'provenance', part: 'provenance' }, ...parts);
+}
+
+// The validator accepts only an https: locator with no user name. Check it again before the browser opens it.
+function openLocator(source, locator) {
+  let url;
+  try {
+    url = new URL(locator);
+  } catch {
+    return;
+  }
+  if (url.protocol !== 'https:' || url.username || url.password) return;
+  const event = new CustomEvent('mu-open', { bubbles: true, composed: true, cancelable: true, detail: { locator: url.href } });
+  if (source.dispatchEvent(event)) window.open(url.href, '_blank', 'noopener,noreferrer');
+}
 
 const STALE = 'Saved the values from before your last edit. Save again to send the edit.';
 
@@ -224,7 +264,7 @@ export class MuCard extends MuElement {
     actions.append(slot);
     return [el('article', { 'aria-label': data.title, part: 'card' },
       el('p', { class: 'title' }, data.title),
-      data.summary ? el('p', {}, data.summary) : null, date, facts, actions)];
+      data.summary ? el('p', {}, data.summary) : null, date, facts, provenance(this.fill.slots), actions)];
   }
 }
 
@@ -246,9 +286,10 @@ export class MuCardGrid extends MuElement {
   render(data) {
     if (data.cards.length === 0) return [el('p', { class: 'empty', part: 'empty' }, 'No cards.')];
     const list = el('ul', { 'aria-label': data.label, part: 'list' });
+    // A nested card takes the slots of the grid, so each card shows them.
     for (const item of data.cards) {
       const card = document.createElement('mu-card');
-      card.fill = item;
+      card.fill = this.fill.slots ? { ...item, slots: this.fill.slots } : item;
       list.append(el('li', {}, card));
     }
     return [list];
@@ -312,7 +353,7 @@ export class MuEditableForm extends ActionElement {
     const submit = el('button', { type: 'submit', part: 'button' }, data.submit_label);
     const area = this.attach(submit, status);
     const form = el('form', { 'aria-label': data.title, part: 'form' },
-      el('p', { class: 'title' }, data.title), ...this.#fields, el('div', {}, submit), area, status);
+      el('p', { class: 'title' }, data.title), provenance(this.fill.slots), ...this.#fields, el('div', {}, submit), area, status);
     // An edit after done makes the values new, so the form can save again.
     form.addEventListener('mu-edit', () => this.reopen());
     form.addEventListener('submit', (event) => {

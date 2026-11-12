@@ -15,6 +15,18 @@ def fill(component, data):
 
 FACT = fill('fact', {'label': 'Shelf', 'value': 'B-14'})
 CARD = fill('card', {'title': 'Field guide to moss', 'date': '2026-12-01', 'date_label': 'Due', 'facts': [FACT, FACT]})
+AUTHOR = {'type': 'agent', 'id': 'agent-check'}
+CITE = {'source': 'Synthetic loan rules', 'locator': 'https://example.org/rules/loans'}
+
+
+def outer(name, data):
+    """An outer fill. It fills the authorship slot if the contract declares one."""
+    result = fill(name, data)
+    if 'authorship' in CATALOG[name].get('slots', {}):
+        result['slots'] = {'authorship': AUTHOR}
+    return result
+
+
 VALID = {
     'text': {'text': 'Weather at sea', 'variant': 'caption'},
     'button': {'label': 'Renew', 'emphasis': 'secondary', 'disabled': False},
@@ -37,12 +49,12 @@ class CatalogContractTest(unittest.TestCase):
     def test_each_contract_accepts_a_valid_fill(self):
         for name, data in VALID.items():
             with self.subTest(name=name):
-                self.assertEqual(catalog.fill_errors(fill(name, data), CATALOG), [])
+                self.assertEqual(catalog.fill_errors(outer(name, data), CATALOG), [])
 
     def test_each_contract_refuses_an_undeclared_field(self):
         for name, data in VALID.items():
             with self.subTest(name=name):
-                self.assertEqual(catalog.fill_errors(fill(name, {**data, 'html': '<b>x</b>'}), CATALOG),
+                self.assertEqual(catalog.fill_errors(outer(name, {**data, 'html': '<b>x</b>'}), CATALOG),
                                  ['data.html: the contract does not declare this field'])
 
     def test_each_required_field_is_required(self):
@@ -52,7 +64,7 @@ class CatalogContractTest(unittest.TestCase):
                     continue
                 with self.subTest(name=name, field=key):
                     data = {k: v for k, v in VALID[name].items() if k != key}
-                    self.assertIn('data.%s: a required field is missing' % key, catalog.fill_errors(fill(name, data), CATALOG))
+                    self.assertIn('data.%s: a required field is missing' % key, catalog.fill_errors(outer(name, data), CATALOG))
 
     def test_each_text_field_has_a_limit(self):
         for name, contract in CATALOG.items():
@@ -62,7 +74,7 @@ class CatalogContractTest(unittest.TestCase):
                 with self.subTest(name=name, field=key):
                     data = {**VALID[name], key: 'x' * (field['max_length'] + 1)}
                     self.assertIn('data.%s: more than %d characters' % (key, field['max_length']),
-                                  catalog.fill_errors(fill(name, data), CATALOG))
+                                  catalog.fill_errors(outer(name, data), CATALOG))
 
     def test_markup_in_each_text_field_is_accepted_as_text(self):
         for name, contract in CATALOG.items():
@@ -70,7 +82,25 @@ class CatalogContractTest(unittest.TestCase):
                 if field['type'] == 'text':
                     with self.subTest(name=name, field=key):
                         value = '<img src=x onerror=alert(1)>'[:field['max_length']]
-                        self.assertEqual(catalog.fill_errors(fill(name, {**VALID[name], key: value}), CATALOG), [])
+                        self.assertEqual(catalog.fill_errors(outer(name, {**VALID[name], key: value}), CATALOG), [])
+
+    def test_each_contract_with_ai_content_requires_the_authorship_slot(self):
+        for name, contract in CATALOG.items():
+            with self.subTest(name=name):
+                self.assertEqual(contract.get('slots', {}).get('authorship', {}).get('required', False), contract['ai_content'])
+                errors = catalog.fill_errors(fill(name, VALID[name]), CATALOG)
+                self.assertEqual(errors, ['slots.authorship: a required slot is missing'] if contract['ai_content'] else [])
+
+    def test_each_slot_accepts_a_filled_value_and_markup_as_text(self):
+        markup = '<img src=x onerror=alert(1)>'
+        for name, contract in CATALOG.items():
+            declared = contract.get('slots', {})
+            if not declared:
+                continue
+            with self.subTest(name=name):
+                slots = {'authorship': {**AUTHOR, 'name': markup}, 'citation': {'source': markup, 'locator': CITE['locator'] + '?q=<b>x</b>'}}
+                filled = {**fill(name, VALID[name]), 'slots': {key: slots[key] for key in declared}}
+                self.assertEqual(catalog.fill_errors(filled, CATALOG), [])
 
     def test_a_nested_fill_of_a_different_component_is_refused(self):
         self.assertIn('data.cards[0].component: must be card',
