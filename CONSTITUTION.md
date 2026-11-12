@@ -1,6 +1,6 @@
 # Mugham constitution
 
-Version 3, 2026-11-12.
+Version 4, 2026-11-12.
 
 ## Purpose
 
@@ -40,7 +40,7 @@ Each component has contract tests and accessibility checks. A build check compar
 
 ## Contributions
 
-Do not add private product material, product names, brand assets, customer data, credentials or generated binaries. Examples and test data are synthetic and neutral. Review each example before its first commit. The license is Apache-2.0.
+Do not add private product material, product names, brand assets, customer data, credentials or generated binaries. The one exception is the README screenshots in `docs/screenshots/`. `make screenshots` makes them from synthetic data. They show only the highlights of the kit, with 16 images maximum, and the package does not contain them. Examples and test data are synthetic and neutral. Review each example before its first commit. The license is Apache-2.0.
 
 ## Governance
 
@@ -69,6 +69,10 @@ Change this constitution when the owner changes direction or evidence changes a 
 Change the governance block only with a new version of the template in `mohanraj00/.github`.
 
 ## Version log
+
+### Version 4, 2026-11-12
+
+The README screenshots in `docs/screenshots/` are an exception to the rule against generated binaries. They show only the highlights of the kit, with 16 images maximum. Reason: the owner wants the README to show the kit to people and to LLMs, so that more projects use it. A script makes the images again from synthetic data, and the owner updates the highlights when the kit grows.
 
 ### Version 3, 2026-11-12
 

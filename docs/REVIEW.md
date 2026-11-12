@@ -153,7 +153,7 @@ Ask for a review of a fork PR only after the owner approval. Before this approva
 
 - the PR links an issue with a concrete workflow and completion criteria;
 - the catalog, the examples and the tests name no real product, brand, customer or person;
-- the change contains no private application material, credentials, customer data or generated binaries;
+- the change contains no private application material, credentials, customer data or generated binaries, other than the README screenshots in `docs/screenshots/`;
 - the change adds no runtime dependency to the kit, or the owner approved it;
 - the PR keeps the Apache-2.0 terms;
 - the cross-harness review and, if needed, the security review are posted.
