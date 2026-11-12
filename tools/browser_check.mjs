@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os';
 import { extname, join, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
+export const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const SERVED = ['src', 'catalog', 'examples', join('tests', 'browser')];
 const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.json': 'application/json', '.css': 'text/css' };
 const MODES = {
@@ -30,10 +30,10 @@ const EXAMPLES = {
 };
 const CHROME = process.env.CHROME || (process.platform === 'darwin'
   ? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' : 'google-chrome');
-const sleep = (ms) => new Promise((done) => setTimeout(done, ms));
+export const sleep = (ms) => new Promise((done) => setTimeout(done, ms));
 
 // A local server for the kit files only. It refuses each path outside the served folders.
-function serve() {
+export function serve() {
   const server = createServer((request, response) => {
     const path = decodeURIComponent(new URL(request.url, 'http://127.0.0.1').pathname);
     const file = resolve(ROOT, '.' + path);
@@ -92,7 +92,7 @@ class Session {
   }
 }
 
-async function startChrome(profile) {
+export async function startChrome(profile) {
   const chrome = spawn(CHROME, ['--headless=new', '--remote-debugging-port=0', '--user-data-dir=' + profile,
     '--no-first-run', '--no-default-browser-check', '--disable-extensions', '--disable-background-networking',
     '--disable-sync', '--disable-component-update', '--metrics-recording-only', 'about:blank'],
@@ -121,13 +121,13 @@ async function key(session, sessionId, name, code, keyCode, text) {
   await session.send('Input.dispatchKeyEvent', { type: 'keyUp', ...base }, sessionId);
 }
 
-async function evaluate(session, sessionId, expression) {
+export async function evaluate(session, sessionId, expression) {
   const result = await session.send('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true }, sessionId);
   if (result.exceptionDetails) throw new Error('page error: ' + result.exceptionDetails.text);
   return result.result.value;
 }
 
-async function open(session, sessionId, url, problems) {
+export async function open(session, sessionId, url, problems) {
   const loaded = session.once('Page.loadEventFired', sessionId);
   await session.send('Page.navigate', { url }, sessionId);
   await loaded;
@@ -233,4 +233,5 @@ async function main() {
   process.exit(report.passed ? 0 : 1);
 }
 
-main();
+// Run the check only when Node runs this file. tools/screenshots.mjs imports the helpers.
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) main();
