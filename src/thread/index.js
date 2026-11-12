@@ -23,6 +23,8 @@ const SOURCE_FAILED = 'The source of events failed.';
 const MAX_SUMMARY = 120;
 const MAX_UPDATES = 4;
 const MAX_NOTICES = 8;
+// The delay in milliseconds of an update on a hidden page.
+const HIDDEN_DELAY = 100;
 
 const CSS = sheet(`
   :host { display: block; font: var(--mu-type-body); color: var(--mu-color-text); }
@@ -120,19 +122,27 @@ export class MuThread extends HTMLElement {
     return this.#reader.result().messages;
   }
 
+  // An event that changes no state gives no update. Thus a stream of unknown events costs no render.
   push(event) {
-    this.#reader.push(event);
-    this.#schedule();
+    if (this.#reader.push(event)) this.#schedule();
   }
 
-  // The thread updates the page one time for each task, not one time for each event.
+  // The thread updates the page one time for each frame, not one time for each event. A hidden page
+  // has no frames, so it updates after a short delay.
   #schedule() {
     if (this.#scheduled) return;
     this.#scheduled = true;
-    queueMicrotask(() => {
-      this.#scheduled = false;
-      this.#render();
-    });
+    const update = () => {
+      if (this.#scheduled) this.#flush();
+    };
+    if (document.visibilityState === 'hidden') setTimeout(update, HIDDEN_DELAY);
+    else requestAnimationFrame(update);
+  }
+
+  // Does a scheduled update now. A later frame then has no update to do.
+  #flush() {
+    this.#scheduled = false;
+    this.#render();
   }
 
   // Reads each event of an async source in order. The transport is the application's.
@@ -140,6 +150,8 @@ export class MuThread extends HTMLElement {
     this.#set('reading');
     try {
       for await (const event of source) this.push(event);
+      // The page shows all events before the state is ended.
+      if (this.#scheduled) this.#flush();
       this.#set('ended');
     } catch {
       this.#source.hidden = false;

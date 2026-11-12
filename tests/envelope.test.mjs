@@ -147,3 +147,17 @@ test('the fills of snapshots count in the data of the stream', () => {
   assert.equal(replaced.messages.length, 1);
   assert.deepEqual(replaced.errors, []);
 });
+
+test('push tells if an event changed the state of the reader', () => {
+  const reader = createReader();
+  const actor = { type: 'agent', id: 'agent-plan' };
+  assert.equal(reader.push({ type: 'TEXT_MESSAGE_START', messageId: 'm-1', metadata: { mugham: { actor } } }), true);
+  assert.equal(reader.push({ type: 'TEXT_MESSAGE_CONTENT', messageId: 'm-1', delta: 'Half' }), true);
+  assert.equal(reader.push({ type: 'CUSTOM', name: 'x' }), false, 'an unknown event');
+  assert.equal(reader.push({ type: 'ACTIVITY_SNAPSHOT', messageId: 'a-1', activityType: 'other' }), false, 'an ignored snapshot');
+  assert.equal(reader.push('not an event'), true, 'a new stream error');
+  for (let count = 1; count < 100; count += 1) reader.push('not an event');
+  assert.equal(reader.result().errors.length, 100);
+  assert.equal(reader.push('not an event'), false, 'an error after the error list is full');
+  assert.equal(reader.push({ type: 'TEXT_MESSAGE_END', messageId: 'm-1' }), true);
+});
