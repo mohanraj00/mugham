@@ -37,7 +37,8 @@ export class MuElement extends HTMLElement {
     }
     this.#fill = structuredClone(value);
     this.dataset.state = this.state(this.#fill.data);
-    root.replaceChildren(...this.render(this.#fill.data));
+    // A render can give null for an optional part. Such a part shows nothing.
+    root.replaceChildren(...this.render(this.#fill.data).filter((part) => part !== null && part !== undefined));
   }
 
   // A subclass can refuse a fill for a rule that the contract format cannot give.

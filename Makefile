@@ -2,7 +2,7 @@
 PYTHON ?= python3
 NODE ?= node
 
-.PHONY: check
+.PHONY: check screenshots
 check:
 	$(PYTHON) -B tools/check_project.py
 	$(PYTHON) -B -m unittest discover -s tests
@@ -11,3 +11,7 @@ check:
 	$(PYTHON) -B tools/tokens.py
 	$(NODE) --test 'tests/**/*.test.mjs'
 	$(NODE) tools/browser_check.mjs
+
+# Write the README screenshots to docs/screenshots/ again.
+screenshots:
+	$(NODE) tools/screenshots.mjs

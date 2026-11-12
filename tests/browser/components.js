@@ -122,6 +122,7 @@ button.addEventListener('mu-action', (event) => events.push(event.detail));
 const control = button.shadowRoot.querySelector('button');
 const status = () => button.shadowRoot.querySelector('[role="status"]').textContent;
 control.click();
+check('action-button: no description shows no text', !deepText(button).includes('null'), deepText(button));
 check('action-button: no action without a binding', events.length === 0 && button.dataset.state === 'disabled', button.dataset.state);
 let thrown = false;
 try { button.action = { tool: 'Run Anything' }; } catch { thrown = true; }
