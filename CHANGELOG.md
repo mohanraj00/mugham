@@ -4,7 +4,7 @@ Each release has an entry. The newest entry is first.
 
 ## Unreleased
 
-- The README is for people. It lists each catalog component, with screenshots in the light theme and the dark theme. Agents and LLMs go to the constitution and `AGENTS.md`.
+- The README is for people. It lists each catalog component, and it shows the highlights of the kit in screenshots for the light theme and the dark theme. Agents and LLMs go to the constitution and `AGENTS.md`.
 - `make screenshots` writes the README screenshots to `docs/screenshots/` from a fixture page with synthetic data.
 - Fix: an action button with no description showed the text `null`.
 

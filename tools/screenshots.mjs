@@ -11,10 +11,10 @@ const OUT = join(ROOT, 'docs', 'screenshots');
 const MODES = ['light', 'dark'];
 // Each section of the gallery and the state that its first element must show.
 const EXPECTED = {
-  'action-button-default': 'default', 'action-button-pending': 'pending', 'action-button-done': 'done',
-  'action-button-error': 'error', 'editable-form-default': 'default', 'editable-form-pending': 'pending',
-  'editable-form-done': 'done',
+  'action-button-pending': 'pending', 'action-button-done': 'done', 'action-button-error': 'error', 'editable-form-done': 'done',
 };
+// CONSTITUTION.md allows 16 README screenshots maximum.
+const LIMIT = 16;
 
 async function main() {
   const server = await serve();
@@ -41,6 +41,7 @@ async function main() {
         if (!sections) await sleep(50);
       }
       if (!sections) throw new Error('the gallery did not render');
+      if (sections.length * MODES.length > LIMIT) throw new Error(`the gallery gives more than ${LIMIT} images`);
       await evaluate(session, sessionId, 'document.fonts.ready.then(() => true)');
       for (const { id, state } of sections) {
         if (EXPECTED[id] && EXPECTED[id] !== state) throw new Error(`${id}: the state is ${state}, not ${EXPECTED[id]}`);
