@@ -207,7 +207,7 @@ export function actorErrors(actor) {
   if (actor === null) return [];
   if (actor === undefined || typeof actor !== 'object' || Array.isArray(actor)) return ['must be an object or null'];
   if (!ACTOR_TYPES.has(actor.type)) return ['type: must be human, agent or system'];
-  if (typeof actor.id !== 'string' || actor.id.length < 1 || actor.id.length > 128) return ['id: must be a string of 1 to 128 characters'];
+  if (typeof actor.id !== 'string' || actor.id === '' || length(actor.id, 128) > 128) return ['id: must be a string of 1 to 128 characters'];
   return [];
 }
 

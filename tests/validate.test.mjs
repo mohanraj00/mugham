@@ -95,4 +95,7 @@ test('the author of a fill must be the bound actor', () => {
   assert.deepEqual(actorErrors({ type: 'person', id: 'x' }), ['type: must be human, agent or system']);
   assert.deepEqual(actorErrors({ type: 'agent', id: '' }), ['id: must be a string of 1 to 128 characters']);
   assert.deepEqual(actorErrors('agent'), ['must be an object or null']);
+  // The id limit counts code points, as the fill schema and the envelope reader do.
+  assert.deepEqual(actorErrors({ type: 'agent', id: '\u{1F600}'.repeat(128) }), []);
+  assert.deepEqual(actorErrors({ type: 'agent', id: '\u{1F600}'.repeat(129) }), ['id: must be a string of 1 to 128 characters']);
 });
