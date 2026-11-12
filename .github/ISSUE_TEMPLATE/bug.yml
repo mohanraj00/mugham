@@ -1,5 +1,5 @@
 name: Reproducible defect
-description: Report behavior of a component, the thread or the workbench that differs from its contract.
+description: Report behavior of a component or the thread that differs from its contract.
 title: "Bug: "
 labels: [bug]
 body:

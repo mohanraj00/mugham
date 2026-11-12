@@ -1,5 +1,5 @@
 name: Capability
-description: Propose a component, a panel or a change to the envelope or the catalog.
+description: Propose a component or a change to the envelope or the catalog.
 title: ""
 labels: [enhancement]
 body:

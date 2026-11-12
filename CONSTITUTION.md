@@ -1,23 +1,23 @@
 # Mugham constitution
 
-Version 1, 2026-11-10.
+Version 2, 2026-11-12.
 
 ## Purpose
 
-Mugham is a UI kit and a workbench for AI applications. The name is the Tamil word for "face". The kit gives a chat thread for people and agents, cards, action buttons, editable forms and card grids. A component catalog declares each component. The kit runs on each device as a progressive web app, with an offline mode. The workbench is a shell with one panel for each connected service.
+Mugham is a UI kit with examples for AI applications. The name is the Tamil word for "face". The kit gives a chat thread for people and agents, cards, action buttons, editable forms and card grids. A component catalog declares each component. The kit runs on each device as a progressive web app, with an offline mode. The kit has no workbench shell and no panels. The owner of a service or an application can build a dashboard with the kit.
 
 ### Consumers
 
 - Developers of vertical AI applications. They build the screens of their application from the catalog.
 - Agents. An agent fills a declared component with data, and it proposes actions.
 - People who use an application: end users, reviewers, approvers and operators. Several people and several agents can be in one thread.
-- Services that supply a workbench panel through a read API. The first services are entelos, groundgate, aavanam, nookku and koodam.
+- Owners of a service API who build a standalone dashboard with the kit. The owner of the dashboard develops it, not mugham.
 
 ## Boundaries
 
-Mugham owns the components, the component catalog and its contract format. It also owns the message envelope, the thread, the workbench shell, the panel contract and the offline queue.
+Mugham owns the components, the component catalog and its contract format. It also owns the message envelope, the thread and the offline queue. It owns no workbench shell and no panel.
 
-An application owns its screens, its domain cards, its wording, its decisions, its users and its sign-in. A service owns the API of its panel and each decision that the panel shows.
+An application owns its screens, its domain cards, its wording, its decisions, its users and its sign-in. A service owns its API and each decision that its API makes. A dashboard that uses the kit changes state only through the API of its service.
 
 Mugham does not decide. An action goes to the API of the application or the service, and that API decides. Mugham shows the result.
 
@@ -35,7 +35,7 @@ These items are out of scope: a model runtime, an agent framework, an identity p
 
 ## Evidence
 
-Each component has contract tests and accessibility checks. A build check compares the bytes of two builds. Each workbench panel has a seam test in this project. The seam test pins a released version of its service. Do not claim speed, model quality or compatibility without a test that shows it.
+Each component has contract tests and accessibility checks. A build check compares the bytes of two builds. Each example that reads a service API runs against a fixture API with synthetic data. A test that uses a released service pins its version. Do not claim speed, model quality or compatibility without a test that shows it.
 
 ## Contributions
 
@@ -68,6 +68,10 @@ Change this constitution when the owner changes direction or evidence changes a 
 Change the governance block only with a new version of the template in `mohanraj00/.github`.
 
 ## Version log
+
+### Version 2, 2026-11-12
+
+Mugham is a UI kit with examples. It has no workbench shell and no panels. Reason: the owner decided that each project builds its own standalone dashboard with the kit, and that an application owns any integrated workbench. This keeps the kit independent of each service and keeps its scope small.
 
 ### Version 1, 2026-11-10
 
