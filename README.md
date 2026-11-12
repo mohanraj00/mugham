@@ -9,7 +9,7 @@ Mugham is a UI toolkit for agentic applications. The name is the Tamil word for 
 
 Agents and LLMs: read [CONSTITUTION.md](CONSTITUTION.md) and [AGENTS.md](AGENTS.md) first.
 
-Status: release `v0.1.0` is out. It has the contract format, the design tokens, the primitives and the first catalog components. The thread, the message envelope and the offline mode are not built yet. The plan is in [docs/STATUS.md](docs/STATUS.md) and in the GitHub milestones.
+Status: release `v0.1.0` is out. It has the contract format, the design tokens, the primitives and the first catalog components. The `main` branch also has the message envelope and the thread for people and agents. The offline mode is not built yet. The plan is in [docs/STATUS.md](docs/STATUS.md) and in the GitHub milestones.
 
 ## What it gives
 
@@ -99,6 +99,14 @@ python3 -m http.server 8000
 4. Open an example in the browser. The examples use synthetic data.
    - `http://localhost:8000/examples/primitives.html`: each primitive.
    - `http://localhost:8000/examples/loans.html`: a card, an action button, a card grid and a form.
+
+5. For the thread example, stop the static server and start the example server. It streams synthetic agent events as server-sent events and gives the receipt of each action:
+
+```sh
+python3 tools/thread_server.py
+```
+
+   Then open `http://127.0.0.1:8765/examples/thread.html`. Two people and two agents talk about a loan. The thread refuses one undeclared component. The Renew action shows `Done` only after the receipt comes back.
 
 To use the kit in your own page, serve `src/` and `catalog/` from one origin, load `src/tokens/tokens.css`, then import `define` from `src/components/index.js` and call it. [src/README.md](src/README.md) gives the steps.
 

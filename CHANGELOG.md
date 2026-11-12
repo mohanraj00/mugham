@@ -4,6 +4,8 @@ Each release has an entry. The newest entry is first.
 
 ## Unreleased
 
+- The thread `mu-thread` for people and agents. It reads AG-UI 1.0 events through `src/envelope/`, from any async source. Each message shows its actor and the actor type. A message with no end marker shows as partial. A run error shows as an error, and a refused part shows a refusal notice. An action goes to the application and shows `Done` only after its receipt. A polite live region announces new messages, and the focus does not move. `src/thread/README.md` is its contract.
+- `examples/thread.html` and `tools/thread_server.py`: two people and two agents in one thread, over server-sent events from a Python standard library server. The server gives the receipt of each action.
 - The message envelope, version 1, in `docs/contracts/`. It maps AG-UI 1.0, as decision 0002 says. `src/envelope/envelope.js` reads an envelope and an AG-UI stream. Each message has an actor, typed parts and an honest state. `tests/vectors/envelope/` has the conformance cases. `generate.py` in that folder writes them, and `tests/test_envelope_vectors.py` compares them with its output.
 - Contract format 2. Format 1 had an `actions` block in a contract and an `actions` list in a fill, but they had no effect. Format 2 removes them. Each contract now has `"format": 2`. A fill with an `actions` key is refused. The application binds each action in code, as `catalog/README.md` says.
 - An action binding can have a confirm step: `confirm: { message, label }`. `mu-action-button` and `mu-editable-form` then show the step, with the new state `confirm`. They send the action only after a person confirms. Cancel and Escape send no action.
