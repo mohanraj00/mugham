@@ -88,7 +88,7 @@
      "messageId": "m-4",
      "activityType": "mugham.fill",
      "content": {
-      "format": 1,
+      "format": 2,
       "fill": {
        "component": "fact",
        "version": "0.1.0",
@@ -199,7 +199,7 @@
       "parts": [
        {
         "type": "component",
-        "format": 1,
+        "format": 2,
         "fill": {
          "component": "fact",
          "version": "0.1.0",
@@ -256,7 +256,7 @@
      "messageId": "m-3",
      "activityType": "mugham.fill",
      "content": {
-      "format": 1,
+      "format": 2,
       "fill": {
        "component": "fact",
        "version": "0.1.0",
@@ -332,7 +332,7 @@
      "messageId": "m-1",
      "activityType": "mugham.fill",
      "content": {
-      "format": 1,
+      "format": 2,
       "fill": {
        "component": "chart",
        "version": "0.1.0",
@@ -354,7 +354,7 @@
      "messageId": "m-2",
      "activityType": "mugham.fill",
      "content": {
-      "format": 2,
+      "format": 1,
       "fill": {
        "component": "fact",
        "version": "0.1.0",
@@ -442,7 +442,7 @@
        {
         "type": "refusal",
         "errors": [
-         "content.format: must be 1"
+         "content.format: must be 2"
         ]
        }
       ]
@@ -884,7 +884,7 @@
      "messageId": "m-1",
      "activityType": "mugham.fill",
      "content": {
-      "format": 1,
+      "format": 2,
       "fill": {
        "component": "fact",
        "version": "0.1.0",
@@ -909,7 +909,7 @@
      "messageId": "m-1",
      "activityType": "mugham.fill",
      "content": {
-      "format": 1,
+      "format": 2,
       "fill": {
        "component": "fact",
        "version": "0.1.0",
@@ -934,7 +934,7 @@
      "messageId": "m-1",
      "activityType": "mugham.fill",
      "content": {
-      "format": 1,
+      "format": 2,
       "fill": {
        "component": "fact",
        "version": "0.1.0",
@@ -960,7 +960,7 @@
      "messageId": "m-1",
      "activityType": "mugham.fill",
      "content": {
-      "format": 1,
+      "format": 2,
       "fill": {
        "component": "fact",
        "version": "0.1.0",
@@ -1013,7 +1013,7 @@
      "messageId": "m-2",
      "activityType": "mugham.fill",
      "content": {
-      "format": 1,
+      "format": 2,
       "fill": {
        "component": "fact",
        "version": "0.1.0",
@@ -1051,7 +1051,7 @@
       "parts": [
        {
         "type": "component",
-        "format": 1,
+        "format": 2,
         "fill": {
          "component": "fact",
          "version": "0.1.0",
@@ -1268,7 +1268,7 @@
      "messageId": "m-1",
      "activityType": "mugham.fill",
      "content": {
-      "format": 1,
+      "format": 2,
       "fill": {
        "component": "fact",
        "version": "0.1.0",
@@ -1293,7 +1293,7 @@
      "messageId": "m-2",
      "activityType": "mugham.fill",
      "content": {
-      "format": 1,
+      "format": 2,
       "fill": {
        "component": "fact",
        "version": "0.1.0",
@@ -1322,7 +1322,7 @@
      "messageId": "m-1",
      "activityType": "mugham.fill",
      "content": {
-      "format": 1,
+      "format": 2,
       "fill": {
        "component": "fact",
        "version": "0.1.0",
@@ -1347,7 +1347,7 @@
      "messageId": "m-2",
      "activityType": "mugham.fill",
      "content": {
-      "format": 1,
+      "format": 2,
       "fill": {
        "component": "fact",
        "version": "0.1.0",
@@ -1393,7 +1393,7 @@
       "parts": [
        {
         "type": "component",
-        "format": 1,
+        "format": 2,
         "fill": {
          "component": "fact",
          "version": "0.1.0",

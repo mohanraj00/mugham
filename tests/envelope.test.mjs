@@ -130,7 +130,7 @@ test('the fills of snapshots count in the data of the stream', () => {
   const actor = { type: 'agent', id: 'agent-plan' };
   const fill = { component: 'text', version: '0.1.0', data: { text: 'a'.repeat(10000) } };
   const snapshot = (id) => ({ type: 'ACTIVITY_SNAPSHOT', messageId: id, activityType: 'mugham.fill',
-    content: { format: 1, fill }, metadata: { mugham: { actor } } });
+    content: { format: 2, fill }, metadata: { mugham: { actor } } });
   const fit = Math.floor(1000000 / JSON.stringify(fill).length);
   const full = readStream(Array.from({ length: fit + 1 }, (_, i) => snapshot(`m-${i}`)));
   assert.equal(full.messages.length, fit);

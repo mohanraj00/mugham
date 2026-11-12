@@ -194,7 +194,7 @@
     "parts": [
      {
       "type": "component",
-      "format": 1,
+      "format": 2,
       "fill": {
        "component": "fact",
        "version": "0.1.0",
@@ -219,7 +219,7 @@
     "parts": [
      {
       "type": "component",
-      "format": 1,
+      "format": 2,
       "fill": {
        "component": "fact",
        "version": "0.1.0",
@@ -248,7 +248,7 @@
     "parts": [
      {
       "type": "component",
-      "format": 1,
+      "format": 2,
       "fill": {
        "component": "chart",
        "version": "0.1.0",
@@ -293,7 +293,7 @@
     "parts": [
      {
       "type": "component",
-      "format": 2,
+      "format": 1,
       "fill": {
        "component": "fact",
        "version": "0.1.0",
@@ -319,7 +319,7 @@
      {
       "type": "refusal",
       "errors": [
-       "parts[0].format: must be 1"
+       "parts[0].format: must be 2"
       ]
      }
     ]

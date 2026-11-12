@@ -25,7 +25,7 @@ The application sets the actor. If a message has no valid actor, the kit refuses
 | Type | Fields | AG-UI 1.0 source |
 |---|---|---|
 | `text` | `text` | Each `delta` of `TEXT_MESSAGE_CONTENT`, added in order |
-| `component` | `format` (`1`) and `fill` | `content` of `ACTIVITY_SNAPSHOT` with `activityType` equal to `mugham.fill` |
+| `component` | `format` (`2`, the fill format of `catalog/schema/`) and `fill` | `content` of `ACTIVITY_SNAPSHOT` with `activityType` equal to `mugham.fill` |
 | `status` | `state` (`error`), `text` and an optional `code` | `message` and `code` of `RUN_ERROR` |
 | `refusal` | `errors` | A component part that the fill validator refused |
 | `fallback` | `partType` and `text` | A part of an unknown type |

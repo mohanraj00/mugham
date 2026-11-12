@@ -196,7 +196,7 @@
           "const": "component"
         },
         "format": {
-          "const": 1
+          "const": 2
         },
         "fill": {
           "type": "object"
@@ -475,7 +475,7 @@
           ],
           "properties": {
             "format": {
-              "const": 1
+              "const": 2
             },
             "fill": {
               "type": "object"

@@ -6,7 +6,7 @@ import { CATALOG } from '../render/catalog.js';
 
 export const ENVELOPE_VERSION = 1;
 export const AGUI_VERSION = '1.0';
-export const FILL_FORMAT = 1;
+export const FILL_FORMAT = 2;
 export const FILL_ACTIVITY = 'mugham.fill';
 export const FALLBACK_TEXT = 'The kit does not know this part type, so it does not show the part.';
 
