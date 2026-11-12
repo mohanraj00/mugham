@@ -28,7 +28,7 @@ test('a catalog key from the object prototype is not a contract', () => {
 test('a very long text gets its error with no copy of the text', () => {
   const code = `
     const { fillErrors } = await import(${JSON.stringify(new URL('../src/render/validate.js', import.meta.url).href)});
-    const contract = { format: 1, name: 'note', version: '0.1.0', kind: 'primitive', description: 'A note.', ai_content: true,
+    const contract = { format: 2, name: 'note', version: '0.1.0', kind: 'primitive', description: 'A note.', ai_content: true,
       data: { text: { type: 'text', label: 'Text', required: true, max_length: 10 } }, states: ['default'], tokens: [],
       accessibility: { role: 'none', keyboard: [], forced_colors: true, reduced_motion: true } };
     const fill = (text) => ({ component: 'note', version: '0.1.0', data: { text } });
@@ -39,33 +39,31 @@ test('a very long text gets its error with no copy of the text', () => {
   assert.deepEqual(JSON.parse(run.stdout), [['data.text: more than 10 characters'], []]);
 });
 
-// An error for each item of 1,000,000 actions needs more than the heap limit of 64 MB.
-test('a very long list of actions gets one size error and no error for each item', () => {
+// Format 2 has no actions list. A fill with 1,000,000 actions gets one error, and no error for each item.
+test('a very long list of actions gets one error and no error for each item', () => {
   const code = `
     const { fillErrors } = await import(${JSON.stringify(new URL('../src/render/validate.js', import.meta.url).href)});
-    const contract = { format: 1, name: 'note', version: '0.1.0', kind: 'primitive', description: 'A note.', ai_content: true,
+    const contract = { format: 2, name: 'note', version: '0.1.0', kind: 'primitive', description: 'A note.', ai_content: true,
       data: { text: { type: 'text', label: 'Text', required: true, max_length: 10 } }, states: ['default'], tokens: [],
       accessibility: { role: 'none', keyboard: [], forced_colors: true, reduced_motion: true } };
     const fill = { component: 'note', version: '0.1.0', data: { text: 'A' }, actions: new Array(1000000).fill(null) };
     console.log(JSON.stringify(fillErrors(fill, { note: contract })));`;
   const run = spawnSync(process.execPath, ['--max-old-space-size=64', '--input-type=module', '-e', code], { encoding: 'utf8' });
   assert.equal(run.status, 0, run.stderr.slice(0, 400));
-  assert.deepEqual(JSON.parse(run.stdout), ['actions: more than 10 items']);
+  assert.deepEqual(JSON.parse(run.stdout), ['actions: unknown key']);
 });
 
 // An error for each of 500,000 unknown keys needs more than the heap limit of 64 MB.
 // Each object gets its own process, because two such objects do not fit in the heap.
-for (const [where, expected] of [['a fill', '(fill): more than 10 unknown keys'], ['an action', 'actions[0]: more than 10 unknown keys']]) {
+for (const [where, expected] of [['a fill', '(fill): more than 10 unknown keys']]) {
   test(`${where} with very many unknown keys gets one error and no error for each key`, () => {
     const code = `
       const { fillErrors } = await import(${JSON.stringify(new URL('../src/render/validate.js', import.meta.url).href)});
-      const contract = { format: 1, name: 'note', version: '0.1.0', kind: 'primitive', description: 'A note.', ai_content: true,
+      const contract = { format: 2, name: 'note', version: '0.1.0', kind: 'primitive', description: 'A note.', ai_content: true,
         data: { text: { type: 'text', label: 'Text', required: true, max_length: 10 } }, states: ['default'], tokens: [],
         accessibility: { role: 'none', keyboard: [], forced_colors: true, reduced_motion: true } };
       const fill = { component: 'note', version: '0.1.0', data: { text: 'A' } };
-      if (${JSON.stringify(where)} === 'an action') fill.actions = [{ action: 'save', arguments: {} }];
-      const target = fill.actions ? fill.actions[0] : fill;
-      for (let index = 0; index < 500000; index += 1) target['key_' + index] = 1;
+      for (let index = 0; index < 500000; index += 1) fill['key_' + index] = 1;
       console.log(JSON.stringify(fillErrors(fill, { note: contract })));`;
     const run = spawnSync(process.execPath, ['--max-old-space-size=64', '--input-type=module', '-e', code], { encoding: 'utf8' });
     assert.equal(run.status, 0, run.stderr.slice(0, 400));
@@ -81,7 +79,4 @@ test('a very long key name gets a short error', () => {
     data: { title: 'A', due: '2026-12-01', renewals: 1, facts: [], [name]: 1 }, [name]: 1 };
   const errors = fillErrors(fill, vectors.catalog);
   assert.deepEqual(errors, [`${'q'.repeat(40)}...: unknown key`]);
-  fill.actions = [{ action: 'renew', arguments: { loan_id: 'L-0001', [name]: 1 } }];
-  delete fill[name];
-  for (const error of fillErrors(fill, vectors.catalog)) assert.ok(error.length < 120, error.slice(0, 120));
 });

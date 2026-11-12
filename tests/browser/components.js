@@ -322,6 +322,107 @@ const formStyle = getComputedStyle(pinned.shadowRoot.querySelector('form'));
 check('editable-form: the form has the card border', formStyle.borderTopStyle === 'solid'
   && parseFloat(formStyle.borderTopWidth) >= 1, `${formStyle.borderTopStyle} ${formStyle.borderTopWidth}`);
 
+// The confirm step and the receipt reference. The expected results come from catalog/README.md#actions.
+const CANCEL_LOAN = { tool: 'library.cancel', label: 'Cancel loan', arguments: { loan_id: 'L-0001' },
+  confirm: { message: 'Cancel the loan L-0001? You cannot undo this.', label: 'Yes, cancel the loan' } };
+const asked = mount('action-button', { label: 'Cancel loan' });
+const askedEvents = [];
+asked.addEventListener('mu-action', (event) => askedEvents.push(event.detail));
+asked.action = CANCEL_LOAN;
+const askedControl = asked.shadowRoot.querySelector('button[part="button"]');
+const step = (node) => node.shadowRoot.querySelector('[part="confirm"]');
+const stepButtons = (node) => [...step(node).querySelectorAll('button')].map((item) => item.textContent);
+check('action-button: no confirm step before a press', step(asked) === null && asked.dataset.state === 'default', asked.dataset.state);
+askedControl.click();
+check('action-button: a press shows the confirm step and sends no action', askedEvents.length === 0
+  && asked.dataset.state === 'confirm' && step(asked)?.getAttribute('role') === 'group'
+  && step(asked).getAttribute('aria-label') === CANCEL_LOAN.confirm.message
+  && askedControl.getAttribute('aria-disabled') === 'true', `${asked.dataset.state} ${askedEvents.length}`);
+check('action-button: the confirm step has Cancel and the confirm label', step(asked)
+  && JSON.stringify(stepButtons(asked)) === JSON.stringify(['Cancel', 'Yes, cancel the loan']), step(asked) && stepButtons(asked));
+check('action-button: the focus goes to Cancel', asked.shadowRoot.activeElement?.textContent === 'Cancel',
+  asked.shadowRoot.activeElement?.textContent);
+askedControl.click();
+check('action-button: a second press while the step shows sends no action', askedEvents.length === 0
+  && asked.shadowRoot.querySelectorAll('[part="confirm"]').length === 1);
+step(asked).querySelector('button').click();
+check('action-button: Cancel closes the step and sends no action', askedEvents.length === 0 && step(asked) === null
+  && asked.dataset.state === 'default' && askedControl.getAttribute('aria-disabled') === 'false'
+  && asked.shadowRoot.activeElement === askedControl, `${asked.dataset.state} ${askedEvents.length}`);
+askedControl.click();
+step(asked).dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+check('action-button: Escape closes the step and sends no action', askedEvents.length === 0 && step(asked) === null
+  && asked.dataset.state === 'default', asked.dataset.state);
+askedControl.click();
+step(asked).querySelectorAll('button')[1].click();
+check('action-button: confirm sends the action', askedEvents.length === 1 && askedEvents[0].tool === 'library.cancel'
+  && askedEvents[0].arguments.loan_id === 'L-0001' && step(asked) === null && asked.dataset.state === 'pending'
+  && asked.shadowRoot.activeElement === askedControl, `${asked.dataset.state} ${JSON.stringify(askedEvents)}`);
+const reference = () => asked.shadowRoot.querySelector('[part="reference"]')?.textContent ?? null;
+check('action-button: an overlong reference is refused and the action stays pending',
+  !asked.receipt({ id: askedEvents[0].id, ok: true, reference: 'R'.repeat(81) }) && asked.dataset.state === 'pending'
+  && reference() === null, `${asked.dataset.state} ${reference()}`);
+check('action-button: a reference with markup shows as text', asked.receipt({ id: askedEvents[0].id, ok: true,
+  message: 'Cancelled.', reference: MARKUP.slice(0, 80) }) && asked.dataset.state === 'done'
+  && reference() === 'Reference: ' + MARKUP.slice(0, 80) && deepQuery(asked, 'img, script').length === 0, reference());
+const plainReceipt = mount('action-button', { label: 'Renew' });
+const plainEvents = [];
+plainReceipt.addEventListener('mu-action', (event) => plainEvents.push(event.detail));
+plainReceipt.action = { tool: 'library.renew', label: 'Renew' };
+plainReceipt.shadowRoot.querySelector('button').click();
+check('action-button: no confirm step without confirm in the binding', plainEvents.length === 1 && step(plainReceipt) === null);
+plainReceipt.receipt({ id: plainEvents[0].id, ok: true, reference: 'R'.repeat(80) });
+check('action-button: a reference of 80 characters shows', plainReceipt.shadowRoot.querySelector('[part="reference"]')?.textContent
+  === 'Reference: ' + 'R'.repeat(80));
+const noReference = mount('action-button', { label: 'Renew' });
+const noReferenceEvents = [];
+noReference.addEventListener('mu-action', (event) => noReferenceEvents.push(event.detail));
+noReference.action = { tool: 'library.renew', label: 'Renew' };
+noReference.shadowRoot.querySelector('button').click();
+noReference.receipt({ id: noReferenceEvents[0].id, ok: true, message: 'Renewed.' });
+check('action-button: a receipt with no reference shows no reference', noReference.dataset.state === 'done'
+  && noReference.shadowRoot.querySelector('[part="reference"]') === null
+  && noReference.shadowRoot.querySelector('[role="status"]').textContent === 'Done: Renewed.');
+const markedStep = mount('action-button', { label: 'Cancel loan' });
+markedStep.action = { ...CANCEL_LOAN, confirm: { message: MARKUP.slice(0, 200), label: MARKUP.slice(0, 40) } };
+markedStep.shadowRoot.querySelector('button').click();
+check('action-button: markup in the confirm step shows as text', step(markedStep)?.textContent.includes(MARKUP.slice(0, 40))
+  && deepQuery(markedStep, 'img, script').length === 0, step(markedStep)?.textContent);
+
+// The editable form shows the confirm step before it sends the values.
+const askedForm = mount('editable-form', FORM);
+const askedSubmits = [];
+askedForm.addEventListener('mu-action', (event) => askedSubmits.push(event.detail));
+askedForm.action = { tool: 'library.update_loan', label: 'Save', title: 'Loan details', arguments: { loan_id: 'L-0001' },
+  editable: EDITABLE, confirm: { message: 'Move the loan L-0001 to a new shelf?', label: 'Yes, move it' } };
+const askedInput = askedForm.shadowRoot.querySelector('mu-field').shadowRoot.querySelector('input');
+askedInput.value = 'C-2';
+askedInput.dispatchEvent(new Event('input', { bubbles: true, composed: true }));
+askedForm.shadowRoot.querySelector('form').requestSubmit();
+check('editable-form: a submit shows the confirm step and sends no action', askedSubmits.length === 0
+  && askedForm.dataset.state === 'confirm' && step(askedForm)?.getAttribute('aria-label') === 'Move the loan L-0001 to a new shelf?'
+  && JSON.stringify(stepButtons(askedForm)) === JSON.stringify(['Cancel', 'Yes, move it']), askedForm.dataset.state);
+askedInput.value = 'C-3';
+askedInput.dispatchEvent(new Event('input', { bubbles: true, composed: true }));
+check('editable-form: an edit closes the confirm step and sends no action', askedSubmits.length === 0
+  && step(askedForm) === null && askedForm.dataset.state === 'default', askedForm.dataset.state);
+askedForm.shadowRoot.querySelector('form').requestSubmit();
+step(askedForm).querySelector('button').click();
+check('editable-form: Cancel sends no action', askedSubmits.length === 0 && askedForm.dataset.state === 'default');
+askedForm.shadowRoot.querySelector('form').requestSubmit();
+step(askedForm).querySelectorAll('button')[1].click();
+check('editable-form: confirm sends the values', askedSubmits.length === 1 && askedSubmits[0].arguments.shelf === 'C-3'
+  && askedSubmits[0].arguments.loan_id === 'L-0001' && askedForm.dataset.state === 'pending', JSON.stringify(askedSubmits));
+askedForm.receipt({ id: askedSubmits[0].id, ok: true, reference: 'MOVE-0001' });
+check('editable-form: the receipt reference shows', askedForm.dataset.state === 'done'
+  && askedForm.shadowRoot.querySelector('[part="reference"]')?.textContent === 'Reference: MOVE-0001', askedForm.dataset.state);
+// These checks moved the focus. Move the start point of Tab to the top of the page, before the keyboard targets.
+const top = document.createElement('span');
+top.tabIndex = -1;
+document.getElementById('keyboard').before(top);
+top.focus();
+top.blur();
+
 // Media modes.
 const mode = new URLSearchParams(location.search).get('mode') || 'light';
 const article = mount('card', LOAN).shadowRoot.querySelector('article');
@@ -382,5 +483,23 @@ enterForm.addEventListener('mu-action', () => { formSubmits += 1; });
 keyboard.append(enterForm);
 window.muFocusField = () => { enterForm.shadowRoot.querySelector('mu-field').shadowRoot.querySelector('input').focus(); return true; };
 window.muFormSubmits = () => formSubmits;
+// The runner opens the confirm step of this button and this form with the keyboard.
+const confirmTarget = document.createElement('mu-action-button');
+confirmTarget.fill = fill('action-button', { label: 'Confirm target' });
+confirmTarget.action = { tool: 'library.cancel', label: 'Confirm target', confirm: { message: 'Cancel the loan? You cannot undo this.', label: 'Yes, cancel' } };
+let confirmPresses = 0;
+confirmTarget.addEventListener('mu-action', (event) => { confirmPresses += 1; confirmTarget.receipt({ id: event.detail.id, ok: false }); });
+keyboard.append(confirmTarget);
+const confirmForm = document.createElement('mu-editable-form');
+confirmForm.fill = fill('editable-form', { ...FORM, title: 'Confirm form' });
+confirmForm.action = { tool: 'library.update_loan', label: 'Save', title: 'Confirm form', editable: EDITABLE,
+  confirm: { message: 'Save the new shelf?', label: 'Yes, save' } };
+let confirmFormSubmits = 0;
+confirmForm.addEventListener('mu-action', (event) => { confirmFormSubmits += 1; confirmForm.receipt({ id: event.detail.id, ok: false }); });
+keyboard.append(confirmForm);
+window.muFocusConfirm = () => { confirmTarget.shadowRoot.querySelector('button').focus(); return true; };
+window.muFocusConfirmField = () => { confirmForm.shadowRoot.querySelector('mu-field').shadowRoot.querySelector('input').focus(); return true; };
+window.muConfirm = () => ({ presses: confirmPresses, state: confirmTarget.dataset.state, submits: confirmFormSubmits,
+  formState: confirmForm.dataset.state });
 window.muPresses = () => presses;
 window.muChecks = { mode, results };
