@@ -4,6 +4,7 @@ Each release has an entry. The newest entry is first.
 
 ## Unreleased
 
+- The message envelope, version 1, in `docs/contracts/`. It maps AG-UI 1.0, as decision 0002 says. `src/envelope/envelope.js` reads an envelope and an AG-UI stream. Each message has an actor, typed parts and an honest state. `tests/vectors/envelope/` has the conformance cases.
 - A release workflow attaches `mugham.tar` and a SHA-256 file to a GitHub release. It publishes no package. [Decision 0004](docs/decisions/0004-package.md) gives the package choice.
 - The README has a quickstart, the minimum browser versions and a stability statement.
 - The README is for people. It lists each catalog component, and it shows the highlights of the kit in screenshots for the light theme and the dark theme. Agents and LLMs go to the constitution and `AGENTS.md`.

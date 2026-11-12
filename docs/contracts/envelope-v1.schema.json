@@ -1,0 +1,510 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/mohanraj00/mugham/docs/contracts/envelope-v1.schema.json",
+  "title": "Mugham message envelope, version 1. It maps AG-UI 1.0",
+  "description": "A message in a thread. The $defs also give the seven AG-UI 1.0 stream events that the kit reads. docs/contracts/envelope.md gives the rules.",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/message"
+    },
+    {
+      "$ref": "#/$defs/refused"
+    }
+  ],
+  "$defs": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "actor": {
+      "description": "The actor of a message. The application sets it. The kit never takes it from the AG-UI role.",
+      "type": "object",
+      "required": [
+        "type",
+        "id"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "enum": [
+            "human",
+            "agent",
+            "system"
+          ]
+        },
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        }
+      }
+    },
+    "role": {
+      "enum": [
+        "developer",
+        "system",
+        "assistant",
+        "user",
+        "tool",
+        "reasoning",
+        "activity"
+      ]
+    },
+    "message": {
+      "type": "object",
+      "required": [
+        "envelope",
+        "agui",
+        "messageId",
+        "actor",
+        "state",
+        "parts"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "envelope": {
+          "const": 1
+        },
+        "agui": {
+          "const": "1.0"
+        },
+        "threadId": {
+          "$ref": "#/$defs/id"
+        },
+        "runId": {
+          "$ref": "#/$defs/id"
+        },
+        "messageId": {
+          "$ref": "#/$defs/id"
+        },
+        "role": {
+          "$ref": "#/$defs/role"
+        },
+        "actor": {
+          "$ref": "#/$defs/actor"
+        },
+        "state": {
+          "enum": [
+            "partial",
+            "final"
+          ]
+        },
+        "parts": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "$ref": "#/$defs/part"
+          }
+        }
+      }
+    },
+    "refused": {
+      "description": "A message that the kit refused, for example with no actor. It has no actor and no parts. It has no messageId if the input had no valid messageId.",
+      "type": "object",
+      "required": [
+        "envelope",
+        "agui",
+        "state",
+        "errors"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "envelope": {
+          "const": 1
+        },
+        "agui": {
+          "const": "1.0"
+        },
+        "threadId": {
+          "$ref": "#/$defs/id"
+        },
+        "runId": {
+          "$ref": "#/$defs/id"
+        },
+        "messageId": {
+          "$ref": "#/$defs/id"
+        },
+        "state": {
+          "const": "refused"
+        },
+        "errors": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 20,
+          "items": {
+            "type": "string",
+            "maxLength": 300
+          }
+        }
+      }
+    },
+    "part": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/textPart"
+        },
+        {
+          "$ref": "#/$defs/componentPart"
+        },
+        {
+          "$ref": "#/$defs/statusPart"
+        },
+        {
+          "$ref": "#/$defs/refusalPart"
+        },
+        {
+          "$ref": "#/$defs/fallbackPart"
+        },
+        {
+          "$ref": "#/$defs/unknownPart"
+        }
+      ]
+    },
+    "textPart": {
+      "description": "Text. The kit never reads it as Markdown or markup.",
+      "type": "object",
+      "required": [
+        "type",
+        "text"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "text"
+        },
+        "text": {
+          "type": "string",
+          "maxLength": 100000
+        }
+      }
+    },
+    "componentPart": {
+      "description": "A fill of a declared component. The kit validates the full fill with the contract.",
+      "type": "object",
+      "required": [
+        "type",
+        "format",
+        "fill"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "component"
+        },
+        "format": {
+          "const": 1
+        },
+        "fill": {
+          "type": "object"
+        }
+      }
+    },
+    "statusPart": {
+      "description": "The status of the run, for example the error of RUN_ERROR. The text shows as text.",
+      "type": "object",
+      "required": [
+        "type",
+        "state",
+        "text"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "status"
+        },
+        "state": {
+          "enum": [
+            "error"
+          ]
+        },
+        "text": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "code": {
+          "type": "string",
+          "maxLength": 128
+        }
+      }
+    },
+    "refusalPart": {
+      "description": "A part that the kit refused, for example an undeclared component. The errors show as text.",
+      "type": "object",
+      "required": [
+        "type",
+        "errors"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "refusal"
+        },
+        "errors": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 20,
+          "items": {
+            "type": "string",
+            "maxLength": 300
+          }
+        }
+      }
+    },
+    "fallbackPart": {
+      "description": "The safe text that the kit shows for a part of an unknown type. It keeps no data of that part.",
+      "type": "object",
+      "required": [
+        "type",
+        "partType",
+        "text"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "fallback"
+        },
+        "partType": {
+          "type": "string",
+          "maxLength": 43
+        },
+        "text": {
+          "type": "string",
+          "maxLength": 200
+        }
+      }
+    },
+    "unknownPart": {
+      "description": "A part of a type that version 1 does not know. The kit replaces it with a fallback part.",
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^(?!(text|component|status|refusal|fallback)$)"
+        }
+      }
+    },
+    "event": {
+      "description": "One of the seven AG-UI 1.0 events that the kit reads. The kit ignores each other event type.",
+      "oneOf": [
+        {
+          "$ref": "#/$defs/RUN_STARTED"
+        },
+        {
+          "$ref": "#/$defs/RUN_FINISHED"
+        },
+        {
+          "$ref": "#/$defs/RUN_ERROR"
+        },
+        {
+          "$ref": "#/$defs/TEXT_MESSAGE_START"
+        },
+        {
+          "$ref": "#/$defs/TEXT_MESSAGE_CONTENT"
+        },
+        {
+          "$ref": "#/$defs/TEXT_MESSAGE_END"
+        },
+        {
+          "$ref": "#/$defs/ACTIVITY_SNAPSHOT"
+        }
+      ]
+    },
+    "RUN_STARTED": {
+      "type": "object",
+      "required": [
+        "type",
+        "threadId",
+        "runId"
+      ],
+      "properties": {
+        "type": {
+          "const": "RUN_STARTED"
+        },
+        "threadId": {
+          "$ref": "#/$defs/id"
+        },
+        "runId": {
+          "$ref": "#/$defs/id"
+        }
+      }
+    },
+    "RUN_FINISHED": {
+      "type": "object",
+      "required": [
+        "type",
+        "threadId",
+        "runId"
+      ],
+      "properties": {
+        "type": {
+          "const": "RUN_FINISHED"
+        },
+        "threadId": {
+          "$ref": "#/$defs/id"
+        },
+        "runId": {
+          "$ref": "#/$defs/id"
+        }
+      }
+    },
+    "RUN_ERROR": {
+      "type": "object",
+      "required": [
+        "type",
+        "message"
+      ],
+      "properties": {
+        "type": {
+          "const": "RUN_ERROR"
+        },
+        "message": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "code": {
+          "type": "string",
+          "maxLength": 128
+        }
+      }
+    },
+    "TEXT_MESSAGE_START": {
+      "type": "object",
+      "required": [
+        "type",
+        "messageId",
+        "metadata"
+      ],
+      "properties": {
+        "type": {
+          "const": "TEXT_MESSAGE_START"
+        },
+        "messageId": {
+          "$ref": "#/$defs/id"
+        },
+        "role": {
+          "$ref": "#/$defs/role"
+        },
+        "metadata": {
+          "type": "object",
+          "required": [
+            "mugham"
+          ],
+          "properties": {
+            "mugham": {
+              "type": "object",
+              "required": [
+                "actor"
+              ],
+              "properties": {
+                "actor": {
+                  "$ref": "#/$defs/actor"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "TEXT_MESSAGE_CONTENT": {
+      "type": "object",
+      "required": [
+        "type",
+        "messageId",
+        "delta"
+      ],
+      "properties": {
+        "type": {
+          "const": "TEXT_MESSAGE_CONTENT"
+        },
+        "messageId": {
+          "$ref": "#/$defs/id"
+        },
+        "delta": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "TEXT_MESSAGE_END": {
+      "type": "object",
+      "required": [
+        "type",
+        "messageId"
+      ],
+      "properties": {
+        "type": {
+          "const": "TEXT_MESSAGE_END"
+        },
+        "messageId": {
+          "$ref": "#/$defs/id"
+        }
+      }
+    },
+    "ACTIVITY_SNAPSHOT": {
+      "type": "object",
+      "required": [
+        "type",
+        "messageId",
+        "activityType",
+        "content",
+        "metadata"
+      ],
+      "properties": {
+        "type": {
+          "const": "ACTIVITY_SNAPSHOT"
+        },
+        "messageId": {
+          "$ref": "#/$defs/id"
+        },
+        "activityType": {
+          "const": "mugham.fill"
+        },
+        "content": {
+          "type": "object",
+          "required": [
+            "format",
+            "fill"
+          ],
+          "properties": {
+            "format": {
+              "const": 1
+            },
+            "fill": {
+              "type": "object"
+            }
+          }
+        },
+        "replace": {
+          "type": "boolean"
+        },
+        "metadata": {
+          "type": "object",
+          "required": [
+            "mugham"
+          ],
+          "properties": {
+            "mugham": {
+              "type": "object",
+              "required": [
+                "actor"
+              ],
+              "properties": {
+                "actor": {
+                  "$ref": "#/$defs/actor"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
