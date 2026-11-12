@@ -1,10 +1,10 @@
 # Mugham constitution
 
-Version 2, 2026-11-12.
+Version 3, 2026-11-12.
 
 ## Purpose
 
-Mugham is a UI kit with examples for AI applications. The name is the Tamil word for "face". The kit gives a chat thread for people and agents, cards, action buttons, editable forms and card grids. A component catalog declares each component. The kit runs on each device as a progressive web app, with an offline mode. The kit has no workbench shell and no panels. The owner of a service or an application can build a dashboard with the kit.
+Mugham is a UI toolkit for agentic applications, with examples. In an agentic application, people and AI agents work in the same screens. The name is the Tamil word for "face". The kit gives a chat thread for people and agents, cards, action buttons, editable forms and card grids. A component catalog declares each component. The kit runs on each device as a progressive web app, with an offline mode. The kit has no workbench shell and no panels. The owner of a service or an application can build a dashboard with the kit.
 
 ### Consumers
 
@@ -26,12 +26,13 @@ These items are out of scope: a model runtime, an agent framework, an identity p
 ## Principles
 
 1. **The catalog is the contract.** Each component has a contract file. The contract declares the data, the states, the tokens, the accessibility rules, and if the component shows AI content. A model fills only declared components, with data that the contract accepts. A model never sends markup, style or code. The thread refuses an undeclared component and shows the refusal.
-2. **Few dependencies.** The kit uses web standards, for example custom elements. The kit has no third-party runtime dependency. A new runtime dependency is a level 1 change. Each build of the same source gives the same bytes.
+2. **No dependencies.** The published kit has no third-party runtime dependency: no framework, no library and no copied third-party code. The kit uses only web standards, for example custom elements, ES modules and CSS custom properties. The source is plain JavaScript, so the kit has no compile step. A tool that only builds or tests the kit needs a decision record, and its code never goes into the package (decision 0001). To add a runtime dependency, first amend this principle. Each build of the same source gives the same bytes.
 3. **Each actor is named.** Each message has an actor type (human, agent or system) and an actor id. The kit never shows the content of an agent as the content of a person.
 4. **Each action has a receipt.** An action is a tool name and its arguments. The kit shows an action as done only after the receipt of the API comes back. Each form edit records its type: judgment, correction or override.
 5. **Untrusted content stays data.** Model output, tool output and document text show as text. The kit never puts them into markup or script. A link from such content loads only after a person clicks it.
-6. **Offline is honest.** When the device is offline, the kit keeps each action in a queue and shows it as pending. A pending action goes through after the device reconnects. The kit never shows a pending action as done.
+6. **State is honest.** The kit shows the true state of each message and each action. While an agent streams a message, the kit marks the message as partial. When the device is offline, the kit keeps each action in a queue and shows it as pending. A pending action goes through after the device reconnects. The kit never shows a partial message as final or a pending action as done.
 7. **Accessible by default.** Each component works with a keyboard and a screen reader. Each component respects forced colors and reduced motion.
+8. **Framework and vendor neutral.** An application uses the kit with any web framework, or with none. The kit binds to no model vendor and no agent framework. The catalog fill format is the native contract of the kit. An adapter maps an outside agent protocol to that format.
 
 ## Evidence
 
@@ -68,6 +69,10 @@ Change this constitution when the owner changes direction or evidence changes a 
 Change the governance block only with a new version of the template in `mohanraj00/.github`.
 
 ## Version log
+
+### Version 3, 2026-11-12
+
+Mugham is a UI toolkit for agentic applications. The kit has no runtime dependency, and a new one needs an amendment of this constitution. The kit is neutral to the framework, the model vendor and the agent framework. The kit marks partial and pending state. Reason: the owner wants a clear identity for the kit and a firm rule against dependencies. The rule keeps the kit small, portable and easy to review.
 
 ### Version 2, 2026-11-12
 
