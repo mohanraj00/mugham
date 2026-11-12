@@ -5,9 +5,9 @@
 
 # mugham
 
-Mugham is a UI kit and a workbench for AI applications. The name is the Tamil word for "face".
+Mugham is a UI kit with examples for AI applications. The name is the Tamil word for "face".
 
-Status: the project starts on 2026-11-10. It has no source code and no release yet. The plan is in [docs/STATUS.md](docs/STATUS.md) and in the GitHub milestones.
+Status: release `v0.1.0` is out. It has the contract format, the design tokens, the primitives and the first catalog components. The thread, the message envelope and the offline mode are not built yet. The plan is in [docs/STATUS.md](docs/STATUS.md) and in the GitHub milestones.
 
 ## What it gives
 
@@ -15,12 +15,12 @@ Status: the project starts on 2026-11-10. It has no source code and no release y
 - **Declared components.** Cards, action buttons, editable forms and card grids come from a component catalog. A model fills a declared component with data. It never sends markup or code.
 - **Actions with receipts.** An action goes to the API of your application. The kit shows it as done only after the receipt comes back.
 - **Each device.** The kit runs as a progressive web app. In offline mode, it keeps each action in a queue and shows it as pending.
-- **A workbench.** A shell with one panel for each connected service, for example review tasks, approvals, evaluation results and spend.
+- **Examples.** Synthetic examples show how to build a page from the catalog. The kit has no workbench shell. Each service owner can build a dashboard with the kit.
 - **Few dependencies.** The kit uses web standards and has no third-party runtime dependency.
 
 ## Related projects
 
-The first workbench panels connect to these projects:
+Mugham works alone. An application can use it with these projects:
 
 - [groundgate](https://github.com/mohanraj00/groundgate): review tasks and admission receipts.
 - [entelos](https://github.com/mohanraj00/entelos): approvals and activations.
