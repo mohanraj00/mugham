@@ -343,6 +343,28 @@ if (mode === 'dark') check('dark: the card uses the dark surface', cardStyle.bac
 if (mode === 'light') check('light: the card uses the light surface', cardStyle.backgroundColor === 'rgb(255, 255, 255)', cardStyle.backgroundColor);
 check('no markup ran', window.muUnsafe === undefined);
 
+// Decision 0003. Each element has an open shadow root. A custom property that an application sets on a host
+// reaches the styles inside. A rule of the page does not reach the elements inside.
+for (const name of Object.keys(TAGS)) {
+  check(`${name}: the shadow root is open`, mount(name, VALID[name]).shadowRoot?.mode === 'open');
+}
+if (mode === 'light') {
+  const themed = mount('card', LOAN);
+  themed.style.setProperty('--mu-color-surface', 'rgb(1, 2, 3)');
+  check('card: a custom property on the host changes the style inside',
+    getComputedStyle(themed.shadowRoot.querySelector('article')).backgroundColor === 'rgb(1, 2, 3)');
+  const rule = new CSSStyleSheet();
+  rule.replaceSync('article { background: rgb(9, 9, 9) !important; }');
+  document.adoptedStyleSheets = [...document.adoptedStyleSheets, rule];
+  const shielded = getComputedStyle(mount('card', LOAN).shadowRoot.querySelector('article')).backgroundColor;
+  const hosted = mount('card', LOAN);
+  rule.replaceSync('mu-card::part(card) { background: rgb(7, 7, 7); }');
+  const parted = getComputedStyle(hosted.shadowRoot.querySelector('article')).backgroundColor;
+  document.adoptedStyleSheets = document.adoptedStyleSheets.filter((item) => item !== rule);
+  check('card: a ::part rule of the page reaches the card part', parted === 'rgb(7, 7, 7)', parted);
+  check('card: a rule of the page does not reach the shadow tree', shielded === 'rgb(255, 255, 255)', shielded);
+}
+
 // The keyboard target for the runner.
 const keyboard = document.getElementById('keyboard');
 const target = document.createElement('mu-action-button');
