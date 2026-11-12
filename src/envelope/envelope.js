@@ -272,6 +272,10 @@ export function createReader(catalog = CATALOG) {
       const open = openText(event, at);
       if (!open) return;
       if (typeof event.delta !== 'string' || event.delta === '') return fail(`${at}.delta: must be a text of 1 character minimum`);
+      // A delta after a status part starts a new text part, so the parts keep the order of the events.
+      const parts = open.message.parts;
+      const last = parts[parts.length - 1];
+      if (last.type !== 'text' && parts.length >= MAX_PARTS) return fail(`${at}.messageId: the message has ${MAX_PARTS} parts`);
       open.entry.size += length(event.delta, MAX_TEXT);
       if (open.entry.size > MAX_TEXT) {
         const { envelope, agui, threadId, runId, messageId } = open.message;
@@ -280,7 +284,8 @@ export function createReader(catalog = CATALOG) {
         messages[open.entry.at] = refused(value, [`text: more than ${MAX_TEXT} characters`]);
         return;
       }
-      open.message.parts[0].text += event.delta;
+      if (last.type === 'text') last.text += event.delta;
+      else parts.push({ type: 'text', text: event.delta });
     },
     TEXT_MESSAGE_END(event, at) {
       const open = openText(event, at);

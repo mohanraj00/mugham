@@ -54,7 +54,7 @@ The reader reads only these seven types. It reads the fields in the table and ke
 | `RUN_FINISHED` | `threadId`, `runId` | The run is `finished`. Open messages stay partial |
 | `RUN_ERROR` | `message`, `code` | The run is `error`. Each open message of the run gets a `status` part and stays partial |
 | `TEXT_MESSAGE_START` | `messageId`, `role`, `metadata.mugham.actor` | Opens a partial message with an empty text part |
-| `TEXT_MESSAGE_CONTENT` | `messageId`, `delta` | Adds the delta to the text part |
+| `TEXT_MESSAGE_CONTENT` | `messageId`, `delta` | Adds the delta to the last part if it is a text part. If not, adds a new text part |
 | `TEXT_MESSAGE_END` | `messageId` | The message is final |
 | `ACTIVITY_SNAPSHOT` | `messageId`, `activityType`, `content`, `replace`, `metadata.mugham.actor` | Adds or replaces a message with one component part |
 

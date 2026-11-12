@@ -1089,6 +1089,94 @@
      "events[6].messageId: the message is a text message"
     ]
    }
+  },
+  {
+   "name": "a text after a run error comes after the status",
+   "events": [
+    {
+     "type": "RUN_STARTED",
+     "threadId": "t-1",
+     "runId": "r-1"
+    },
+    {
+     "type": "TEXT_MESSAGE_START",
+     "messageId": "m-1",
+     "role": "assistant",
+     "metadata": {
+      "mugham": {
+       "actor": {
+        "type": "agent",
+        "id": "agent-plan",
+        "name": "Planner"
+       }
+      }
+     }
+    },
+    {
+     "type": "TEXT_MESSAGE_CONTENT",
+     "messageId": "m-1",
+     "delta": "Before"
+    },
+    {
+     "type": "RUN_ERROR",
+     "message": "Failed"
+    },
+    {
+     "type": "TEXT_MESSAGE_CONTENT",
+     "messageId": "m-1",
+     "delta": "After"
+    },
+    {
+     "type": "TEXT_MESSAGE_CONTENT",
+     "messageId": "m-1",
+     "delta": " again"
+    }
+   ],
+   "expected": {
+    "runs": [
+     {
+      "threadId": "t-1",
+      "runId": "r-1",
+      "state": "error",
+      "error": {
+       "message": "Failed"
+      }
+     }
+    ],
+    "messages": [
+     {
+      "envelope": 1,
+      "agui": "1.0",
+      "threadId": "t-1",
+      "runId": "r-1",
+      "messageId": "m-1",
+      "role": "assistant",
+      "actor": {
+       "type": "agent",
+       "id": "agent-plan",
+       "name": "Planner"
+      },
+      "state": "partial",
+      "parts": [
+       {
+        "type": "text",
+        "text": "Before"
+       },
+       {
+        "type": "status",
+        "state": "error",
+        "text": "Failed"
+       },
+       {
+        "type": "text",
+        "text": "After again"
+       }
+      ]
+     }
+    ],
+    "ignored": 0,
+    "errors": []
+   }
   }
  ]
 }
