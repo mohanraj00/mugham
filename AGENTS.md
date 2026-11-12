@@ -51,7 +51,7 @@ Flag these as high priority in a PR review:
 - Content of an agent that shows as the content of a person.
 - A removed contract test or accessibility check.
 - A name of a real product, brand, customer or person in the catalog, the examples or the tests.
-- Private material, credentials or generated binaries.
+- Private material, credentials or generated binaries. The README screenshots in `docs/screenshots/` are the one exception, with 16 images maximum.
 
 End a code review with one line. If `.github/gates.json` or the shared categories of the gates mark a changed path as security-relevant, write `Security review: needed`, with the reason. If not, write `Security review: not needed`. A security review does not end with this line.
 
