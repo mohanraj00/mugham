@@ -65,6 +65,8 @@ export class MuThread extends HTMLElement {
 
   #reader = createReader();
   #items = new Map();
+  // The notice of each run error, by runId. A message id cannot be a key here, so it cannot hide a notice.
+  #notices = new Map();
   #owners = new WeakMap();
   #scheduled = false;
   #state = 'idle';
@@ -130,13 +132,12 @@ export class MuThread extends HTMLElement {
     for (const message of messages) this.#show(message, said);
     // A run error that no message shows becomes a system notice.
     for (const run of runs) {
-      const key = 'run:' + run.runId;
-      if (run.state !== 'error' || this.#items.has(key)) continue;
+      if (run.state !== 'error' || this.#notices.has(run.runId)) continue;
       if (messages.some((message) => message.runId === run.runId && message.parts?.some((part) => part.type === 'status'))) continue;
       const words = 'Error: ' + run.error.message + (run.error.code ? ` (${run.error.code})` : '');
       const node = el('li', { class: 'notice system', 'data-state': 'error' },
         el('article', { 'aria-label': 'Notice from Thread, System' }, header('Thread', TYPES.system), el('p', { class: 'error' }, words)));
-      this.#items.set(key, { node });
+      this.#notices.set(run.runId, node);
       this.#list.append(node);
       said.push('Thread, System: ' + words);
     }
@@ -209,6 +210,8 @@ export class MuThread extends HTMLElement {
       const json = JSON.stringify(part);
       if (index < before.length && JSON.stringify(before[index]) === json && entry.nodes[index]) return;
       const node = this.#part(part, message);
+      // A refusal that replaces a part is new for the person, so the live region tells it.
+      if (entry.nodes[index] && part.type === 'refusal') said.push(`The thread refused a part of the message from ${who(message.actor)}.`);
       if (entry.nodes[index]) entry.nodes[index].replaceWith(node);
       else entry.parts.append(node);
       entry.nodes[index] = node;

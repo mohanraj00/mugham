@@ -106,6 +106,30 @@ async function run() {
   check('error: a run error with no open message shows a system notice',
     notice?.textContent.includes('Error: The agent stopped.') && notice.textContent.includes('System'), notice?.textContent);
 
+  // A message id cannot hide the notice of a run. The reader does not reserve an id of the form "run:<runId>".
+  const collide = mount();
+  collide.push({ type: 'RUN_STARTED', threadId: 't5', runId: 'r1' });
+  for (const event of say('run:r1', RENEW_AGENT, 'The loan is renewed.', 'assistant')) collide.push(event);
+  await settle();
+  collide.push({ type: 'RUN_ERROR', message: 'The renewal failed.' });
+  await settle();
+  const collideNotice = collide.shadowRoot.querySelector('li.notice');
+  check('error: a message with the id run:<runId> does not hide the run error',
+    collideNotice?.textContent.includes('Error: The renewal failed.') && items(collide).length === 1
+    && live(collide).textContent.includes('Error: The renewal failed.'), collide.shadowRoot.textContent);
+
+  // A later snapshot can replace a component with an undeclared component. The live region announces the refusal.
+  const replaced = mount();
+  replaced.push(snapshot('k1', CATALOG_AGENT, { format: 2, fill: fill('card', { title: 'Weather at sea' }) }));
+  await settle();
+  const saidBefore = live(replaced).textContent;
+  replaced.push(snapshot('k1', CATALOG_AGENT, { format: 2, fill: fill('banner', { text: 'Sale' }) }));
+  await settle();
+  check('refused: a snapshot that replaces a component with an undeclared component shows a refusal',
+    item(replaced, 0).querySelector('.refusal') && !item(replaced, 0).querySelector('mu-card'), item(replaced, 0).textContent);
+  check('live: the region announces a refusal that replaces a part', live(replaced).textContent !== saidBefore
+    && live(replaced).textContent === 'The thread refused a part of the message from Catalog agent, Agent.', live(replaced).textContent);
+
   // Refused: an undeclared component shows a refusal notice and makes no element.
   const refused = mount();
   refused.push(snapshot('c1', CATALOG_AGENT, { format: 2, fill: fill('banner', { text: 'Sale' }) }));
