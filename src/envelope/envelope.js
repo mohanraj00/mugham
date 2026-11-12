@@ -26,7 +26,7 @@ const MAX_STREAM_ERRORS = 100;
 // The stream comes from a model, so the reader keeps a limited quantity of data.
 const MAX_RUNS = 1000;
 const MAX_MESSAGES = 1000;
-const MAX_STREAM_TEXT = 1000000;
+const MAX_STREAM_DATA = 1000000;
 
 const own = (object, key) => Object.prototype.hasOwnProperty.call(object, key);
 const isObject = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -177,7 +177,7 @@ export function createReader(catalog = CATALOG) {
   let ignored = 0;
   let active = null;
   let count = 0;
-  let textSize = 0;
+  let dataSize = 0;
   const runIds = new Set();
 
   const fail = (error) => {
@@ -285,18 +285,18 @@ export function createReader(catalog = CATALOG) {
       const last = parts[parts.length - 1];
       if (last.type !== 'text' && parts.length >= MAX_PARTS) return fail(`${at}.messageId: the message has ${MAX_PARTS} parts`);
       const size = length(event.delta, MAX_TEXT);
-      if (textSize + size > MAX_STREAM_TEXT) return fail(`${at}.delta: the stream has ${MAX_STREAM_TEXT} characters of text`);
+      if (dataSize + size > MAX_STREAM_DATA) return fail(`${at}.delta: the stream has ${MAX_STREAM_DATA} characters of data`);
       open.entry.size += size;
       if (open.entry.size > MAX_TEXT) {
         // The kit does not keep the text of a refused message.
-        textSize -= open.entry.size - size;
+        dataSize -= open.entry.size - size;
         const { envelope, agui, threadId, runId, messageId } = open.message;
         const value = { envelope, agui, threadId, runId, messageId };
         for (const key of ['threadId', 'runId']) if (value[key] === undefined) delete value[key];
         messages[open.entry.at] = refused(value, [`text: more than ${MAX_TEXT} characters`]);
         return;
       }
-      textSize += size;
+      dataSize += size;
       if (last.type === 'text') last.text += event.delta;
       else parts.push({ type: 'text', text: event.delta });
     },
@@ -333,8 +333,15 @@ export function createReader(catalog = CATALOG) {
           : refusalPart(['content: must be an object']);
         message = { ...header(event.messageId), role: 'activity', actor: actorCopy(actor), state: 'final', parts: [part] };
       }
+      // The JSON text of a fill counts in the data of the stream. A replaced fill gives back its size.
+      const part = message.parts ? message.parts[0] : undefined;
+      const size = part && part.type === 'component' ? JSON.stringify(part.fill).length : 0;
+      const before = entry ? entry.size : 0;
+      if (dataSize - before + size > MAX_STREAM_DATA) return fail(`${at}.content: the stream has ${MAX_STREAM_DATA} characters of data`);
+      dataSize += size - before;
       if (entry) messages[entry.at] = message;
       else add(event.messageId, 'activity', message);
+      index.get(event.messageId).size = size;
     },
   };
 

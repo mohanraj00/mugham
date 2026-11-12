@@ -68,7 +68,7 @@ The stream comes from a model, so the reader limits the data that it keeps:
 
 - 1000 runs maximum. A `RUN_STARTED` after that is not valid.
 - 1000 messages maximum. A new message after that is not valid.
-- 1000000 characters of text maximum, for all the messages together. A delta after that is not valid.
+- 1000000 characters of data maximum, for the text and the fills of all the messages together. The kit counts a fill as the length of its JSON text. A delta or a snapshot after that is not valid. A snapshot that replaces a fill gives back the size of the old fill.
 
 Actions and receipts do not go through the stream. The receipt is the response of the application API.
 

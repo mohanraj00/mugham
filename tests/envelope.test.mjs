@@ -95,7 +95,7 @@ test('the stream keeps 100 errors at most', () => {
   assert.equal(result.errors.length, 100);
 });
 
-test('the stream keeps 1000 messages, 1000 runs and 1000000 characters of text at most', () => {
+test('the stream keeps 1000 messages, 1000 runs and 1000000 characters of data at most', () => {
   const actor = { type: 'agent', id: 'agent-plan' };
   const start = (id) => ({ type: 'TEXT_MESSAGE_START', messageId: id, role: 'assistant', metadata: { mugham: { actor } } });
   const many = readStream(Array.from({ length: 1001 }, (_, i) => start(`m-${i}`)));
@@ -114,7 +114,7 @@ test('the stream keeps 1000 messages, 1000 runs and 1000000 characters of text a
   const long = readStream(text);
   assert.equal(long.messages[9].parts[0].text.length, 100000);
   assert.equal(long.messages[10].parts[0].text, '');
-  assert.deepEqual(long.errors, ['events[21].delta: the stream has 1000000 characters of text']);
+  assert.deepEqual(long.errors, ['events[21].delta: the stream has 1000000 characters of data']);
 });
 
 test('repeated run errors with no run add no status part', () => {
@@ -124,4 +124,19 @@ test('repeated run errors with no run add no status part', () => {
   const result = readStream(events);
   assert.deepEqual(result.messages[0].parts, [{ type: 'text', text: '' }]);
   assert.equal(result.errors.length, 100);
+});
+
+test('the fills of snapshots count in the data of the stream', () => {
+  const actor = { type: 'agent', id: 'agent-plan' };
+  const fill = { component: 'text', version: '0.1.0', data: { text: 'a'.repeat(10000) } };
+  const snapshot = (id) => ({ type: 'ACTIVITY_SNAPSHOT', messageId: id, activityType: 'mugham.fill',
+    content: { format: 1, fill }, metadata: { mugham: { actor } } });
+  const fit = Math.floor(1000000 / JSON.stringify(fill).length);
+  const full = readStream(Array.from({ length: fit + 1 }, (_, i) => snapshot(`m-${i}`)));
+  assert.equal(full.messages.length, fit);
+  assert.deepEqual(full.errors, [`events[${fit}].content: the stream has 1000000 characters of data`]);
+
+  const replaced = readStream(Array.from({ length: fit + 50 }, () => snapshot('m-1')));
+  assert.equal(replaced.messages.length, 1);
+  assert.deepEqual(replaced.errors, []);
 });
