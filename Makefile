@@ -9,6 +9,7 @@ check:
 	$(PYTHON) -B tools/build.py --check
 	$(PYTHON) -B tools/catalog.py
 	$(PYTHON) -B tools/tokens.py
+	$(PYTHON) -B tests/vectors/envelope/generate.py
 	$(NODE) --test 'tests/**/*.test.mjs'
 	$(NODE) tools/browser_check.mjs
 

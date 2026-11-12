@@ -4,7 +4,7 @@ Each release has an entry. The newest entry is first.
 
 ## Unreleased
 
-- The message envelope, version 1, in `docs/contracts/`. It maps AG-UI 1.0, as decision 0002 says. `src/envelope/envelope.js` reads an envelope and an AG-UI stream. Each message has an actor, typed parts and an honest state. `tests/vectors/envelope/` has the conformance cases.
+- The message envelope, version 1, in `docs/contracts/`. It maps AG-UI 1.0, as decision 0002 says. `src/envelope/envelope.js` reads an envelope and an AG-UI stream. Each message has an actor, typed parts and an honest state. `tests/vectors/envelope/` has the conformance cases. `generate.py` in that folder writes them, and `make check` compares them with its output.
 - Contract format 2. Format 1 had an `actions` block in a contract and an `actions` list in a fill, but they had no effect. Format 2 removes them. Each contract now has `"format": 2`. A fill with an `actions` key is refused. The application binds each action in code, as `catalog/README.md` says.
 - An action binding can have a confirm step: `confirm: { message, label }`. `mu-action-button` and `mu-editable-form` then show the step, with the new state `confirm`. They send the action only after a person confirms. Cancel and Escape send no action.
 - A receipt can carry a `reference`, for example a record id. The element shows it as text, with 80 characters maximum. A receipt with a longer reference is refused.
