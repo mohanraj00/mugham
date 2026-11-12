@@ -155,3 +155,56 @@ test('the description comes from the binding', () => {
   action.bind({ tool: 'library.renew', description: 'Renews the loan of Rivers and deltas.' });
   assert.equal(action.description, 'Renews the loan of Rivers and deltas.');
 });
+
+// The confirm step and the receipt reference. The expected results come from catalog/README.md#actions.
+const CONFIRM = ['confirm must have only a message of 1 to 200 characters and a label of 1 to 40 characters'];
+
+test('a binding can give a confirm step with a message and a label', () => {
+  assert.deepEqual(bindingErrors({ tool: 'library.cancel', confirm: { message: 'Cancel the loan L-0001?', label: 'Cancel the loan' } }), []);
+  assert.deepEqual(bindingErrors({ tool: 'library.cancel', confirm: { message: 'M'.repeat(200), label: 'L'.repeat(40) } }), []);
+  assert.deepEqual(bindingErrors({ tool: 'library.cancel', confirm: true }), CONFIRM);
+  assert.deepEqual(bindingErrors({ tool: 'library.cancel', confirm: null }), CONFIRM);
+  assert.deepEqual(bindingErrors({ tool: 'library.cancel', confirm: { message: 'Cancel?' } }), CONFIRM);
+  assert.deepEqual(bindingErrors({ tool: 'library.cancel', confirm: { message: '', label: 'Yes' } }), CONFIRM);
+  assert.deepEqual(bindingErrors({ tool: 'library.cancel', confirm: { message: 'M'.repeat(201), label: 'Yes' } }), CONFIRM);
+  assert.deepEqual(bindingErrors({ tool: 'library.cancel', confirm: { message: 'Cancel?', label: 'L'.repeat(41) } }), CONFIRM);
+  assert.deepEqual(bindingErrors({ tool: 'library.cancel', confirm: { message: 'Cancel?', label: 'Yes', tool: 'shell.run' } }), CONFIRM);
+});
+
+test('an action with a confirm step starts only after a person confirms', () => {
+  const action = new ActionState();
+  assert.equal(action.confirm, null);
+  action.bind({ tool: 'library.renew' });
+  assert.equal(action.confirm, null);
+  action.bind({ tool: 'library.cancel', confirm: { message: 'Cancel the loan L-0001?', label: 'Cancel the loan' } });
+  assert.deepEqual({ ...action.confirm }, { message: 'Cancel the loan L-0001?', label: 'Cancel the loan' });
+  assert.throws(() => { action.confirm.label = 'Run'; }, TypeError);
+  assert.equal(action.start(), null);
+  assert.equal(action.state, 'default');
+  const request = action.start({}, true);
+  assert.equal(request.tool, 'library.cancel');
+  assert.equal(action.state, 'pending');
+});
+
+test('a receipt can carry a reference as text with a length limit', () => {
+  const action = new ActionState();
+  assert.equal(action.reference, '');
+  action.bind({ tool: 'library.renew' });
+  let request = action.start();
+  assert.equal(action.receipt({ id: request.id, ok: true, reference: 'R'.repeat(81) }), false);
+  assert.equal(action.receipt({ id: request.id, ok: true, reference: 7 }), false);
+  assert.equal(action.state, 'pending');
+  assert.equal(action.reference, '');
+  const markup = '<img src=x onerror=alert(1)>';
+  assert.equal(action.receipt({ id: request.id, ok: true, reference: markup }), true);
+  assert.equal(action.reference, markup);
+  action.reopen();
+  assert.equal(action.reference, '');
+  request = action.start();
+  assert.equal(action.receipt({ id: request.id, ok: true, reference: 'R'.repeat(80) }), true);
+  assert.equal(action.reference, 'R'.repeat(80));
+  action.reopen();
+  request = action.start();
+  assert.equal(action.receipt({ id: request.id, ok: false }), true);
+  assert.equal(action.reference, '');
+});

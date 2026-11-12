@@ -196,6 +196,41 @@ async function main() {
           const submits = await evaluate(session, sessionId, 'window.muFormSubmits()');
           report.keyboard.push({ page, step: 'Enter in a field submits the form', ok: submits === 1, detail: submits });
         }
+        // The confirm step: Enter opens it, Escape closes it, and only the confirm button sends the action.
+        // The accessibility tree must name the group and its buttons. See catalog/README.md#actions.
+        if (await evaluate(session, sessionId, 'typeof window.muFocusConfirm === "function"')) {
+          const active = () => evaluate(session, sessionId, 'document.activeElement?.shadowRoot?.activeElement?.textContent || ""');
+          const confirm = () => evaluate(session, sessionId, 'window.muConfirm()');
+          const push = (step, ok, detail) => report.keyboard.push({ page, step, ok, detail: JSON.stringify(detail) });
+          await evaluate(session, sessionId, 'window.muFocusConfirm()');
+          await key(session, sessionId, 'Enter', 'Enter', 13, '\r');
+          let state = await confirm();
+          let focus = await active();
+          push('Enter opens the confirm step with the focus on Cancel', state.presses === 0 && state.state === 'confirm' && focus === 'Cancel', { state, focus });
+          report.accessibility.push(...await axErrors(session, sessionId, [['group', 'Cancel the loan? You cannot undo this.'],
+            ['button', 'Cancel'], ['button', 'Yes, cancel']], page + ' confirm step'));
+          await key(session, sessionId, 'Escape', 'Escape', 27);
+          state = await confirm();
+          focus = await active();
+          push('Escape closes the confirm step and sends no action', state.presses === 0 && state.state === 'default' && focus === 'Confirm target', { state, focus });
+          await key(session, sessionId, 'Enter', 'Enter', 13, '\r');
+          await key(session, sessionId, 'Tab', 'Tab', 9);
+          focus = await active();
+          await key(session, sessionId, 'Enter', 'Enter', 13, '\r');
+          state = await confirm();
+          push('Tab and Enter on the confirm button send one action', focus === 'Yes, cancel' && state.presses === 1, { state, focus });
+          await evaluate(session, sessionId, 'window.muFocusConfirmField()');
+          await key(session, sessionId, 'Enter', 'Enter', 13, '\r');
+          state = await confirm();
+          focus = await active();
+          push('Enter in a field opens the confirm step of the form', state.submits === 0 && state.formState === 'confirm' && focus === 'Cancel', { state, focus });
+          report.accessibility.push(...await axErrors(session, sessionId, [['group', 'Save the new shelf?'], ['button', 'Yes, save']],
+            page + ' form confirm step'));
+          await key(session, sessionId, 'Tab', 'Tab', 9);
+          await key(session, sessionId, ' ', 'Space', 32, ' ');
+          state = await confirm();
+          push('Space on the confirm button submits the form one time', state.submits === 1, { state });
+        }
       }
     }
 

@@ -195,22 +195,5 @@ export function fillErrors(fill, catalog, path = '', depth = 0) {
     if (own(data, key)) errors.push(...valueErrors(data[key], field, `${prefix}data.${key}`, catalog, depth));
     else if (field.required) errors.push(`${prefix}data.${key}: a required field is missing`);
   }
-  const declared = contract.actions ?? {};
-  (fill.actions ?? []).forEach((item, index) => {
-    const at = `${prefix}actions[${index}]`;
-    const action = own(declared, item.action) ? declared[item.action] : undefined;
-    if (action === undefined) {
-      errors.push(`${at}.action: the contract does not declare this action`);
-      return;
-    }
-    const args = item.arguments;
-    for (const key of Object.keys(args)) {
-      if (!own(action.arguments, key)) errors.push(`${at}.arguments.${shown(key)}: the action does not declare this argument`);
-    }
-    for (const [key, field] of Object.entries(action.arguments)) {
-      if (own(args, key)) errors.push(...valueErrors(args[key], field, `${at}.arguments.${key}`, catalog, depth));
-      else if (field.required) errors.push(`${at}.arguments.${key}: a required argument is missing`);
-    }
-  });
   return errors;
 }

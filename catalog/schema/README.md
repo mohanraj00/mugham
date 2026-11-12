@@ -1,4 +1,4 @@
-# Contract format 1
+# Contract format 2
 
 This folder is a level 1 path. It holds the format of a component contract and the format of a fill. The owner merges each change.
 
@@ -12,15 +12,14 @@ A contract is one JSON file in `catalog/`, for example `catalog/card.json`. The 
 
 | Key | Content |
 |---|---|
-| `format` | Always `1`. |
+| `format` | Always `2`. |
 | `name` | The component name, in lower case with hyphens. |
 | `version` | A version with three numbers, for example `0.1.0`. |
 | `kind` | `primitive` or `component`. |
 | `description` | One sentence about the component. |
 | `ai_content` | `true` if the component can show content from a model. Then the kit shows the actor of the content. |
 | `data` | The data fields. Each field has a type, a label and the `required` key. |
-| `actions` | Optional. The actions that the component can propose. |
-| `states` | The states of the component. |
+| `states` | The states of the component: `default`, `empty`, `loading`, `disabled`, `confirm`, `pending`, `done`, `error` or `refused`. A component shows `confirm` while a person decides on a confirm step. |
 | `tokens` | The design tokens that the component uses. |
 | `accessibility` | The role, the accessible name (not for the role `none`), the keys, and support for forced colors and reduced motion. |
 
@@ -41,25 +40,25 @@ A field with `editable: true` is a form input. A list field and a component fiel
 
 ### Actions
 
-An action has a `tool`, a `label`, `arguments` and `confirm`. The contract sets the tool name. A fill can only name a declared action and give its arguments. Thus a model cannot select a different tool. Each argument is a scalar field. If `confirm` is `true`, the kit asks a person before it sends the action.
+A contract declares no action, and a fill names no action. The application binds the tool, the arguments and the confirm step in code. Thus a model cannot select a tool. [The catalog README](../README.md#actions) is the one description of the action model.
+
+Format 1 had an `actions` block in a contract and an `actions` list in a fill. They had no effect, so format 2 removes them. A fill with an `actions` key is refused.
 
 ### Rules in tools/catalog.py
 
 1. The `name` agrees with the file name.
 2. The states include `default`.
-3. If the contract has actions, the states include `pending`, `done` and `error`. The kit shows an action as done only after the receipt comes back.
-4. A component with the role `none` has no accessible name. Each other role needs one. If the accessible name comes from a field, that field is a required text field.
-5. `min_length` is not more than `max_length`, and `minimum` is not more than `maximum`.
-6. Each component field names a contract in the catalog. A contract cannot contain itself, directly or through other contracts.
+3. A component with the role `none` has no accessible name. Each other role needs one. If the accessible name comes from a field, that field is a required text field.
+4. `min_length` is not more than `max_length`, and `minimum` is not more than `maximum`.
+5. Each component field names a contract in the catalog. A contract cannot contain itself, directly or through other contracts.
 
 ## Fill
 
-A fill has the keys `component`, `version`, `data` and optionally `actions`.
+A fill has the keys `component`, `version` and `data`. It has no other key.
 
 - `component` names a contract in the catalog. If no contract has that name, the kit refuses the fill and shows the refusal.
 - `version` is equal to the version of the contract.
 - `data` has only declared fields. Each required field is present. Each value agrees with its field.
-- Each item in `actions` names a declared action. Its `arguments` has only declared arguments, and each required argument is present.
 - A fill never contains markup, style or script. The validator does not read a string as markup. The kit shows each text value as text.
 
 The validator gives each error with a path, for example `data.title`. It does not change a fill.
