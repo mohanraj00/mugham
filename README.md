@@ -78,18 +78,49 @@ make screenshots
 
 If Chrome is not at its usual path, set `CHROME` to the path of the Chrome executable.
 
-## Try it
+## Quickstart
 
-The examples use synthetic data. Serve the repository root with a static file server, then open an example:
+The examples are ES modules that import JSON files. A browser blocks module imports from a `file:` page. Thus the page needs an HTTP server. The kit has no dependency, so there is nothing to install.
+
+1. Install Python 3 and Git. Use a browser from the [browser support](#browser-support) list.
+2. Clone the repository and go to its root:
+
+```sh
+git clone https://github.com/mohanraj00/mugham.git
+cd mugham
+```
+
+3. Start a static file server at the repository root:
 
 ```sh
 python3 -m http.server 8000
 ```
 
-- [examples/primitives.html](examples/primitives.html): each primitive. Open `http://localhost:8000/examples/primitives.html`.
-- [examples/loans.html](examples/loans.html): a card, an action button, a card grid and a form. Open `http://localhost:8000/examples/loans.html`.
+4. Open an example in the browser. The examples use synthetic data.
+   - `http://localhost:8000/examples/primitives.html`: each primitive.
+   - `http://localhost:8000/examples/loans.html`: a card, an action button, a card grid and a form.
+
+To use the kit in your own page, serve `src/` and `catalog/` from one origin, load `src/tokens/tokens.css`, then import `define` from `src/components/index.js` and call it. [src/README.md](src/README.md) gives the steps.
+
+Each release has the archive `mugham.tar` and its `mugham.tar.sha256` file as release assets. Two builds of the same source give the same bytes. The release publishes no package ([decision 0004](docs/decisions/0004-package.md)).
 
 Run the project checks with `make check`. The checks need Python 3, Node.js and Chrome.
+
+## Browser support
+
+The kit imports JSON files with the syntax `import x from './x.json' with { type: 'json' }`. A browser must support this syntax. These are the minimum versions:
+
+| Browser | Minimum version |
+|---|---|
+| Chrome and Edge | 123 |
+| Safari | 17.2 |
+| Firefox | 138 |
+
+The checks of the project run in one pinned version of Chrome. They do not test the other browsers.
+
+## Stability
+
+The stability of the element API (the elements and their properties), the events (`mu-press`, `mu-edit`, `mu-action` and `mu-refused`) and contract format 1 is **experimental**, before v1.0. Each of them can change in a minor release. Format 1 changes in v0.2 ([mugham#35](https://github.com/mohanraj00/mugham/issues/35)). The [changelog](CHANGELOG.md) lists each change. v1.0 gives a compatibility statement.
 
 ## Brand
 
