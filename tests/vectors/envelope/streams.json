@@ -1,0 +1,1426 @@
+{
+ "note": "Conformance cases for src/envelope/ and docs/contracts/envelope-v1.schema.json. tests/envelope.test.mjs checks each case. The data is synthetic. \"expected\" is the result of readStream with the catalog of the kit.",
+ "cases": [
+  {
+   "name": "two people and two agents in one thread",
+   "events": [
+    {
+     "type": "RUN_STARTED",
+     "threadId": "t-1",
+     "runId": "r-1"
+    },
+    {
+     "type": "TEXT_MESSAGE_START",
+     "messageId": "m-1",
+     "role": "user",
+     "metadata": {
+      "mugham": {
+       "actor": {
+        "type": "human",
+        "id": "person-a",
+        "name": "Person A"
+       }
+      }
+     }
+    },
+    {
+     "type": "TEXT_MESSAGE_CONTENT",
+     "messageId": "m-1",
+     "delta": "Is the loan due?"
+    },
+    {
+     "type": "TEXT_MESSAGE_END",
+     "messageId": "m-1"
+    },
+    {
+     "type": "TEXT_MESSAGE_START",
+     "messageId": "m-2",
+     "role": "user",
+     "metadata": {
+      "mugham": {
+       "actor": {
+        "type": "human",
+        "id": "person-b",
+        "name": "Person B"
+       }
+      }
+     }
+    },
+    {
+     "type": "TEXT_MESSAGE_CONTENT",
+     "messageId": "m-2",
+     "delta": "I can renew it."
+    },
+    {
+     "type": "TEXT_MESSAGE_END",
+     "messageId": "m-2"
+    },
+    {
+     "type": "TEXT_MESSAGE_START",
+     "messageId": "m-3",
+     "role": "assistant",
+     "metadata": {
+      "mugham": {
+       "actor": {
+        "type": "agent",
+        "id": "agent-plan",
+        "name": "Planner"
+       }
+      }
+     }
+    },
+    {
+     "type": "TEXT_MESSAGE_CONTENT",
+     "messageId": "m-3",
+     "delta": "The loan is due "
+    },
+    {
+     "type": "TEXT_MESSAGE_CONTENT",
+     "messageId": "m-3",
+     "delta": "on 2026-11-20."
+    },
+    {
+     "type": "TEXT_MESSAGE_END",
+     "messageId": "m-3"
+    },
+    {
+     "type": "ACTIVITY_SNAPSHOT",
+     "messageId": "m-4",
+     "activityType": "mugham.fill",
+     "content": {
+      "format": 2,
+      "fill": {
+       "component": "fact",
+       "version": "0.1.0",
+       "data": {
+        "label": "Due",
+        "value": "2026-11-20"
+       }
+      }
+     },
+     "metadata": {
+      "mugham": {
+       "actor": {
+        "type": "agent",
+        "id": "agent-check",
+        "name": "Checker"
+       }
+      }
+     }
+    },
+    {
+     "type": "RUN_FINISHED",
+     "threadId": "t-1",
+     "runId": "r-1"
+    }
+   ],
+   "expected": {
+    "runs": [
+     {
+      "threadId": "t-1",
+      "runId": "r-1",
+      "state": "finished"
+     }
+    ],
+    "messages": [
+     {
+      "envelope": 1,
+      "agui": "1.0",
+      "threadId": "t-1",
+      "runId": "r-1",
+      "messageId": "m-1",
+      "role": "user",
+      "actor": {
+       "type": "human",
+       "id": "person-a",
+       "name": "Person A"
+      },
+      "state": "final",
+      "parts": [
+       {
+        "type": "text",
+        "text": "Is the loan due?"
+       }
+      ]
+     },
+     {
+      "envelope": 1,
+      "agui": "1.0",
+      "threadId": "t-1",
+      "runId": "r-1",
+      "messageId": "m-2",
+      "role": "user",
+      "actor": {
+       "type": "human",
+       "id": "person-b",
+       "name": "Person B"
+      },
+      "state": "final",
+      "parts": [
+       {
+        "type": "text",
+        "text": "I can renew it."
+       }
+      ]
+     },
+     {
+      "envelope": 1,
+      "agui": "1.0",
+      "threadId": "t-1",
+      "runId": "r-1",
+      "messageId": "m-3",
+      "role": "assistant",
+      "actor": {
+       "type": "agent",
+       "id": "agent-plan",
+       "name": "Planner"
+      },
+      "state": "final",
+      "parts": [
+       {
+        "type": "text",
+        "text": "The loan is due on 2026-11-20."
+       }
+      ]
+     },
+     {
+      "envelope": 1,
+      "agui": "1.0",
+      "threadId": "t-1",
+      "runId": "r-1",
+      "messageId": "m-4",
+      "role": "activity",
+      "actor": {
+       "type": "agent",
+       "id": "agent-check",
+       "name": "Checker"
+      },
+      "state": "final",
+      "parts": [
+       {
+        "type": "component",
+        "format": 2,
+        "fill": {
+         "component": "fact",
+         "version": "0.1.0",
+         "data": {
+          "label": "Due",
+          "value": "2026-11-20"
+         }
+        }
+       }
+      ]
+     }
+    ],
+    "ignored": 0,
+    "errors": []
+   }
+  },
+  {
+   "name": "a message with no actor or an invalid actor is refused",
+   "events": [
+    {
+     "type": "RUN_STARTED",
+     "threadId": "t-1",
+     "runId": "r-1"
+    },
+    {
+     "type": "TEXT_MESSAGE_START",
+     "messageId": "m-1",
+     "role": "assistant"
+    },
+    {
+     "type": "TEXT_MESSAGE_CONTENT",
+     "messageId": "m-1",
+     "delta": "Hello"
+    },
+    {
+     "type": "TEXT_MESSAGE_END",
+     "messageId": "m-1"
+    },
+    {
+     "type": "TEXT_MESSAGE_START",
+     "messageId": "m-2",
+     "role": "user",
+     "metadata": {
+      "mugham": {
+       "actor": {
+        "type": "robot",
+        "id": ""
+       }
+      }
+     }
+    },
+    {
+     "type": "ACTIVITY_SNAPSHOT",
+     "messageId": "m-3",
+     "activityType": "mugham.fill",
+     "content": {
+      "format": 2,
+      "fill": {
+       "component": "fact",
+       "version": "0.1.0",
+       "data": {
+        "label": "Due",
+        "value": "2026-11-20"
+       }
+      }
+     },
+     "metadata": {
+      "mugham": {}
+     }
+    },
+    {
+     "type": "RUN_FINISHED",
+     "threadId": "t-1",
+     "runId": "r-1"
+    }
+   ],
+   "expected": {
+    "runs": [
+     {
+      "threadId": "t-1",
+      "runId": "r-1",
+      "state": "finished"
+     }
+    ],
+    "messages": [
+     {
+      "envelope": 1,
+      "agui": "1.0",
+      "threadId": "t-1",
+      "runId": "r-1",
+      "messageId": "m-1",
+      "state": "refused",
+      "errors": [
+       "metadata.mugham.actor: a required field is missing"
+      ]
+     },
+     {
+      "envelope": 1,
+      "agui": "1.0",
+      "threadId": "t-1",
+      "runId": "r-1",
+      "messageId": "m-2",
+      "state": "refused",
+      "errors": [
+       "metadata.mugham.actor.type: must be human, agent or system",
+       "metadata.mugham.actor.id: must be an id of 1 to 128 characters"
+      ]
+     },
+     {
+      "envelope": 1,
+      "agui": "1.0",
+      "threadId": "t-1",
+      "runId": "r-1",
+      "messageId": "m-3",
+      "state": "refused",
+      "errors": [
+       "metadata.mugham.actor: a required field is missing"
+      ]
+     }
+    ],
+    "ignored": 2,
+    "errors": []
+   }
+  },
+  {
+   "name": "an undeclared component shows as a refusal",
+   "events": [
+    {
+     "type": "ACTIVITY_SNAPSHOT",
+     "messageId": "m-1",
+     "activityType": "mugham.fill",
+     "content": {
+      "format": 2,
+      "fill": {
+       "component": "chart",
+       "version": "0.1.0",
+       "data": {}
+      }
+     },
+     "metadata": {
+      "mugham": {
+       "actor": {
+        "type": "agent",
+        "id": "agent-check",
+        "name": "Checker"
+       }
+      }
+     }
+    },
+    {
+     "type": "ACTIVITY_SNAPSHOT",
+     "messageId": "m-2",
+     "activityType": "mugham.fill",
+     "content": {
+      "format": 1,
+      "fill": {
+       "component": "fact",
+       "version": "0.1.0",
+       "data": {
+        "label": "Due",
+        "value": "2026-11-20"
+       }
+      }
+     },
+     "metadata": {
+      "mugham": {
+       "actor": {
+        "type": "agent",
+        "id": "agent-check",
+        "name": "Checker"
+       }
+      }
+     }
+    },
+    {
+     "type": "ACTIVITY_SNAPSHOT",
+     "messageId": "m-3",
+     "activityType": "other.progress",
+     "content": {
+      "html": "<b>50%</b>"
+     },
+     "metadata": {
+      "mugham": {
+       "actor": {
+        "type": "agent",
+        "id": "agent-check",
+        "name": "Checker"
+       }
+      }
+     }
+    },
+    {
+     "type": "ACTIVITY_DELTA",
+     "messageId": "m-1",
+     "activityType": "mugham.fill",
+     "patch": [
+      {
+       "op": "replace",
+       "path": "/fill/component",
+       "value": "fact"
+      }
+     ]
+    }
+   ],
+   "expected": {
+    "runs": [],
+    "messages": [
+     {
+      "envelope": 1,
+      "agui": "1.0",
+      "messageId": "m-1",
+      "role": "activity",
+      "actor": {
+       "type": "agent",
+       "id": "agent-check",
+       "name": "Checker"
+      },
+      "state": "final",
+      "parts": [
+       {
+        "type": "refusal",
+        "errors": [
+         "component: no contract has the name chart"
+        ]
+       }
+      ]
+     },
+     {
+      "envelope": 1,
+      "agui": "1.0",
+      "messageId": "m-2",
+      "role": "activity",
+      "actor": {
+       "type": "agent",
+       "id": "agent-check",
+       "name": "Checker"
+      },
+      "state": "final",
+      "parts": [
+       {
+        "type": "refusal",
+        "errors": [
+         "content.format: must be 2"
+        ]
+       }
+      ]
+     }
+    ],
+    "ignored": 2,
+    "errors": []
+   }
+  },
+  {
+   "name": "markup in a text delta stays text",
+   "events": [
+    {
+     "type": "TEXT_MESSAGE_START",
+     "messageId": "m-1",
+     "role": "assistant",
+     "metadata": {
+      "mugham": {
+       "actor": {
+        "type": "agent",
+        "id": "agent-plan",
+        "name": "Planner"
+       }
+      }
+     }
+    },
+    {
+     "type": "TEXT_MESSAGE_CONTENT",
+     "messageId": "m-1",
+     "delta": "<img src=x onerror=alert(1)>"
+    },
+    {
+     "type": "TEXT_MESSAGE_CONTENT",
+     "messageId": "m-1",
+     "delta": " **bold** <script>alert(1)</script>"
+    },
+    {
+     "type": "TEXT_MESSAGE_END",
+     "messageId": "m-1"
+    }
+   ],
+   "expected": {
+    "runs": [],
+    "messages": [
+     {
+      "envelope": 1,
+      "agui": "1.0",
+      "messageId": "m-1",
+      "role": "assistant",
+      "actor": {
+       "type": "agent",
+       "id": "agent-plan",
+       "name": "Planner"
+      },
+      "state": "final",
+      "parts": [
+       {
+        "type": "text",
+        "text": "<img src=x onerror=alert(1)> **bold** <script>alert(1)</script>"
+       }
+      ]
+     }
+    ],
+    "ignored": 0,
+    "errors": []
+   }
+  },
+  {
+   "name": "a message with no end marker stays partial after the run ends",
+   "events": [
+    {
+     "type": "RUN_STARTED",
+     "threadId": "t-1",
+     "runId": "r-1"
+    },
+    {
+     "type": "TEXT_MESSAGE_START",
+     "messageId": "m-1",
+     "role": "assistant",
+     "metadata": {
+      "mugham": {
+       "actor": {
+        "type": "agent",
+        "id": "agent-plan",
+        "name": "Planner"
+       }
+      }
+     }
+    },
+    {
+     "type": "TEXT_MESSAGE_CONTENT",
+     "messageId": "m-1",
+     "delta": "Part one"
+    },
+    {
+     "type": "RUN_FINISHED",
+     "threadId": "t-1",
+     "runId": "r-1"
+    }
+   ],
+   "expected": {
+    "runs": [
+     {
+      "threadId": "t-1",
+      "runId": "r-1",
+      "state": "finished"
+     }
+    ],
+    "messages": [
+     {
+      "envelope": 1,
+      "agui": "1.0",
+      "threadId": "t-1",
+      "runId": "r-1",
+      "messageId": "m-1",
+      "role": "assistant",
+      "actor": {
+       "type": "agent",
+       "id": "agent-plan",
+       "name": "Planner"
+      },
+      "state": "partial",
+      "parts": [
+       {
+        "type": "text",
+        "text": "Part one"
+       }
+      ]
+     }
+    ],
+    "ignored": 0,
+    "errors": []
+   }
+  },
+  {
+   "name": "a run error marks each open message of the run",
+   "events": [
+    {
+     "type": "TEXT_MESSAGE_START",
+     "messageId": "m-0",
+     "role": "assistant",
+     "metadata": {
+      "mugham": {
+       "actor": {
+        "type": "agent",
+        "id": "agent-plan",
+        "name": "Planner"
+       }
+      }
+     }
+    },
+    {
+     "type": "RUN_STARTED",
+     "threadId": "t-1",
+     "runId": "r-1"
+    },
+    {
+     "type": "TEXT_MESSAGE_START",
+     "messageId": "m-1",
+     "role": "assistant",
+     "metadata": {
+      "mugham": {
+       "actor": {
+        "type": "agent",
+        "id": "agent-plan",
+        "name": "Planner"
+       }
+      }
+     }
+    },
+    {
+     "type": "TEXT_MESSAGE_CONTENT",
+     "messageId": "m-1",
+     "delta": "Checking"
+    },
+    {
+     "type": "TEXT_MESSAGE_START",
+     "messageId": "m-2",
+     "role": "user",
+     "metadata": {
+      "mugham": {
+       "actor": {
+        "type": "human",
+        "id": "person-a",
+        "name": "Person A"
+       }
+      }
+     }
+    },
+    {
+     "type": "TEXT_MESSAGE_CONTENT",
+     "messageId": "m-2",
+     "delta": "Thank you."
+    },
+    {
+     "type": "TEXT_MESSAGE_END",
+     "messageId": "m-2"
+    },
+    {
+     "type": "RUN_ERROR",
+     "message": "The service did not answer.",
+     "code": "timeout"
+    }
+   ],
+   "expected": {
+    "runs": [
+     {
+      "threadId": "t-1",
+      "runId": "r-1",
+      "state": "error",
+      "error": {
+       "message": "The service did not answer.",
+       "code": "timeout"
+      }
+     }
+    ],
+    "messages": [
+     {
+      "envelope": 1,
+      "agui": "1.0",
+      "messageId": "m-0",
+      "role": "assistant",
+      "actor": {
+       "type": "agent",
+       "id": "agent-plan",
+       "name": "Planner"
+      },
+      "state": "partial",
+      "parts": [
+       {
+        "type": "text",
+        "text": ""
+       }
+      ]
+     },
+     {
+      "envelope": 1,
+      "agui": "1.0",
+      "threadId": "t-1",
+      "runId": "r-1",
+      "messageId": "m-1",
+      "role": "assistant",
+      "actor": {
+       "type": "agent",
+       "id": "agent-plan",
+       "name": "Planner"
+      },
+      "state": "partial",
+      "parts": [
+       {
+        "type": "text",
+        "text": "Checking"
+       },
+       {
+        "type": "status",
+        "state": "error",
+        "text": "The service did not answer.",
+        "code": "timeout"
+       }
+      ]
+     },
+     {
+      "envelope": 1,
+      "agui": "1.0",
+      "threadId": "t-1",
+      "runId": "r-1",
+      "messageId": "m-2",
+      "role": "user",
+      "actor": {
+       "type": "human",
+       "id": "person-a",
+       "name": "Person A"
+      },
+      "state": "final",
+      "parts": [
+       {
+        "type": "text",
+        "text": "Thank you."
+       }
+      ]
+     }
+    ],
+    "ignored": 0,
+    "errors": []
+   }
+  },
+  {
+   "name": "invalid events are ignored with an error and the order stays",
+   "events": [
+    {
+     "type": "TEXT_MESSAGE_CONTENT",
+     "messageId": "m-1",
+     "delta": "Too early"
+    },
+    {
+     "type": "TEXT_MESSAGE_START",
+     "messageId": "m-1",
+     "role": "assistant",
+     "metadata": {
+      "mugham": {
+       "actor": {
+        "type": "agent",
+        "id": "agent-plan",
+        "name": "Planner"
+       }
+      }
+     }
+    },
+    {
+     "type": "TEXT_MESSAGE_START",
+     "messageId": "m-1",
+     "role": "assistant",
+     "metadata": {
+      "mugham": {
+       "actor": {
+        "type": "agent",
+        "id": "agent-check",
+        "name": "Checker"
+       }
+      }
+     }
+    },
+    {
+     "type": "TEXT_MESSAGE_CONTENT",
+     "messageId": "m-1",
+     "delta": ""
+    },
+    {
+     "type": "TEXT_MESSAGE_CONTENT",
+     "messageId": "m-1",
+     "delta": "First"
+    },
+    {
+     "type": "TEXT_MESSAGE_END",
+     "messageId": "m-1"
+    },
+    {
+     "type": "TEXT_MESSAGE_CONTENT",
+     "messageId": "m-1",
+     "delta": "Too late"
+    },
+    {
+     "type": "TEXT_MESSAGE_END",
+     "messageId": "m-1"
+    },
+    null,
+    {
+     "type": "TOOL_CALL_START",
+     "toolCallId": "c-1",
+     "toolCallName": "library.renew"
+    },
+    {
+     "type": "STATE_DELTA",
+     "delta": []
+    },
+    {
+     "type": "RUN_FINISHED",
+     "threadId": "t-1",
+     "runId": "r-1"
+    },
+    {
+     "type": "RUN_STARTED",
+     "threadId": "t-1",
+     "runId": 5
+    },
+    {
+     "type": "RUN_STARTED",
+     "threadId": "t-1",
+     "runId": "r-1"
+    },
+    {
+     "type": "RUN_STARTED",
+     "threadId": "t-1",
+     "runId": "r-2"
+    },
+    {
+     "type": "TEXT_MESSAGE_START",
+     "messageId": "m-2",
+     "role": "robot",
+     "metadata": {
+      "mugham": {
+       "actor": {
+        "type": "agent",
+        "id": "agent-plan",
+        "name": "Planner"
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "runs": [
+     {
+      "threadId": "t-1",
+      "runId": "r-1",
+      "state": "active"
+     }
+    ],
+    "messages": [
+     {
+      "envelope": 1,
+      "agui": "1.0",
+      "messageId": "m-1",
+      "role": "assistant",
+      "actor": {
+       "type": "agent",
+       "id": "agent-plan",
+       "name": "Planner"
+      },
+      "state": "final",
+      "parts": [
+       {
+        "type": "text",
+        "text": "First"
+       }
+      ]
+     }
+    ],
+    "ignored": 2,
+    "errors": [
+     "events[0].messageId: no message has this id",
+     "events[2].messageId: the message exists already",
+     "events[3].delta: must be a text of 1 character minimum",
+     "events[6].messageId: the message has ended",
+     "events[7].messageId: the message has ended",
+     "events[8]: must be an object with a type",
+     "events[11]: no active run has this threadId and runId",
+     "events[12].runId: must be an id of 1 to 128 characters",
+     "events[14]: a run is already active",
+     "events[15].role: must be one of developer, system, assistant, user, tool, reasoning, activity"
+    ]
+   }
+  },
+  {
+   "name": "a snapshot replaces a component and cannot change the actor",
+   "events": [
+    {
+     "type": "ACTIVITY_SNAPSHOT",
+     "messageId": "m-1",
+     "activityType": "mugham.fill",
+     "content": {
+      "format": 2,
+      "fill": {
+       "component": "fact",
+       "version": "0.1.0",
+       "data": {
+        "label": "Due",
+        "value": "2026-11-20"
+       }
+      }
+     },
+     "metadata": {
+      "mugham": {
+       "actor": {
+        "type": "agent",
+        "id": "agent-check",
+        "name": "Checker"
+       }
+      }
+     }
+    },
+    {
+     "type": "ACTIVITY_SNAPSHOT",
+     "messageId": "m-1",
+     "activityType": "mugham.fill",
+     "content": {
+      "format": 2,
+      "fill": {
+       "component": "fact",
+       "version": "0.1.0",
+       "data": {
+        "label": "Due",
+        "value": "2026-11-27"
+       }
+      }
+     },
+     "metadata": {
+      "mugham": {
+       "actor": {
+        "type": "agent",
+        "id": "agent-check",
+        "name": "Checker"
+       }
+      }
+     }
+    },
+    {
+     "type": "ACTIVITY_SNAPSHOT",
+     "messageId": "m-1",
+     "activityType": "mugham.fill",
+     "content": {
+      "format": 2,
+      "fill": {
+       "component": "fact",
+       "version": "0.1.0",
+       "data": {
+        "label": "Due",
+        "value": "2026-12-04"
+       }
+      }
+     },
+     "metadata": {
+      "mugham": {
+       "actor": {
+        "type": "agent",
+        "id": "agent-check",
+        "name": "Checker"
+       }
+      }
+     },
+     "replace": false
+    },
+    {
+     "type": "ACTIVITY_SNAPSHOT",
+     "messageId": "m-1",
+     "activityType": "mugham.fill",
+     "content": {
+      "format": 2,
+      "fill": {
+       "component": "fact",
+       "version": "0.1.0",
+       "data": {
+        "label": "Due",
+        "value": "2026-12-11"
+       }
+      }
+     },
+     "metadata": {
+      "mugham": {
+       "actor": {
+        "type": "agent",
+        "id": "agent-plan",
+        "name": "Planner"
+       }
+      }
+     }
+    },
+    {
+     "type": "TEXT_MESSAGE_START",
+     "messageId": "m-1",
+     "role": "assistant",
+     "metadata": {
+      "mugham": {
+       "actor": {
+        "type": "agent",
+        "id": "agent-check",
+        "name": "Checker"
+       }
+      }
+     }
+    },
+    {
+     "type": "TEXT_MESSAGE_START",
+     "messageId": "m-2",
+     "role": "assistant",
+     "metadata": {
+      "mugham": {
+       "actor": {
+        "type": "agent",
+        "id": "agent-check",
+        "name": "Checker"
+       }
+      }
+     }
+    },
+    {
+     "type": "ACTIVITY_SNAPSHOT",
+     "messageId": "m-2",
+     "activityType": "mugham.fill",
+     "content": {
+      "format": 2,
+      "fill": {
+       "component": "fact",
+       "version": "0.1.0",
+       "data": {
+        "label": "Due",
+        "value": "2026-12-11"
+       }
+      }
+     },
+     "metadata": {
+      "mugham": {
+       "actor": {
+        "type": "agent",
+        "id": "agent-check",
+        "name": "Checker"
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "runs": [],
+    "messages": [
+     {
+      "envelope": 1,
+      "agui": "1.0",
+      "messageId": "m-1",
+      "role": "activity",
+      "actor": {
+       "type": "agent",
+       "id": "agent-check",
+       "name": "Checker"
+      },
+      "state": "final",
+      "parts": [
+       {
+        "type": "component",
+        "format": 2,
+        "fill": {
+         "component": "fact",
+         "version": "0.1.0",
+         "data": {
+          "label": "Due",
+          "value": "2026-11-27"
+         }
+        }
+       }
+      ]
+     },
+     {
+      "envelope": 1,
+      "agui": "1.0",
+      "messageId": "m-2",
+      "role": "assistant",
+      "actor": {
+       "type": "agent",
+       "id": "agent-check",
+       "name": "Checker"
+      },
+      "state": "partial",
+      "parts": [
+       {
+        "type": "text",
+        "text": ""
+       }
+      ]
+     }
+    ],
+    "ignored": 1,
+    "errors": [
+     "events[3].metadata.mugham.actor: must not change",
+     "events[4].messageId: the message exists already",
+     "events[6].messageId: the message is a text message"
+    ]
+   }
+  },
+  {
+   "name": "a text after a run error comes after the status",
+   "events": [
+    {
+     "type": "RUN_STARTED",
+     "threadId": "t-1",
+     "runId": "r-1"
+    },
+    {
+     "type": "TEXT_MESSAGE_START",
+     "messageId": "m-1",
+     "role": "assistant",
+     "metadata": {
+      "mugham": {
+       "actor": {
+        "type": "agent",
+        "id": "agent-plan",
+        "name": "Planner"
+       }
+      }
+     }
+    },
+    {
+     "type": "TEXT_MESSAGE_CONTENT",
+     "messageId": "m-1",
+     "delta": "Before"
+    },
+    {
+     "type": "RUN_ERROR",
+     "message": "Failed"
+    },
+    {
+     "type": "TEXT_MESSAGE_CONTENT",
+     "messageId": "m-1",
+     "delta": "After"
+    },
+    {
+     "type": "TEXT_MESSAGE_CONTENT",
+     "messageId": "m-1",
+     "delta": " again"
+    }
+   ],
+   "expected": {
+    "runs": [
+     {
+      "threadId": "t-1",
+      "runId": "r-1",
+      "state": "error",
+      "error": {
+       "message": "Failed"
+      }
+     }
+    ],
+    "messages": [
+     {
+      "envelope": 1,
+      "agui": "1.0",
+      "threadId": "t-1",
+      "runId": "r-1",
+      "messageId": "m-1",
+      "role": "assistant",
+      "actor": {
+       "type": "agent",
+       "id": "agent-plan",
+       "name": "Planner"
+      },
+      "state": "partial",
+      "parts": [
+       {
+        "type": "text",
+        "text": "Before"
+       },
+       {
+        "type": "status",
+        "state": "error",
+        "text": "Failed"
+       },
+       {
+        "type": "text",
+        "text": "After again"
+       }
+      ]
+     }
+    ],
+    "ignored": 0,
+    "errors": []
+   }
+  },
+  {
+   "name": "a run error with no active run and a second run with one runId are errors",
+   "events": [
+    {
+     "type": "TEXT_MESSAGE_START",
+     "messageId": "m-1",
+     "role": "assistant",
+     "metadata": {
+      "mugham": {
+       "actor": {
+        "type": "agent",
+        "id": "agent-plan",
+        "name": "Planner"
+       }
+      }
+     }
+    },
+    {
+     "type": "RUN_ERROR",
+     "message": "Failed"
+    },
+    {
+     "type": "RUN_STARTED",
+     "threadId": "t-1",
+     "runId": "r-1"
+    },
+    {
+     "type": "RUN_FINISHED",
+     "threadId": "t-1",
+     "runId": "r-1"
+    },
+    {
+     "type": "RUN_STARTED",
+     "threadId": "t-1",
+     "runId": "r-1"
+    },
+    {
+     "type": "RUN_ERROR",
+     "message": "Failed"
+    }
+   ],
+   "expected": {
+    "runs": [
+     {
+      "threadId": "t-1",
+      "runId": "r-1",
+      "state": "finished"
+     }
+    ],
+    "messages": [
+     {
+      "envelope": 1,
+      "agui": "1.0",
+      "messageId": "m-1",
+      "role": "assistant",
+      "actor": {
+       "type": "agent",
+       "id": "agent-plan",
+       "name": "Planner"
+      },
+      "state": "partial",
+      "parts": [
+       {
+        "type": "text",
+        "text": ""
+       }
+      ]
+     }
+    ],
+    "ignored": 0,
+    "errors": [
+     "events[1]: no run is active",
+     "events[4].runId: a run has this runId already",
+     "events[5]: no run is active"
+    ]
+   }
+  },
+  {
+   "name": "a replaced snapshot keeps its run ids and a refused snapshot stays refused",
+   "events": [
+    {
+     "type": "RUN_STARTED",
+     "threadId": "t-1",
+     "runId": "r-1"
+    },
+    {
+     "type": "ACTIVITY_SNAPSHOT",
+     "messageId": "m-1",
+     "activityType": "mugham.fill",
+     "content": {
+      "format": 2,
+      "fill": {
+       "component": "fact",
+       "version": "0.1.0",
+       "data": {
+        "label": "Due",
+        "value": "2026-11-20"
+       }
+      }
+     },
+     "metadata": {
+      "mugham": {
+       "actor": {
+        "type": "agent",
+        "id": "agent-check",
+        "name": "Checker"
+       }
+      }
+     }
+    },
+    {
+     "type": "ACTIVITY_SNAPSHOT",
+     "messageId": "m-2",
+     "activityType": "mugham.fill",
+     "content": {
+      "format": 2,
+      "fill": {
+       "component": "fact",
+       "version": "0.1.0",
+       "data": {
+        "label": "Due",
+        "value": "2026-11-20"
+       }
+      }
+     },
+     "metadata": {
+      "mugham": {
+       "actor": {
+        "type": "robot",
+        "id": ""
+       }
+      }
+     }
+    },
+    {
+     "type": "RUN_FINISHED",
+     "threadId": "t-1",
+     "runId": "r-1"
+    },
+    {
+     "type": "ACTIVITY_SNAPSHOT",
+     "messageId": "m-1",
+     "activityType": "mugham.fill",
+     "content": {
+      "format": 2,
+      "fill": {
+       "component": "fact",
+       "version": "0.1.0",
+       "data": {
+        "label": "Due",
+        "value": "2026-11-27"
+       }
+      }
+     },
+     "metadata": {
+      "mugham": {
+       "actor": {
+        "type": "agent",
+        "id": "agent-check",
+        "name": "Checker"
+       }
+      }
+     }
+    },
+    {
+     "type": "ACTIVITY_SNAPSHOT",
+     "messageId": "m-2",
+     "activityType": "mugham.fill",
+     "content": {
+      "format": 2,
+      "fill": {
+       "component": "fact",
+       "version": "0.1.0",
+       "data": {
+        "label": "Due",
+        "value": "2026-11-27"
+       }
+      }
+     },
+     "metadata": {
+      "mugham": {
+       "actor": {
+        "type": "agent",
+        "id": "agent-check",
+        "name": "Checker"
+       }
+      }
+     }
+    }
+   ],
+   "expected": {
+    "runs": [
+     {
+      "threadId": "t-1",
+      "runId": "r-1",
+      "state": "finished"
+     }
+    ],
+    "messages": [
+     {
+      "envelope": 1,
+      "agui": "1.0",
+      "threadId": "t-1",
+      "runId": "r-1",
+      "messageId": "m-1",
+      "role": "activity",
+      "actor": {
+       "type": "agent",
+       "id": "agent-check",
+       "name": "Checker"
+      },
+      "state": "final",
+      "parts": [
+       {
+        "type": "component",
+        "format": 2,
+        "fill": {
+         "component": "fact",
+         "version": "0.1.0",
+         "data": {
+          "label": "Due",
+          "value": "2026-11-27"
+         }
+        }
+       }
+      ]
+     },
+     {
+      "envelope": 1,
+      "agui": "1.0",
+      "threadId": "t-1",
+      "runId": "r-1",
+      "messageId": "m-2",
+      "state": "refused",
+      "errors": [
+       "metadata.mugham.actor.type: must be human, agent or system",
+       "metadata.mugham.actor.id: must be an id of 1 to 128 characters"
+      ]
+     }
+    ],
+    "ignored": 1,
+    "errors": []
+   }
+  }
+ ]
+}

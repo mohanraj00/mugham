@@ -1,0 +1,768 @@
+{
+ "note": "Conformance cases for src/envelope/ and docs/contracts/envelope-v1.schema.json. tests/envelope.test.mjs checks each case. The data is synthetic. \"schema\" tells if the input agrees with the schema. \"result\" is the envelope that readEnvelope gives.",
+ "fallback": "The kit does not know this part type, so it does not show the part.",
+ "cases": [
+  {
+   "name": "a final text message of a person",
+   "schema": true,
+   "envelope": {
+    "envelope": 1,
+    "agui": "1.0",
+    "threadId": "t-1",
+    "messageId": "m-1",
+    "role": "user",
+    "actor": {
+     "type": "human",
+     "id": "person-a",
+     "name": "Person A"
+    },
+    "state": "final",
+    "parts": [
+     {
+      "type": "text",
+      "text": "Is the loan due?"
+     }
+    ]
+   },
+   "result": {
+    "envelope": 1,
+    "agui": "1.0",
+    "threadId": "t-1",
+    "messageId": "m-1",
+    "role": "user",
+    "actor": {
+     "type": "human",
+     "id": "person-a",
+     "name": "Person A"
+    },
+    "state": "final",
+    "parts": [
+     {
+      "type": "text",
+      "text": "Is the loan due?"
+     }
+    ]
+   }
+  },
+  {
+   "name": "a message with no actor is refused",
+   "schema": false,
+   "envelope": {
+    "envelope": 1,
+    "agui": "1.0",
+    "threadId": "t-1",
+    "messageId": "m-1",
+    "role": "user",
+    "state": "final",
+    "parts": [
+     {
+      "type": "text",
+      "text": "Hello"
+     }
+    ]
+   },
+   "result": {
+    "envelope": 1,
+    "agui": "1.0",
+    "threadId": "t-1",
+    "messageId": "m-1",
+    "state": "refused",
+    "errors": [
+     "actor: a required field is missing"
+    ]
+   }
+  },
+  {
+   "name": "an actor with an unknown type and an empty id is refused",
+   "schema": false,
+   "envelope": {
+    "envelope": 1,
+    "agui": "1.0",
+    "messageId": "m-1",
+    "actor": {
+     "type": "robot",
+     "id": ""
+    },
+    "state": "final",
+    "parts": []
+   },
+   "result": {
+    "envelope": 1,
+    "agui": "1.0",
+    "messageId": "m-1",
+    "state": "refused",
+    "errors": [
+     "actor.type: must be human, agent or system",
+     "actor.id: must be an id of 1 to 128 characters"
+    ]
+   }
+  },
+  {
+   "name": "an unknown part type shows as a text fallback with no data",
+   "schema": true,
+   "envelope": {
+    "envelope": 1,
+    "agui": "1.0",
+    "messageId": "m-1",
+    "actor": {
+     "type": "agent",
+     "id": "agent-plan",
+     "name": "Planner"
+    },
+    "state": "final",
+    "parts": [
+     {
+      "type": "chart",
+      "points": [
+       1,
+       2
+      ],
+      "html": "<b>x</b>"
+     }
+    ]
+   },
+   "result": {
+    "envelope": 1,
+    "agui": "1.0",
+    "messageId": "m-1",
+    "actor": {
+     "type": "agent",
+     "id": "agent-plan",
+     "name": "Planner"
+    },
+    "state": "final",
+    "parts": [
+     {
+      "type": "fallback",
+      "partType": "chart",
+      "text": "The kit does not know this part type, so it does not show the part."
+     }
+    ]
+   }
+  },
+  {
+   "name": "a long unknown part type name is cut to 40 characters",
+   "schema": true,
+   "envelope": {
+    "envelope": 1,
+    "agui": "1.0",
+    "messageId": "m-1",
+    "actor": {
+     "type": "agent",
+     "id": "agent-plan",
+     "name": "Planner"
+    },
+    "state": "final",
+    "parts": [
+     {
+      "type": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+     }
+    ]
+   },
+   "result": {
+    "envelope": 1,
+    "agui": "1.0",
+    "messageId": "m-1",
+    "actor": {
+     "type": "agent",
+     "id": "agent-plan",
+     "name": "Planner"
+    },
+    "state": "final",
+    "parts": [
+     {
+      "type": "fallback",
+      "partType": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx...",
+      "text": "The kit does not know this part type, so it does not show the part."
+     }
+    ]
+   }
+  },
+  {
+   "name": "a declared component",
+   "schema": true,
+   "envelope": {
+    "envelope": 1,
+    "agui": "1.0",
+    "messageId": "m-1",
+    "actor": {
+     "type": "agent",
+     "id": "agent-check",
+     "name": "Checker"
+    },
+    "state": "final",
+    "parts": [
+     {
+      "type": "component",
+      "format": 2,
+      "fill": {
+       "component": "fact",
+       "version": "0.1.0",
+       "data": {
+        "label": "Due",
+        "value": "2026-11-20"
+       }
+      }
+     }
+    ]
+   },
+   "result": {
+    "envelope": 1,
+    "agui": "1.0",
+    "messageId": "m-1",
+    "actor": {
+     "type": "agent",
+     "id": "agent-check",
+     "name": "Checker"
+    },
+    "state": "final",
+    "parts": [
+     {
+      "type": "component",
+      "format": 2,
+      "fill": {
+       "component": "fact",
+       "version": "0.1.0",
+       "data": {
+        "label": "Due",
+        "value": "2026-11-20"
+       }
+      }
+     }
+    ]
+   }
+  },
+  {
+   "name": "an undeclared component shows as a refusal",
+   "schema": true,
+   "envelope": {
+    "envelope": 1,
+    "agui": "1.0",
+    "messageId": "m-1",
+    "actor": {
+     "type": "agent",
+     "id": "agent-check",
+     "name": "Checker"
+    },
+    "state": "final",
+    "parts": [
+     {
+      "type": "component",
+      "format": 2,
+      "fill": {
+       "component": "chart",
+       "version": "0.1.0",
+       "data": {}
+      }
+     }
+    ]
+   },
+   "result": {
+    "envelope": 1,
+    "agui": "1.0",
+    "messageId": "m-1",
+    "actor": {
+     "type": "agent",
+     "id": "agent-check",
+     "name": "Checker"
+    },
+    "state": "final",
+    "parts": [
+     {
+      "type": "refusal",
+      "errors": [
+       "component: no contract has the name chart"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "a component part of fill format 1 shows as a refusal",
+   "schema": false,
+   "envelope": {
+    "envelope": 1,
+    "agui": "1.0",
+    "messageId": "m-1",
+    "actor": {
+     "type": "agent",
+     "id": "agent-check",
+     "name": "Checker"
+    },
+    "state": "final",
+    "parts": [
+     {
+      "type": "component",
+      "format": 1,
+      "fill": {
+       "component": "fact",
+       "version": "0.1.0",
+       "data": {
+        "label": "Due",
+        "value": "2026-11-20"
+       }
+      }
+     }
+    ]
+   },
+   "result": {
+    "envelope": 1,
+    "agui": "1.0",
+    "messageId": "m-1",
+    "actor": {
+     "type": "agent",
+     "id": "agent-check",
+     "name": "Checker"
+    },
+    "state": "final",
+    "parts": [
+     {
+      "type": "refusal",
+      "errors": [
+       "parts[0].format: must be 2"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "markup in a text part stays text",
+   "schema": true,
+   "envelope": {
+    "envelope": 1,
+    "agui": "1.0",
+    "messageId": "m-1",
+    "actor": {
+     "type": "agent",
+     "id": "agent-plan",
+     "name": "Planner"
+    },
+    "state": "final",
+    "parts": [
+     {
+      "type": "text",
+      "text": "<a href=\"https://example.com/\">Renew</a> **now**"
+     }
+    ]
+   },
+   "result": {
+    "envelope": 1,
+    "agui": "1.0",
+    "messageId": "m-1",
+    "actor": {
+     "type": "agent",
+     "id": "agent-plan",
+     "name": "Planner"
+    },
+    "state": "final",
+    "parts": [
+     {
+      "type": "text",
+      "text": "<a href=\"https://example.com/\">Renew</a> **now**"
+     }
+    ]
+   }
+  },
+  {
+   "name": "a text part that is not a string shows as a refusal",
+   "schema": false,
+   "envelope": {
+    "envelope": 1,
+    "agui": "1.0",
+    "messageId": "m-1",
+    "actor": {
+     "type": "agent",
+     "id": "agent-plan",
+     "name": "Planner"
+    },
+    "state": "final",
+    "parts": [
+     {
+      "type": "text",
+      "text": 5
+     }
+    ]
+   },
+   "result": {
+    "envelope": 1,
+    "agui": "1.0",
+    "messageId": "m-1",
+    "actor": {
+     "type": "agent",
+     "id": "agent-plan",
+     "name": "Planner"
+    },
+    "state": "final",
+    "parts": [
+     {
+      "type": "refusal",
+      "errors": [
+       "parts[0].text: must be a text of 100000 characters maximum"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "a part that is not an object shows as a refusal",
+   "schema": false,
+   "envelope": {
+    "envelope": 1,
+    "agui": "1.0",
+    "messageId": "m-1",
+    "actor": {
+     "type": "agent",
+     "id": "agent-plan",
+     "name": "Planner"
+    },
+    "state": "final",
+    "parts": [
+     "<b>hello</b>"
+    ]
+   },
+   "result": {
+    "envelope": 1,
+    "agui": "1.0",
+    "messageId": "m-1",
+    "actor": {
+     "type": "agent",
+     "id": "agent-plan",
+     "name": "Planner"
+    },
+    "state": "final",
+    "parts": [
+     {
+      "type": "refusal",
+      "errors": [
+       "parts[0]: must be an object with a type"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "a partial message with an error status",
+   "schema": true,
+   "envelope": {
+    "envelope": 1,
+    "agui": "1.0",
+    "threadId": "t-1",
+    "runId": "r-1",
+    "messageId": "m-1",
+    "role": "assistant",
+    "actor": {
+     "type": "agent",
+     "id": "agent-plan",
+     "name": "Planner"
+    },
+    "state": "partial",
+    "parts": [
+     {
+      "type": "text",
+      "text": "Checking"
+     },
+     {
+      "type": "status",
+      "state": "error",
+      "text": "The service did not answer.",
+      "code": "timeout"
+     }
+    ]
+   },
+   "result": {
+    "envelope": 1,
+    "agui": "1.0",
+    "threadId": "t-1",
+    "runId": "r-1",
+    "messageId": "m-1",
+    "role": "assistant",
+    "actor": {
+     "type": "agent",
+     "id": "agent-plan",
+     "name": "Planner"
+    },
+    "state": "partial",
+    "parts": [
+     {
+      "type": "text",
+      "text": "Checking"
+     },
+     {
+      "type": "status",
+      "state": "error",
+      "text": "The service did not answer.",
+      "code": "timeout"
+     }
+    ]
+   }
+  },
+  {
+   "name": "a different envelope version is refused",
+   "schema": false,
+   "envelope": {
+    "envelope": 2,
+    "agui": "1.0",
+    "messageId": "m-1",
+    "actor": {
+     "type": "agent",
+     "id": "agent-plan",
+     "name": "Planner"
+    },
+    "state": "final",
+    "parts": []
+   },
+   "result": {
+    "envelope": 1,
+    "agui": "1.0",
+    "messageId": "m-1",
+    "state": "refused",
+    "errors": [
+     "envelope: must be 1"
+    ]
+   }
+  },
+  {
+   "name": "a different AG-UI version and an unknown state are refused",
+   "schema": false,
+   "envelope": {
+    "envelope": 1,
+    "agui": "0.9",
+    "messageId": "m-1",
+    "actor": {
+     "type": "agent",
+     "id": "agent-plan",
+     "name": "Planner"
+    },
+    "state": "done",
+    "parts": []
+   },
+   "result": {
+    "envelope": 1,
+    "agui": "1.0",
+    "messageId": "m-1",
+    "state": "refused",
+    "errors": [
+     "agui: must be 1.0",
+     "state: must be partial or final"
+    ]
+   }
+  },
+  {
+   "name": "a refusal error longer than 300 characters is cut to 300 characters",
+   "schema": false,
+   "envelope": {
+    "envelope": 1,
+    "agui": "1.0",
+    "messageId": "m-1",
+    "actor": {
+     "type": "agent",
+     "id": "agent-check",
+     "name": "Checker"
+    },
+    "state": "final",
+    "parts": [
+     {
+      "type": "refusal",
+      "errors": [
+       "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+      ]
+     }
+    ]
+   },
+   "result": {
+    "envelope": 1,
+    "agui": "1.0",
+    "messageId": "m-1",
+    "actor": {
+     "type": "agent",
+     "id": "agent-check",
+     "name": "Checker"
+    },
+    "state": "final",
+    "parts": [
+     {
+      "type": "refusal",
+      "errors": [
+       "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx..."
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "a refused envelope from the history keeps its errors",
+   "schema": true,
+   "envelope": {
+    "envelope": 1,
+    "agui": "1.0",
+    "threadId": "t-1",
+    "messageId": "m-1",
+    "state": "refused",
+    "errors": [
+     "text: more than 100000 characters"
+    ]
+   },
+   "result": {
+    "envelope": 1,
+    "agui": "1.0",
+    "threadId": "t-1",
+    "messageId": "m-1",
+    "state": "refused",
+    "errors": [
+     "text: more than 100000 characters"
+    ]
+   }
+  },
+  {
+   "name": "a refused envelope keeps no actor and no parts",
+   "schema": false,
+   "envelope": {
+    "envelope": 1,
+    "agui": "1.0",
+    "messageId": "m-1",
+    "actor": {
+     "type": "agent",
+     "id": "agent-plan",
+     "name": "Planner"
+    },
+    "state": "refused",
+    "errors": [
+     "actor: a required field is missing"
+    ],
+    "parts": [
+     {
+      "type": "text",
+      "text": "Hello"
+     }
+    ]
+   },
+   "result": {
+    "envelope": 1,
+    "agui": "1.0",
+    "messageId": "m-1",
+    "state": "refused",
+    "errors": [
+     "actor: a required field is missing"
+    ]
+   }
+  },
+  {
+   "name": "a refused envelope with no errors is refused again",
+   "schema": false,
+   "envelope": {
+    "envelope": 1,
+    "agui": "1.0",
+    "messageId": "m-1",
+    "state": "refused",
+    "errors": []
+   },
+   "result": {
+    "envelope": 1,
+    "agui": "1.0",
+    "messageId": "m-1",
+    "state": "refused",
+    "errors": [
+     "errors: must be a list of 1 to 20 texts of 300 characters maximum"
+    ]
+   }
+  },
+  {
+   "name": "a refused envelope with an id that is not valid keeps its errors after the id error",
+   "schema": false,
+   "envelope": {
+    "envelope": 1,
+    "agui": "1.0",
+    "threadId": 5,
+    "messageId": "m-1",
+    "state": "refused",
+    "errors": [
+     "text: more than 100000 characters"
+    ]
+   },
+   "result": {
+    "envelope": 1,
+    "agui": "1.0",
+    "messageId": "m-1",
+    "state": "refused",
+    "errors": [
+     "threadId: must be an id of 1 to 128 characters",
+     "text: more than 100000 characters"
+    ]
+   }
+  },
+  {
+   "name": "a refused envelope keeps 20 errors maximum after the id error",
+   "schema": false,
+   "envelope": {
+    "envelope": 1,
+    "agui": "1.0",
+    "threadId": 5,
+    "messageId": "m-1",
+    "state": "refused",
+    "errors": [
+     "error 0",
+     "error 1",
+     "error 2",
+     "error 3",
+     "error 4",
+     "error 5",
+     "error 6",
+     "error 7",
+     "error 8",
+     "error 9",
+     "error 10",
+     "error 11",
+     "error 12",
+     "error 13",
+     "error 14",
+     "error 15",
+     "error 16",
+     "error 17",
+     "error 18",
+     "error 19"
+    ]
+   },
+   "result": {
+    "envelope": 1,
+    "agui": "1.0",
+    "messageId": "m-1",
+    "state": "refused",
+    "errors": [
+     "threadId: must be an id of 1 to 128 characters",
+     "error 0",
+     "error 1",
+     "error 2",
+     "error 3",
+     "error 4",
+     "error 5",
+     "error 6",
+     "error 7",
+     "error 8",
+     "error 9",
+     "error 10",
+     "error 11",
+     "error 12",
+     "error 13",
+     "error 14",
+     "error 15",
+     "error 16",
+     "error 17",
+     "error 18"
+    ]
+   }
+  },
+  {
+   "name": "a value that is not an object is refused",
+   "schema": false,
+   "envelope": "<p>hello</p>",
+   "result": {
+    "envelope": 1,
+    "agui": "1.0",
+    "state": "refused",
+    "errors": [
+     "(envelope): must be an object"
+    ]
+   }
+  }
+ ]
+}

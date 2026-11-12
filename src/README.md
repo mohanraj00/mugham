@@ -6,6 +6,7 @@
 - `render/catalog.js`: the contracts that the kit knows.
 - `primitives/`: the custom elements `mu-text`, `mu-button`, `mu-field`, `mu-stack` and `mu-grid`.
 - `components/`: the custom elements `mu-card`, `mu-action-button`, `mu-editable-form` and `mu-card-grid`.
+- `envelope/envelope.js`: the message envelope and the reader of an AG-UI 1.0 stream. [docs/contracts/envelope.md](../docs/contracts/envelope.md) gives the rules. A component part goes to `render/validate.js`.
 - `actions/action.js`: the action path. A request stays pending until a receipt with the same id comes back.
 
 ## Use
