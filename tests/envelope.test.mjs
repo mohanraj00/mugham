@@ -94,3 +94,34 @@ test('the stream keeps 100 errors at most', () => {
   const result = readStream(new Array(150).fill(null));
   assert.equal(result.errors.length, 100);
 });
+
+test('the stream keeps 1000 messages, 1000 runs and 1000000 characters of text at most', () => {
+  const actor = { type: 'agent', id: 'agent-plan' };
+  const start = (id) => ({ type: 'TEXT_MESSAGE_START', messageId: id, role: 'assistant', metadata: { mugham: { actor } } });
+  const many = readStream(Array.from({ length: 1001 }, (_, i) => start(`m-${i}`)));
+  assert.equal(many.messages.length, 1000);
+  assert.deepEqual(many.errors, ['events[1000]: the stream has 1000 messages']);
+
+  const runs = Array.from({ length: 1001 }, (_, i) => [{ type: 'RUN_STARTED', threadId: 't-1', runId: `r-${i}` },
+    { type: 'RUN_FINISHED', threadId: 't-1', runId: `r-${i}` }]).flat();
+  const longRuns = readStream(runs);
+  assert.equal(longRuns.runs.length, 1000);
+  assert.deepEqual(longRuns.errors, ['events[2000]: the stream has 1000 runs',
+    'events[2001]: no active run has this threadId and runId']);
+
+  const text = [];
+  for (let i = 0; i < 11; i += 1) text.push(start(`m-${i}`), { type: 'TEXT_MESSAGE_CONTENT', messageId: `m-${i}`, delta: 'a'.repeat(100000) });
+  const long = readStream(text);
+  assert.equal(long.messages[9].parts[0].text.length, 100000);
+  assert.equal(long.messages[10].parts[0].text, '');
+  assert.deepEqual(long.errors, ['events[21].delta: the stream has 1000000 characters of text']);
+});
+
+test('repeated run errors with no run add no status part', () => {
+  const actor = { type: 'agent', id: 'agent-plan' };
+  const events = [{ type: 'TEXT_MESSAGE_START', messageId: 'm-1', role: 'assistant', metadata: { mugham: { actor } } }];
+  for (let i = 0; i < 200; i += 1) events.push({ type: 'RUN_ERROR', message: 'Failed' });
+  const result = readStream(events);
+  assert.deepEqual(result.messages[0].parts, [{ type: 'text', text: '' }]);
+  assert.equal(result.errors.length, 100);
+});

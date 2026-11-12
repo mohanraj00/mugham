@@ -1177,6 +1177,83 @@
     "ignored": 0,
     "errors": []
    }
+  },
+  {
+   "name": "a run error with no active run and a second run with one runId are errors",
+   "events": [
+    {
+     "type": "TEXT_MESSAGE_START",
+     "messageId": "m-1",
+     "role": "assistant",
+     "metadata": {
+      "mugham": {
+       "actor": {
+        "type": "agent",
+        "id": "agent-plan",
+        "name": "Planner"
+       }
+      }
+     }
+    },
+    {
+     "type": "RUN_ERROR",
+     "message": "Failed"
+    },
+    {
+     "type": "RUN_STARTED",
+     "threadId": "t-1",
+     "runId": "r-1"
+    },
+    {
+     "type": "RUN_FINISHED",
+     "threadId": "t-1",
+     "runId": "r-1"
+    },
+    {
+     "type": "RUN_STARTED",
+     "threadId": "t-1",
+     "runId": "r-1"
+    },
+    {
+     "type": "RUN_ERROR",
+     "message": "Failed"
+    }
+   ],
+   "expected": {
+    "runs": [
+     {
+      "threadId": "t-1",
+      "runId": "r-1",
+      "state": "finished"
+     }
+    ],
+    "messages": [
+     {
+      "envelope": 1,
+      "agui": "1.0",
+      "messageId": "m-1",
+      "role": "assistant",
+      "actor": {
+       "type": "agent",
+       "id": "agent-plan",
+       "name": "Planner"
+      },
+      "state": "partial",
+      "parts": [
+       {
+        "type": "text",
+        "text": ""
+       }
+      ]
+     }
+    ],
+    "ignored": 0,
+    "errors": [
+     "events[1]: no run is active",
+     "events[4].runId: a run has this runId already",
+     "events[5]: no run is active"
+    ]
+   }
   }
  ]
 }

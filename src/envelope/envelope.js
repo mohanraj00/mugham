@@ -23,6 +23,10 @@ const MAX_ERRORS = 20;
 const MAX_ERROR = 300;
 const MAX_TYPE = 40;
 const MAX_STREAM_ERRORS = 100;
+// The stream comes from a model, so the reader keeps a limited quantity of data.
+const MAX_RUNS = 1000;
+const MAX_MESSAGES = 1000;
+const MAX_STREAM_TEXT = 1000000;
 
 const own = (object, key) => Object.prototype.hasOwnProperty.call(object, key);
 const isObject = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -173,6 +177,8 @@ export function createReader(catalog = CATALOG) {
   let ignored = 0;
   let active = null;
   let count = 0;
+  let textSize = 0;
+  const runIds = new Set();
 
   const fail = (error) => {
     if (errors.length < MAX_STREAM_ERRORS) errors.push(error);
@@ -224,6 +230,9 @@ export function createReader(catalog = CATALOG) {
       const bad = ['threadId', 'runId'].filter((key) => !isId(event[key]));
       if (bad.length) return bad.forEach((key) => fail(`${at}.${key}: ${ID_ERROR}`));
       if (active) return fail(`${at}: a run is already active`);
+      if (runIds.has(event.runId)) return fail(`${at}.runId: a run has this runId already`);
+      if (runs.length >= MAX_RUNS) return fail(`${at}: the stream has ${MAX_RUNS} runs`);
+      runIds.add(event.runId);
       active = { threadId: event.threadId, runId: event.runId, state: 'active' };
       runs.push(active);
     },
@@ -241,24 +250,23 @@ export function createReader(catalog = CATALOG) {
       if (!isText(event.message, 0, MAX_STATUS)) bad.push(`${at}.message: must be a text of 1000 characters maximum`);
       if (own(event, 'code') && !isText(event.code, 0, MAX_CODE)) bad.push(`${at}.code: must be a text of 128 characters maximum`);
       if (bad.length) return bad.forEach(fail);
+      if (!active) return fail(`${at}: no run is active`);
       const status = { type: 'status', state: 'error', text: event.message };
       if (own(event, 'code')) status.code = event.code;
-      const runId = active ? active.runId : undefined;
       for (const message of messages) {
-        if (message.state === 'partial' && message.runId === runId && message.parts.length < MAX_PARTS) {
+        if (message.state === 'partial' && message.runId === active.runId && message.parts.length < MAX_PARTS) {
           message.parts.push({ ...status });
         }
       }
-      if (active) {
-        active.state = 'error';
-        active.error = { message: event.message };
-        if (own(event, 'code')) active.error.code = event.code;
-        active = null;
-      }
+      active.state = 'error';
+      active.error = { message: event.message };
+      if (own(event, 'code')) active.error.code = event.code;
+      active = null;
     },
     TEXT_MESSAGE_START(event, at) {
       if (!isId(event.messageId)) return fail(`${at}.messageId: ${ID_ERROR}`);
       if (index.has(event.messageId)) return fail(`${at}.messageId: the message exists already`);
+      if (messages.length >= MAX_MESSAGES) return fail(`${at}: the stream has ${MAX_MESSAGES} messages`);
       if (own(event, 'role') && !ROLES.includes(event.role)) return fail(`${at}.role: must be one of ${ROLES.join(', ')}`);
       const actor = actorOf(event);
       const bad = actorErrors(actor, 'metadata.mugham.actor');
@@ -276,14 +284,19 @@ export function createReader(catalog = CATALOG) {
       const parts = open.message.parts;
       const last = parts[parts.length - 1];
       if (last.type !== 'text' && parts.length >= MAX_PARTS) return fail(`${at}.messageId: the message has ${MAX_PARTS} parts`);
-      open.entry.size += length(event.delta, MAX_TEXT);
+      const size = length(event.delta, MAX_TEXT);
+      if (textSize + size > MAX_STREAM_TEXT) return fail(`${at}.delta: the stream has ${MAX_STREAM_TEXT} characters of text`);
+      open.entry.size += size;
       if (open.entry.size > MAX_TEXT) {
+        // The kit does not keep the text of a refused message.
+        textSize -= open.entry.size - size;
         const { envelope, agui, threadId, runId, messageId } = open.message;
         const value = { envelope, agui, threadId, runId, messageId };
         for (const key of ['threadId', 'runId']) if (value[key] === undefined) delete value[key];
         messages[open.entry.at] = refused(value, [`text: more than ${MAX_TEXT} characters`]);
         return;
       }
+      textSize += size;
       if (last.type === 'text') last.text += event.delta;
       else parts.push({ type: 'text', text: event.delta });
     },
@@ -300,6 +313,7 @@ export function createReader(catalog = CATALOG) {
       if (own(event, 'replace') && typeof event.replace !== 'boolean') return fail(`${at}.replace: must be true or false`);
       const entry = index.get(event.messageId);
       if (entry && entry.kind !== 'activity') return fail(`${at}.messageId: the message is a text message`);
+      if (!entry && messages.length >= MAX_MESSAGES) return fail(`${at}: the stream has ${MAX_MESSAGES} messages`);
       if (entry && event.replace === false) {
         ignored += 1;
         return;

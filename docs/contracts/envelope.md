@@ -50,9 +50,9 @@ The reader reads only these seven types. It reads the fields in the table and ke
 
 | Event | Fields | Effect |
 |---|---|---|
-| `RUN_STARTED` | `threadId`, `runId` | Starts a run. The run is `active` |
+| `RUN_STARTED` | `threadId`, `runId` | Starts a run. The run is `active`. A `runId` can start one run only |
 | `RUN_FINISHED` | `threadId`, `runId` | The run is `finished`. Open messages stay partial |
-| `RUN_ERROR` | `message`, `code` | The run is `error`. Each open message of the run gets a `status` part and stays partial |
+| `RUN_ERROR` | `message`, `code` | The active run is `error`. Each open message of the run gets a `status` part and stays partial. If no run is active, the event is not valid |
 | `TEXT_MESSAGE_START` | `messageId`, `role`, `metadata.mugham.actor` | Opens a partial message with an empty text part |
 | `TEXT_MESSAGE_CONTENT` | `messageId`, `delta` | Adds the delta to the last part if it is a text part. If not, adds a new text part |
 | `TEXT_MESSAGE_END` | `messageId` | The message is final |
@@ -63,6 +63,12 @@ The reader ignores each other event type, and an `ACTIVITY_SNAPSHOT` with a diff
 For `ACTIVITY_SNAPSHOT`, `replace` is `true` if it is not given, as in AG-UI. If `replace` is `false` and the message exists, the reader ignores the snapshot. A snapshot cannot change the actor of a message.
 
 If an event of the seven types is not valid, the reader ignores it and records an error for the stream. For example: a delta for a message that is not open, a second start of one message, or a run event that does not match the active run. The result keeps 100 stream errors maximum. If the text of a message becomes longer than 100000 characters, the kit refuses the message.
+
+The stream comes from a model, so the reader limits the data that it keeps:
+
+- 1000 runs maximum. A `RUN_STARTED` after that is not valid.
+- 1000 messages maximum. A new message after that is not valid.
+- 1000000 characters of text maximum, for all the messages together. A delta after that is not valid.
 
 Actions and receipts do not go through the stream. The receipt is the response of the application API.
 
