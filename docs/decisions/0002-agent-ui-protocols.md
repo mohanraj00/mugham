@@ -63,7 +63,7 @@ The MCP server declares the HTML before the tool call, as a template. The specif
 | Envelope and actor | Each message has an actor type and an actor id (principle 3) | `messageId` and `role`. No actor id | `surfaceId`. No actor id | No message envelope. A tool result and a resource |
 | Component declaration | A contract file for each component. The kit refuses an undeclared component | None | A catalog that the client declares. The agent sends the component tree | None. The server sends HTML |
 | Content type | Data that the contract accepts. Text shows as text | Text deltas and JSON | Declarative JSON. Text can have Markdown | HTML with script |
-| Action | The contract binds the tool name. A fill names only a declared action | Tool calls from the agent | The agent writes the action name | The app calls `tools/call`. The host can ask for consent |
+| Action | The application binds the tool name in code. A fill names no tool | Tool calls from the agent | The agent writes the action name | The app calls `tools/call`. The host can ask for consent |
 | Receipt | Done only after the receipt of the API | `TOOL_CALL_RESULT` from the agent | None | `ui/notifications/tool-result` |
 | Stream | None in format 1 | Start, content and end events for each message. Run events | Ordered messages for each surface | Partial tool input only |
 
@@ -126,7 +126,7 @@ The adapter is a later issue. It maps an A2UI surface to fills:
 
 - The application gives a map from each A2UI component type to a contract in the catalog. The adapter refuses each component type that the map does not have.
 - The adapter resolves each JSON Pointer binding before it makes the fill. The fill contains only data.
-- The application gives a map from each A2UI action name to a declared action of the contract. The adapter refuses each action name that the map does not have. Thus the model cannot select a tool.
+- The application gives a map from each A2UI action name to an action binding of the application. The adapter refuses each action name that the map does not have. Thus the model cannot select a tool.
 - The adapter shows Markdown in a text value as plain text.
 - The adapter is plain JavaScript in the kit, with no dependency, as principle 2 says.
 
@@ -143,8 +143,8 @@ The adapter is a later issue. It maps an A2UI surface to fills:
 
 ## Changes to format 1 (mohanraj00/mugham#35)
 
-1. The contract keeps the tool name. A fill names only a declared action. Do not move a tool name into a fill, because the A2UI adapter depends on this rule.
+1. The application binding keeps the tool name. A fill names no tool and no action. Do not move a tool name into a fill, because the A2UI adapter depends on this rule. Format 2 removes the `actions` block of a contract and the `actions` list of a fill, because they had no effect.
 2. The receipt is the response of the application API. It is not an AG-UI `TOOL_CALL_RESULT`. The reference in the receipt shows as text, as #35 says.
-3. The confirm step stays in the contract. A2UI has no confirm step, so the adapter cannot remove one.
+3. The confirm step is in the application binding, not in a fill. A2UI has no confirm step, so the adapter cannot remove one.
 4. The fill gets no surface id and no message id. The envelope holds these ids.
 5. If #35 removes a part of format 1, the format number changes. The envelope part names the format number, as item 4 of the envelope list says.

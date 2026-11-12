@@ -1,9 +1,9 @@
 {
-  "format": 1,
+  "format": 2,
   "name": "editable-form",
   "version": "0.1.0",
   "kind": "component",
-  "description": "A form with up to 20 text fields. A person edits the values and submits them as one action.",
+  "description": "A form with up to 20 text fields. A person edits the values and submits them as one action. The form can ask a person to confirm.",
   "ai_content": true,
   "data": {
     "title": {
@@ -36,6 +36,7 @@
   "states": [
     "default",
     "disabled",
+    "confirm",
     "pending",
     "done",
     "error"

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate the component contracts and the fills of contract format 1. See catalog/schema/README.md."""
+"""Validate the component contracts and the fills of contract format 2. See catalog/schema/README.md."""
 import datetime
 import json
 import math
@@ -182,14 +182,11 @@ FILL_SCHEMA = load_schema('fill.schema.json')
 
 
 def fields_of(contract):
-    """Yield (path, field) for each field of a contract, with list items and action arguments."""
+    """Yield (path, field) for each field of a contract, with list items."""
     for name, field in contract.get('data', {}).items():
         yield 'data.' + name, field
         if field['type'] == 'list':
             yield 'data.%s.items' % name, field['items']
-    for name, action in contract.get('actions', {}).items():
-        for argument, field in action['arguments'].items():
-            yield 'actions.%s.arguments.%s' % (name, argument), field
 
 
 def references(contract):
@@ -209,8 +206,6 @@ def contract_errors(contract, filename=None, catalog=None, invalid=()):
     states = set(contract['states'])
     if 'default' not in states:
         errors.append('states: must include default')
-    if contract.get('actions') and not {'pending', 'done', 'error'} <= states:
-        errors.append('states: a contract with actions must include pending, done and error')
     accessibility = contract['accessibility']
     name = accessibility.get('name', {})
     if accessibility['role'] == 'none' and 'name' in accessibility:
@@ -323,22 +318,6 @@ def fill_errors(fill, catalog, path='', depth=0):
             errors += value_errors(data[key], field, '%sdata.%s' % (prefix, key), catalog, depth)
         elif field['required']:
             errors.append('%sdata.%s: a required field is missing' % (prefix, key))
-    declared = contract.get('actions', {})
-    for index, item in enumerate(fill.get('actions', [])):
-        at = '%sactions[%d]' % (prefix, index)
-        action = declared.get(item['action'])
-        if action is None:
-            errors.append(at + '.action: the contract does not declare this action')
-            continue
-        arguments = item['arguments']
-        for key in arguments:
-            if key not in action['arguments']:
-                errors.append('%s.arguments.%s: the action does not declare this argument' % (at, shown(key)))
-        for key, field in action['arguments'].items():
-            if key in arguments:
-                errors += value_errors(arguments[key], field, '%s.arguments.%s' % (at, key), catalog, depth)
-            elif field['required']:
-                errors.append('%s.arguments.%s: a required argument is missing' % (at, key))
     return errors
 
 
@@ -370,7 +349,7 @@ def load_catalog(folder):
 def main():
     contracts, errors = load_catalog(ROOT / 'catalog')
     print(json.dumps({'passed': not errors, 'contracts': sorted(contracts), 'errors': errors,
-                      'scope': 'The contract files in catalog/ against contract format 1. No browser result.'},
+                      'scope': 'The contract files in catalog/ against contract format 2. No browser result.'},
                      indent=2))
     return 1 if errors else 0
 

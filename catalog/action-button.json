@@ -1,9 +1,9 @@
 {
-  "format": 1,
+  "format": 2,
   "name": "action-button",
   "version": "0.1.0",
   "kind": "component",
-  "description": "A button for one action. The application binds the tool. The button shows done only after the receipt comes back.",
+  "description": "A button for one action. The application binds the tool. The button can ask a person to confirm. It shows done only after the receipt comes back.",
   "ai_content": false,
   "data": {
     "label": {
@@ -23,6 +23,7 @@
   "states": [
     "default",
     "disabled",
+    "confirm",
     "pending",
     "done",
     "error"

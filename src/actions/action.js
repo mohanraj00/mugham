@@ -1,5 +1,6 @@
 // The action path of the kit. An action is a tool name and its arguments. The application binds them in code.
-// A fill never selects the tool. The state is pending until a receipt with the same id comes back.
+// A fill never selects the tool. If the binding has a confirm step, the action starts only after a person confirms.
+// The state is pending until a receipt with the same id comes back.
 const TOOL = /^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)*$/;
 const MAX_MESSAGE = 200;
 const FIELD_NAME = /^[a-z][a-z0-9]*(_[a-z0-9]+)*$/;
@@ -9,6 +10,11 @@ const MAX_LABEL = 80;
 const MAX_TITLE = 120;
 // The action-button contract gives a description of 200 characters at most.
 const MAX_DESCRIPTION = 200;
+// A confirm step has a message of 200 characters at most and a button label of 40 characters at most.
+const MAX_CONFIRM_MESSAGE = 200;
+const MAX_CONFIRM_LABEL = 40;
+// A receipt reference, for example a record id, has 80 characters at most.
+const MAX_REFERENCE = 80;
 
 // Returns true if the text has more than max characters. The loop stops at max + 1, so a very long text
 // does not make a copy of all its characters.
@@ -33,6 +39,10 @@ function first(text, max) {
   return start;
 }
 
+function text(value, max) {
+  return typeof value === 'string' && value.length > 0 && !longer(value, max);
+}
+
 function scalar(value) {
   return typeof value === 'string' || typeof value === 'boolean' || (typeof value === 'number' && Number.isFinite(value));
 }
@@ -53,6 +63,15 @@ export function bindingErrors(binding) {
   // The application gives the description of an action, so a fill cannot describe a different target.
   if (binding.description !== undefined && (typeof binding.description !== 'string' || binding.description.length === 0
     || longer(binding.description, MAX_DESCRIPTION))) errors.push('the description must be a text of 1 to 200 characters');
+  // The application gives the confirm step, so a fill cannot remove it or change its words.
+  if (binding.confirm !== undefined) {
+    const confirm = binding.confirm;
+    const shaped = confirm !== null && typeof confirm === 'object' && !Array.isArray(confirm)
+      && Object.keys(confirm).every((key) => key === 'message' || key === 'label');
+    if (!shaped || !text(confirm.message, MAX_CONFIRM_MESSAGE) || !text(confirm.label, MAX_CONFIRM_LABEL)) {
+      errors.push('confirm must have only a message of 1 to 200 characters and a label of 1 to 40 characters');
+    }
+  }
   // The application gives the label of each editable field, so a fill cannot change what a field means.
   const editable = binding.editable ?? {};
   const entries = editable !== null && typeof editable === 'object' && !Array.isArray(editable) ? Object.entries(editable) : null;
@@ -69,6 +88,7 @@ export class ActionState {
   #request = null;
   #state = 'disabled';
   #message = '';
+  #reference = '';
 
   get state() {
     return this.#state;
@@ -76,6 +96,16 @@ export class ActionState {
 
   get message() {
     return this.#message;
+  }
+
+  // The reference of the last receipt, for example a record id. The element shows it only as text.
+  get reference() {
+    return this.#reference;
+  }
+
+  // The confirm step of the binding, as { message, label }. Without a binding or a confirm step, the value is null.
+  get confirm() {
+    return this.#binding ? this.#binding.confirm : null;
   }
 
   // The label of the action. The application gives it in the binding. A binding with no label gives an empty
@@ -108,28 +138,34 @@ export class ActionState {
       this.#request = null;
       this.#state = 'disabled';
       this.#message = '';
+      this.#reference = '';
       return [];
     }
     const errors = bindingErrors(binding);
     if (errors.length) return errors;
     this.#binding = Object.freeze({ tool: binding.tool, label: binding.label ?? '', title: binding.title ?? '', description: binding.description ?? '', arguments: Object.freeze({ ...(binding.arguments ?? {}) }),
-      editable: Object.freeze(Object.assign(Object.create(null), binding.editable ?? {})) });
+      editable: Object.freeze(Object.assign(Object.create(null), binding.editable ?? {})),
+      confirm: binding.confirm ? Object.freeze({ message: binding.confirm.message, label: binding.confirm.label }) : null });
     this.#request = null;
     this.#state = 'default';
     this.#message = '';
+    this.#reference = '';
     return [];
   }
 
   // Returns a request, or null if the action cannot start now. The extra values come from a fill,
   // so they cannot change an argument that the application binds: the bound arguments come last.
-  // Each extra value needs a name that the binding gives as editable.
-  start(extra = {}) {
+  // Each extra value needs a name that the binding gives as editable. If the binding has a confirm step,
+  // the action starts only when confirmed is true, after a person confirms.
+  start(extra = {}, confirmed = false) {
     if (!this.#binding || this.#state === 'pending' || this.#state === 'done') return null;
+    if (this.#binding.confirm && confirmed !== true) return null;
     if (Object.keys(extra).some((name) => !Object.hasOwn(this.#binding.editable, name))) return null;
     this.#request = Object.freeze({ id: crypto.randomUUID(), tool: this.#binding.tool,
       arguments: Object.freeze({ ...extra, ...this.#binding.arguments }) });
     this.#state = 'pending';
     this.#message = '';
+    this.#reference = '';
     return this.#request;
   }
 
@@ -139,6 +175,7 @@ export class ActionState {
     if (this.#state !== 'done' && this.#state !== 'error') return false;
     this.#state = 'default';
     this.#message = first(String(message), MAX_MESSAGE);
+    this.#reference = '';
     return true;
   }
 
@@ -148,8 +185,11 @@ export class ActionState {
     if (value.id !== this.#request.id || typeof value.ok !== 'boolean') return false;
     const message = value.message ?? '';
     if (typeof message !== 'string' || longer(message, MAX_MESSAGE)) return false;
+    const reference = value.reference ?? '';
+    if (typeof reference !== 'string' || longer(reference, MAX_REFERENCE)) return false;
     this.#state = value.ok ? 'done' : 'error';
     this.#message = message;
+    this.#reference = reference;
     this.#request = null;
     return true;
   }

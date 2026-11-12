@@ -30,6 +30,10 @@ const ACTION_CSS = sheet(`
   button[aria-disabled="true"] { cursor: not-allowed; opacity: 0.6; }
   .status { font: var(--mu-type-caption); color: var(--mu-color-text-muted); min-height: 1lh; }
   .status.error { color: var(--mu-color-danger); }
+  .reference { display: block; }
+  .step { display: flex; flex-wrap: wrap; align-items: center; gap: var(--mu-space-2); }
+  .step p { flex-basis: 100%; margin: 0; }
+  .step button[part="cancel"] { background: transparent; color: var(--mu-color-accent); }
   @media (forced-colors: active) {
     button { background: ButtonFace; color: ButtonText; border-color: ButtonText; forced-color-adjust: none; }
     button[aria-disabled="true"] { color: GrayText; border-color: GrayText; opacity: 1; }
@@ -40,7 +44,7 @@ const ACTION_CSS = sheet(`
 const STALE = 'Saved the values from before your last edit. Save again to send the edit.';
 
 // The text of each state. A pending action never shows as done.
-const STATUS = { default: '', disabled: '', pending: 'Pending', done: 'Done', error: 'Not done' };
+const STATUS = { default: '', disabled: '', confirm: '', pending: 'Pending', done: 'Done', error: 'Not done' };
 
 // Shared code for a component with one action. The application binds the tool with the action property
 // and gives the receipt with receipt(). The element sends a mu-action event with the request.
@@ -48,6 +52,9 @@ class ActionElement extends MuElement {
   #action = new ActionState();
   #status = null;
   #control = null;
+  // The area of the confirm step, and the step while it shows.
+  #area = null;
+  #asking = null;
 
   // The state of the action can only be read. Only bind(), start() and receipt() change it.
   get action() {
@@ -57,6 +64,7 @@ class ActionElement extends MuElement {
   set action(binding) {
     const errors = this.#action.bind(binding);
     if (errors.length) throw new TypeError('action: ' + errors.join('; '));
+    this.#close();
     this.rebound();
     this.#update();
   }
@@ -91,8 +99,10 @@ class ActionElement extends MuElement {
     return false;
   }
 
-  // An edit after a receipt makes the data new. Then the action can start again.
+  // An edit after a receipt makes the data new. Then the action can start again. An edit also closes
+  // the confirm step, because the person did not confirm the new data.
   reopen() {
+    this.#close();
     if (this.#action.reopen()) this.#update();
   }
 
@@ -100,16 +110,60 @@ class ActionElement extends MuElement {
     return data.disabled ? 'disabled' : this.#action.state;
   }
 
+  // Returns the area of the confirm step. The subclass puts it in the shadow root.
   attach(control, status) {
     this.#control = control;
     this.#status = status;
+    this.#asking = null;
+    this.#area = el('div', { class: 'confirm-area' });
     this.#update();
+    return this.#area;
   }
 
   // The started function runs only for an accepted request, before the element sends the event.
+  // If the binding has a confirm step, the element shows it first and sends the action only after a person confirms.
   send(extra, started) {
-    if (this.dataset.state === 'refused' || !this.fill) return;
-    const request = this.#action.start(extra);
+    if (this.dataset.state === 'refused' || !this.fill || this.#asking) return;
+    const confirm = this.#action.confirm;
+    if (!confirm) {
+      this.#start(extra, started, false);
+      return;
+    }
+    const state = this.#action.state;
+    if (state !== 'default' && state !== 'error') return;
+    const cancel = el('button', { type: 'button', part: 'cancel' }, 'Cancel');
+    const accept = el('button', { type: 'button', part: 'accept' }, confirm.label);
+    const step = el('div', { class: 'step', role: 'group', 'aria-label': confirm.message, part: 'confirm' },
+      el('p', {}, confirm.message), cancel, accept);
+    cancel.addEventListener('click', () => this.#close());
+    accept.addEventListener('click', () => {
+      this.#close();
+      this.#start(extra, started, true);
+    });
+    step.addEventListener('keydown', (event) => {
+      if (event.key !== 'Escape') return;
+      event.preventDefault();
+      event.stopPropagation();
+      this.#close();
+    });
+    this.#asking = step;
+    this.#area.replaceChildren(step);
+    this.#update();
+    cancel.focus();
+  }
+
+  // Closes the confirm step. If the focus was in the step, it goes back to the action control.
+  #close() {
+    if (!this.#asking) return;
+    const focused = this.#asking.contains(this.shadowRoot?.activeElement);
+    this.#asking = null;
+    this.#area.replaceChildren();
+    this.#update();
+    if (focused) this.#control.focus();
+  }
+
+  #start(extra, started, confirmed) {
+    const request = this.#action.start(extra, confirmed);
     if (!request) return;
     started?.(request);
     this.#update();
@@ -118,12 +172,14 @@ class ActionElement extends MuElement {
 
   #update() {
     if (!this.fill || !this.#control) return;
-    const state = this.#action.state;
+    const state = this.#asking ? 'confirm' : this.#action.state;
     this.dataset.state = state;
     this.#control.setAttribute('aria-disabled', state === 'default' || state === 'error' ? 'false' : 'true');
-    const words = [STATUS[state], this.#action.message].filter(Boolean).join(': ');
+    const words = [STATUS[state], state === 'confirm' ? '' : this.#action.message].filter(Boolean).join(': ');
     this.#status.className = 'status' + (state === 'error' ? ' error' : '');
-    this.#status.replaceChildren(words);
+    // The reference comes from the API of the application. It shows only as text.
+    const reference = state === 'confirm' ? '' : this.#action.reference;
+    this.#status.replaceChildren(words, reference ? el('span', { class: 'reference', part: 'reference' }, 'Reference: ' + reference) : '');
   }
 }
 
@@ -148,8 +204,8 @@ export class MuActionButton extends ActionElement {
     const status = el('span', { class: 'status', role: 'status', 'aria-live': 'polite', part: 'status' });
     const button = el('button', { type: 'button', part: 'button' }, data.label);
     button.addEventListener('click', () => this.send());
-    this.attach(button, status);
-    return [button, data.description ? el('span', { class: 'muted' }, data.description) : null, status];
+    const area = this.attach(button, status);
+    return [button, data.description ? el('span', { class: 'muted' }, data.description) : null, area, status];
   }
 }
 
@@ -254,8 +310,9 @@ export class MuEditableForm extends ActionElement {
     });
     const status = el('span', { class: 'status', role: 'status', 'aria-live': 'polite', part: 'status' });
     const submit = el('button', { type: 'submit', part: 'button' }, data.submit_label);
+    const area = this.attach(submit, status);
     const form = el('form', { 'aria-label': data.title, part: 'form' },
-      el('p', { class: 'title' }, data.title), ...this.#fields, el('div', {}, submit), status);
+      el('p', { class: 'title' }, data.title), ...this.#fields, el('div', {}, submit), area, status);
     // An edit after done makes the values new, so the form can save again.
     form.addEventListener('mu-edit', () => this.reopen());
     form.addEventListener('submit', (event) => {
@@ -272,7 +329,6 @@ export class MuEditableForm extends ActionElement {
       event.preventDefault();
       form.requestSubmit(submit);
     });
-    this.attach(submit, status);
     // A new fill has new values. A receipt from before the fill does not confirm them, so the form can save again.
     this.reopen();
     return [form];
