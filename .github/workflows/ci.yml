@@ -70,8 +70,6 @@ jobs:
           node-version: 25.8.0
       - name: Check the design tokens
         run: python3 -B tools/tokens.py
-      - name: Check the envelope vectors
-        run: python3 -B tests/vectors/envelope/generate.py
       - name: Run the tests of the browser validator
         run: node --test 'tests/**/*.test.mjs'
       # A pinned Chrome for Testing build. The step refuses the archive if its SHA-256 is different.

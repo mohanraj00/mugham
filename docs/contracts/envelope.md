@@ -1,6 +1,6 @@
 # Message envelope, version 1
 
-The schema is [envelope-v1.schema.json](envelope-v1.schema.json). It maps AG-UI 1.0, as [decision 0002](../decisions/0002-agent-ui-protocols.md) says. The reader is `src/envelope/`. The conformance set is `tests/vectors/envelope/`. `tests/vectors/envelope/generate.py` writes it, and `make check` compares the committed files with the output of the script.
+The schema is [envelope-v1.schema.json](envelope-v1.schema.json). It maps AG-UI 1.0, as [decision 0002](../decisions/0002-agent-ui-protocols.md) says. The reader is `src/envelope/`. The conformance set is `tests/vectors/envelope/`. `tests/vectors/envelope/generate.py` writes it, and `tests/test_envelope_vectors.py` compares the committed files with the output of the script.
 
 ## The envelope
 
