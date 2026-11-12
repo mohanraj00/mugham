@@ -4,7 +4,7 @@ Version 3, 2026-11-12.
 
 ## Purpose
 
-Mugham is a UI toolkit for agentic applications, with examples. In an agentic application, people and AI agents work in the same screens. The name is the Tamil word for "face". The kit gives a chat thread for people and agents, cards, action buttons, editable forms and card grids. A component catalog declares each component. The kit runs on each device as a progressive web app, with an offline mode. The kit has no workbench shell and no panels. The owner of a service or an application can build a dashboard with the kit.
+Mugham is a UI toolkit for agentic applications. The name is the Tamil word for "face". The kit gives a chat thread for people and agents, cards, action buttons, editable forms and card grids. A component catalog declares each component. The kit runs on each device as a progressive web app, with an offline mode. The kit has no workbench shell and no panels. The owner of a service or an application can build a dashboard with the kit.
 
 ### Consumers
 

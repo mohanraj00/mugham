@@ -5,7 +5,7 @@
 
 # mugham
 
-Mugham is a UI toolkit for agentic applications, with examples. People and AI agents work in the same screens. The name is the Tamil word for "face".
+Mugham is a UI toolkit for agentic applications. The name is the Tamil word for "face".
 
 Status: release `v0.1.0` is out. It has the contract format, the design tokens, the primitives and the first catalog components. The thread, the message envelope and the offline mode are not built yet. The plan is in [docs/STATUS.md](docs/STATUS.md) and in the GitHub milestones.
 
