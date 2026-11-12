@@ -141,6 +141,13 @@
      "version": "0.1.0",
      "data": {
       "title": "Field guide to moss"
+     },
+     "slots": {
+      "authorship": {
+       "type": "agent",
+       "id": "a-catalog",
+       "name": "Catalog agent"
+      }
      }
     }
    }
@@ -181,6 +188,13 @@
         }
        }
       ]
+     },
+     "slots": {
+      "authorship": {
+       "type": "agent",
+       "id": "a-catalog",
+       "name": "Catalog agent"
+      }
      }
     }
    }
@@ -229,6 +243,13 @@
         }
        }
       ]
+     },
+     "slots": {
+      "authorship": {
+       "type": "agent",
+       "id": "a-catalog",
+       "name": "Catalog agent"
+      }
      }
     }
    }
