@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
-import { fillErrors, schemaErrors } from '../src/render/validate.js';
+import { actorErrors, authorErrors, fillErrors, schemaErrors } from '../src/render/validate.js';
 
 const vectors = JSON.parse(readFileSync(new URL('./vectors/fills.json', import.meta.url), 'utf8'));
 
@@ -79,4 +79,20 @@ test('a very long key name gets a short error', () => {
     data: { title: 'A', due: '2026-12-01', renewals: 1, facts: [], [name]: 1 }, [name]: 1 };
   const errors = fillErrors(fill, vectors.catalog);
   assert.deepEqual(errors, [`${'q'.repeat(40)}...: unknown key`]);
+});
+
+// The author in a fill must be the actor that the application or the thread gives.
+test('the author of a fill must be the bound actor', () => {
+  const agent = { type: 'agent', id: 'agent-check' };
+  const fill = { component: 'card', version: '0.1.0', data: {}, slots: { authorship: agent } };
+  assert.deepEqual(authorErrors(fill, agent), []);
+  assert.deepEqual(authorErrors({ ...fill, slots: {} }, null), []);
+  assert.deepEqual(authorErrors(fill, null), ['slots.authorship: no actor is bound, so the author cannot be checked']);
+  assert.deepEqual(authorErrors(fill, { type: 'human', id: 'agent-check' }), ['slots.authorship: the author is not the bound actor']);
+  assert.deepEqual(authorErrors(fill, { type: 'agent', id: 'agent-other' }), ['slots.authorship: the author is not the bound actor']);
+  assert.deepEqual(actorErrors(null), []);
+  assert.deepEqual(actorErrors(agent), []);
+  assert.deepEqual(actorErrors({ type: 'person', id: 'x' }), ['type: must be human, agent or system']);
+  assert.deepEqual(actorErrors({ type: 'agent', id: '' }), ['id: must be a string of 1 to 128 characters']);
+  assert.deepEqual(actorErrors('agent'), ['must be an object or null']);
 });

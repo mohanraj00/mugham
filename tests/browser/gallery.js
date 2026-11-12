@@ -15,6 +15,7 @@ const main = document.getElementById('main');
 
 function make(tag, value, ...children) {
   const node = document.createElement(tag);
+  node.actor = SLOTS.authorship;
   node.fill = value;
   node.append(...children);
   return node;
@@ -44,6 +45,7 @@ const buttons = STATES.map(() => {
 for (const [index, state] of STATES.entries()) section('action-button-' + state, buttons[index]);
 
 const form = document.createElement('mu-editable-form');
+form.actor = SLOTS.authorship;
 form.action = { tool: 'library.update_loan', label: 'Save', title: 'Change a loan', arguments: { loan_id: 'L-0001' },
   editable: { shelf: 'Shelf code', note: 'Note' } };
 form.fill = outer('editable-form', { title: 'Change a loan', submit_label: 'Save', fields: [

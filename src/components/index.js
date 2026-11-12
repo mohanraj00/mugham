@@ -286,9 +286,10 @@ export class MuCardGrid extends MuElement {
   render(data) {
     if (data.cards.length === 0) return [el('p', { class: 'empty', part: 'empty' }, 'No cards.')];
     const list = el('ul', { 'aria-label': data.label, part: 'list' });
-    // A nested card takes the slots of the grid, so each card shows them.
+    // A nested card takes the slots and the actor of the grid, so each card shows them.
     for (const item of data.cards) {
       const card = document.createElement('mu-card');
+      card.actor = this.actor;
       card.fill = this.fill.slots ? { ...item, slots: this.fill.slots } : item;
       list.append(el('li', {}, card));
     }

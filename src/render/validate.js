@@ -199,6 +199,26 @@ export function fillErrors(fill, catalog, path = '', depth = 0) {
 }
 
 // Only the outer fill has slots. A nested fill takes the slots of its outer fill.
+// The author in a fill is a claim of the model. Only the actor that the application or the thread gives is
+// trusted (CONSTITUTION.md, principle 3). Call this only for a fill that fillErrors accepts.
+const ACTOR_TYPES = new Set(['human', 'agent', 'system']);
+
+export function actorErrors(actor) {
+  if (actor === null) return [];
+  if (actor === undefined || typeof actor !== 'object' || Array.isArray(actor)) return ['must be an object or null'];
+  if (!ACTOR_TYPES.has(actor.type)) return ['type: must be human, agent or system'];
+  if (typeof actor.id !== 'string' || actor.id.length < 1 || actor.id.length > 128) return ['id: must be a string of 1 to 128 characters'];
+  return [];
+}
+
+export function authorErrors(fill, actor) {
+  const author = fill.slots?.authorship;
+  if (!author) return [];
+  if (!actor) return ['slots.authorship: no actor is bound, so the author cannot be checked'];
+  if (author.type !== actor.type || author.id !== actor.id) return ['slots.authorship: the author is not the bound actor'];
+  return [];
+}
+
 function slotErrors(fill, contract, prefix, depth) {
   const declared = contract.slots ?? {};
   if (depth > 0) return own(fill, 'slots') ? [`${prefix}slots: a nested fill takes the slots of its outer fill`] : [];

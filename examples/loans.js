@@ -13,6 +13,8 @@ const loan = (title, date, shelf) => fill('card', { title, date, date_label: 'Du
 
 function make(tag, value) {
   const node = document.createElement(tag);
+  // The application gives the actor. The authorship slot must name the same actor.
+  node.actor = AUTHOR.authorship;
   node.fill = value;
   return node;
 }
