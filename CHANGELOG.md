@@ -4,6 +4,8 @@ Each release has an entry. The newest entry is first.
 
 ## Unreleased
 
+- A release workflow attaches `mugham.tar` and a SHA-256 file to a GitHub release. It publishes no package. [Decision 0004](docs/decisions/0004-package.md) gives the package choice.
+- The README has a quickstart, the minimum browser versions and a stability statement.
 - The README is for people. It lists each catalog component, and it shows the highlights of the kit in screenshots for the light theme and the dark theme. Agents and LLMs go to the constitution and `AGENTS.md`.
 - `make screenshots` writes the README screenshots to `docs/screenshots/` from a fixture page with synthetic data.
 - Fix: an action button with no description showed the text `null`.

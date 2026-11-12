@@ -1,0 +1,38 @@
+name: Release archive
+# This workflow attaches the build archive to a GitHub release. It publishes no package.
+# The owner makes the release by hand. See docs/decisions/0004-package.md.
+on:
+  release:
+    types: [published]
+permissions: {}
+jobs:
+  archive:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: 3.14.6
+      # Two builds of one commit must give the same bytes. The job stops if they differ.
+      - name: Build two times and compare the bytes
+        run: python3 -B tools/build.py --check
+      - name: Build the archive
+        run: |
+          set -euo pipefail
+          python3 -B tools/build.py --out "$RUNNER_TEMP/archive"
+          cd "$RUNNER_TEMP/archive"
+          sha256sum mugham.tar | tee mugham.tar.sha256
+      - name: Attach the archive to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/archive"
+          gh release upload "$TAG" mugham.tar mugham.tar.sha256
