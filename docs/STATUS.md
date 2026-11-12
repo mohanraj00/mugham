@@ -16,5 +16,4 @@ The GitHub milestones hold the issues of each release.
 
 ## Next
 
-1. Build the thread on the message envelope (#5). [docs/contracts/envelope.md](contracts/envelope.md) gives the envelope.
-2. Build the evidence components and the extension point for application contracts.
+1. Build the evidence components and the extension point for application contracts.

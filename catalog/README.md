@@ -15,6 +15,8 @@ Each JSON file in this folder is the contract of one component. [schema/README.m
 | `editable-form.json` | `mu-editable-form` | component | Up to 20 fields, submitted as one action. |
 | `card-grid.json` | `mu-card-grid` | component | A labeled list of cards. |
 
+The thread `mu-thread` has no contract in this folder, because a model does not fill it. A model sends events, and the catalog validates each component part of an event. [src/thread/README.md](../src/thread/README.md) is the contract of the thread.
+
 ## Actions
 
 This section is the one description of the action model. A contract declares no tool, and a fill names no action. The application binds the tool and the fixed arguments in code:
