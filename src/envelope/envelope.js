@@ -3,10 +3,12 @@
 // The reader never changes its input. Each text stays text: the reader never reads it as Markdown or markup.
 import { fillErrors } from '../render/validate.js';
 import { CATALOG } from '../render/catalog.js';
+import CONTRACT_SCHEMA from '../../catalog/schema/contract.schema.json' with { type: 'json' };
 
 export const ENVELOPE_VERSION = 1;
 export const AGUI_VERSION = '1.0';
-export const FILL_FORMAT = 2;
+// One format number covers a contract and a fill (catalog/schema/README.md). The reader keeps no copy of it.
+export const FILL_FORMAT = CONTRACT_SCHEMA.properties.format.const;
 export const FILL_ACTIVITY = 'mugham.fill';
 export const FALLBACK_TEXT = 'The kit does not know this part type, so it does not show the part.';
 

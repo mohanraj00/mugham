@@ -4,10 +4,11 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { schemaErrors } from '../src/render/validate.js';
-import { createReader, readEnvelope, readStream, FALLBACK_TEXT } from '../src/envelope/envelope.js';
+import { createReader, readEnvelope, readStream, FALLBACK_TEXT, FILL_FORMAT } from '../src/envelope/envelope.js';
 
 const load = (path) => JSON.parse(readFileSync(new URL(path, import.meta.url), 'utf8'));
 const SCHEMA = load('../docs/contracts/envelope-v1.schema.json');
+const CONTRACT = load('../catalog/schema/contract.schema.json');
 const ENVELOPES = load('./vectors/envelope/envelopes.json');
 const STREAMS = load('./vectors/envelope/streams.json');
 const EVENT = { $ref: '#/$defs/event' };
@@ -18,6 +19,12 @@ const envelopeErrors = (value) => schemaErrors(value, SCHEMA, SCHEMA, '', '(enve
 
 test('the fallback text of the vectors is the text of the kit', () => {
   assert.equal(ENVELOPES.fallback, FALLBACK_TEXT);
+});
+
+test('the envelope schema and the reader use the fill format of the catalog', () => {
+  assert.equal(FILL_FORMAT, CONTRACT.properties.format.const);
+  assert.equal(SCHEMA.$defs.componentPart.properties.format.const, FILL_FORMAT);
+  assert.equal(SCHEMA.$defs.ACTIVITY_SNAPSHOT.properties.content.properties.format.const, FILL_FORMAT);
 });
 
 for (const item of ENVELOPES.cases) {

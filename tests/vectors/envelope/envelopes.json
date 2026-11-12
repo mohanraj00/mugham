@@ -278,7 +278,7 @@
    }
   },
   {
-   "name": "a component part of a different format shows as a refusal",
+   "name": "a component part of fill format 1 shows as a refusal",
    "schema": false,
    "envelope": {
     "envelope": 1,
