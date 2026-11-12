@@ -667,6 +667,91 @@
    }
   },
   {
+   "name": "a refused envelope with an id that is not valid keeps its errors after the id error",
+   "schema": false,
+   "envelope": {
+    "envelope": 1,
+    "agui": "1.0",
+    "threadId": 5,
+    "messageId": "m-1",
+    "state": "refused",
+    "errors": [
+     "text: more than 100000 characters"
+    ]
+   },
+   "result": {
+    "envelope": 1,
+    "agui": "1.0",
+    "messageId": "m-1",
+    "state": "refused",
+    "errors": [
+     "threadId: must be an id of 1 to 128 characters",
+     "text: more than 100000 characters"
+    ]
+   }
+  },
+  {
+   "name": "a refused envelope keeps 20 errors maximum after the id error",
+   "schema": false,
+   "envelope": {
+    "envelope": 1,
+    "agui": "1.0",
+    "threadId": 5,
+    "messageId": "m-1",
+    "state": "refused",
+    "errors": [
+     "error 0",
+     "error 1",
+     "error 2",
+     "error 3",
+     "error 4",
+     "error 5",
+     "error 6",
+     "error 7",
+     "error 8",
+     "error 9",
+     "error 10",
+     "error 11",
+     "error 12",
+     "error 13",
+     "error 14",
+     "error 15",
+     "error 16",
+     "error 17",
+     "error 18",
+     "error 19"
+    ]
+   },
+   "result": {
+    "envelope": 1,
+    "agui": "1.0",
+    "messageId": "m-1",
+    "state": "refused",
+    "errors": [
+     "threadId: must be an id of 1 to 128 characters",
+     "error 0",
+     "error 1",
+     "error 2",
+     "error 3",
+     "error 4",
+     "error 5",
+     "error 6",
+     "error 7",
+     "error 8",
+     "error 9",
+     "error 10",
+     "error 11",
+     "error 12",
+     "error 13",
+     "error 14",
+     "error 15",
+     "error 16",
+     "error 17",
+     "error 18"
+    ]
+   }
+  },
+  {
    "name": "a value that is not an object is refused",
    "schema": false,
    "envelope": "<p>hello</p>",

@@ -18,7 +18,7 @@ An envelope is one message of a thread. The stream reader makes envelopes from A
 | `state` | `partial`, `final` or `refused` | See "States" |
 | `parts` | The typed parts, in the order of the events | See "Parts" |
 
-The application sets the actor. If a message has no valid actor, the kit refuses the message. A refused envelope has `state` equal to `refused`, a list of `errors`, no actor and no parts. It has no `messageId` if the input had no valid `messageId`. An application can also give a refused envelope, for example from its history. If it is valid, the kit keeps its errors and its ids. It does not keep other fields.
+The application sets the actor. If a message has no valid actor, the kit refuses the message. A refused envelope has `state` equal to `refused`, a list of `errors`, no actor and no parts. It has no `messageId` if the input had no valid `messageId`. An application can also give a refused envelope, for example from its history. If it is valid, the kit keeps its errors and its ids. It does not keep other fields. If an id is not valid, the kit puts the id error before the errors of the envelope, with 20 errors maximum.
 
 ## Parts
 
@@ -60,7 +60,7 @@ The reader reads only these seven types. It reads the fields in the table and ke
 
 The reader ignores each other event type, and an `ACTIVITY_SNAPSHOT` with a different `activityType`. It also ignores a `TEXT_MESSAGE_CONTENT` or a `TEXT_MESSAGE_END` of a refused message. These events change no state. The result counts them in `ignored`. `ACTIVITY_DELTA` is not accepted.
 
-For `ACTIVITY_SNAPSHOT`, `replace` is `true` if it is not given, as in AG-UI. If `replace` is `false` and the message exists, the reader ignores the snapshot. A snapshot cannot change the actor of a message.
+For `ACTIVITY_SNAPSHOT`, `replace` is `true` if it is not given, as in AG-UI. If `replace` is `false` and the message exists, the reader ignores the snapshot. A snapshot cannot change the actor of a message. A replaced message keeps its `threadId` and its `runId`. The reader also ignores a snapshot of a refused message, so a refused message stays refused.
 
 If an event of the seven types is not valid, the reader ignores it and records an error for the stream. For example: a delta for a message that is not open, a second start of one message, or a run event that does not match the active run. The result keeps 100 stream errors maximum. If the text of a message becomes longer than 100000 characters, the kit refuses the message.
 

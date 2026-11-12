@@ -149,7 +149,8 @@ export function readEnvelope(value, catalog = CATALOG) {
     const valid = Array.isArray(value.errors) && value.errors.length >= 1 && value.errors.length <= MAX_ERRORS &&
       value.errors.every((error) => isText(error, 0, MAX_ERROR));
     if (!valid) errors.push(`errors: must be a list of 1 to ${MAX_ERRORS} texts of ${MAX_ERROR} characters maximum`);
-    return refused(header, errors.length ? errors : value.errors);
+    else errors.push(...value.errors);
+    return refused(header, errors.slice(0, MAX_ERRORS));
   }
   if (own(value, 'role') && !ROLES.includes(value.role)) errors.push(`role: must be one of ${ROLES.join(', ')}`);
   if (value.state !== 'partial' && value.state !== 'final') errors.push('state: must be partial or final');
@@ -318,20 +319,31 @@ export function createReader(catalog = CATALOG) {
         ignored += 1;
         return;
       }
+      const old = entry ? messages[entry.at] : undefined;
+      // A refused message stays refused.
+      if (old && old.state === 'refused') {
+        ignored += 1;
+        return;
+      }
       const actor = actorOf(event);
       const bad = actorErrors(actor, 'metadata.mugham.actor');
-      const old = entry ? messages[entry.at] : undefined;
       if (old && bad.length) return bad.forEach((error) => fail(`${at}.${error}`));
-      if (old && old.state !== 'refused' && !sameActor(old.actor, actor)) {
+      if (old && !sameActor(old.actor, actor)) {
         return fail(`${at}.metadata.mugham.actor: must not change`);
       }
+      // A replaced message keeps its threadId and its runId.
+      const head = old ? { envelope: old.envelope, agui: old.agui } : header(event.messageId);
+      if (old) {
+        for (const key of ['threadId', 'runId']) if (own(old, key)) head[key] = old[key];
+        head.messageId = old.messageId;
+      }
       let message;
-      if (bad.length) message = refused(header(event.messageId), bad);
+      if (bad.length) message = refused(head, bad);
       else {
         const content = event.content;
         const part = isObject(content) ? componentPart(content.format, content.fill, 'content', catalog)
           : refusalPart(['content: must be an object']);
-        message = { ...header(event.messageId), role: 'activity', actor: actorCopy(actor), state: 'final', parts: [part] };
+        message = { ...head, role: 'activity', actor: actorCopy(actor), state: 'final', parts: [part] };
       }
       // The JSON text of a fill counts in the data of the stream. A replaced fill gives back its size.
       const part = message.parts ? message.parts[0] : undefined;
