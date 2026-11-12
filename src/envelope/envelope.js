@@ -40,14 +40,12 @@ function length(text, limit) {
 const isText = (value, min, max) => typeof value === 'string' && length(value, max) >= min && length(value, max) <= max;
 const isId = (value) => isText(value, 1, MAX_ID);
 
-// Give the first code points of text, with '...' if the text is longer.
+// Give text with max code points at most. A longer text keeps its first code points and ends with '...'.
 function cut(text, max) {
-  let start = '';
-  let count = 0;
+  const start = [];
   for (const character of text) {
-    count += 1;
-    if (count > max) return start + '...';
-    start += character;
+    if (start.length === max) return start.slice(0, max - 3).join('') + '...';
+    start.push(character);
   }
   return text;
 }
@@ -141,7 +139,14 @@ export function readEnvelope(value, catalog = CATALOG) {
     }
   }
   if (isId(value.messageId)) header.messageId = value.messageId;
-  else errors.push(`messageId: ${ID_ERROR}`);
+  else if (value.state !== 'refused' || own(value, 'messageId')) errors.push(`messageId: ${ID_ERROR}`);
+  // A refused envelope, for example from the history. The kit keeps its errors and its ids.
+  if (value.state === 'refused') {
+    const valid = Array.isArray(value.errors) && value.errors.length >= 1 && value.errors.length <= MAX_ERRORS &&
+      value.errors.every((error) => isText(error, 0, MAX_ERROR));
+    if (!valid) errors.push(`errors: must be a list of 1 to ${MAX_ERRORS} texts of ${MAX_ERROR} characters maximum`);
+    return refused(header, errors.length ? errors : value.errors);
+  }
   if (own(value, 'role') && !ROLES.includes(value.role)) errors.push(`role: must be one of ${ROLES.join(', ')}`);
   if (value.state !== 'partial' && value.state !== 'final') errors.push('state: must be partial or final');
   errors.push(...actorErrors(value.actor, 'actor'));

@@ -18,7 +18,7 @@ An envelope is one message of a thread. The stream reader makes envelopes from A
 | `state` | `partial`, `final` or `refused` | See "States" |
 | `parts` | The typed parts, in the order of the events | See "Parts" |
 
-The application sets the actor. If a message has no valid actor, the kit refuses the message. A refused envelope has `state` equal to `refused`, a list of `errors`, no actor and no parts. It has no `messageId` if the input had no valid `messageId`.
+The application sets the actor. If a message has no valid actor, the kit refuses the message. A refused envelope has `state` equal to `refused`, a list of `errors`, no actor and no parts. It has no `messageId` if the input had no valid `messageId`. An application can also give a refused envelope, for example from its history. If it is valid, the kit keeps its errors and its ids. It does not keep other fields.
 
 ## Parts
 
@@ -34,7 +34,7 @@ Text is text. The kit never reads a text, a delta, an error or a status as Markd
 
 The kit validates each component part with `fillErrors` of `src/render/validate.js` and the catalog. If the fill has an error, the part becomes a `refusal` part with the errors. Thus an undeclared component shows as a refusal.
 
-If a part has a type that version 1 does not know, the kit replaces it with a `fallback` part. The fallback has a fixed text and the type name, with 40 characters maximum. It keeps no other data of the part.
+If a part has a type that version 1 does not know, the kit replaces it with a `fallback` part. The fallback has a fixed text and the type name, with 40 characters maximum. If a type name or an error is too long, the kit cuts it. The cut text ends with `...` and stays in the limit. It keeps no other data of the part.
 
 ## States
 

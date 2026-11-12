@@ -269,7 +269,7 @@
         },
         "partType": {
           "type": "string",
-          "maxLength": 43
+          "maxLength": 40
         },
         "text": {
           "type": "string",

@@ -172,7 +172,7 @@
     "parts": [
      {
       "type": "fallback",
-      "partType": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx...",
+      "partType": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx...",
       "text": "The kit does not know this part type, so it does not show the part."
      }
     ]
@@ -544,6 +544,125 @@
     "errors": [
      "agui: must be 1.0",
      "state: must be partial or final"
+    ]
+   }
+  },
+  {
+   "name": "a refusal error longer than 300 characters is cut to 300 characters",
+   "schema": false,
+   "envelope": {
+    "envelope": 1,
+    "agui": "1.0",
+    "messageId": "m-1",
+    "actor": {
+     "type": "agent",
+     "id": "agent-check",
+     "name": "Checker"
+    },
+    "state": "final",
+    "parts": [
+     {
+      "type": "refusal",
+      "errors": [
+       "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+      ]
+     }
+    ]
+   },
+   "result": {
+    "envelope": 1,
+    "agui": "1.0",
+    "messageId": "m-1",
+    "actor": {
+     "type": "agent",
+     "id": "agent-check",
+     "name": "Checker"
+    },
+    "state": "final",
+    "parts": [
+     {
+      "type": "refusal",
+      "errors": [
+       "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx..."
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "a refused envelope from the history keeps its errors",
+   "schema": true,
+   "envelope": {
+    "envelope": 1,
+    "agui": "1.0",
+    "threadId": "t-1",
+    "messageId": "m-1",
+    "state": "refused",
+    "errors": [
+     "text: more than 100000 characters"
+    ]
+   },
+   "result": {
+    "envelope": 1,
+    "agui": "1.0",
+    "threadId": "t-1",
+    "messageId": "m-1",
+    "state": "refused",
+    "errors": [
+     "text: more than 100000 characters"
+    ]
+   }
+  },
+  {
+   "name": "a refused envelope keeps no actor and no parts",
+   "schema": false,
+   "envelope": {
+    "envelope": 1,
+    "agui": "1.0",
+    "messageId": "m-1",
+    "actor": {
+     "type": "agent",
+     "id": "agent-plan",
+     "name": "Planner"
+    },
+    "state": "refused",
+    "errors": [
+     "actor: a required field is missing"
+    ],
+    "parts": [
+     {
+      "type": "text",
+      "text": "Hello"
+     }
+    ]
+   },
+   "result": {
+    "envelope": 1,
+    "agui": "1.0",
+    "messageId": "m-1",
+    "state": "refused",
+    "errors": [
+     "actor: a required field is missing"
+    ]
+   }
+  },
+  {
+   "name": "a refused envelope with no errors is refused again",
+   "schema": false,
+   "envelope": {
+    "envelope": 1,
+    "agui": "1.0",
+    "messageId": "m-1",
+    "state": "refused",
+    "errors": []
+   },
+   "result": {
+    "envelope": 1,
+    "agui": "1.0",
+    "messageId": "m-1",
+    "state": "refused",
+    "errors": [
+     "errors: must be a list of 1 to 20 texts of 300 characters maximum"
     ]
    }
   },
