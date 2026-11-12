@@ -232,6 +232,8 @@ check('citation: a click opens the locator with no opener', sourceAsks.length ==
 const unsourced = citation({ authorship: AUTHOR });
 check('citation: no citation slot shows the empty state', unsourced.dataset.state === 'empty'
   && unsourced.shadowRoot.textContent.includes('No source given.') && !unsourced.shadowRoot.querySelector('button'), unsourced.shadowRoot.textContent);
+check('citation: the empty state still shows the author and the quote', unsourced.shadowRoot.textContent.includes('Author: agent agent-check')
+  && unsourced.shadowRoot.textContent.includes('A short loan can get one renewal.'), unsourced.shadowRoot.textContent);
 const refusals = [];
 const noLocator = document.createElement('mu-citation');
 noLocator.addEventListener('mu-refused', (event) => refusals.push(...event.detail.errors));

@@ -414,9 +414,9 @@ export class MuCitation extends MuElement {
 
   render(data) {
     const quote = data.quote ? el('blockquote', { part: 'quote' }, data.quote) : null;
-    const source = this.fill.slots.citation ? provenance(this.fill.slots)
-      : el('p', { class: 'muted', part: 'empty' }, 'No source given.');
-    return [el('figure', { role: 'group', 'aria-label': 'Citation', part: 'citation' }, quote, source)];
+    // The authorship slot is required, so the author always shows. With no citation slot, the text tells it.
+    const empty = this.fill.slots.citation ? null : el('p', { class: 'muted', part: 'empty' }, 'No source given.');
+    return [el('figure', { role: 'group', 'aria-label': 'Citation', part: 'citation' }, quote, empty, provenance(this.fill.slots))];
   }
 }
 
