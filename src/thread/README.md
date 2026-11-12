@@ -20,7 +20,7 @@ await thread.read(events);
 |---|---|
 | `push(event)` | Gives one AG-UI 1.0 event to the reader. |
 | `read(source)` | Reads each event of an async source, or of any iterable, in order. The promise resolves when the source ends. If the source fails, the thread shows a notice and the promise resolves. |
-| `bind` | Optional. A function `(fill, message)` that gives the action binding of an `action-button` or an `editable-form` part. [The catalog README](../../catalog/README.md#actions) gives the binding. If it gives no binding, the element refuses the fill. |
+| `bind` | Optional. A function `(fill, message)` that gives the action binding of an `action-button` or an `editable-form` part. [The catalog README](../../catalog/README.md#actions) gives the binding. If it gives no binding, the element shows as disabled and sends no action. If the fill does not agree with the binding, the element refuses the fill. |
 | `perform` | Optional. An async function `(request, message)` that sends the request to the API of the application and gives its receipt. If it is not set, the `mu-action` event goes up to the page, and the page calls `receipt()` of the element. |
 | `messages` | A copy of the envelopes, in the order of the thread. |
 | `state` | `idle`, `reading`, `ended` or `failed`. The element also sets `data-state` to this value. |
@@ -67,12 +67,18 @@ An action in a component goes to `perform`, through the `mu-action` event of the
 4. If `perform` fails, the thread gives a receipt with `ok` equal to `false` and the message `The request failed.`
 5. If the element refuses the receipt, for example because its message is too long, the thread gives a receipt with `ok` equal to `false` and the message `The thread refused the receipt.`
 
-A new event never replaces the element of a component part that did not change. Thus a pending action stays pending while the stream continues. If a snapshot replaces the fill, the thread makes a new element.
+A new event never replaces the element of a component part that did not change. The key order of a fill is not a change. Thus the same fill again cannot make a done action start again.
+
+A snapshot never replaces a pending action or an open confirm step. The element stays until the receipt comes back or the step closes, so a person cannot send the request a second time. After that, the thread shows the new part.
+
+If a snapshot gives a new fill for the same action component and the binding is the same, the thread gives the fill to the same element. Then the rules of the element apply: a done action button stays done, and a form with new values can save again. If the binding or the component is different, the thread makes a new element.
 
 ## Accessibility
 
 - The list of messages has the name `Thread`.
-- One polite live region announces each new message, each end of a message, each refusal and each error. The text is short: the actor, the type and the new state.
+- One polite live region announces each new message, each end of a message, each refusal and each error. The text is short: the actor, the type and the new state. It has 120 characters maximum of the text of a message. If one update has many items, the region gives the refusals and the errors first, 8 maximum, then the last 4 messages, and the count of the others.
+- A refusal is a refused message, a refused part, or a fill that its element refuses. The region also announces a refusal that replaces a part.
+- An error is a `RUN_ERROR`, a failure of the source, or a new count of stream errors. An action element announces its own receipt.
 - Focus does not move when a message arrives or changes.
 - The colors come from the tokens. In forced colors, the borders and the state texts use system colors. Reduced motion removes each transition.
 

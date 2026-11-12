@@ -209,6 +209,127 @@ async function run() {
   check('error: a refused receipt shows an error', button(3).dataset.state === 'error'
     && status(3) === 'Not done: The thread refused the receipt.', status(3));
 
+  // A snapshot cannot replace a pending action. The element stays until its receipt comes back.
+  const kept = mount();
+  const keptCalls = [];
+  kept.bind = (value) => (value.component === 'action-button' ? RENEW : undefined);
+  kept.perform = (request) => new Promise((done) => keptCalls.push({ request, done }));
+  const renewFill = fill('action-button', { label: 'Renew' });
+  const reordered = { data: { label: 'Renew' }, version: '0.1.0', component: 'action-button' };
+  kept.push(snapshot('p1', RENEW_AGENT, { format: 2, fill: renewFill }));
+  await settle();
+  const keptButton = item(kept, 0).querySelector('mu-action-button');
+  kept.push(snapshot('p1', RENEW_AGENT, { fill: reordered, format: 2 }));
+  await settle();
+  check('action: the same fill with a different key order keeps the element',
+    item(kept, 0).querySelector('mu-action-button') === keptButton);
+  keptButton.shadowRoot.querySelector('button').click();
+  await settle();
+  kept.push(snapshot('p1', RENEW_AGENT, { fill: reordered, format: 2 }));
+  kept.push(snapshot('p1', RENEW_AGENT, { format: 2, fill: fill('banner', { text: 'Sale' }) }));
+  await settle();
+  check('pending: a snapshot does not replace a pending action', item(kept, 0).querySelector('mu-action-button') === keptButton
+    && keptButton.dataset.state === 'pending' && !item(kept, 0).querySelector('.refusal'), item(kept, 0).textContent);
+  keptButton.shadowRoot.querySelector('button').click();
+  await settle();
+  check('pending: a pending action sends one request only', keptCalls.length === 1, keptCalls.length);
+  keptCalls[0].done({ ok: true, message: 'Renewed.' });
+  await settle();
+  check('done: the receipt goes to the element that sent the request', keptButton.dataset.state === 'done', keptButton.dataset.state);
+  check('refused: the snapshot shows after the receipt', item(kept, 0).querySelector('.refusal')
+    && !item(kept, 0).querySelector('mu-action-button')
+    && live(kept).textContent.includes('The thread refused a part of the message from Renewal agent, Agent.'), live(kept).textContent);
+  // The same fill again cannot make a done action start again.
+  const once = mount();
+  once.bind = () => RENEW;
+  once.perform = async () => ({ ok: true });
+  once.push(snapshot('d1', RENEW_AGENT, { format: 2, fill: renewFill }));
+  await settle();
+  const onceButton = item(once, 0).querySelector('mu-action-button');
+  onceButton.shadowRoot.querySelector('button').click();
+  await settle();
+  once.push(snapshot('d1', RENEW_AGENT, { fill: reordered, format: 2 }));
+  await settle();
+  check('done: the same fill again keeps the done action', item(once, 0).querySelector('mu-action-button') === onceButton
+    && onceButton.dataset.state === 'done', onceButton.dataset.state);
+  once.push(snapshot('d1', RENEW_AGENT, { format: 2, fill: fill('action-button', { label: 'Renew', description: '' }) }));
+  await settle();
+  check('done: a different fill that the binding accepts keeps the done action', item(once, 0).querySelector('mu-action-button') === onceButton
+    && onceButton.dataset.state === 'done', onceButton.dataset.state);
+  onceButton.shadowRoot.querySelector('button').click();
+  await settle();
+  check('done: a done action sends no second request', onceButton.dataset.state === 'done');
+  // An open confirm step stays, and the focus stays in it.
+  const asked = mount();
+  asked.bind = () => ({ ...RENEW, confirm: { message: 'Renew the loan?', label: 'Yes, renew' } });
+  asked.push(snapshot('n1', RENEW_AGENT, { format: 2, fill: renewFill }));
+  await settle();
+  const askedButton = item(asked, 0).querySelector('mu-action-button');
+  askedButton.shadowRoot.querySelector('button').click();
+  const focusBefore = askedButton.shadowRoot.activeElement;
+  asked.push(snapshot('n1', RENEW_AGENT, { format: 2, fill: fill('banner', { text: 'Sale' }) }));
+  await settle();
+  check('confirm: a snapshot does not replace an open confirm step', item(asked, 0).querySelector('mu-action-button') === askedButton
+    && askedButton.dataset.state === 'confirm' && focusBefore !== null && askedButton.shadowRoot.activeElement === focusBefore,
+  askedButton.dataset.state);
+  askedButton.shadowRoot.querySelector('button[part="cancel"]').click();
+  await settle();
+  check('confirm: the snapshot shows after the confirm step closes', item(asked, 0).querySelector('.refusal')
+    && !item(asked, 0).querySelector('mu-action-button'), item(asked, 0).textContent);
+  // With no perform, the page gives the receipt. The snapshot shows after it.
+  const paged = mount();
+  paged.bind = () => RENEW;
+  paged.push(snapshot('g1', RENEW_AGENT, { format: 2, fill: renewFill }));
+  await settle();
+  const pagedButton = item(paged, 0).querySelector('mu-action-button');
+  let pagedRequest = null;
+  const pagedListener = (event) => { pagedRequest = event.detail; };
+  document.addEventListener('mu-action', pagedListener);
+  pagedButton.shadowRoot.querySelector('button').click();
+  document.removeEventListener('mu-action', pagedListener);
+  paged.push(snapshot('g1', RENEW_AGENT, { format: 2, fill: fill('card', { title: 'Weather at sea' }) }));
+  await settle();
+  check('pending: with no perform, a snapshot does not replace a pending action',
+    item(paged, 0).querySelector('mu-action-button') === pagedButton && !item(paged, 0).querySelector('mu-card'));
+  check('done: with no perform, the page receipt goes to the element', pagedButton.receipt({ id: pagedRequest.id, ok: true })
+    && pagedButton.dataset.state === 'done', pagedButton.dataset.state);
+  await settle();
+  check('pending: with no perform, the snapshot shows after the receipt', item(paged, 0).querySelector('mu-card')
+    && !item(paged, 0).querySelector('mu-action-button'), item(paged, 0).textContent);
+
+  // The live region announces each refusal: a refused part, and a fill that its element refuses.
+  const told = mount();
+  told.bind = () => RENEW;
+  told.push(snapshot('h1', CATALOG_AGENT, { format: 2, fill: fill('banner', { text: 'Sale' }) }));
+  await settle();
+  check('live: the region announces a refused part of a new message',
+    live(told).textContent.includes('The thread refused a part of the message from Catalog agent, Agent.'), live(told).textContent);
+  told.push(snapshot('h2', RENEW_AGENT, { format: 2, fill: fill('action-button', { label: 'Delete' }) }));
+  await settle();
+  check('live: the region announces a fill that its element refuses',
+    item(told, 1).querySelector('mu-action-button')?.dataset.state === 'refused'
+    && live(told).textContent.includes('The thread refused a part of the message from Renewal agent, Agent.'), live(told).textContent);
+  const unbound = mount();
+  unbound.push(snapshot('h3', RENEW_AGENT, { format: 2, fill: renewFill }));
+  await settle();
+  check('action: an action with no binding shows as disabled and sends no action',
+    item(unbound, 0).querySelector('mu-action-button')?.dataset.state === 'disabled', item(unbound, 0).querySelector('mu-action-button')?.dataset.state);
+  const long = mount();
+  for (const event of say('h4', CATALOG_AGENT, 'word '.repeat(200))) long.push(event);
+  long.push(snapshot('h5', CATALOG_AGENT, { format: 2, fill: fill('banner', { text: 'Sale' }) }));
+  await settle();
+  check('live: a long text does not remove the refusal from the region',
+    live(long).textContent.includes('The thread refused a part of the message from Catalog agent, Agent.'), live(long).textContent.length);
+
+  // Many messages in one update do not remove a refusal or an error from the region.
+  const many = mount();
+  many.push(snapshot('y0', CATALOG_AGENT, { format: 2, fill: fill('banner', { text: 'Sale' }) }));
+  for (let index = 1; index <= 40; index += 1) for (const event of say('y' + index, SAM, 'word '.repeat(60))) many.push(event);
+  await settle();
+  check('live: many messages keep the refusal and stay short',
+    live(many).textContent.includes('The thread refused a part of the message from Catalog agent, Agent.')
+    && live(many).textContent.includes('37 earlier messages.') && live(many).textContent.length < 1200, live(many).textContent.length);
+
   // With no perform, the mu-action event goes up to the page, and the page gives the receipt.
   const open = mount();
   open.bind = () => RENEW;
@@ -262,6 +383,7 @@ async function run() {
   await settle();
   check('read: a failed source shows a notice', broken.state === 'failed'
     && broken.shadowRoot.querySelector('.source')?.textContent === 'The source of events failed.', broken.shadowRoot.textContent);
+  check('live: the region announces a failed source', live(broken).textContent.includes('The source of events failed.'), live(broken).textContent);
 
   // The stream errors show as a count and the first error.
   const noisy = mount();
@@ -270,6 +392,17 @@ async function run() {
   await settle();
   const errors = noisy.shadowRoot.querySelector('.stream');
   check('error: the stream errors show', errors?.textContent.startsWith('The thread ignored 2 events that are not valid.'), errors?.textContent);
+
+  check('live: the region announces the stream errors',
+    live(noisy).textContent.includes('The thread ignored 2 events that are not valid.'), live(noisy).textContent);
+  noisy.push({ type: 'TEXT_MESSAGE_END', messageId: 'none' });
+  for (const event of say('q1', SAM, 'Hello.')) noisy.push(event);
+  await settle();
+  check('live: the region announces a new stream error with the new count',
+    live(noisy).textContent.includes('The thread ignored 3 events that are not valid.'), live(noisy).textContent);
+  for (const event of say('q2', SAM, 'Again.')) noisy.push(event);
+  await settle();
+  check('live: the region does not repeat the stream errors', !live(noisy).textContent.includes('ignored'), live(noisy).textContent);
 
   check('no markup ran', window.muUnsafe === undefined);
 
