@@ -9,6 +9,7 @@ import { BASE, el, sheet } from '../render/dom.js';
 const TAGS = Object.freeze(Object.assign(Object.create(null), {
   text: 'mu-text', button: 'mu-button', field: 'mu-field', stack: 'mu-stack', grid: 'mu-grid', card: 'mu-card',
   'action-button': 'mu-action-button', 'editable-form': 'mu-editable-form', 'card-grid': 'mu-card-grid',
+  citation: 'mu-citation',
 }));
 // The components with an action. The application gives the binding of each one.
 const ACTIONS = new Set(['action-button', 'editable-form']);
