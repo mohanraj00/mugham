@@ -2,7 +2,7 @@
 
 `mu-thread` shows one thread for people and agents. It reads AG-UI 1.0 events only through the reader of `src/envelope/`. [docs/contracts/envelope.md](../../docs/contracts/envelope.md) gives the envelope, the states and the limits. This file is the contract of the element.
 
-The thread has no contract in `catalog/`. A model does not fill the thread. A model sends events, and each component part of an event is a fill that the catalog validates. Thus the catalog rules do not need a thread contract, and the contract format does not change.
+The thread has no contract in `catalog/`. A model does not fill the thread. A model sends events, and each component part of an event is a fill that the catalog or a [registered contract](../../catalog/README.md#application-contracts) validates. Thus the catalog rules do not need a thread contract, and the contract format does not change.
 
 ## Use
 

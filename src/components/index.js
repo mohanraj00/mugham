@@ -51,7 +51,7 @@ const ACTION_CSS = sheet(`
 
 // The filled slots of a fill, as text (catalog/schema/README.md). The locator opens only after a person clicks
 // the button. The element first sends a cancelable mu-open event, so that the application can open the locator.
-function provenance(slots) {
+export function provenance(slots) {
   const { authorship, citation } = slots ?? {};
   if (!authorship && !citation) return null;
   const parts = [];
@@ -488,3 +488,7 @@ export function define(registry = customElements) {
     if (!registry.get(name)) registry.define(name, element);
   }
 }
+
+// An application builds its own element on MuElement and registers it with its contract.
+export { MuElement } from '../primitives/base.js';
+export { register } from '../render/registry.js';

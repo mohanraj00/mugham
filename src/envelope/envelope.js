@@ -2,7 +2,7 @@
 // docs/contracts/envelope.md gives the rules. tests/vectors/envelope/ gives the conformance cases.
 // The reader never changes its input. Each text stays text: the reader never reads it as Markdown or markup.
 import { fillErrors } from '../render/validate.js';
-import { CATALOG } from '../render/catalog.js';
+import { CONTRACTS } from '../render/registry.js';
 import CONTRACT_SCHEMA from '../../catalog/schema/contract.schema.json' with { type: 'json' };
 
 export const ENVELOPE_VERSION = 1;
@@ -132,7 +132,7 @@ function refused(header, errors) {
 
 // Read one envelope, for example a message from the history of an application. The result is always an
 // envelope that agrees with docs/contracts/envelope-v1.schema.json. An envelope with an error is refused.
-export function readEnvelope(value, catalog = CATALOG) {
+export function readEnvelope(value, catalog = CONTRACTS) {
   const header = { envelope: ENVELOPE_VERSION, agui: AGUI_VERSION };
   if (!isObject(value)) return refused(header, ['(envelope): must be an object']);
   const errors = [];
@@ -172,7 +172,7 @@ export function readEnvelope(value, catalog = CATALOG) {
 // result gives a copy of the runs, the messages in the order of their first event, the count of
 // ignored events and the errors of the stream. push gives false for an event that changed no run, no
 // message and no error. A reader of the stream can then skip its update.
-export function createReader(catalog = CATALOG) {
+export function createReader(catalog = CONTRACTS) {
   const runs = [];
   const messages = [];
   // The messageId of each message gives its index in messages, its kind and its text length.
@@ -389,7 +389,7 @@ export function createReader(catalog = CATALOG) {
 }
 
 // Read a full list of AG-UI 1.0 events.
-export function readStream(events, catalog = CATALOG) {
+export function readStream(events, catalog = CONTRACTS) {
   const reader = createReader(catalog);
   for (const event of events) reader.push(event);
   return reader.result();

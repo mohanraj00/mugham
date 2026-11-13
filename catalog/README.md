@@ -21,7 +21,67 @@ The contracts with `ai_content` set to `true` are `card`, `card-grid`, `citation
 
 The span of an excerpt starts at `span_start` and stops before `span_end`. Both count code points of the passage, the same as each text limit of the kit. The element refuses a span that is empty or that goes past the end of the passage. [schema/README.md](schema/README.md#slots) gives the slots.
 
+An application can register its own contract and element. [Application contracts](#application-contracts) gives the call and its limits.
+
 The thread `mu-thread` has no contract in this folder, because a model does not fill it. A model sends events, and the catalog validates each component part of an event. [src/thread/README.md](../src/thread/README.md) is the contract of the thread.
+
+## Application contracts
+
+An application can add a domain component without a change to this folder. It registers a contract and an element class with one call:
+
+```js
+import { MuElement, define, register } from './src/components/index.js';
+import { el } from './src/render/dom.js';
+import SEED_TRAY from './seed-tray.json' with { type: 'json' };
+
+class SeedTray extends MuElement {
+  static component = 'seed-tray';
+  render(data) {
+    return [el('article', { 'aria-label': data.label }, el('p', {}, data.label))];
+  }
+}
+
+define();
+register(SEED_TRAY, SeedTray); // Gives 'mu-app-seed-tray'.
+```
+
+`register(contract, element, elements = customElements)` does these steps:
+
+1. It makes a copy of the contract. A later change to the object of the application has no effect.
+2. It checks the copy with `contractErrors` in `src/render/validate.js`. That validator uses `schema/contract.schema.json` and the rules of `tools/catalog.py`. `tests/vectors/contracts.json` shows that the two give the same errors.
+3. It defines the element as `mu-app-<name>`, and it keeps the frozen copy in the registry of `src/render/registry.js`.
+
+The call fails with a `TypeError` and changes nothing in these conditions:
+
+| Condition | Error |
+|---|---|
+| The contract is missing. | `register: a contract is necessary` |
+| The contract is not JSON data. | `register: the contract must be JSON data` |
+| The name is a catalog name. | `register: card is the name of a catalog contract` |
+| The name is already registered. | `register: seed-tray is already registered` |
+| The contract is not valid. | `register: the contract seed-tray is not valid: ` and each error of the validator |
+| The element does not extend `MuElement`, replaces `fill` or `actor`, or has a different `static component`. | `register: the element of seed-tray ...` |
+| The element name is already defined. | `register: the element name mu-app-seed-tray is already defined` |
+
+After the call, the element, the envelope reader and the thread validate each fill against the catalog and the registered contracts. These rules stay true:
+
+- The frozen `CATALOG` does not change. `CONTRACTS` in `src/render/registry.js` gives the catalog contracts and the registered contracts. A script cannot write it.
+- An undeclared component stays refused. A registered component gets only a fill that its contract accepts.
+- A component field of a registered contract can name a catalog contract or a contract that is already registered. A catalog contract never names a registered contract.
+- If `ai_content` is `true`, the contract must declare a required authorship slot. The thread binds the actor of the envelope to the element, the same as for a catalog component. `provenance(slots)` from `src/components/index.js` shows the slots as text.
+
+These are the limits of the call:
+
+- A registration stays until the page closes. The kit has no call that removes a contract. Register each contract before the first fill of that component. A fill that the reader refused before the registration stays refused.
+- The registry is global to the page. Each thread and each element of the page reads the same registry.
+- The thread binds no action to a registered component. Only `action-button` and `editable-form` send an action.
+- Each element gets `fill` and `actor` as own accessors that cannot change. A class field with the name `fill` or `actor` makes the constructor of the element throw a `TypeError`, so it cannot replace the validation.
+- If a script sets `actor` before the upgrade of an element, the constructor gives it to the setter. If a script sets `fill` before the upgrade, the element gives it to the setter in a microtask after its constructor. A newer fill replaces the early fill.
+- The contract is in the registry before the definition of the element. Thus an element of the page that the definition upgrades reads the new contract. If the definition fails, the registry removes the contract.
+- The element must make its nodes only with `el` and `text` from `src/render/dom.js`. Then a markup string in a text field shows as text. The kit cannot check the code of the element, so the application owns this rule.
+- `tools/catalog.py` checks only the contracts in this folder. The application keeps its own contract files and its own tests.
+
+[examples/register.html](../examples/register.html) registers the synthetic `seed-tray` contract and its element.
 
 ## Actions
 
