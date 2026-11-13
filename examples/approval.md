@@ -26,4 +26,4 @@ The page keeps no approval state of its own. The fixture API owns the state of e
 
 ## Use a real service
 
-A real workflow service, for example entelos, can take the place of the fixture API through its own HTTP API. The service owns its decisions, its users and its sign-in. To connect a service, change the `call` function in [approval.js](approval.js) to the paths of that API. Each receipt must have the `id` of its request, `ok`, and an optional `message` and `reference`.
+A real workflow service can take the place of the fixture API through its own HTTP API. The service owns its decisions, its users and its sign-in. To connect a service, change the `call` function in [approval.js](approval.js) to the paths of that API. Each receipt must have the `id` of its request, `ok`, and an optional `message` and `reference`.
