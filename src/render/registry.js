@@ -98,11 +98,14 @@ export function register(contract, element, elements = globalThis.customElements
   if (error) throw new TypeError(error);
   const tag = TAG_PREFIX + name;
   if (elements.get(tag)) throw new TypeError(`register: the element name ${tag} is already defined`);
+  // The contract is in the registry before the definition, because the definition upgrades each element of
+  // the page, and an upgrade can set a fill. If the definition fails, the registry removes the contract.
+  registered.set(name, { contract: freeze(value), tag });
   try {
     elements.define(tag, element);
   } catch (failure) {
+    registered.delete(name);
     throw new TypeError(`register: the element of ${name} cannot be defined: ${failure.message}`);
   }
-  registered.set(name, { contract: freeze(value), tag });
   return tag;
 }

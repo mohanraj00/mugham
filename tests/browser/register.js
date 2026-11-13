@@ -55,7 +55,45 @@ function mount(fill) {
   return node;
 }
 
+// An element of the page before its registration. Its upgrade sets the fill in connectedCallback.
+class EarlyNote extends PlotNote {
+  static component = 'early-note';
+
+  connectedCallback() {
+    this.actor = AGENT;
+    this.fill = { component: 'early-note', version: '0.1.0', data: { title: 'Plot 9', rows: 2 }, slots: { authorship: AGENT } };
+  }
+}
+
 async function run() {
+  // A class field with the name fill or actor cannot replace the validated accessors.
+  const fieldContract = { ...structuredClone(CONTRACT), name: 'field-note' };
+  class FieldNote extends PlotNote {
+    static component = 'field-note';
+    fill = null;
+  }
+  register(fieldContract, FieldNote);
+  const field = throws(() => new FieldNote());
+  check('a class field fill: the element cannot be made', field.startsWith('TypeError'), field);
+  class ActorNote extends PlotNote {
+    static component = 'actor-note';
+    actor = null;
+  }
+  register({ ...structuredClone(CONTRACT), name: 'actor-note' }, ActorNote);
+  const actorField = throws(() => new ActorNote());
+  check('a class field actor: the element cannot be made', actorField.startsWith('TypeError'), actorField);
+
+  // An upgrade during the registration reads the new contract.
+  const early = document.createElement('mu-app-early-note');
+  early.fill = 'set before the upgrade';
+  stage.append(early);
+  register({ ...structuredClone(CONTRACT), name: 'early-note' }, EarlyNote);
+  check('an element of the page: its upgrade reads the registered contract', early instanceof EarlyNote
+    && early.dataset.state === 'default' && early.shadowRoot.textContent.includes('Plot 9'), early.shadowRoot?.textContent);
+  const value = { component: 'early-note', version: '0.1.0', data: { title: 'Plot 9', rows: 99 }, slots: { authorship: AGENT } };
+  early.fill = value;
+  check('an element of the page: a later invalid fill is refused', early.dataset.state === 'refused', early.dataset.state);
+
   const catalogNames = Object.keys(CATALOG).join(',');
   // A registration with an error changes nothing.
   check('no contract: fails with a clear error', throws(() => register(undefined, PlotNote)) === 'TypeError: register: a contract is necessary',

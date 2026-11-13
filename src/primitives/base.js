@@ -17,6 +17,16 @@ export class MuElement extends HTMLElement {
     super();
     const root = this.attachShadow({ mode: 'open', delegatesFocus: this.constructor.focus });
     root.adoptedStyleSheets = [BASE, ...this.constructor.styles];
+    // Each instance gets fill and actor as own accessors that it cannot change. Thus a class field of a
+    // subclass, for example fill = null, cannot replace the validation: its definition throws a TypeError.
+    // A value that a script gave before the upgrade of the element goes through the setter.
+    const early = {};
+    for (const key of ['actor', 'fill']) {
+      if (Object.hasOwn(this, key)) early[key] = this[key];
+      const { get, set } = Object.getOwnPropertyDescriptor(MuElement.prototype, key);
+      Object.defineProperty(this, key, { get, set, enumerable: false, configurable: false });
+    }
+    for (const key of ['actor', 'fill']) if (Object.hasOwn(early, key)) this[key] = early[key];
   }
 
   get fill() {
