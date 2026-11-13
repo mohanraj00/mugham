@@ -494,6 +494,22 @@ async function run() {
       `${copies} renders, ${frames} frames`);
     check('render: the text of all events shows', item(busy, 1).textContent.includes('a'.repeat(1000) + 'b'.repeat(200)));
     check('render: the message stays partial', item(busy, 1).dataset.state === 'partial');
+    // A page can become hidden before its frame. Then no frame comes, and the timer does the update.
+    const raf = window.requestAnimationFrame;
+    window.requestAnimationFrame = () => 0;
+    try {
+      copies = 0;
+      busy.push({ type: 'TEXT_MESSAGE_CONTENT', messageId: 'c3', delta: 'c' });
+      await new Promise((done) => setTimeout(done, 150));
+    } finally {
+      window.requestAnimationFrame = raf;
+    }
+    check('render: with no frame, the update comes after a short delay', copies === 1
+      && item(busy, 1).textContent.includes('b'.repeat(200) + 'c'), `${copies} renders`);
+    copies = 0;
+    busy.push({ type: 'TEXT_MESSAGE_CONTENT', messageId: 'c3', delta: 'd' });
+    await new Promise((done) => setTimeout(done, 150));
+    check('render: a frame and a timer give one update', copies === 1, `${copies} renders`);
   } finally {
     window.structuredClone = copy;
   }

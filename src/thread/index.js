@@ -24,7 +24,7 @@ const SOURCE_FAILED = 'The source of events failed.';
 const MAX_SUMMARY = 120;
 const MAX_UPDATES = 4;
 const MAX_NOTICES = 8;
-// The delay in milliseconds of an update on a hidden page.
+// The maximum delay in milliseconds of an update, also on a hidden page.
 const HIDDEN_DELAY = 100;
 
 const CSS = sheet(`
@@ -93,6 +93,8 @@ export class MuThread extends HTMLElement {
   // The stable text of the binding of each action element.
   #bindings = new WeakMap();
   #scheduled = false;
+  // The number of the last scheduled update.
+  #token = 0;
   #state = 'idle';
   #list = el('ol', { 'aria-label': 'Thread', part: 'list' });
   #stream = el('p', { class: 'stream', part: 'stream' });
@@ -128,16 +130,18 @@ export class MuThread extends HTMLElement {
     if (this.#reader.push(event)) this.#schedule();
   }
 
-  // The thread updates the page one time for each frame, not one time for each event. A hidden page
-  // has no frames, so it updates after a short delay.
+  // The thread updates the page one time for each frame, not one time for each event. A page can
+  // become hidden before its frame, and a hidden page has no frames. Thus a timer also does the update.
+  // The first of the two does the update, and the other does nothing.
   #schedule() {
     if (this.#scheduled) return;
     this.#scheduled = true;
+    const token = ++this.#token;
     const update = () => {
-      if (this.#scheduled) this.#flush();
+      if (this.#scheduled && this.#token === token) this.#flush();
     };
-    if (document.visibilityState === 'hidden') setTimeout(update, HIDDEN_DELAY);
-    else requestAnimationFrame(update);
+    if (document.visibilityState !== 'hidden') requestAnimationFrame(update);
+    setTimeout(update, HIDDEN_DELAY);
   }
 
   // Does a scheduled update now. A later frame then has no update to do.

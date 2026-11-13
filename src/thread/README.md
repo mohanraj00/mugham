@@ -86,6 +86,6 @@ If a snapshot gives a new fill for the same action component and the binding is 
 ## Limits
 
 - The thread keeps the limits of the reader: 1000 messages, 1000 runs and 1000000 characters of data.
-- The thread updates the page one time for each frame, not one time for each event. On a hidden page, it updates after 100 ms.
+- The thread updates the page one time for each frame, not one time for each event. On a hidden page, it updates after 100 ms. If the page becomes hidden before the frame, the update also comes after 100 ms.
 - An event that changes no message, no run and no error gives no update. Examples are an unknown event, an ignored event and an error after the list of errors is full.
 - The thread has no history input and no compose box. The application owns them. A message of a person comes as AG-UI events with an actor of the type `human`.
