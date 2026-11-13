@@ -11,6 +11,7 @@ check:
 	$(PYTHON) -B tools/tokens.py
 	$(NODE) --test 'tests/**/*.test.mjs'
 	$(NODE) tools/browser_check.mjs
+	$(NODE) tests/browser/approval.mjs
 
 # Write the README screenshots to docs/screenshots/ again.
 screenshots:

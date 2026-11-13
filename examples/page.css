@@ -1,2 +1,3 @@
 body { margin: 0; padding: var(--mu-space-4); background: var(--mu-color-surface); color: var(--mu-color-text); font: var(--mu-type-body); }
 @media (forced-colors: active) { body { background: Canvas; color: CanvasText; } }
+.decisions { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--mu-space-4); }
