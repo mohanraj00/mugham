@@ -9,7 +9,7 @@ Mugham is a UI toolkit for agentic applications. The name is the Tamil word for 
 
 Agents and LLMs: read [CONSTITUTION.md](CONSTITUTION.md) and [AGENTS.md](AGENTS.md) first.
 
-Status: release `v0.1.0` is out. It has the contract format, the design tokens, the primitives and the first catalog components. The `main` branch also has the message envelope and the thread for people and agents. The offline mode is not built yet. The plan is in [docs/STATUS.md](docs/STATUS.md) and in the GitHub milestones.
+Status: release `v0.2.0` is the newest. It has the contract format 2, the design tokens, the primitives, the catalog components, the message envelope and the thread for people and agents. The offline mode is not built yet. The plan is in [docs/STATUS.md](docs/STATUS.md) and in the GitHub milestones.
 
 ## What it gives
 
@@ -134,7 +134,7 @@ The checks of the project run in one pinned version of Chrome. They do not test 
 
 ## Stability
 
-The stability of the element API (the elements and their properties), the events (`mu-press`, `mu-edit`, `mu-action` and `mu-refused`) and contract format 2 is **experimental**, before v1.0. Each of them can change in a minor release. Format 1 changes in v0.2 ([mugham#35](https://github.com/mohanraj00/mugham/issues/35)). The [changelog](CHANGELOG.md) lists each change. v1.0 gives a compatibility statement.
+The stability of the element API (the elements and their properties), the events (`mu-press`, `mu-edit`, `mu-action` and `mu-refused`) and contract format 2 is **experimental**, before v1.0. Each of them can change in a minor release. Format 1 changed in v0.2.0 ([mugham#35](https://github.com/mohanraj00/mugham/issues/35)). The [changelog](CHANGELOG.md) lists each change. v1.0 gives a compatibility statement.
 
 ## Brand
 
