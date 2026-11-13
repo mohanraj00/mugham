@@ -12,6 +12,8 @@ export class MuElement extends HTMLElement {
 
   #fill = null;
   #actor = null;
+  // The values that a script gave before the upgrade, until the element replays them.
+  #early = null;
 
   constructor() {
     super();
@@ -19,14 +21,21 @@ export class MuElement extends HTMLElement {
     root.adoptedStyleSheets = [BASE, ...this.constructor.styles];
     // Each instance gets fill and actor as own accessors that it cannot change. Thus a class field of a
     // subclass, for example fill = null, cannot replace the validation: its definition throws a TypeError.
-    // A value that a script gave before the upgrade of the element goes through the setter.
     const early = {};
     for (const key of ['actor', 'fill']) {
       if (Object.hasOwn(this, key)) early[key] = this[key];
       const { get, set } = Object.getOwnPropertyDescriptor(MuElement.prototype, key);
       Object.defineProperty(this, key, { get, set, enumerable: false, configurable: false });
     }
-    for (const key of ['actor', 'fill']) if (Object.hasOwn(early, key)) this[key] = early[key];
+    // A value that a script gave before the upgrade goes through the setter after the constructor of the
+    // subclass completes, because check and render can read its fields. A newer value replaces it.
+    if (Object.keys(early).length === 0) return;
+    this.#early = early;
+    queueMicrotask(() => {
+      const values = this.#early;
+      this.#early = null;
+      for (const key of ['actor', 'fill']) if (values && Object.hasOwn(values, key)) this[key] = values[key];
+    });
   }
 
   get fill() {
@@ -40,6 +49,7 @@ export class MuElement extends HTMLElement {
   }
 
   set actor(value) {
+    if (this.#early) delete this.#early.actor;
     const errors = actorErrors(value);
     if (errors.length) throw new TypeError('actor: ' + errors.join('; '));
     this.#actor = value === null ? null
@@ -49,6 +59,7 @@ export class MuElement extends HTMLElement {
 
   // A fill is data only. If it has an error, the element shows a refusal as text and keeps no data.
   set fill(value) {
+    if (this.#early) delete this.#early.fill;
     const name = this.constructor.component;
     // A fill of a different component is refused for that reason first.
     const other = value !== null && typeof value === 'object' && !Array.isArray(value) && value.component !== name;

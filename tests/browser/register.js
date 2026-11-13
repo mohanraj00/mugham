@@ -65,7 +65,30 @@ class EarlyNote extends PlotNote {
   }
 }
 
+// An element whose check reads a private field. The fill comes before the upgrade.
+class PrivateNote extends PlotNote {
+  static component = 'private-note';
+  #limit = 4;
+
+  check(data) {
+    return data.rows > this.#limit ? [`data.rows: more than ${this.#limit} for this application`] : [];
+  }
+}
+
 async function run() {
+  // A value before the upgrade goes through the setter after the constructor of the subclass.
+  const waiting = document.createElement('mu-app-private-note');
+  waiting.actor = AGENT;
+  waiting.fill = { component: 'private-note', version: '0.1.0', data: { title: 'Plot 3', rows: 3 }, slots: { authorship: AGENT } };
+  stage.append(waiting);
+  register({ ...structuredClone(CONTRACT), name: 'private-note' }, PrivateNote);
+  await Promise.resolve();
+  check('a fill before the upgrade: renders after the constructor', waiting instanceof PrivateNote
+    && waiting.dataset.state === 'default' && waiting.shadowRoot.textContent.includes('Plot 3'), waiting.shadowRoot?.textContent);
+  waiting.fill = { component: 'private-note', version: '0.1.0', data: { title: 'Plot 3', rows: 6 }, slots: { authorship: AGENT } };
+  check('a fill before the upgrade: the check of the subclass runs', waiting.dataset.state === 'refused'
+    && waiting.shadowRoot.textContent.includes('more than 4 for this application'), waiting.shadowRoot.textContent);
+
   // A class field with the name fill or actor cannot replace the validated accessors.
   const fieldContract = { ...structuredClone(CONTRACT), name: 'field-note' };
   class FieldNote extends PlotNote {
