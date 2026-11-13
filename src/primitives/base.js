@@ -46,7 +46,7 @@ export class MuElement extends HTMLElement {
     if (errors.length) {
       this.#fill = null;
       this.dataset.state = 'refused';
-      root.replaceChildren(el('span', { class: 'refused', role: 'status' }, `Refused ${name}: ${errors[0]}`));
+      root.replaceChildren(el('span', { class: 'refused', role: 'status' }, `Refused ${name}: ${this.refusal(errors)}`));
       this.dispatchEvent(new CustomEvent('mu-refused', { bubbles: true, composed: true, detail: { errors } }));
       return;
     }
@@ -54,6 +54,11 @@ export class MuElement extends HTMLElement {
     this.dataset.state = this.state(this.#fill.data);
     // A render can give null for an optional part. Such a part shows nothing.
     root.replaceChildren(...this.render(this.#fill.data).filter((part) => part !== null && part !== undefined));
+  }
+
+  // The reason of a refusal, as text for a person. The mu-refused event always gives all errors of the validator.
+  refusal(errors) {
+    return errors[0];
   }
 
   // A subclass can refuse a fill for a rule that the contract format cannot give.

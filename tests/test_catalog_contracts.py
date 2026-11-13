@@ -38,6 +38,7 @@ VALID = {
     'action-button': {'label': 'Renew', 'description': 'Renew the loan for two weeks.'},
     'editable-form': {'title': 'Loan details', 'submit_label': 'Save', 'fields': [fill('field', {'name': 'shelf', 'label': 'Shelf code'})]},
     'card-grid': {'label': 'Loans', 'cards': [CARD]},
+    'citation': {'quote': 'A short loan can get one renewal.'},
 }
 
 
@@ -105,6 +106,21 @@ class CatalogContractTest(unittest.TestCase):
     def test_a_nested_fill_of_a_different_component_is_refused(self):
         self.assertIn('data.cards[0].component: must be card',
                       catalog.fill_errors(fill('card-grid', {'label': 'Loans', 'cards': [FACT]}), CATALOG))
+
+    def test_the_citation_uses_the_locator_rule_of_the_citation_slot(self):
+        # The citation component has no locator field of its own. Its source and locator are in the citation slot.
+        self.assertNotIn('locator', CATALOG['citation']['data'])
+        base = outer('citation', VALID['citation'])
+        self.assertEqual(catalog.fill_errors(base, CATALOG), [])
+        self.assertEqual(catalog.fill_errors({**base, 'slots': {'authorship': AUTHOR, 'citation': CITE}}, CATALOG), [])
+        no_locator = {**base, 'slots': {'authorship': AUTHOR, 'citation': {'source': CITE['source']}}}
+        self.assertEqual(catalog.fill_errors(no_locator, CATALOG), ['slots.citation: missing key locator'])
+        for locator in ['http://example.org/rules', 'javascript:alert(1)', 'https://person@example.org/rules', 'rules page 4']:
+            with self.subTest(locator=locator):
+                bad = {**base, 'slots': {'authorship': AUTHOR, 'citation': {**CITE, 'locator': locator}}}
+                errors = catalog.fill_errors(bad, CATALOG)
+                self.assertEqual(len(errors), 1)
+                self.assertTrue(errors[0].startswith('slots.citation.locator: does not agree with the pattern'), errors)
 
     def test_a_kit_component_declares_no_tool(self):
         # The application binds each tool in code. A fill cannot select one. See catalog/README.md.
