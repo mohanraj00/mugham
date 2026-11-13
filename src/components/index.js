@@ -1,4 +1,4 @@
-// The catalog components: card, action button, editable form, card grid and citation.
+// The catalog components: card, action button, editable form, card grid, citation and excerpt.
 import { MuElement } from '../primitives/base.js';
 import { define as definePrimitives } from '../primitives/index.js';
 import { ActionState } from '../actions/action.js';
@@ -420,10 +420,71 @@ export class MuCitation extends MuElement {
   }
 }
 
+// A passage of a source document with a marked span (catalog/excerpt.json). The passage is document text, so it
+// shows only as text nodes. The span starts at span_start and stops before span_end. Both count code points, the
+// same as each text limit of the kit. The source and the locator come from the required citation slot.
+export class MuExcerpt extends MuElement {
+  static component = 'excerpt';
+  static styles = [sheet(`
+    :host { display: block; }
+    figure {
+      margin: 0; color: var(--mu-color-text); font: var(--mu-type-body); padding: var(--mu-space-2) var(--mu-space-3);
+      border-inline-start: 3px solid var(--mu-color-border); border-radius: var(--mu-radius-2);
+      display: flex; flex-direction: column; gap: var(--mu-space-1);
+    }
+    blockquote { margin: 0; overflow-wrap: anywhere; white-space: pre-wrap; }
+    mark {
+      background: transparent; color: inherit; font-weight: var(--mu-type-weight-strong);
+      text-decoration: underline 2px var(--mu-color-accent); text-underline-offset: 0.2em;
+    }
+    .muted { font: var(--mu-type-caption); color: var(--mu-color-text-muted); }
+    .span { margin: 0; overflow-wrap: anywhere; }
+    .provenance { display: flex; flex-direction: column; gap: var(--mu-space-1); }
+    .provenance p { margin: 0; overflow-wrap: anywhere; }
+    .provenance button {
+      align-self: start; font: var(--mu-type-caption); min-height: 2.75rem; padding: 0 var(--mu-space-2); cursor: pointer;
+      border: 1px solid var(--mu-color-border); border-radius: var(--mu-radius-2); background: transparent; color: var(--mu-color-text);
+    }
+    @media (forced-colors: active) {
+      figure { border-color: CanvasText; } .muted { color: CanvasText; }
+      mark { background: Mark; color: MarkText; text-decoration-color: MarkText; forced-color-adjust: none; }
+      .provenance button { color: ButtonText; border-color: ButtonText; }
+    }
+  `)];
+
+  // The contract format cannot compare two fields, so the element checks the span against the passage.
+  check(data) {
+    if (data.span_start >= data.span_end) return ['data.span_start: must be less than span_end'];
+    if (data.span_end > [...data.passage].length) return ['data.span_end: outside the passage'];
+    return [];
+  }
+
+  refusal(errors) {
+    const [error] = errors;
+    if (error === 'data.span_end: outside the passage') return 'the span is outside the passage.';
+    if (error === 'data.span_start: must be less than span_end') return 'the span is empty.';
+    if (error === 'slots.citation: a required slot is missing') return 'the source and the locator are missing.';
+    if (error === 'slots.citation: missing key locator') return 'the locator is missing.';
+    if (error.startsWith('slots.citation.locator:')) return 'the locator is not a safe https: address.';
+    return error;
+  }
+
+  render(data) {
+    const points = [...data.passage];
+    const span = points.slice(data.span_start, data.span_end).join('');
+    const passage = el('blockquote', { part: 'passage' }, points.slice(0, data.span_start).join(''),
+      el('mark', { part: 'mark' }, span), points.slice(data.span_end).join(''));
+    // The span shows again as text, so that the mark does not depend on its style only.
+    const marked = el('p', { class: 'span muted', part: 'span' }, `Marked text: ${span}`);
+    return [el('figure', { role: 'group', 'aria-label': 'Source excerpt', part: 'excerpt' }, passage, marked, provenance(this.fill.slots))];
+  }
+}
+
 export function define(registry = customElements) {
   definePrimitives(registry);
   for (const [name, element] of [['mu-action-button', MuActionButton], ['mu-card', MuCard],
-    ['mu-card-grid', MuCardGrid], ['mu-editable-form', MuEditableForm], ['mu-citation', MuCitation]]) {
+    ['mu-card-grid', MuCardGrid], ['mu-editable-form', MuEditableForm], ['mu-citation', MuCitation],
+    ['mu-excerpt', MuExcerpt]]) {
     if (!registry.get(name)) registry.define(name, element);
   }
 }

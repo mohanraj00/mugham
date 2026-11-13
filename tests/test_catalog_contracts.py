@@ -22,8 +22,11 @@ CITE = {'source': 'Synthetic loan rules', 'locator': 'https://example.org/rules/
 def outer(name, data):
     """An outer fill. It fills the authorship slot if the contract declares one."""
     result = fill(name, data)
-    if 'authorship' in CATALOG[name].get('slots', {}):
+    slots = CATALOG[name].get('slots', {})
+    if 'authorship' in slots:
         result['slots'] = {'authorship': AUTHOR}
+    if slots.get('citation', {}).get('required'):
+        result['slots']['citation'] = CITE
     return result
 
 
@@ -39,6 +42,7 @@ VALID = {
     'editable-form': {'title': 'Loan details', 'submit_label': 'Save', 'fields': [fill('field', {'name': 'shelf', 'label': 'Shelf code'})]},
     'card-grid': {'label': 'Loans', 'cards': [CARD]},
     'citation': {'quote': 'A short loan can get one renewal.'},
+    'excerpt': {'passage': 'A short loan can get one renewal of seven days.', 'span_start': 13, 'span_end': 32},
 }
 
 
@@ -90,7 +94,7 @@ class CatalogContractTest(unittest.TestCase):
             with self.subTest(name=name):
                 self.assertEqual(contract.get('slots', {}).get('authorship', {}).get('required', False), contract['ai_content'])
                 errors = catalog.fill_errors(fill(name, VALID[name]), CATALOG)
-                self.assertEqual(errors, ['slots.authorship: a required slot is missing'] if contract['ai_content'] else [])
+                self.assertEqual(errors[:1], ['slots.authorship: a required slot is missing'] if contract['ai_content'] else [])
 
     def test_each_slot_accepts_a_filled_value_and_markup_as_text(self):
         markup = '<img src=x onerror=alert(1)>'
@@ -121,6 +125,32 @@ class CatalogContractTest(unittest.TestCase):
                 errors = catalog.fill_errors(bad, CATALOG)
                 self.assertEqual(len(errors), 1)
                 self.assertTrue(errors[0].startswith('slots.citation.locator: does not agree with the pattern'), errors)
+
+    def test_the_excerpt_requires_the_citation_slot_and_its_locator_rule(self):
+        # The excerpt has no locator field of its own. The citation slot gives the source and the locator.
+        self.assertNotIn('locator', CATALOG['excerpt']['data'])
+        base = outer('excerpt', VALID['excerpt'])
+        self.assertEqual(catalog.fill_errors(base, CATALOG), [])
+        self.assertEqual(catalog.fill_errors({**base, 'slots': {'authorship': AUTHOR}}, CATALOG),
+                         ['slots.citation: a required slot is missing'])
+        bad = {**base, 'slots': {'authorship': AUTHOR, 'citation': {**CITE, 'locator': 'http://example.org/rules'}}}
+        errors = catalog.fill_errors(bad, CATALOG)
+        self.assertEqual(len(errors), 1)
+        self.assertTrue(errors[0].startswith('slots.citation.locator: does not agree with the pattern'), errors)
+
+    def test_the_excerpt_span_positions_are_integers_in_the_limits(self):
+        base = outer('excerpt', VALID['excerpt'])
+        cases = [
+            ({'span_start': -1}, 'data.span_start: less than the minimum 0'),
+            ({'span_end': 0}, 'data.span_end: less than the minimum 1'),
+            ({'span_end': 2001}, 'data.span_end: more than the maximum 2000'),
+            ({'span_start': 1.5}, 'data.span_start: must be an integer'),
+            ({'span_end': '9'}, 'data.span_end: must be an integer'),
+            ({'passage': ''}, 'data.passage: fewer than 1 characters'),
+        ]
+        for change, error in cases:
+            with self.subTest(change=change):
+                self.assertEqual(catalog.fill_errors({**base, 'data': {**base['data'], **change}}, CATALOG), [error])
 
     def test_a_kit_component_declares_no_tool(self):
         # The application binds each tool in code. A fill cannot select one. See catalog/README.md.

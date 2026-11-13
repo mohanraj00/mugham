@@ -15,8 +15,11 @@ Each JSON file in this folder is the contract of one component. [schema/README.m
 | `editable-form.json` | `mu-editable-form` | component | Up to 20 fields, submitted as one action. |
 | `card-grid.json` | `mu-card-grid` | component | A labeled list of cards. |
 | `citation.json` | `mu-citation` | component | A source name, a locator as text, an optional quote and an open button. |
+| `excerpt.json` | `mu-excerpt` | component | A passage as text with a marked span, the source name, the locator as text and an open button. |
 
-The contracts with `ai_content` set to `true` are `card`, `card-grid`, `citation`, `editable-form` and `fact`. Each of them requires the authorship slot. `card`, `card-grid` and `citation` also accept the citation slot. [schema/README.md](schema/README.md#slots) gives the slots.
+The contracts with `ai_content` set to `true` are `card`, `card-grid`, `citation`, `editable-form`, `excerpt` and `fact`. Each of them requires the authorship slot. `card`, `card-grid` and `citation` also accept the citation slot. `excerpt` requires the citation slot, because the slot gives the locator of the passage.
+
+The span of an excerpt starts at `span_start` and stops before `span_end`. Both count code points of the passage, the same as each text limit of the kit. The element refuses a span that is empty or that goes past the end of the passage. [schema/README.md](schema/README.md#slots) gives the slots.
 
 The thread `mu-thread` has no contract in this folder, because a model does not fill it. A model sends events, and the catalog validates each component part of an event. [src/thread/README.md](../src/thread/README.md) is the contract of the thread.
 

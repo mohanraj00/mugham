@@ -194,6 +194,17 @@ async function run() {
     && citation.shadowRoot.textContent.includes('Author: agent a-catalog')
     && citation.shadowRoot.querySelector('button[part="open"]') !== null, item(cited, 0).textContent);
 
+  // An excerpt part shows as its element, with the marked span and the actor of the envelope as its author.
+  const excerpted = mount();
+  excerpted.push(snapshot('x1', CATALOG_AGENT, { format: 2, fill: { ...fill('excerpt', { passage: 'A short loan can get one renewal.', span_start: 13, span_end: 32 }),
+    slots: { authorship: CATALOG_AGENT_ID, citation: { source: 'Synthetic loan rules', locator: 'https://example.org/rules/loans' } } } }));
+  await settle();
+  const excerpt = item(excerpted, 0).querySelector('mu-excerpt');
+  check('excerpt: an excerpt part shows as its element', excerpt?.dataset.state === 'default'
+    && excerpt.shadowRoot.querySelector('mark')?.textContent === 'can get one renewal'
+    && excerpt.shadowRoot.textContent.includes('Source: Synthetic loan rules')
+    && excerpt.shadowRoot.textContent.includes('Author: agent a-catalog'), item(excerpted, 0).textContent);
+
   // A fill of a component with no element shows a refusal.
   const noElement = mount();
   noElement.push(snapshot('f1', CATALOG_AGENT, { format: 2, fill: { ...fill('fact', { label: 'Shelf', value: 'B-14' }), slots: { authorship: CATALOG_AGENT_ID } } }));

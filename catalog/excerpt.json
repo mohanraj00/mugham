@@ -1,0 +1,70 @@
+{
+  "format": 2,
+  "name": "excerpt",
+  "version": "0.1.0",
+  "kind": "component",
+  "description": "A passage of a source document as text, with a marked span, the source name and the locator of the passage.",
+  "ai_content": true,
+  "slots": {
+    "authorship": {
+      "required": true
+    },
+    "citation": {
+      "required": true
+    }
+  },
+  "data": {
+    "passage": {
+      "type": "text",
+      "label": "Passage",
+      "required": true,
+      "min_length": 1,
+      "max_length": 2000
+    },
+    "span_start": {
+      "type": "integer",
+      "label": "Span start",
+      "required": true,
+      "minimum": 0,
+      "maximum": 1999
+    },
+    "span_end": {
+      "type": "integer",
+      "label": "Span end",
+      "required": true,
+      "minimum": 1,
+      "maximum": 2000
+    }
+  },
+  "states": [
+    "default",
+    "refused"
+  ],
+  "tokens": [
+    "color.text",
+    "color.text-muted",
+    "color.border",
+    "color.accent",
+    "space.1",
+    "space.2",
+    "space.3",
+    "radius.2",
+    "type.body",
+    "type.caption",
+    "type.weight-strong"
+  ],
+  "accessibility": {
+    "role": "group",
+    "name": {
+      "text": "Source excerpt"
+    },
+    "keyboard": [
+      "Tab",
+      "Shift+Tab",
+      "Enter",
+      "Space"
+    ],
+    "forced_colors": true,
+    "reduced_motion": true
+  }
+}

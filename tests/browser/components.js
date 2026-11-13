@@ -273,6 +273,94 @@ const citationExtra = [...citationTokens].filter((token) => !declared('citation'
 check('citation: the styles use only declared tokens', citationExtra.length === 0, citationExtra.join(' '));
 check('citation: the styles have a forced colors rule', citationSheets.some((item) => [...item.cssRules].some((rule) => rule.cssText.includes('forced-colors'))));
 
+// The excerpt component (catalog/excerpt.json). The passage shows as text. The span shows in a mark element with
+// a style that is not color only, and again as text. Span positions count code points of the passage.
+const PASSAGE = 'A short loan can get one renewal of seven days.';
+const excerpt = (data, slots = CITED, actor = AUTHOR) => {
+  const node = document.createElement('mu-excerpt');
+  stage.append(node);
+  node.actor = actor;
+  node.fill = { ...fill('excerpt', data), slots };
+  return node;
+};
+const passage = excerpt({ passage: PASSAGE, span_start: 13, span_end: 32 });
+const passageText = deepText(passage);
+const passageMark = passage.shadowRoot.querySelectorAll('mark');
+check('excerpt: renders a valid fill', passage.dataset.state === 'default' && passage.fill !== null, passage.dataset.state);
+check('excerpt: is a group named Source excerpt', passage.shadowRoot.querySelector('[role="group"]')?.getAttribute('aria-label') === 'Source excerpt');
+check('excerpt: the passage shows in full as text', passage.shadowRoot.querySelector('[part="passage"]')?.textContent === PASSAGE,
+  passage.shadowRoot.querySelector('[part="passage"]')?.textContent);
+check('excerpt: one mark element holds the span', passageMark.length === 1 && passageMark[0].textContent === 'can get one renewal',
+  passageMark[0]?.textContent);
+const markStyle = passageMark[0] ? getComputedStyle(passageMark[0]) : null;
+check('excerpt: the mark has a style that is not color only', markStyle !== null && markStyle.textDecorationLine.includes('underline')
+  && Number(markStyle.fontWeight) >= 600, markStyle && `${markStyle.textDecorationLine} ${markStyle.fontWeight}`);
+check('excerpt: the span also shows as text', passage.shadowRoot.querySelector('[part="span"]')?.textContent === 'Marked text: can get one renewal',
+  passage.shadowRoot.querySelector('[part="span"]')?.textContent);
+check('excerpt: shows the source, the locator and the author as text', passageText.includes('Source: Synthetic loan rules')
+  && passageText.includes('https://example.org/rules/loans') && passageText.includes('Author: agent agent-check (Checker)'), passageText.slice(0, 240));
+check('excerpt: the locator makes no link', deepQuery(passage, 'a, link, iframe, img').length === 0);
+const excerptAsks = [];
+passage.addEventListener('mu-open', (event) => { excerptAsks.push(event.detail.locator); event.preventDefault(); });
+passage.shadowRoot.querySelector('[part="open"]')?.click();
+check('excerpt: a click on the open button asks to open the locator', excerptAsks.length === 1 && excerptAsks[0] === 'https://example.org/rules/loans',
+  excerptAsks.join(' '));
+const edges = excerpt({ passage: PASSAGE, span_start: 0, span_end: [...PASSAGE].length });
+check('excerpt: a span can hold the full passage', edges.dataset.state === 'default' && edges.shadowRoot.querySelector('mark')?.textContent === PASSAGE);
+// A supplementary character is one code point and two UTF-16 units. The span counts code points.
+const wide = excerpt({ passage: 'Shelf 𝔸 holds the maps.', span_start: 6, span_end: 7 });
+check('excerpt: span positions count code points', wide.dataset.state === 'default' && wide.shadowRoot.querySelector('mark')?.textContent === '𝔸',
+  wide.shadowRoot.querySelector('mark')?.textContent ?? wide.shadowRoot.textContent);
+const wideEnd = excerpt({ passage: 'Shelf 𝔸', span_start: 6, span_end: 7 });
+check('excerpt: a span to the last code point is in the passage', wideEnd.dataset.state === 'default', wideEnd.shadowRoot.textContent);
+for (const [data, error, words] of [
+  [{ passage: PASSAGE, span_start: 13, span_end: 48 }, 'data.span_end: outside the passage', 'the span is outside the passage.'],
+  [{ passage: 'Shelf 𝔸', span_start: 6, span_end: 8 }, 'data.span_end: outside the passage', 'the span is outside the passage.'],
+  [{ passage: PASSAGE, span_start: 47, span_end: 48 }, 'data.span_end: outside the passage', 'the span is outside the passage.'],
+  [{ passage: PASSAGE, span_start: 20, span_end: 20 }, 'data.span_start: must be less than span_end', 'the span is empty.'],
+  [{ passage: PASSAGE, span_start: 20, span_end: 10 }, 'data.span_start: must be less than span_end', 'the span is empty.'],
+]) {
+  const node = document.createElement('mu-excerpt');
+  const errors = [];
+  node.addEventListener('mu-refused', (event) => errors.push(...event.detail.errors));
+  stage.append(node);
+  node.actor = AUTHOR;
+  node.fill = { ...fill('excerpt', data), slots: CITED };
+  check(`excerpt: refuses the span ${data.span_start} to ${data.span_end} of ${JSON.stringify(data.passage.slice(0, 12))}`,
+    node.dataset.state === 'refused' && node.fill === null && errors.includes(error)
+    && node.shadowRoot.textContent === `Refused excerpt: ${words}` && node.shadowRoot.querySelector('[role="status"]') !== null
+    && !node.shadowRoot.querySelector('mark'), `${errors.join('; ')} | ${node.shadowRoot.textContent}`);
+}
+const unlocated = excerpt({ passage: PASSAGE, span_start: 0, span_end: 7 }, { authorship: AUTHOR });
+check('excerpt: refuses a fill with no citation slot', unlocated.dataset.state === 'refused'
+  && unlocated.shadowRoot.textContent === 'Refused excerpt: the source and the locator are missing.', unlocated.shadowRoot.textContent);
+const badLocator = excerpt({ passage: PASSAGE, span_start: 0, span_end: 7 }, { authorship: AUTHOR, citation: { ...CITED.citation, locator: 'javascript:alert(1)' } });
+check('excerpt: refuses a locator that is not a safe https: address', badLocator.dataset.state === 'refused'
+  && badLocator.shadowRoot.textContent === 'Refused excerpt: the locator is not a safe https: address.', badLocator.shadowRoot.textContent);
+const unauthoredExcerpt = excerpt({ passage: PASSAGE, span_start: 0, span_end: 7 }, { citation: CITED.citation });
+check('excerpt: refuses a fill with no authorship slot', unauthoredExcerpt.dataset.state === 'refused'
+  && unauthoredExcerpt.shadowRoot.textContent.includes('slots.authorship: a required slot is missing'), unauthoredExcerpt.shadowRoot.textContent);
+// Markup in the passage, in the span and around the span shows as text. No element of the markup appears.
+const marked = excerpt({ passage: `Before ${MARKUP} after.`, span_start: 7, span_end: 7 + [...MARKUP].length });
+check('excerpt: markup in the passage shows as text and makes no element', marked.dataset.state === 'default'
+  && deepQuery(marked, 'img, script, a, b').length === 0 && window.muUnsafe === undefined
+  && marked.shadowRoot.querySelector('mark')?.textContent === MARKUP
+  && marked.shadowRoot.querySelector('[part="passage"]')?.textContent === `Before ${MARKUP} after.`
+  && marked.shadowRoot.querySelector('[part="passage"]').children.length === 1, marked.shadowRoot.textContent.slice(0, 240));
+const halfMarked = excerpt({ passage: '<b>bold</b> text', span_start: 1, span_end: 9 });
+check('excerpt: a span that cuts a tag shows the tag as text', halfMarked.dataset.state === 'default' && deepQuery(halfMarked, 'b').length === 0
+  && halfMarked.shadowRoot.querySelector('mark')?.textContent === 'b>bold</', halfMarked.shadowRoot.textContent);
+const excerptSheets = passage.shadowRoot.adoptedStyleSheets.slice(1);
+const excerptTokens = new Set(excerptSheets.flatMap((item) => [...item.cssRules].map((rule) => rule.cssText)).join(' ').match(/--mu-[a-z0-9-]+/g) ?? []);
+const excerptExtra = [...excerptTokens].filter((token) => !declared('excerpt').has(token));
+check('excerpt: the styles use only declared tokens', excerptExtra.length === 0, excerptExtra.join(' '));
+check('excerpt: the styles have a forced colors rule for the mark', excerptSheets.some((item) => [...item.cssRules]
+  .some((rule) => rule.cssText.includes('forced-colors') && rule.cssText.includes('mark'))));
+if (matchMedia('(forced-colors: active)').matches) {
+  const forced = getComputedStyle(passageMark[0]);
+  check('excerpt: in forced colors the mark keeps its underline', forced.textDecorationLine.includes('underline'), forced.textDecorationLine);
+}
+
 // The action path. The button is pending after a press, and done only after the receipt.
 const button = mount('action-button', VALID['action-button']);
 const events = [];
@@ -673,5 +761,11 @@ keyboardCitation.addEventListener('mu-open', (event) => { citationOpens += 1; ev
 keyboard.append(keyboardCitation);
 window.muFocusCitation = () => { keyboardCitation.shadowRoot.querySelector('[part="open"]').focus(); return true; };
 window.muCitationOpens = () => citationOpens;
+const keyboardExcerpt = document.createElement('mu-excerpt');
+keyboardExcerpt.actor = AUTHOR;
+keyboardExcerpt.fill = { ...fill('excerpt', { passage: 'Keyboard passage with a mark.', span_start: 23, span_end: 28 }),
+  slots: { authorship: AUTHOR, citation: { source: 'Keyboard excerpt source', locator: 'https://example.org/keyboard/excerpt' } } };
+keyboardExcerpt.addEventListener('mu-open', (event) => event.preventDefault());
+keyboard.append(keyboardExcerpt);
 window.muPresses = () => presses;
 window.muChecks = { mode, results };
