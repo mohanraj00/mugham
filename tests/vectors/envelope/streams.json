@@ -95,6 +95,12 @@
        "data": {
         "label": "Due",
         "value": "2026-11-20"
+       },
+       "slots": {
+        "authorship": {
+         "type": "agent",
+         "id": "agent-check"
+        }
        }
       }
      },
@@ -206,6 +212,12 @@
          "data": {
           "label": "Due",
           "value": "2026-11-20"
+         },
+         "slots": {
+          "authorship": {
+           "type": "agent",
+           "id": "agent-check"
+          }
          }
         }
        }
@@ -263,6 +275,12 @@
        "data": {
         "label": "Due",
         "value": "2026-11-20"
+       },
+       "slots": {
+        "authorship": {
+         "type": "agent",
+         "id": "agent-check"
+        }
        }
       }
      },
@@ -361,6 +379,12 @@
        "data": {
         "label": "Due",
         "value": "2026-11-20"
+       },
+       "slots": {
+        "authorship": {
+         "type": "agent",
+         "id": "agent-check"
+        }
        }
       }
      },
@@ -891,6 +915,12 @@
        "data": {
         "label": "Due",
         "value": "2026-11-20"
+       },
+       "slots": {
+        "authorship": {
+         "type": "agent",
+         "id": "agent-check"
+        }
        }
       }
      },
@@ -916,6 +946,12 @@
        "data": {
         "label": "Due",
         "value": "2026-11-27"
+       },
+       "slots": {
+        "authorship": {
+         "type": "agent",
+         "id": "agent-check"
+        }
        }
       }
      },
@@ -941,6 +977,12 @@
        "data": {
         "label": "Due",
         "value": "2026-12-04"
+       },
+       "slots": {
+        "authorship": {
+         "type": "agent",
+         "id": "agent-check"
+        }
        }
       }
      },
@@ -967,6 +1009,12 @@
        "data": {
         "label": "Due",
         "value": "2026-12-11"
+       },
+       "slots": {
+        "authorship": {
+         "type": "agent",
+         "id": "agent-check"
+        }
        }
       }
      },
@@ -1020,6 +1068,12 @@
        "data": {
         "label": "Due",
         "value": "2026-12-11"
+       },
+       "slots": {
+        "authorship": {
+         "type": "agent",
+         "id": "agent-check"
+        }
        }
       }
      },
@@ -1058,6 +1112,12 @@
          "data": {
           "label": "Due",
           "value": "2026-11-27"
+         },
+         "slots": {
+          "authorship": {
+           "type": "agent",
+           "id": "agent-check"
+          }
          }
         }
        }
@@ -1275,6 +1335,12 @@
        "data": {
         "label": "Due",
         "value": "2026-11-20"
+       },
+       "slots": {
+        "authorship": {
+         "type": "agent",
+         "id": "agent-check"
+        }
        }
       }
      },
@@ -1300,6 +1366,12 @@
        "data": {
         "label": "Due",
         "value": "2026-11-20"
+       },
+       "slots": {
+        "authorship": {
+         "type": "agent",
+         "id": "agent-check"
+        }
        }
       }
      },
@@ -1329,6 +1401,12 @@
        "data": {
         "label": "Due",
         "value": "2026-11-27"
+       },
+       "slots": {
+        "authorship": {
+         "type": "agent",
+         "id": "agent-check"
+        }
        }
       }
      },
@@ -1354,6 +1432,12 @@
        "data": {
         "label": "Due",
         "value": "2026-11-27"
+       },
+       "slots": {
+        "authorship": {
+         "type": "agent",
+         "id": "agent-check"
+        }
        }
       }
      },
@@ -1400,6 +1484,12 @@
          "data": {
           "label": "Due",
           "value": "2026-11-27"
+         },
+         "slots": {
+          "authorship": {
+           "type": "agent",
+           "id": "agent-check"
+          }
          }
         }
        }

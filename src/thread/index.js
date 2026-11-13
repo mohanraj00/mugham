@@ -13,6 +13,8 @@ const TAGS = Object.freeze(Object.assign(Object.create(null), {
 // The components with an action. The application gives the binding of each one.
 const ACTIONS = new Set(['action-button', 'editable-form']);
 const TYPES = Object.freeze({ human: 'Person', agent: 'Agent', system: 'System' });
+// The envelope reader accepts only a message with a valid actor, so the element accepts this actor.
+const actorOf = ({ actor }) => ({ type: actor.type, id: actor.id, ...(actor.name === undefined ? {} : { name: actor.name }) });
 const REFUSED_PART = 'Refused: the thread did not show this part. ';
 const FAILED = 'The request failed.';
 const REFUSED_RECEIPT = 'The thread refused the receipt.';
@@ -284,6 +286,7 @@ export class MuThread extends HTMLElement {
   #refill(old, part, message) {
     if (!old || part.type !== 'component' || !ACTIONS.has(part.fill.component) || old.localName !== TAGS[part.fill.component]) return null;
     if (!this.#bindings.has(old) || this.#bindings.get(old) !== stable(this.#binding(part.fill, message))) return null;
+    old.actor = actorOf(message);
     old.fill = part.fill;
     return old;
   }
@@ -334,6 +337,8 @@ export class MuThread extends HTMLElement {
       }
     }
     this.#bindings.set(node, stable(binding));
+    // The actor of the envelope is the trusted actor. The element refuses a fill that names a different author.
+    node.actor = actorOf(message);
     node.fill = fill;
     this.#owners.set(node, message.messageId);
     return node;

@@ -5,6 +5,11 @@
   "kind": "component",
   "description": "A label and a value in a card.",
   "ai_content": true,
+  "slots": {
+    "authorship": {
+      "required": true
+    }
+  },
   "data": {
     "label": {
       "type": "text",

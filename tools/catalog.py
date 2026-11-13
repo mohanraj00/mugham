@@ -221,6 +221,8 @@ def contract_errors(contract, filename=None, catalog=None, invalid=()):
             errors.append(path + ': min_length is more than max_length')
         if field.get('minimum', -math.inf) > field.get('maximum', math.inf):
             errors.append(path + ': minimum is more than maximum')
+    if contract['ai_content'] and not contract.get('slots', {}).get('authorship', {}).get('required'):
+        errors.append('slots.authorship: a contract with ai_content must declare a required authorship slot')
     if catalog is not None:
         for path, target in references(contract):
             if target in invalid:
@@ -318,6 +320,18 @@ def fill_errors(fill, catalog, path='', depth=0):
             errors += value_errors(data[key], field, '%sdata.%s' % (prefix, key), catalog, depth)
         elif field['required']:
             errors.append('%sdata.%s: a required field is missing' % (prefix, key))
+    return errors + slot_errors(fill, contract, prefix, depth)
+
+
+def slot_errors(fill, contract, prefix, depth):
+    """Only the outer fill has slots. A nested fill takes the slots of its outer fill."""
+    declared = contract.get('slots', {})
+    if depth > 0:
+        return ['%sslots: a nested fill takes the slots of its outer fill' % prefix] if 'slots' in fill else []
+    filled = fill.get('slots', {})
+    errors = ['%sslots.%s: the contract does not declare this slot' % (prefix, key) for key in filled if key not in declared]
+    errors += ['%sslots.%s: a required slot is missing' % (prefix, key)
+               for key, slot in declared.items() if slot['required'] and key not in filled]
     return errors
 
 

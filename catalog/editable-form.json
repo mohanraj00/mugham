@@ -5,6 +5,11 @@
   "kind": "component",
   "description": "A form with up to 20 text fields. A person edits the values and submits them as one action. The form can ask a person to confirm.",
   "ai_content": true,
+  "slots": {
+    "authorship": {
+      "required": true
+    }
+  },
   "data": {
     "title": {
       "type": "text",

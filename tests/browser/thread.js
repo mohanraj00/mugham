@@ -17,6 +17,10 @@ const ROBIN = actor('human', 'u-robin', 'Robin');
 const SAM = actor('human', 'u-sam', 'Sam');
 const CATALOG_AGENT = actor('agent', 'a-catalog', 'Catalog agent');
 const RENEW_AGENT = actor('agent', 'a-renew', 'Renewal agent');
+// A card names its author. The thread binds the actor of the envelope, so the author must be that actor.
+const CATALOG_AGENT_ID = { type: 'agent', id: 'a-catalog' };
+const RENEW_AGENT_ID = { type: 'agent', id: 'a-renew' };
+const card = (title, author) => ({ ...fill('card', { title }), slots: { authorship: author } });
 const say = (messageId, metadata, text, role = 'user') => [
   { type: 'TEXT_MESSAGE_START', messageId, role, metadata },
   { type: 'TEXT_MESSAGE_CONTENT', messageId, delta: text },
@@ -120,7 +124,7 @@ async function run() {
 
   // A later snapshot can replace a component with an undeclared component. The live region announces the refusal.
   const replaced = mount();
-  replaced.push(snapshot('k1', CATALOG_AGENT, { format: 2, fill: fill('card', { title: 'Weather at sea' }) }));
+  replaced.push(snapshot('k1', CATALOG_AGENT, { format: 2, fill: card('Weather at sea', CATALOG_AGENT_ID) }));
   await settle();
   const saidBefore = live(replaced).textContent;
   replaced.push(snapshot('k1', CATALOG_AGENT, { format: 2, fill: fill('banner', { text: 'Sale' }) }));
@@ -149,7 +153,7 @@ async function run() {
   // Untrusted content stays text.
   const unsafe = mount();
   for (const event of say('x1', CATALOG_AGENT, MARKUP)) unsafe.push(event);
-  unsafe.push(snapshot('x2', CATALOG_AGENT, { format: 2, fill: fill('card', { title: MARKUP.slice(0, 120) }) }));
+  unsafe.push(snapshot('x2', CATALOG_AGENT, { format: 2, fill: card(MARKUP.slice(0, 120), CATALOG_AGENT_ID) }));
   unsafe.push({ type: 'RUN_STARTED', threadId: 't4', runId: 'r1' });
   unsafe.push({ type: 'TEXT_MESSAGE_START', messageId: 'x3', metadata: CATALOG_AGENT });
   unsafe.push({ type: 'RUN_ERROR', message: MARKUP });
@@ -159,9 +163,28 @@ async function run() {
   check('text: a card part shows as its element', item(unsafe, 1).querySelector('mu-card')?.dataset.state === 'default');
   check('text: markup in an error shows as text', item(unsafe, 2).textContent.includes(MARKUP));
 
+  // The thread binds the actor of the envelope to each component. The content of an agent never shows as
+  // the content of a person.
+  const authored = mount();
+  authored.push(snapshot('p1', CATALOG_AGENT, { format: 2, fill: card('Weather at sea', CATALOG_AGENT_ID) }));
+  authored.push(snapshot('p2', CATALOG_AGENT, { format: 2, fill: card('Weather at sea', { type: 'human', id: 'u-robin' }) }));
+  authored.push(snapshot('p3', CATALOG_AGENT, { format: 2, fill: fill('card', { title: 'Weather at sea' }) }));
+  await settle();
+  const authorCard = item(authored, 0).querySelector('mu-card');
+  check('author: a card part shows the actor of the envelope as its author', authorCard?.dataset.state === 'default'
+    && authorCard.actor?.type === 'agent' && authorCard.actor.id === 'a-catalog'
+    && authorCard.shadowRoot.textContent.includes('Author: agent a-catalog'), authorCard?.shadowRoot.textContent);
+  const spoofCard = item(authored, 1).querySelector('mu-card');
+  check('author: a card of an agent that names a person as its author is refused', spoofCard?.dataset.state === 'refused'
+    && spoofCard.shadowRoot.textContent.includes('slots.authorship: the author is not the bound actor')
+    && !spoofCard.shadowRoot.textContent.includes('Author: human'), spoofCard?.shadowRoot.textContent);
+  check('author: a card with no authorship is refused', !item(authored, 2).querySelector('mu-card')
+    && item(authored, 2).querySelector('.refusal')?.textContent.includes('slots.authorship: a required slot is missing'),
+    item(authored, 2).textContent);
+
   // A fill of a component with no element shows a refusal.
   const noElement = mount();
-  noElement.push(snapshot('f1', CATALOG_AGENT, { format: 2, fill: fill('fact', { label: 'Shelf', value: 'B-14' }) }));
+  noElement.push(snapshot('f1', CATALOG_AGENT, { format: 2, fill: { ...fill('fact', { label: 'Shelf', value: 'B-14' }), slots: { authorship: CATALOG_AGENT_ID } } }));
   await settle();
   check('refused: a fill of a component with no element shows a refusal',
     item(noElement, 0).querySelector('.refusal')?.textContent.includes('fact'), item(noElement, 0).textContent);
@@ -183,7 +206,7 @@ async function run() {
   check('pending: an action shows pending before the receipt', element.dataset.state === 'pending' && status(0) === 'Pending', status(0));
   check('pending: the action goes to perform with its message', calls.length === 1 && calls[0].request.tool === 'library.renew'
     && calls[0].request.arguments.loan_id === 'L-0001' && calls[0].message.actor.id === 'a-renew', JSON.stringify(calls[0]?.request));
-  acting.push(snapshot('a6', CATALOG_AGENT, { format: 2, fill: fill('card', { title: 'Weather at sea' }) }));
+  acting.push(snapshot('a6', CATALOG_AGENT, { format: 2, fill: card('Weather at sea', CATALOG_AGENT_ID) }));
   for (const event of say('a7', SAM, 'Thanks.')) acting.push(event);
   await settle();
   check('pending: new events keep the element and its pending state', button(0) === element && element.dataset.state === 'pending',
@@ -287,7 +310,7 @@ async function run() {
   document.addEventListener('mu-action', pagedListener);
   pagedButton.shadowRoot.querySelector('button').click();
   document.removeEventListener('mu-action', pagedListener);
-  paged.push(snapshot('g1', RENEW_AGENT, { format: 2, fill: fill('card', { title: 'Weather at sea' }) }));
+  paged.push(snapshot('g1', RENEW_AGENT, { format: 2, fill: card('Weather at sea', RENEW_AGENT_ID) }));
   await settle();
   check('pending: with no perform, a snapshot does not replace a pending action',
     item(paged, 0).querySelector('mu-action-button') === pagedButton && !item(paged, 0).querySelector('mu-card'));

@@ -33,6 +33,7 @@ Each message is a list item with an article. The article has the name `Message f
 
 - The header shows the actor name and the actor type. If the actor has no name, the header shows the actor id. The type text is `Person` for `human`, `Agent` for `agent` and `System` for `system`.
 - The thread takes the actor only from the envelope. The AG-UI `role` never changes the actor. The content of an agent never shows as the content of a person.
+- The thread sets the `actor` of each component element to the actor of the envelope, before the fill. A fill of a contract with `ai_content` set to `true` must have an authorship slot with the `type` and the `id` of that actor. If the slot has a `name`, it must be the name of that actor. If not, the thread or the element refuses the part. Thus an agent cannot name a person as the author of its card.
 - A refused message has no actor. It shows `Refused message` and the first error. It never shows an actor name.
 
 ## States

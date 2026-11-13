@@ -99,6 +99,7 @@ python3 -m http.server 8000
 4. Open an example in the browser. The examples use synthetic data.
    - `http://localhost:8000/examples/primitives.html`: each primitive.
    - `http://localhost:8000/examples/loans.html`: a card, an action button, a card grid and a form.
+   - `http://localhost:8000/examples/provenance.html`: a card with the authorship slot and the citation slot, and a refused card.
 
 5. For the thread example, stop the static server and start the example server. It streams synthetic agent events as server-sent events and gives the receipt of each action:
 

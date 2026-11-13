@@ -8,6 +8,14 @@
    "kind": "component",
    "description": "A synthetic library loan.",
    "ai_content": true,
+   "slots": {
+    "authorship": {
+     "required": true
+    },
+    "citation": {
+     "required": false
+    }
+   },
    "data": {
     "title": {
      "type": "text",
@@ -128,6 +136,12 @@
       "Shelf 4",
       "Floor 2"
      ]
+    },
+    "slots": {
+     "authorship": {
+      "type": "agent",
+      "id": "agent-check"
+     }
     }
    },
    "errors": []
@@ -145,6 +159,12 @@
       "Shelf 4",
       "Floor 2"
      ]
+    },
+    "slots": {
+     "authorship": {
+      "type": "agent",
+      "id": "agent-check"
+     }
     }
    },
    "errors": [
@@ -164,6 +184,12 @@
       "Shelf 4",
       "Floor 2"
      ]
+    },
+    "slots": {
+     "authorship": {
+      "type": "agent",
+      "id": "agent-check"
+     }
     }
    },
    "errors": [
@@ -197,6 +223,12 @@
       "Shelf 4",
       "Floor 2"
      ]
+    },
+    "slots": {
+     "authorship": {
+      "type": "agent",
+      "id": "agent-check"
+     }
     }
    },
    "errors": []
@@ -214,6 +246,12 @@
       "Shelf 4",
       "Floor 2"
      ]
+    },
+    "slots": {
+     "authorship": {
+      "type": "agent",
+      "id": "agent-check"
+     }
     }
    },
    "errors": [
@@ -234,6 +272,12 @@
       "Floor 2"
      ],
      "script": "x"
+    },
+    "slots": {
+     "authorship": {
+      "type": "agent",
+      "id": "agent-check"
+     }
     }
    },
    "errors": [
@@ -252,6 +296,12 @@
       "Shelf 4",
       "Floor 2"
      ]
+    },
+    "slots": {
+     "authorship": {
+      "type": "agent",
+      "id": "agent-check"
+     }
     }
    },
    "errors": [
@@ -271,6 +321,12 @@
       "Shelf 4",
       "Floor 2"
      ]
+    },
+    "slots": {
+     "authorship": {
+      "type": "agent",
+      "id": "agent-check"
+     }
     }
    },
    "errors": [
@@ -290,6 +346,12 @@
       "Shelf 4",
       "Floor 2"
      ]
+    },
+    "slots": {
+     "authorship": {
+      "type": "agent",
+      "id": "agent-check"
+     }
     }
    },
    "errors": [
@@ -309,6 +371,12 @@
       "Shelf 4",
       "Floor 2"
      ]
+    },
+    "slots": {
+     "authorship": {
+      "type": "agent",
+      "id": "agent-check"
+     }
     }
    },
    "errors": [
@@ -328,6 +396,12 @@
       "Shelf 4",
       "Floor 2"
      ]
+    },
+    "slots": {
+     "authorship": {
+      "type": "agent",
+      "id": "agent-check"
+     }
     }
    },
    "errors": [
@@ -347,6 +421,12 @@
       "Shelf 4",
       "Floor 2"
      ]
+    },
+    "slots": {
+     "authorship": {
+      "type": "agent",
+      "id": "agent-check"
+     }
     }
    },
    "errors": [
@@ -366,6 +446,12 @@
       "Shelf 4",
       "Floor 2"
      ]
+    },
+    "slots": {
+     "authorship": {
+      "type": "agent",
+      "id": "agent-check"
+     }
     }
    },
    "errors": []
@@ -383,6 +469,12 @@
       "Shelf 4",
       "Floor 2"
      ]
+    },
+    "slots": {
+     "authorship": {
+      "type": "agent",
+      "id": "agent-check"
+     }
     }
    },
    "errors": [
@@ -402,6 +494,12 @@
       "Shelf 4",
       "Floor 2"
      ]
+    },
+    "slots": {
+     "authorship": {
+      "type": "agent",
+      "id": "agent-check"
+     }
     }
    },
    "errors": [
@@ -421,6 +519,12 @@
       "Shelf 4",
       "Floor 2"
      ]
+    },
+    "slots": {
+     "authorship": {
+      "type": "agent",
+      "id": "agent-check"
+     }
     }
    },
    "errors": [
@@ -441,6 +545,12 @@
       "Floor 2"
      ],
      "status": "lost"
+    },
+    "slots": {
+     "authorship": {
+      "type": "agent",
+      "id": "agent-check"
+     }
     }
    },
    "errors": [
@@ -461,6 +571,12 @@
       "b",
       "c"
      ]
+    },
+    "slots": {
+     "authorship": {
+      "type": "agent",
+      "id": "agent-check"
+     }
     }
    },
    "errors": [
@@ -480,6 +596,12 @@
       "a",
       5
      ]
+    },
+    "slots": {
+     "authorship": {
+      "type": "agent",
+      "id": "agent-check"
+     }
     }
    },
    "errors": [
@@ -500,7 +622,13 @@
       "Floor 2"
      ]
     },
-    "style": "x"
+    "style": "x",
+    "slots": {
+     "authorship": {
+      "type": "agent",
+      "id": "agent-check"
+     }
+    }
    },
    "errors": [
     "style: unknown key"
@@ -522,6 +650,12 @@
      "__proto__": {
       "x": 1
      }
+    },
+    "slots": {
+     "authorship": {
+      "type": "agent",
+      "id": "agent-check"
+     }
     }
    },
    "errors": [
@@ -542,6 +676,12 @@
       "Floor 2"
      ],
      "constructor": "x"
+    },
+    "slots": {
+     "authorship": {
+      "type": "agent",
+      "id": "agent-check"
+     }
     }
    },
    "errors": [
@@ -561,6 +701,12 @@
       "Shelf 4",
       "Floor 2"
      ]
+    },
+    "slots": {
+     "authorship": {
+      "type": "agent",
+      "id": "agent-check"
+     }
     }
    },
    "errors": []
@@ -578,6 +724,12 @@
       "Shelf 4",
       "Floor 2"
      ]
+    },
+    "slots": {
+     "authorship": {
+      "type": "agent",
+      "id": "agent-check"
+     }
     }
    },
    "errors": [
@@ -597,6 +749,12 @@
       "Shelf 4",
       "Floor 2"
      ]
+    },
+    "slots": {
+     "authorship": {
+      "type": "agent",
+      "id": "agent-check"
+     }
     }
    },
    "errors": []
@@ -614,6 +772,12 @@
       "Shelf 4",
       "Floor 2"
      ]
+    },
+    "slots": {
+     "authorship": {
+      "type": "agent",
+      "id": "agent-check"
+     }
     }
    },
    "errors": []
@@ -631,6 +795,12 @@
       "Shelf 4",
       "Floor 2"
      ]
+    },
+    "slots": {
+     "authorship": {
+      "type": "agent",
+      "id": "agent-check"
+     }
     }
    },
    "errors": []
@@ -648,6 +818,12 @@
       "Shelf 4",
       "Floor 2"
      ]
+    },
+    "slots": {
+     "authorship": {
+      "type": "agent",
+      "id": "agent-check"
+     }
     }
    },
    "errors": []
@@ -828,7 +1004,13 @@
     "x7": 1,
     "x8": 1,
     "x9": 1,
-    "x10": 1
+    "x10": 1,
+    "slots": {
+     "authorship": {
+      "type": "agent",
+      "id": "agent-check"
+     }
+    }
    },
    "errors": [
     "(fill): more than 10 unknown keys"
@@ -857,7 +1039,13 @@
     "x6": 1,
     "x7": 1,
     "x8": 1,
-    "x9": 1
+    "x9": 1,
+    "slots": {
+     "authorship": {
+      "type": "agent",
+      "id": "agent-check"
+     }
+    }
    },
    "errors": [
     "x0: unknown key",
@@ -886,7 +1074,13 @@
       "Floor 2"
      ]
     },
-    "qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq": 1
+    "qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq": 1,
+    "slots": {
+     "authorship": {
+      "type": "agent",
+      "id": "agent-check"
+     }
+    }
    },
    "errors": [
     "qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq...: unknown key"
@@ -906,6 +1100,12 @@
       "Floor 2"
      ],
      "qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq": 1
+    },
+    "slots": {
+     "authorship": {
+      "type": "agent",
+      "id": "agent-check"
+     }
     }
    },
    "errors": [
@@ -926,6 +1126,12 @@
       "Floor 2"
      ],
      "qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq": 1
+    },
+    "slots": {
+     "authorship": {
+      "type": "agent",
+      "id": "agent-check"
+     }
     }
    },
    "errors": [
@@ -948,10 +1154,459 @@
        "loan_id": "L-0001"
       }
      }
-    ]
+    ],
+    "slots": {
+     "authorship": {
+      "type": "agent",
+      "id": "agent-check"
+     }
+    }
    },
    "errors": [
     "actions: unknown key"
+   ]
+  },
+  {
+   "name": "a fill with no slots leaves the required authorship slot empty",
+   "fill": {
+    "component": "loan-card",
+    "version": "0.1.0",
+    "data": {
+     "title": "Field guide to moss",
+     "due": "2026-12-01",
+     "renewals": 1,
+     "facts": [
+      "Shelf 4",
+      "Floor 2"
+     ]
+    }
+   },
+   "errors": [
+    "slots.authorship: a required slot is missing"
+   ]
+  },
+  {
+   "name": "a fill with only a citation leaves the required authorship slot empty",
+   "fill": {
+    "component": "loan-card",
+    "version": "0.1.0",
+    "data": {
+     "title": "Field guide to moss",
+     "due": "2026-12-01",
+     "renewals": 1,
+     "facts": [
+      "Shelf 4",
+      "Floor 2"
+     ]
+    },
+    "slots": {
+     "citation": {
+      "source": "Synthetic loan rules",
+      "locator": "https://example.org/rules/loans#renewals"
+     }
+    }
+   },
+   "errors": [
+    "slots.authorship: a required slot is missing"
+   ]
+  },
+  {
+   "name": "a fill with both slots filled",
+   "fill": {
+    "component": "loan-card",
+    "version": "0.1.0",
+    "data": {
+     "title": "Field guide to moss",
+     "due": "2026-12-01",
+     "renewals": 1,
+     "facts": [
+      "Shelf 4",
+      "Floor 2"
+     ]
+    },
+    "slots": {
+     "authorship": {
+      "type": "agent",
+      "id": "agent-check",
+      "name": "Checker"
+     },
+     "citation": {
+      "source": "Synthetic loan rules",
+      "locator": "https://example.org/rules/loans#renewals"
+     }
+    }
+   },
+   "errors": []
+  },
+  {
+   "name": "markup in a slot stays text",
+   "fill": {
+    "component": "loan-card",
+    "version": "0.1.0",
+    "data": {
+     "title": "Field guide to moss",
+     "due": "2026-12-01",
+     "renewals": 1,
+     "facts": [
+      "Shelf 4",
+      "Floor 2"
+     ]
+    },
+    "slots": {
+     "authorship": {
+      "type": "human",
+      "id": "<b>person-a</b>",
+      "name": "<img src=x onerror=alert(1)>"
+     },
+     "citation": {
+      "source": "<script>alert(1)</script>",
+      "locator": "https://example.org/a?q=<b>x</b>"
+     }
+    }
+   },
+   "errors": []
+  },
+  {
+   "name": "an authorship slot with an unknown actor type",
+   "fill": {
+    "component": "loan-card",
+    "version": "0.1.0",
+    "data": {
+     "title": "Field guide to moss",
+     "due": "2026-12-01",
+     "renewals": 1,
+     "facts": [
+      "Shelf 4",
+      "Floor 2"
+     ]
+    },
+    "slots": {
+     "authorship": {
+      "type": "robot",
+      "id": "agent-check"
+     }
+    }
+   },
+   "errors": [
+    "slots.authorship.type: must be one of \"human\", \"agent\", \"system\""
+   ]
+  },
+  {
+   "name": "an authorship slot with an empty id",
+   "fill": {
+    "component": "loan-card",
+    "version": "0.1.0",
+    "data": {
+     "title": "Field guide to moss",
+     "due": "2026-12-01",
+     "renewals": 1,
+     "facts": [
+      "Shelf 4",
+      "Floor 2"
+     ]
+    },
+    "slots": {
+     "authorship": {
+      "type": "agent",
+      "id": ""
+     }
+    }
+   },
+   "errors": [
+    "slots.authorship.id: fewer than 1 characters"
+   ]
+  },
+  {
+   "name": "a citation with no locator",
+   "fill": {
+    "component": "loan-card",
+    "version": "0.1.0",
+    "data": {
+     "title": "Field guide to moss",
+     "due": "2026-12-01",
+     "renewals": 1,
+     "facts": [
+      "Shelf 4",
+      "Floor 2"
+     ]
+    },
+    "slots": {
+     "authorship": {
+      "type": "agent",
+      "id": "agent-check"
+     },
+     "citation": {
+      "source": "Synthetic loan rules"
+     }
+    }
+   },
+   "errors": [
+    "slots.citation: missing key locator"
+   ]
+  },
+  {
+   "name": "a citation with the locator \"http://example.org/rules\"",
+   "fill": {
+    "component": "loan-card",
+    "version": "0.1.0",
+    "data": {
+     "title": "Field guide to moss",
+     "due": "2026-12-01",
+     "renewals": 1,
+     "facts": [
+      "Shelf 4",
+      "Floor 2"
+     ]
+    },
+    "slots": {
+     "authorship": {
+      "type": "agent",
+      "id": "agent-check"
+     },
+     "citation": {
+      "source": "Rules",
+      "locator": "http://example.org/rules"
+     }
+    }
+   },
+   "errors": [
+    "slots.citation.locator: does not agree with the pattern ^https://[^\\x00-\\x20\\x7f-\\x9f\u00a0\u1680\u2000-\u200f\u2028-\u202f\u205f-\u206f\u3000\ufeff/?#@]+([/?#][^\\x00-\\x20\\x7f-\\x9f\u00a0\u1680\u2000-\u200f\u2028-\u202f\u205f-\u206f\u3000\ufeff]*)?$"
+   ]
+  },
+  {
+   "name": "a citation with the locator \"javascript:alert(1)\"",
+   "fill": {
+    "component": "loan-card",
+    "version": "0.1.0",
+    "data": {
+     "title": "Field guide to moss",
+     "due": "2026-12-01",
+     "renewals": 1,
+     "facts": [
+      "Shelf 4",
+      "Floor 2"
+     ]
+    },
+    "slots": {
+     "authorship": {
+      "type": "agent",
+      "id": "agent-check"
+     },
+     "citation": {
+      "source": "Rules",
+      "locator": "javascript:alert(1)"
+     }
+    }
+   },
+   "errors": [
+    "slots.citation.locator: does not agree with the pattern ^https://[^\\x00-\\x20\\x7f-\\x9f\u00a0\u1680\u2000-\u200f\u2028-\u202f\u205f-\u206f\u3000\ufeff/?#@]+([/?#][^\\x00-\\x20\\x7f-\\x9f\u00a0\u1680\u2000-\u200f\u2028-\u202f\u205f-\u206f\u3000\ufeff]*)?$"
+   ]
+  },
+  {
+   "name": "a citation with the locator \"https://person@example.org/rules\"",
+   "fill": {
+    "component": "loan-card",
+    "version": "0.1.0",
+    "data": {
+     "title": "Field guide to moss",
+     "due": "2026-12-01",
+     "renewals": 1,
+     "facts": [
+      "Shelf 4",
+      "Floor 2"
+     ]
+    },
+    "slots": {
+     "authorship": {
+      "type": "agent",
+      "id": "agent-check"
+     },
+     "citation": {
+      "source": "Rules",
+      "locator": "https://person@example.org/rules"
+     }
+    }
+   },
+   "errors": [
+    "slots.citation.locator: does not agree with the pattern ^https://[^\\x00-\\x20\\x7f-\\x9f\u00a0\u1680\u2000-\u200f\u2028-\u202f\u205f-\u206f\u3000\ufeff/?#@]+([/?#][^\\x00-\\x20\\x7f-\\x9f\u00a0\u1680\u2000-\u200f\u2028-\u202f\u205f-\u206f\u3000\ufeff]*)?$"
+   ]
+  },
+  {
+   "name": "a citation with the locator \"https://example.org/a b\"",
+   "fill": {
+    "component": "loan-card",
+    "version": "0.1.0",
+    "data": {
+     "title": "Field guide to moss",
+     "due": "2026-12-01",
+     "renewals": 1,
+     "facts": [
+      "Shelf 4",
+      "Floor 2"
+     ]
+    },
+    "slots": {
+     "authorship": {
+      "type": "agent",
+      "id": "agent-check"
+     },
+     "citation": {
+      "source": "Rules",
+      "locator": "https://example.org/a b"
+     }
+    }
+   },
+   "errors": [
+    "slots.citation.locator: does not agree with the pattern ^https://[^\\x00-\\x20\\x7f-\\x9f\u00a0\u1680\u2000-\u200f\u2028-\u202f\u205f-\u206f\u3000\ufeff/?#@]+([/?#][^\\x00-\\x20\\x7f-\\x9f\u00a0\u1680\u2000-\u200f\u2028-\u202f\u205f-\u206f\u3000\ufeff]*)?$"
+   ]
+  },
+  {
+   "name": "a citation with the locator \"https://example.org/\\u202egnp.exe\"",
+   "fill": {
+    "component": "loan-card",
+    "version": "0.1.0",
+    "data": {
+     "title": "Field guide to moss",
+     "due": "2026-12-01",
+     "renewals": 1,
+     "facts": [
+      "Shelf 4",
+      "Floor 2"
+     ]
+    },
+    "slots": {
+     "authorship": {
+      "type": "agent",
+      "id": "agent-check"
+     },
+     "citation": {
+      "source": "Rules",
+      "locator": "https://example.org/\u202egnp.exe"
+     }
+    }
+   },
+   "errors": [
+    "slots.citation.locator: does not agree with the pattern ^https://[^\\x00-\\x20\\x7f-\\x9f\u00a0\u1680\u2000-\u200f\u2028-\u202f\u205f-\u206f\u3000\ufeff/?#@]+([/?#][^\\x00-\\x20\\x7f-\\x9f\u00a0\u1680\u2000-\u200f\u2028-\u202f\u205f-\u206f\u3000\ufeff]*)?$"
+   ]
+  },
+  {
+   "name": "an unknown slot",
+   "fill": {
+    "component": "loan-card",
+    "version": "0.1.0",
+    "data": {
+     "title": "Field guide to moss",
+     "due": "2026-12-01",
+     "renewals": 1,
+     "facts": [
+      "Shelf 4",
+      "Floor 2"
+     ]
+    },
+    "slots": {
+     "authorship": {
+      "type": "agent",
+      "id": "agent-check"
+     },
+     "stamp": "x"
+    }
+   },
+   "errors": [
+    "slots: unknown key stamp"
+   ]
+  },
+  {
+   "name": "a slot that the contract does not declare",
+   "fill": {
+    "component": "loan-grid",
+    "version": "0.1.0",
+    "data": {
+     "label": "Loans",
+     "cards": [
+      {
+       "component": "loan-card",
+       "version": "0.1.0",
+       "data": {
+        "title": "Field guide to moss",
+        "due": "2026-12-01",
+        "renewals": 1,
+        "facts": [
+         "Shelf 4",
+         "Floor 2"
+        ]
+       }
+      },
+      {
+       "component": "loan-card",
+       "version": "0.1.0",
+       "data": {
+        "title": "Field guide to moss",
+        "due": "2026-12-01",
+        "renewals": 1,
+        "facts": [
+         "Shelf 4",
+         "Floor 2"
+        ]
+       }
+      }
+     ]
+    },
+    "slots": {
+     "citation": {
+      "source": "Synthetic loan rules",
+      "locator": "https://example.org/rules/loans#renewals"
+     }
+    }
+   },
+   "errors": [
+    "slots.citation: the contract does not declare this slot"
+   ]
+  },
+  {
+   "name": "a nested fill with slots",
+   "fill": {
+    "component": "loan-grid",
+    "version": "0.1.0",
+    "data": {
+     "label": "Loans",
+     "cards": [
+      {
+       "component": "loan-card",
+       "version": "0.1.0",
+       "data": {
+        "title": "Field guide to moss",
+        "due": "2026-12-01",
+        "renewals": 1,
+        "facts": [
+         "Shelf 4",
+         "Floor 2"
+        ]
+       },
+       "slots": {
+        "authorship": {
+         "type": "agent",
+         "id": "agent-check"
+        }
+       }
+      },
+      {
+       "component": "loan-card",
+       "version": "0.1.0",
+       "data": {
+        "title": "Field guide to moss",
+        "due": "2026-12-01",
+        "renewals": 1,
+        "facts": [
+         "Shelf 4",
+         "Floor 2"
+        ]
+       }
+      }
+     ]
+    }
+   },
+   "errors": [
+    "data.cards[0].slots: a nested fill takes the slots of its outer fill"
    ]
   }
  ]

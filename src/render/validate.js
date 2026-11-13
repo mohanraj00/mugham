@@ -195,5 +195,41 @@ export function fillErrors(fill, catalog, path = '', depth = 0) {
     if (own(data, key)) errors.push(...valueErrors(data[key], field, `${prefix}data.${key}`, catalog, depth));
     else if (field.required) errors.push(`${prefix}data.${key}: a required field is missing`);
   }
-  return errors;
+  return [...errors, ...slotErrors(fill, contract, prefix, depth)];
+}
+
+// Only the outer fill has slots. A nested fill takes the slots of its outer fill.
+// The author in a fill is a claim of the model. Only the actor that the application or the thread gives is
+// trusted (CONSTITUTION.md, principle 3). Call this only for a fill that fillErrors accepts.
+const ACTOR_TYPES = new Set(['human', 'agent', 'system']);
+
+export function actorErrors(actor) {
+  if (actor === null) return [];
+  if (actor === undefined || typeof actor !== 'object' || Array.isArray(actor)) return ['must be an object or null'];
+  if (!ACTOR_TYPES.has(actor.type)) return ['type: must be human, agent or system'];
+  if (typeof actor.id !== 'string' || actor.id === '' || length(actor.id, 128) > 128) return ['id: must be a string of 1 to 128 characters'];
+  if (own(actor, 'name') && (typeof actor.name !== 'string' || actor.name === '' || length(actor.name, 80) > 80)) {
+    return ['name: must be a string of 1 to 80 characters'];
+  }
+  return [];
+}
+
+export function authorErrors(fill, actor) {
+  const author = fill.slots?.authorship;
+  if (!author) return [];
+  if (!actor) return ['slots.authorship: no actor is bound, so the author cannot be checked'];
+  // A fill with no name shows only the type and the id. A fill with a name must give the name of the bound actor.
+  const name = own(author, 'name') && author.name !== actor.name;
+  if (author.type !== actor.type || author.id !== actor.id || name) return ['slots.authorship: the author is not the bound actor'];
+  return [];
+}
+
+function slotErrors(fill, contract, prefix, depth) {
+  const declared = contract.slots ?? {};
+  if (depth > 0) return own(fill, 'slots') ? [`${prefix}slots: a nested fill takes the slots of its outer fill`] : [];
+  const filled = fill.slots ?? {};
+  return [
+    ...Object.keys(filled).filter((key) => !own(declared, key)).map((key) => `${prefix}slots.${key}: the contract does not declare this slot`),
+    ...Object.entries(declared).filter(([key, slot]) => slot.required && !own(filled, key)).map(([key]) => `${prefix}slots.${key}: a required slot is missing`),
+  ];
 }

@@ -9,6 +9,9 @@ const MARKUP = '<img src=x onerror="window.muUnsafe=1"><script>window.muUnsafe=1
 const results = [];
 const check = (name, ok, detail = '') => results.push({ name, ok: Boolean(ok), detail: String(detail) });
 const fill = (component, data) => ({ component, version: '0.1.0', data });
+// An outer fill. Only the outer fill has slots, and a contract with ai_content requires the authorship slot.
+const AUTHOR = { type: 'agent', id: 'agent-check', name: 'Checker' };
+const outer = (component, data) => ({ ...fill(component, data), ...(CATALOG[component].slots?.authorship ? { slots: { authorship: AUTHOR } } : {}) });
 const fact = (label, value) => fill('fact', { label, value });
 const field = (name, label, value) => fill('field', { name, label, value });
 const stage = document.getElementById('stage');
@@ -27,7 +30,8 @@ const TAGS = { card: 'mu-card', 'action-button': 'mu-action-button', 'editable-f
 function mount(name, data) {
   const node = document.createElement(TAGS[name]);
   stage.append(node);
-  node.fill = fill(name, data);
+  node.actor = AUTHOR;
+  node.fill = outer(name, data);
   return node;
 }
 
@@ -53,13 +57,13 @@ function deepQuery(node, selector) {
 for (const name of Object.keys(TAGS)) {
   const node = mount(name, VALID[name]);
   check(`${name}: renders a valid fill`, node.dataset.state !== 'refused' && node.fill !== null, node.dataset.state);
-  node.fill = fill(name, { ...VALID[name], style: 'color: red' });
+  node.fill = outer(name, { ...VALID[name], style: 'color: red' });
   check(`${name}: refuses an undeclared field`, node.dataset.state === 'refused'
     && node.shadowRoot.textContent.includes('data.style: the contract does not declare this field'), node.shadowRoot.textContent);
   const required = Object.keys(VALID[name])[0];
   const missing = { ...VALID[name] };
   delete missing[required];
-  node.fill = fill(name, missing);
+  node.fill = outer(name, missing);
   check(`${name}: refuses a fill without ${required}`, node.dataset.state === 'refused', node.shadowRoot.textContent);
 }
 const nested = mount('card-grid', { label: 'Loans', cards: [fill('card', { ...LOAN, facts: [fact('Shelf', 7)] })] });
@@ -115,6 +119,94 @@ for (const [name, data] of Object.entries(MARKED)) {
     && shown.includes(MARKUP.slice(0, 40)), shown.slice(0, 160));
 }
 
+// The authorship and citation slots (catalog/schema/README.md). Each filled slot shows as text. The locator
+// opens only after a person clicks the button. Markup in a slot shows as text and makes no element.
+const CITED = { authorship: { ...AUTHOR, name: 'Checker' }, citation: { source: 'Synthetic loan rules', locator: 'https://example.org/rules/loans' } };
+const slotted = (name, data, slots, actor = AUTHOR) => {
+  const node = document.createElement(TAGS[name]);
+  stage.append(node);
+  node.actor = actor;
+  node.fill = slots === undefined ? fill(name, data) : { ...fill(name, data), slots };
+  return node;
+};
+const opened = [];
+const realOpen = window.open;
+window.open = (...args) => { opened.push(args); return null; };
+const cited = slotted('card', LOAN, CITED);
+const citedText = deepText(cited);
+const openButton = cited.shadowRoot.querySelector('[part="open"]');
+const openAsks = [];
+cited.addEventListener('mu-open', (event) => openAsks.push(event.detail.locator));
+check('card: shows the authorship slot as text', citedText.includes('Author: agent agent-check (Checker)'), citedText.slice(0, 200));
+check('card: shows the citation slot as text', citedText.includes('Source: Synthetic loan rules')
+  && citedText.includes('https://example.org/rules/loans'), citedText.slice(0, 200));
+check('card: the locator makes no link', deepQuery(cited, 'a, link, iframe, img').length === 0);
+check('card: the locator does not open before a click', opened.length === 0 && openAsks.length === 0);
+check('card: the open button names the source', openButton?.getAttribute('aria-label') === 'Open source: Synthetic loan rules');
+openButton.click();
+check('card: a click opens the locator with no opener', openAsks.length === 1 && openAsks[0] === 'https://example.org/rules/loans'
+  && opened.length === 1 && opened[0][0] === 'https://example.org/rules/loans' && opened[0][2] === 'noopener,noreferrer', JSON.stringify(opened));
+const handled = (event) => event.preventDefault();
+cited.addEventListener('mu-open', handled);
+openButton.click();
+check('card: the application can open the locator itself', openAsks.length === 2 && opened.length === 1, JSON.stringify(opened));
+cited.removeEventListener('mu-open', handled);
+window.open = realOpen;
+const authorOnly = deepText(slotted('card', LOAN, { authorship: AUTHOR }));
+check('card: an empty citation slot shows no source', authorOnly.includes('Author: agent agent-check') && !authorOnly.includes('Source:'), authorOnly.slice(0, 200));
+for (const name of ['card', 'editable-form', 'card-grid']) {
+  const node = slotted(name, VALID[name], undefined);
+  check(`${name}: refuses a fill with no authorship slot`, node.dataset.state === 'refused'
+    && node.shadowRoot.textContent.includes('slots.authorship: a required slot is missing'), node.shadowRoot.textContent);
+}
+const formText = deepText(slotted('editable-form', FORM, { authorship: AUTHOR }));
+check('editable-form: shows the authorship slot as text', formText.includes('Author: agent agent-check'), formText.slice(0, 200));
+const gridCards = deepQuery(slotted('card-grid', VALID['card-grid'], CITED), 'mu-card');
+check('card-grid: each card takes the slots of the grid', gridCards.length === 2
+  && gridCards.every((card) => deepText(card).includes('Author: agent agent-check (Checker)') && deepText(card).includes('Source: Synthetic loan rules')));
+const nestedSlots = slotted('card-grid', { label: 'Loans', cards: [{ ...fill('card', LOAN), slots: { authorship: AUTHOR } }] }, { authorship: AUTHOR });
+check('card-grid: refuses a nested card with its own slots', nestedSlots.dataset.state === 'refused'
+  && nestedSlots.shadowRoot.textContent.includes('data.cards[0].slots: a nested fill takes the slots of its outer fill'), nestedSlots.shadowRoot.textContent);
+const markedSlots = slotted('card', LOAN, { authorship: { type: 'agent', id: MARKUP.slice(0, 128), name: MARKUP.slice(0, 80) },
+  citation: { source: MARKUP.slice(0, 120), locator: 'https://example.org/a?q=<script>x</script>' } }, { type: 'agent', id: MARKUP.slice(0, 128), name: MARKUP.slice(0, 80) });
+const markedText = deepText(markedSlots);
+check('card: markup in a slot shows as text', markedSlots.dataset.state !== 'refused' && deepQuery(markedSlots, 'img, script, a').length === 0
+  && markedText.includes(MARKUP.slice(0, 40)) && markedText.includes('<script>x</script>') && !window.muUnsafe, markedText.slice(0, 200));
+const insecure = slotted('card', LOAN, { authorship: AUTHOR, citation: { source: 'Rules', locator: 'javascript:alert(1)' } });
+check('card: refuses a locator that is not https', insecure.dataset.state === 'refused'
+  && insecure.shadowRoot.textContent.includes('slots.citation.locator'), insecure.shadowRoot.textContent.slice(0, 120));
+
+// The author in a fill is a claim. The element shows it only if it is the actor that the application gives.
+const PERSON = { type: 'human', id: 'person-check' };
+const unbound = slotted('card', LOAN, { authorship: AUTHOR }, null);
+check('card: refuses an authorship slot with no bound actor', unbound.dataset.state === 'refused'
+  && unbound.shadowRoot.textContent.includes('slots.authorship: no actor is bound'), unbound.shadowRoot.textContent);
+const posing = slotted('card', LOAN, { authorship: PERSON });
+check('card: refuses an agent fill that names a person as the author', posing.dataset.state === 'refused'
+  && posing.shadowRoot.textContent.includes('slots.authorship: the author is not the bound actor') && !deepText(posing).includes('person-check|'),
+  posing.shadowRoot.textContent);
+const otherAgent = slotted('card', LOAN, { authorship: { type: 'agent', id: 'agent-other' } });
+check('card: refuses an author with a different id', otherAgent.dataset.state === 'refused', otherAgent.shadowRoot.textContent);
+// A fill cannot show a name that is not the name of the bound actor.
+const otherName = slotted('card', LOAN, { authorship: { ...AUTHOR, name: 'Robin' } });
+check('card: refuses an author with a different name', otherName.dataset.state === 'refused'
+  && otherName.shadowRoot.textContent.includes('slots.authorship: the author is not the bound actor')
+  && !deepText(otherName).includes('Robin'), otherName.shadowRoot.textContent);
+const boundName = slotted('card', LOAN, { authorship: { ...AUTHOR, name: 'Checker' } });
+check('card: shows the name of the bound actor', boundName.dataset.state === 'default' && boundName.actor.name === 'Checker'
+  && deepText(boundName).includes('Checker'), boundName.shadowRoot.textContent);
+const rebind = slotted('card', LOAN, { authorship: AUTHOR });
+rebind.actor = PERSON;
+check('card: a new actor checks the fill again', rebind.dataset.state === 'refused' && rebind.fill === null, rebind.dataset.state);
+const gridPosing = slotted('card-grid', VALID['card-grid'], { authorship: PERSON });
+check('card-grid: refuses an author that is not the bound actor', gridPosing.dataset.state === 'refused', gridPosing.shadowRoot.textContent);
+const gridBound = slotted('card-grid', VALID['card-grid'], { authorship: AUTHOR });
+check('card-grid: each card takes the actor of the grid', deepQuery(gridBound, 'mu-card').every((card) => card.actor?.id === 'agent-check'
+  && card.dataset.state !== 'refused'));
+let badActor = '';
+try { rebind.actor = { type: 'person', id: 'x' }; } catch (error) { badActor = error.message; }
+check('card: refuses an actor of an unknown type', badActor === 'actor: type: must be human, agent or system', badActor);
+
 // The action path. The button is pending after a press, and done only after the receipt.
 const button = mount('action-button', VALID['action-button']);
 const events = [];
@@ -153,7 +245,7 @@ button.action = null;
 check('action-button: a binding of null disables the button', button.dataset.state === 'disabled'
   && control.getAttribute('aria-disabled') === 'true' && status() === '', `${button.dataset.state} ${status()}`);
 button.action = { tool: 'library.renew', label: 'Renew' };
-button.fill = fill('action-button', { label: 'Renew', style: 'x' });
+button.fill = outer('action-button', { label: 'Renew', style: 'x' });
 const before = events.length;
 button.send();
 check('action-button: a refused button sends no request', button.dataset.state === 'refused' && events.length === before);
@@ -278,23 +370,26 @@ check('editable-form: a fill before the binding with an unlisted field is refuse
   && refusedText(sneaky).includes('data.fields: the application does not accept the field approved') && sneakySubmits.length === 0,
   `${sneaky.dataset.state} ${refusedText(sneaky)}`);
 const late = document.createElement('mu-editable-form');
+late.actor = AUTHOR;
 stage.append(late);
 late.action = { tool: 'library.update_loan', label: 'Save', title: 'Loan details', editable: EDITABLE };
-late.fill = fill('editable-form', SNEAKY);
+late.fill = outer('editable-form', SNEAKY);
 check('editable-form: a fill after the binding with an unlisted field is refused', late.dataset.state === 'refused'
   && refusedText(late).includes('the field approved'), `${late.dataset.state} ${refusedText(late)}`);
 const unlisted = document.createElement('mu-editable-form');
+unlisted.actor = AUTHOR;
 stage.append(unlisted);
 unlisted.action = { tool: 'library.update_loan', label: 'Save', title: 'Loan details' };
-unlisted.fill = fill('editable-form', FORM);
+unlisted.fill = outer('editable-form', FORM);
 check('editable-form: a binding with no editable map accepts no field', unlisted.dataset.state === 'refused'
   && refusedText(unlisted).includes('the field shelf'), `${unlisted.dataset.state} ${refusedText(unlisted)}`);
 
 // The application gives the label of each field. A fill cannot show a different meaning for a name.
 const relabeled = document.createElement('mu-editable-form');
+relabeled.actor = AUTHOR;
 stage.append(relabeled);
 relabeled.action = { tool: 'library.update_loan', label: 'Save', title: 'Loan details', editable: EDITABLE };
-relabeled.fill = fill('editable-form', { ...FORM, fields: [field('shelf', 'Approve the loan', 'B-14')] });
+relabeled.fill = outer('editable-form', { ...FORM, fields: [field('shelf', 'Approve the loan', 'B-14')] });
 check('editable-form: a field label that is not the label of the application is refused', relabeled.dataset.state === 'refused'
   && refusedText(relabeled).includes('the label of the field shelf'), `${relabeled.dataset.state} ${refusedText(relabeled)}`);
 // A person cannot edit a disabled field, so the form does not send its value.
@@ -313,7 +408,7 @@ refill.addEventListener('mu-action', (event) => refillSubmits.push(event.detail)
 refill.action = { tool: 'library.update_loan', label: 'Save', title: 'Loan details', editable: EDITABLE };
 refill.shadowRoot.querySelector('form').requestSubmit();
 refill.receipt({ id: refillSubmits[0]?.id, ok: true });
-refill.fill = fill('editable-form', { ...FORM, fields: [field('shelf', 'Shelf code', 'C-2'), field('branch', 'Branch', 'North')] });
+refill.fill = outer('editable-form', { ...FORM, fields: [field('shelf', 'Shelf code', 'C-2'), field('branch', 'Branch', 'North')] });
 refill.shadowRoot.querySelector('form').requestSubmit();
 check('editable-form: a new fill after done lets the form save again', refillSubmits.length === 2
   && refillSubmits[1].arguments.shelf === 'C-2', `${refill.dataset.state} ${JSON.stringify(refillSubmits)}`);
@@ -469,14 +564,15 @@ if (mode === 'light') {
 // The keyboard target for the runner.
 const keyboard = document.getElementById('keyboard');
 const target = document.createElement('mu-action-button');
-target.fill = fill('action-button', { label: 'Keyboard target' });
+target.fill = outer('action-button', { label: 'Keyboard target' });
 target.action = { tool: 'library.renew', label: 'Keyboard target' };
 let presses = 0;
 target.addEventListener('mu-action', (event) => { presses += 1; target.receipt({ id: event.detail.id, ok: false }); });
 keyboard.append(target);
 // The runner presses Enter in a field of this form. The form must submit one time.
 const enterForm = document.createElement('mu-editable-form');
-enterForm.fill = fill('editable-form', FORM);
+enterForm.actor = AUTHOR;
+enterForm.fill = outer('editable-form', FORM);
 enterForm.action = { tool: 'library.update_loan', label: 'Save', title: 'Loan details', editable: EDITABLE };
 let formSubmits = 0;
 enterForm.addEventListener('mu-action', () => { formSubmits += 1; });
@@ -485,13 +581,14 @@ window.muFocusField = () => { enterForm.shadowRoot.querySelector('mu-field').sha
 window.muFormSubmits = () => formSubmits;
 // The runner opens the confirm step of this button and this form with the keyboard.
 const confirmTarget = document.createElement('mu-action-button');
-confirmTarget.fill = fill('action-button', { label: 'Confirm target' });
+confirmTarget.fill = outer('action-button', { label: 'Confirm target' });
 confirmTarget.action = { tool: 'library.cancel', label: 'Confirm target', confirm: { message: 'Cancel the loan? You cannot undo this.', label: 'Yes, cancel' } };
 let confirmPresses = 0;
 confirmTarget.addEventListener('mu-action', (event) => { confirmPresses += 1; confirmTarget.receipt({ id: event.detail.id, ok: false }); });
 keyboard.append(confirmTarget);
 const confirmForm = document.createElement('mu-editable-form');
-confirmForm.fill = fill('editable-form', { ...FORM, title: 'Confirm form' });
+confirmForm.actor = AUTHOR;
+confirmForm.fill = outer('editable-form', { ...FORM, title: 'Confirm form' });
 confirmForm.action = { tool: 'library.update_loan', label: 'Save', title: 'Confirm form', editable: EDITABLE,
   confirm: { message: 'Save the new shelf?', label: 'Yes, save' } };
 let confirmFormSubmits = 0;
