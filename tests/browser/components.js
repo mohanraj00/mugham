@@ -261,7 +261,7 @@ const unauthored = citation({ citation: CITED.citation });
 check('citation: refuses a fill with no authorship slot', unauthored.dataset.state === 'refused'
   && unauthored.shadowRoot.textContent.includes('slots.authorship: a required slot is missing'), unauthored.shadowRoot.textContent);
 const markedCitation = citation({ authorship: { type: 'agent', id: MARKUP.slice(0, 128), name: MARKUP.slice(0, 80) },
-  citation: { source: MARKUP.slice(0, 120), locator: 'https://example.org/a?q=<script>x</script>' } }, { quote: MARKUP }, { type: 'agent', id: MARKUP.slice(0, 128) });
+  citation: { source: MARKUP.slice(0, 120), locator: 'https://example.org/a?q=<script>x</script>' } }, { quote: MARKUP }, { type: 'agent', id: MARKUP.slice(0, 128), name: MARKUP.slice(0, 80) });
 const markedCitationText = deepText(markedCitation);
 check('citation: markup in each text field shows as text', markedCitation.dataset.state === 'default'
   && deepQuery(markedCitation, 'img, script, a').length === 0 && window.muUnsafe === undefined
