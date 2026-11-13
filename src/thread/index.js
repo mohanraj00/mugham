@@ -14,7 +14,7 @@ const TAGS = Object.freeze(Object.assign(Object.create(null), {
 const ACTIONS = new Set(['action-button', 'editable-form']);
 const TYPES = Object.freeze({ human: 'Person', agent: 'Agent', system: 'System' });
 // The envelope reader accepts only a message with a valid actor, so the element accepts this actor.
-const actorOf = (message) => ({ type: message.actor.type, id: message.actor.id });
+const actorOf = ({ actor }) => ({ type: actor.type, id: actor.id, ...(actor.name === undefined ? {} : { name: actor.name }) });
 const REFUSED_PART = 'Refused: the thread did not show this part. ';
 const FAILED = 'The request failed.';
 const REFUSED_RECEIPT = 'The thread refused the receipt.';

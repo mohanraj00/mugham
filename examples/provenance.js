@@ -9,7 +9,7 @@ const fact = (label, value) => fill('fact', { label, value });
 const RULE = { title: 'Renewal rule for short loans', summary: 'A short loan can get one renewal of seven days.',
   facts: [fact('Loan type', 'Short loan'), fact('Renewals', '1 of 1')] };
 // The page knows the agent that sent the content, so it gives that actor to each component.
-const AGENT = { type: 'agent', id: 'agent-rules' };
+const AGENT = { type: 'agent', id: 'agent-rules', name: 'Rules helper' };
 const CITATION = { source: 'Synthetic library rules, section 4', locator: 'https://example.org/library/rules#section-4' };
 
 function make(tag, value) {
@@ -27,7 +27,7 @@ function caption(words) {
 
 // Both slots are filled. The card shows the actor and the source as text. The locator opens after a click.
 const filled = make('mu-card', { ...fill('card', RULE),
-  slots: { authorship: { ...AGENT, name: 'Rules helper' }, citation: CITATION } });
+  slots: { authorship: AGENT, citation: CITATION } });
 
 // The contract of the card requires the authorship slot. This fill has only a citation, so the card refuses it.
 const missing = make('mu-card', { ...fill('card', RULE), slots: { citation: CITATION } });
