@@ -9,12 +9,13 @@ import { BASE, el, sheet } from '../render/dom.js';
 const TAGS = Object.freeze(Object.assign(Object.create(null), {
   text: 'mu-text', button: 'mu-button', field: 'mu-field', stack: 'mu-stack', grid: 'mu-grid', card: 'mu-card',
   'action-button': 'mu-action-button', 'editable-form': 'mu-editable-form', 'card-grid': 'mu-card-grid',
+  citation: 'mu-citation',
 }));
 // The components with an action. The application gives the binding of each one.
 const ACTIONS = new Set(['action-button', 'editable-form']);
 const TYPES = Object.freeze({ human: 'Person', agent: 'Agent', system: 'System' });
 // The envelope reader accepts only a message with a valid actor, so the element accepts this actor.
-const actorOf = (message) => ({ type: message.actor.type, id: message.actor.id });
+const actorOf = ({ actor }) => ({ type: actor.type, id: actor.id, ...(actor.name === undefined ? {} : { name: actor.name }) });
 const REFUSED_PART = 'Refused: the thread did not show this part. ';
 const FAILED = 'The request failed.';
 const REFUSED_RECEIPT = 'The thread refused the receipt.';

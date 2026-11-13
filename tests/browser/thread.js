@@ -183,6 +183,17 @@ async function run() {
     && item(authored, 2).querySelector('.refusal')?.textContent.includes('slots.authorship: a required slot is missing'),
     item(authored, 2).textContent);
 
+  // A citation part shows as its element, with the actor of the envelope as its author.
+  const cited = mount();
+  cited.push(snapshot('c1', CATALOG_AGENT, { format: 2, fill: { ...fill('citation', { quote: 'A short loan can get one renewal.' }),
+    slots: { authorship: CATALOG_AGENT_ID, citation: { source: 'Synthetic loan rules', locator: 'https://example.org/rules/loans' } } } }));
+  await settle();
+  const citation = item(cited, 0).querySelector('mu-citation');
+  check('citation: a citation part shows as its element', citation?.dataset.state === 'default'
+    && citation.shadowRoot.textContent.includes('Source: Synthetic loan rules')
+    && citation.shadowRoot.textContent.includes('Author: agent a-catalog')
+    && citation.shadowRoot.querySelector('button[part="open"]') !== null, item(cited, 0).textContent);
+
   // A fill of a component with no element shows a refusal.
   const noElement = mount();
   noElement.push(snapshot('f1', CATALOG_AGENT, { format: 2, fill: { ...fill('fact', { label: 'Shelf', value: 'B-14' }), slots: { authorship: CATALOG_AGENT_ID } } }));

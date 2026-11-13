@@ -10,7 +10,7 @@ const results = [];
 const check = (name, ok, detail = '') => results.push({ name, ok: Boolean(ok), detail: String(detail) });
 const fill = (component, data) => ({ component, version: '0.1.0', data });
 // An outer fill. Only the outer fill has slots, and a contract with ai_content requires the authorship slot.
-const AUTHOR = { type: 'agent', id: 'agent-check' };
+const AUTHOR = { type: 'agent', id: 'agent-check', name: 'Checker' };
 const outer = (component, data) => ({ ...fill(component, data), ...(CATALOG[component].slots?.authorship ? { slots: { authorship: AUTHOR } } : {}) });
 const fact = (label, value) => fill('fact', { label, value });
 const field = (name, label, value) => fill('field', { name, label, value });
@@ -168,7 +168,7 @@ const nestedSlots = slotted('card-grid', { label: 'Loans', cards: [{ ...fill('ca
 check('card-grid: refuses a nested card with its own slots', nestedSlots.dataset.state === 'refused'
   && nestedSlots.shadowRoot.textContent.includes('data.cards[0].slots: a nested fill takes the slots of its outer fill'), nestedSlots.shadowRoot.textContent);
 const markedSlots = slotted('card', LOAN, { authorship: { type: 'agent', id: MARKUP.slice(0, 128), name: MARKUP.slice(0, 80) },
-  citation: { source: MARKUP.slice(0, 120), locator: 'https://example.org/a?q=<script>x</script>' } }, { type: 'agent', id: MARKUP.slice(0, 128) });
+  citation: { source: MARKUP.slice(0, 120), locator: 'https://example.org/a?q=<script>x</script>' } }, { type: 'agent', id: MARKUP.slice(0, 128), name: MARKUP.slice(0, 80) });
 const markedText = deepText(markedSlots);
 check('card: markup in a slot shows as text', markedSlots.dataset.state !== 'refused' && deepQuery(markedSlots, 'img, script, a').length === 0
   && markedText.includes(MARKUP.slice(0, 40)) && markedText.includes('<script>x</script>') && !window.muUnsafe, markedText.slice(0, 200));
@@ -187,6 +187,14 @@ check('card: refuses an agent fill that names a person as the author', posing.da
   posing.shadowRoot.textContent);
 const otherAgent = slotted('card', LOAN, { authorship: { type: 'agent', id: 'agent-other' } });
 check('card: refuses an author with a different id', otherAgent.dataset.state === 'refused', otherAgent.shadowRoot.textContent);
+// A fill cannot show a name that is not the name of the bound actor.
+const otherName = slotted('card', LOAN, { authorship: { ...AUTHOR, name: 'Robin' } });
+check('card: refuses an author with a different name', otherName.dataset.state === 'refused'
+  && otherName.shadowRoot.textContent.includes('slots.authorship: the author is not the bound actor')
+  && !deepText(otherName).includes('Robin'), otherName.shadowRoot.textContent);
+const boundName = slotted('card', LOAN, { authorship: { ...AUTHOR, name: 'Checker' } });
+check('card: shows the name of the bound actor', boundName.dataset.state === 'default' && boundName.actor.name === 'Checker'
+  && deepText(boundName).includes('Checker'), boundName.shadowRoot.textContent);
 const rebind = slotted('card', LOAN, { authorship: AUTHOR });
 rebind.actor = PERSON;
 check('card: a new actor checks the fill again', rebind.dataset.state === 'refused' && rebind.fill === null, rebind.dataset.state);
@@ -198,6 +206,72 @@ check('card-grid: each card takes the actor of the grid', deepQuery(gridBound, '
 let badActor = '';
 try { rebind.actor = { type: 'person', id: 'x' }; } catch (error) { badActor = error.message; }
 check('card: refuses an actor of an unknown type', badActor === 'actor: type: must be human, agent or system', badActor);
+
+// The citation component (catalog/citation.json). The source and the locator come from the citation slot, so
+// the locator rule of the slot applies. The locator shows as text and opens only after a click.
+const citation = (slots, data = { quote: 'A short loan can get one renewal.' }, actor = AUTHOR) => {
+  const node = document.createElement('mu-citation');
+  stage.append(node);
+  node.actor = actor;
+  node.fill = { ...fill('citation', data), slots };
+  return node;
+};
+const source = citation(CITED);
+const sourceText = deepText(source);
+const sourceOpen = source.shadowRoot.querySelector('[part="open"]');
+const sourceAsks = [];
+source.addEventListener('mu-open', (event) => sourceAsks.push(event.detail.locator));
+check('citation: renders a valid fill', source.dataset.state === 'default' && source.fill !== null, source.dataset.state);
+check('citation: shows the source, the locator, the author and the quote as text', sourceText.includes('Source: Synthetic loan rules')
+  && sourceText.includes('https://example.org/rules/loans') && sourceText.includes('Author: agent agent-check (Checker)')
+  && sourceText.includes('A short loan can get one renewal.'), sourceText.slice(0, 240));
+check('citation: is a group named Citation', source.shadowRoot.querySelector('[role="group"]')?.getAttribute('aria-label') === 'Citation');
+check('citation: the locator makes no link', deepQuery(source, 'a, link, iframe, img').length === 0);
+check('citation: the open button is a native button that names the source', sourceOpen?.localName === 'button' && sourceOpen.tabIndex === 0
+  && sourceOpen.getAttribute('aria-label') === 'Open source: Synthetic loan rules');
+const citationOpened = [];
+window.open = (...args) => { citationOpened.push(args); return null; };
+check('citation: the locator does not open before a click', sourceAsks.length === 0 && citationOpened.length === 0);
+sourceOpen?.click();
+window.open = realOpen;
+check('citation: a click opens the locator with no opener', sourceAsks.length === 1 && sourceAsks[0] === 'https://example.org/rules/loans'
+  && citationOpened.length === 1 && citationOpened[0][0] === 'https://example.org/rules/loans' && citationOpened[0][1] === '_blank'
+  && citationOpened[0][2] === 'noopener,noreferrer', JSON.stringify(citationOpened));
+const unsourced = citation({ authorship: AUTHOR });
+check('citation: no citation slot shows the empty state', unsourced.dataset.state === 'empty'
+  && unsourced.shadowRoot.textContent.includes('No source given.') && !unsourced.shadowRoot.querySelector('button'), unsourced.shadowRoot.textContent);
+check('citation: the empty state still shows the author and the quote', unsourced.shadowRoot.textContent.includes('Author: agent agent-check')
+  && unsourced.shadowRoot.textContent.includes('A short loan can get one renewal.'), unsourced.shadowRoot.textContent);
+const refusals = [];
+const noLocator = document.createElement('mu-citation');
+noLocator.addEventListener('mu-refused', (event) => refusals.push(...event.detail.errors));
+stage.append(noLocator);
+noLocator.actor = AUTHOR;
+noLocator.fill = { ...fill('citation', {}), slots: { authorship: AUTHOR, citation: { source: 'Synthetic loan rules' } } };
+check('citation: a missing locator shows a clear refusal', noLocator.dataset.state === 'refused' && noLocator.fill === null
+  && noLocator.shadowRoot.textContent === 'Refused citation: the locator is missing.'
+  && noLocator.shadowRoot.querySelector('[role="status"]') !== null, noLocator.shadowRoot.textContent);
+check('citation: the refusal event keeps the error of the validator', refusals.includes('slots.citation: missing key locator'), refusals.join('; '));
+for (const locator of ['http://example.org/rules', 'javascript:alert(1)', 'https://person@example.org/rules', 'https://example.org/‮gnp.exe']) {
+  const bad = citation({ authorship: AUTHOR, citation: { source: 'Synthetic loan rules', locator } });
+  check(`citation: refuses the locator ${JSON.stringify(locator)} with a clear text`, bad.dataset.state === 'refused' && bad.fill === null
+    && bad.shadowRoot.textContent === 'Refused citation: the locator is not a safe https: address.', bad.shadowRoot.textContent);
+}
+const unauthored = citation({ citation: CITED.citation });
+check('citation: refuses a fill with no authorship slot', unauthored.dataset.state === 'refused'
+  && unauthored.shadowRoot.textContent.includes('slots.authorship: a required slot is missing'), unauthored.shadowRoot.textContent);
+const markedCitation = citation({ authorship: { type: 'agent', id: MARKUP.slice(0, 128), name: MARKUP.slice(0, 80) },
+  citation: { source: MARKUP.slice(0, 120), locator: 'https://example.org/a?q=<script>x</script>' } }, { quote: MARKUP }, { type: 'agent', id: MARKUP.slice(0, 128), name: MARKUP.slice(0, 80) });
+const markedCitationText = deepText(markedCitation);
+check('citation: markup in each text field shows as text', markedCitation.dataset.state === 'default'
+  && deepQuery(markedCitation, 'img, script, a').length === 0 && window.muUnsafe === undefined
+  && markedCitationText.includes('Source: ' + MARKUP.slice(0, 40)) && markedCitationText.includes('Author: agent ' + MARKUP.slice(0, 40))
+  && markedCitationText.includes('https://example.org/a?q=<script>x</script>'), markedCitationText.slice(0, 240));
+const citationSheets = source.shadowRoot.adoptedStyleSheets.slice(1);
+const citationTokens = new Set(citationSheets.flatMap((item) => [...item.cssRules].map((rule) => rule.cssText)).join(' ').match(/--mu-[a-z0-9-]+/g) ?? []);
+const citationExtra = [...citationTokens].filter((token) => !declared('citation').has(token));
+check('citation: the styles use only declared tokens', citationExtra.length === 0, citationExtra.join(' '));
+check('citation: the styles have a forced colors rule', citationSheets.some((item) => [...item.cssRules].some((rule) => rule.cssText.includes('forced-colors'))));
 
 // The action path. The button is pending after a press, and done only after the receipt.
 const button = mount('action-button', VALID['action-button']);
@@ -590,5 +664,14 @@ window.muFocusConfirm = () => { confirmTarget.shadowRoot.querySelector('button')
 window.muFocusConfirmField = () => { confirmForm.shadowRoot.querySelector('mu-field').shadowRoot.querySelector('input').focus(); return true; };
 window.muConfirm = () => ({ presses: confirmPresses, state: confirmTarget.dataset.state, submits: confirmFormSubmits,
   formState: confirmForm.dataset.state });
+const keyboardCitation = document.createElement('mu-citation');
+keyboardCitation.actor = AUTHOR;
+keyboardCitation.fill = { ...fill('citation', {}), slots: { authorship: AUTHOR, citation: { source: 'Keyboard source', locator: 'https://example.org/keyboard' } } };
+let citationOpens = 0;
+// The page acts as the application. It cancels the event, so the check opens no tab.
+keyboardCitation.addEventListener('mu-open', (event) => { citationOpens += 1; event.preventDefault(); });
+keyboard.append(keyboardCitation);
+window.muFocusCitation = () => { keyboardCitation.shadowRoot.querySelector('[part="open"]').focus(); return true; };
+window.muCitationOpens = () => citationOpens;
 window.muPresses = () => presses;
 window.muChecks = { mode, results };

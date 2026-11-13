@@ -1,4 +1,4 @@
-// The first catalog components: card, action button, editable form and card grid.
+// The catalog components: card, action button, editable form, card grid and citation.
 import { MuElement } from '../primitives/base.js';
 import { define as definePrimitives } from '../primitives/index.js';
 import { ActionState } from '../actions/action.js';
@@ -377,10 +377,53 @@ export class MuEditableForm extends ActionElement {
   }
 }
 
+// The citation of a claim (catalog/citation.json). The source and the locator come from the citation slot, so the
+// locator rule of the slot applies. The validator refuses a missing or bad locator, and the refusal tells why.
+export class MuCitation extends MuElement {
+  static component = 'citation';
+  static styles = [sheet(`
+    :host { display: block; }
+    figure {
+      margin: 0; color: var(--mu-color-text); font: var(--mu-type-body); padding: var(--mu-space-2) var(--mu-space-3);
+      border-inline-start: 3px solid var(--mu-color-border); border-radius: var(--mu-radius-2);
+      display: flex; flex-direction: column; gap: var(--mu-space-1);
+    }
+    blockquote { margin: 0; overflow-wrap: anywhere; }
+    .muted { font: var(--mu-type-caption); color: var(--mu-color-text-muted); }
+    .provenance { display: flex; flex-direction: column; gap: var(--mu-space-1); }
+    .provenance p { margin: 0; overflow-wrap: anywhere; }
+    .provenance button {
+      align-self: start; font: var(--mu-type-caption); min-height: 2.75rem; padding: 0 var(--mu-space-2); cursor: pointer;
+      border: 1px solid var(--mu-color-border); border-radius: var(--mu-radius-2); background: transparent; color: var(--mu-color-text);
+    }
+    @media (forced-colors: active) {
+      figure { border-color: CanvasText; } .muted { color: CanvasText; }
+      .provenance button { color: ButtonText; border-color: ButtonText; }
+    }
+  `)];
+
+  state() {
+    return this.fill.slots?.citation ? 'default' : 'empty';
+  }
+
+  refusal(errors) {
+    if (errors[0] === 'slots.citation: missing key locator') return 'the locator is missing.';
+    if (errors[0].startsWith('slots.citation.locator:')) return 'the locator is not a safe https: address.';
+    return errors[0];
+  }
+
+  render(data) {
+    const quote = data.quote ? el('blockquote', { part: 'quote' }, data.quote) : null;
+    // The authorship slot is required, so the author always shows. With no citation slot, the text tells it.
+    const empty = this.fill.slots.citation ? null : el('p', { class: 'muted', part: 'empty' }, 'No source given.');
+    return [el('figure', { role: 'group', 'aria-label': 'Citation', part: 'citation' }, quote, empty, provenance(this.fill.slots))];
+  }
+}
+
 export function define(registry = customElements) {
   definePrimitives(registry);
   for (const [name, element] of [['mu-action-button', MuActionButton], ['mu-card', MuCard],
-    ['mu-card-grid', MuCardGrid], ['mu-editable-form', MuEditableForm]]) {
+    ['mu-card-grid', MuCardGrid], ['mu-editable-form', MuEditableForm], ['mu-citation', MuCitation]]) {
     if (!registry.get(name)) registry.define(name, element);
   }
 }

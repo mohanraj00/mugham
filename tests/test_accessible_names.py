@@ -1,4 +1,4 @@
-"""Each project component with a role gets its accessible name from a field that cannot be blank.
+"""Each project component with a role gets its accessible name from a fixed text or from a field that cannot be blank.
 
 The expected result comes from principle 7 of the constitution: each component works with a screen reader.
 """
@@ -21,6 +21,9 @@ class AccessibleNameTest(unittest.TestCase):
             if accessibility['role'] == 'none':
                 continue
             with self.subTest(component=name):
+                if 'text' in accessibility['name']:
+                    self.assertGreaterEqual(len(accessibility['name']['text'].strip()), 1)
+                    continue
                 field = contract['data'][accessibility['name']['field']]
                 self.assertTrue(field['required'])
                 self.assertGreaterEqual(field.get('min_length', 0), 1)
