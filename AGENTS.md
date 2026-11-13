@@ -10,7 +10,7 @@ For component work, read [.agents/skills/component-workflow/SKILL.md](.agents/sk
 
 ## Layout
 
-The repository has source code and the release `v0.1.0`. This is the layout:
+The repository has source code and the release `v0.2.0`. This is the layout:
 
 - `catalog/`: one contract file for each component, and the schema of the contract format.
 - `src/`: the kit.
