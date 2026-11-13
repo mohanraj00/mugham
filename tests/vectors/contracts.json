@@ -1,0 +1,946 @@
+{
+  "note": "Shared contract cases. tools/catalog.py and src/render/validate.js give these errors for each case. A registered contract uses the same rules.",
+  "catalog": {
+    "loan-card": {
+      "format": 2,
+      "name": "loan-card",
+      "version": "0.1.0",
+      "kind": "component",
+      "description": "A synthetic library loan.",
+      "ai_content": true,
+      "slots": {
+        "authorship": {
+          "required": true
+        },
+        "citation": {
+          "required": false
+        }
+      },
+      "data": {
+        "title": {
+          "type": "text",
+          "label": "Title",
+          "required": true,
+          "max_length": 80
+        },
+        "due": {
+          "type": "date",
+          "label": "Due date",
+          "required": true
+        },
+        "renewals": {
+          "type": "integer",
+          "label": "Renewals",
+          "required": false,
+          "minimum": 0,
+          "maximum": 3
+        },
+        "status": {
+          "type": "enum",
+          "label": "Status",
+          "required": false,
+          "values": [
+            "on_loan",
+            "late"
+          ]
+        },
+        "facts": {
+          "type": "list",
+          "label": "Facts",
+          "required": false,
+          "max_items": 2,
+          "items": {
+            "type": "text",
+            "label": "Fact",
+            "required": true,
+            "max_length": 40
+          }
+        }
+      },
+      "states": [
+        "default",
+        "pending",
+        "done",
+        "error"
+      ],
+      "tokens": [
+        "color.surface",
+        "space.2"
+      ],
+      "accessibility": {
+        "role": "article",
+        "name": {
+          "field": "title"
+        },
+        "keyboard": [
+          "Tab"
+        ],
+        "forced_colors": true,
+        "reduced_motion": true
+      }
+    }
+  },
+  "cases": [
+    {
+      "name": "a valid contract",
+      "contract": {
+        "format": 2,
+        "name": "seed-tray",
+        "version": "0.1.0",
+        "kind": "component",
+        "description": "A tray of seedlings with its label, its sow date and its stage.",
+        "ai_content": true,
+        "slots": {
+          "authorship": {
+            "required": true
+          }
+        },
+        "data": {
+          "label": {
+            "type": "text",
+            "label": "Label",
+            "required": true,
+            "max_length": 80
+          },
+          "seedlings": {
+            "type": "integer",
+            "label": "Seedlings",
+            "required": true,
+            "minimum": 0,
+            "maximum": 200
+          },
+          "loan": {
+            "type": "component",
+            "label": "Loan",
+            "required": false,
+            "name": "loan-card"
+          }
+        },
+        "states": [
+          "default",
+          "refused"
+        ],
+        "tokens": [
+          "color.text",
+          "type.body"
+        ],
+        "accessibility": {
+          "role": "article",
+          "name": {
+            "field": "label"
+          },
+          "keyboard": [],
+          "forced_colors": true,
+          "reduced_motion": true
+        }
+      },
+      "errors": []
+    },
+    {
+      "name": "no contract",
+      "contract": null,
+      "errors": [
+        "(contract): must be an object"
+      ]
+    },
+    {
+      "name": "an unknown key",
+      "contract": {
+        "format": 2,
+        "name": "seed-tray",
+        "version": "0.1.0",
+        "kind": "component",
+        "description": "A tray of seedlings with its label, its sow date and its stage.",
+        "ai_content": true,
+        "slots": {
+          "authorship": {
+            "required": true
+          }
+        },
+        "data": {
+          "label": {
+            "type": "text",
+            "label": "Label",
+            "required": true,
+            "max_length": 80
+          },
+          "seedlings": {
+            "type": "integer",
+            "label": "Seedlings",
+            "required": true,
+            "minimum": 0,
+            "maximum": 200
+          },
+          "loan": {
+            "type": "component",
+            "label": "Loan",
+            "required": false,
+            "name": "loan-card"
+          }
+        },
+        "states": [
+          "default",
+          "refused"
+        ],
+        "tokens": [
+          "color.text",
+          "type.body"
+        ],
+        "accessibility": {
+          "role": "article",
+          "name": {
+            "field": "label"
+          },
+          "keyboard": [],
+          "forced_colors": true,
+          "reduced_motion": true
+        },
+        "script": "x"
+      },
+      "errors": [
+        "script: unknown key"
+      ]
+    },
+    {
+      "name": "a different format",
+      "contract": {
+        "format": 1,
+        "name": "seed-tray",
+        "version": "0.1.0",
+        "kind": "component",
+        "description": "A tray of seedlings with its label, its sow date and its stage.",
+        "ai_content": true,
+        "slots": {
+          "authorship": {
+            "required": true
+          }
+        },
+        "data": {
+          "label": {
+            "type": "text",
+            "label": "Label",
+            "required": true,
+            "max_length": 80
+          },
+          "seedlings": {
+            "type": "integer",
+            "label": "Seedlings",
+            "required": true,
+            "minimum": 0,
+            "maximum": 200
+          },
+          "loan": {
+            "type": "component",
+            "label": "Loan",
+            "required": false,
+            "name": "loan-card"
+          }
+        },
+        "states": [
+          "default",
+          "refused"
+        ],
+        "tokens": [
+          "color.text",
+          "type.body"
+        ],
+        "accessibility": {
+          "role": "article",
+          "name": {
+            "field": "label"
+          },
+          "keyboard": [],
+          "forced_colors": true,
+          "reduced_motion": true
+        }
+      },
+      "errors": [
+        "format: must be 2"
+      ]
+    },
+    {
+      "name": "a name that does not agree with the pattern",
+      "contract": {
+        "format": 2,
+        "name": "Seed_Tray",
+        "version": "0.1.0",
+        "kind": "component",
+        "description": "A tray of seedlings with its label, its sow date and its stage.",
+        "ai_content": true,
+        "slots": {
+          "authorship": {
+            "required": true
+          }
+        },
+        "data": {
+          "label": {
+            "type": "text",
+            "label": "Label",
+            "required": true,
+            "max_length": 80
+          },
+          "seedlings": {
+            "type": "integer",
+            "label": "Seedlings",
+            "required": true,
+            "minimum": 0,
+            "maximum": 200
+          },
+          "loan": {
+            "type": "component",
+            "label": "Loan",
+            "required": false,
+            "name": "loan-card"
+          }
+        },
+        "states": [
+          "default",
+          "refused"
+        ],
+        "tokens": [
+          "color.text",
+          "type.body"
+        ],
+        "accessibility": {
+          "role": "article",
+          "name": {
+            "field": "label"
+          },
+          "keyboard": [],
+          "forced_colors": true,
+          "reduced_motion": true
+        }
+      },
+      "errors": [
+        "name: does not agree with the pattern ^[a-z][a-z0-9]*(-[a-z0-9]+)*$"
+      ]
+    },
+    {
+      "name": "no default state",
+      "contract": {
+        "format": 2,
+        "name": "seed-tray",
+        "version": "0.1.0",
+        "kind": "component",
+        "description": "A tray of seedlings with its label, its sow date and its stage.",
+        "ai_content": true,
+        "slots": {
+          "authorship": {
+            "required": true
+          }
+        },
+        "data": {
+          "label": {
+            "type": "text",
+            "label": "Label",
+            "required": true,
+            "max_length": 80
+          },
+          "seedlings": {
+            "type": "integer",
+            "label": "Seedlings",
+            "required": true,
+            "minimum": 0,
+            "maximum": 200
+          },
+          "loan": {
+            "type": "component",
+            "label": "Loan",
+            "required": false,
+            "name": "loan-card"
+          }
+        },
+        "states": [
+          "empty"
+        ],
+        "tokens": [
+          "color.text",
+          "type.body"
+        ],
+        "accessibility": {
+          "role": "article",
+          "name": {
+            "field": "label"
+          },
+          "keyboard": [],
+          "forced_colors": true,
+          "reduced_motion": true
+        }
+      },
+      "errors": [
+        "states: must include default"
+      ]
+    },
+    {
+      "name": "ai content with no authorship slot",
+      "contract": {
+        "format": 2,
+        "name": "seed-tray",
+        "version": "0.1.0",
+        "kind": "component",
+        "description": "A tray of seedlings with its label, its sow date and its stage.",
+        "ai_content": true,
+        "data": {
+          "label": {
+            "type": "text",
+            "label": "Label",
+            "required": true,
+            "max_length": 80
+          },
+          "seedlings": {
+            "type": "integer",
+            "label": "Seedlings",
+            "required": true,
+            "minimum": 0,
+            "maximum": 200
+          },
+          "loan": {
+            "type": "component",
+            "label": "Loan",
+            "required": false,
+            "name": "loan-card"
+          }
+        },
+        "states": [
+          "default",
+          "refused"
+        ],
+        "tokens": [
+          "color.text",
+          "type.body"
+        ],
+        "accessibility": {
+          "role": "article",
+          "name": {
+            "field": "label"
+          },
+          "keyboard": [],
+          "forced_colors": true,
+          "reduced_motion": true
+        }
+      },
+      "errors": [
+        "slots.authorship: a contract with ai_content must declare a required authorship slot"
+      ]
+    },
+    {
+      "name": "an accessible name from a number field",
+      "contract": {
+        "format": 2,
+        "name": "seed-tray",
+        "version": "0.1.0",
+        "kind": "component",
+        "description": "A tray of seedlings with its label, its sow date and its stage.",
+        "ai_content": true,
+        "slots": {
+          "authorship": {
+            "required": true
+          }
+        },
+        "data": {
+          "label": {
+            "type": "text",
+            "label": "Label",
+            "required": true,
+            "max_length": 80
+          },
+          "seedlings": {
+            "type": "integer",
+            "label": "Seedlings",
+            "required": true,
+            "minimum": 0,
+            "maximum": 200
+          },
+          "loan": {
+            "type": "component",
+            "label": "Loan",
+            "required": false,
+            "name": "loan-card"
+          }
+        },
+        "states": [
+          "default",
+          "refused"
+        ],
+        "tokens": [
+          "color.text",
+          "type.body"
+        ],
+        "accessibility": {
+          "role": "article",
+          "name": {
+            "field": "seedlings"
+          },
+          "keyboard": [],
+          "forced_colors": true,
+          "reduced_motion": true
+        }
+      },
+      "errors": [
+        "accessibility.name: the field must be a required text field"
+      ]
+    },
+    {
+      "name": "the role none with an accessible name",
+      "contract": {
+        "format": 2,
+        "name": "seed-tray",
+        "version": "0.1.0",
+        "kind": "component",
+        "description": "A tray of seedlings with its label, its sow date and its stage.",
+        "ai_content": true,
+        "slots": {
+          "authorship": {
+            "required": true
+          }
+        },
+        "data": {
+          "label": {
+            "type": "text",
+            "label": "Label",
+            "required": true,
+            "max_length": 80
+          },
+          "seedlings": {
+            "type": "integer",
+            "label": "Seedlings",
+            "required": true,
+            "minimum": 0,
+            "maximum": 200
+          },
+          "loan": {
+            "type": "component",
+            "label": "Loan",
+            "required": false,
+            "name": "loan-card"
+          }
+        },
+        "states": [
+          "default",
+          "refused"
+        ],
+        "tokens": [
+          "color.text",
+          "type.body"
+        ],
+        "accessibility": {
+          "role": "none",
+          "name": {
+            "field": "label"
+          },
+          "keyboard": [],
+          "forced_colors": true,
+          "reduced_motion": true
+        }
+      },
+      "errors": [
+        "accessibility.name: a component with the role none has no accessible name"
+      ]
+    },
+    {
+      "name": "min_length more than max_length",
+      "contract": {
+        "format": 2,
+        "name": "seed-tray",
+        "version": "0.1.0",
+        "kind": "component",
+        "description": "A tray of seedlings with its label, its sow date and its stage.",
+        "ai_content": true,
+        "slots": {
+          "authorship": {
+            "required": true
+          }
+        },
+        "data": {
+          "label": {
+            "type": "text",
+            "label": "Label",
+            "required": true,
+            "max_length": 80,
+            "min_length": 90
+          },
+          "seedlings": {
+            "type": "integer",
+            "label": "Seedlings",
+            "required": true,
+            "minimum": 0,
+            "maximum": 200
+          },
+          "loan": {
+            "type": "component",
+            "label": "Loan",
+            "required": false,
+            "name": "loan-card"
+          }
+        },
+        "states": [
+          "default",
+          "refused"
+        ],
+        "tokens": [
+          "color.text",
+          "type.body"
+        ],
+        "accessibility": {
+          "role": "article",
+          "name": {
+            "field": "label"
+          },
+          "keyboard": [],
+          "forced_colors": true,
+          "reduced_motion": true
+        }
+      },
+      "errors": [
+        "data.label: min_length is more than max_length"
+      ]
+    },
+    {
+      "name": "minimum more than maximum",
+      "contract": {
+        "format": 2,
+        "name": "seed-tray",
+        "version": "0.1.0",
+        "kind": "component",
+        "description": "A tray of seedlings with its label, its sow date and its stage.",
+        "ai_content": true,
+        "slots": {
+          "authorship": {
+            "required": true
+          }
+        },
+        "data": {
+          "label": {
+            "type": "text",
+            "label": "Label",
+            "required": true,
+            "max_length": 80
+          },
+          "seedlings": {
+            "type": "integer",
+            "label": "Seedlings",
+            "required": true,
+            "minimum": 300,
+            "maximum": 200
+          },
+          "loan": {
+            "type": "component",
+            "label": "Loan",
+            "required": false,
+            "name": "loan-card"
+          }
+        },
+        "states": [
+          "default",
+          "refused"
+        ],
+        "tokens": [
+          "color.text",
+          "type.body"
+        ],
+        "accessibility": {
+          "role": "article",
+          "name": {
+            "field": "label"
+          },
+          "keyboard": [],
+          "forced_colors": true,
+          "reduced_motion": true
+        }
+      },
+      "errors": [
+        "data.seedlings: minimum is more than maximum"
+      ]
+    },
+    {
+      "name": "a component field with an unknown name",
+      "contract": {
+        "format": 2,
+        "name": "seed-tray",
+        "version": "0.1.0",
+        "kind": "component",
+        "description": "A tray of seedlings with its label, its sow date and its stage.",
+        "ai_content": true,
+        "slots": {
+          "authorship": {
+            "required": true
+          }
+        },
+        "data": {
+          "label": {
+            "type": "text",
+            "label": "Label",
+            "required": true,
+            "max_length": 80
+          },
+          "seedlings": {
+            "type": "integer",
+            "label": "Seedlings",
+            "required": true,
+            "minimum": 0,
+            "maximum": 200
+          },
+          "loan": {
+            "type": "component",
+            "label": "Loan",
+            "required": false,
+            "name": "banner"
+          }
+        },
+        "states": [
+          "default",
+          "refused"
+        ],
+        "tokens": [
+          "color.text",
+          "type.body"
+        ],
+        "accessibility": {
+          "role": "article",
+          "name": {
+            "field": "label"
+          },
+          "keyboard": [],
+          "forced_colors": true,
+          "reduced_motion": true
+        }
+      },
+      "errors": [
+        "data.loan: no contract has the name banner"
+      ]
+    },
+    {
+      "name": "a list of an unknown component",
+      "contract": {
+        "format": 2,
+        "name": "seed-tray",
+        "version": "0.1.0",
+        "kind": "component",
+        "description": "A tray of seedlings with its label, its sow date and its stage.",
+        "ai_content": true,
+        "slots": {
+          "authorship": {
+            "required": true
+          }
+        },
+        "data": {
+          "label": {
+            "type": "text",
+            "label": "Label",
+            "required": true,
+            "max_length": 80
+          },
+          "seedlings": {
+            "type": "integer",
+            "label": "Seedlings",
+            "required": true,
+            "minimum": 0,
+            "maximum": 200
+          },
+          "loan": {
+            "type": "list",
+            "label": "Parts",
+            "required": false,
+            "max_items": 3,
+            "items": {
+              "type": "component",
+              "label": "Part",
+              "required": true,
+              "name": "banner"
+            }
+          }
+        },
+        "states": [
+          "default",
+          "refused"
+        ],
+        "tokens": [
+          "color.text",
+          "type.body"
+        ],
+        "accessibility": {
+          "role": "article",
+          "name": {
+            "field": "label"
+          },
+          "keyboard": [],
+          "forced_colors": true,
+          "reduced_motion": true
+        }
+      },
+      "errors": [
+        "data.loan.items: no contract has the name banner"
+      ]
+    },
+    {
+      "name": "a component field with its own name",
+      "contract": {
+        "format": 2,
+        "name": "seed-tray",
+        "version": "0.1.0",
+        "kind": "component",
+        "description": "A tray of seedlings with its label, its sow date and its stage.",
+        "ai_content": true,
+        "slots": {
+          "authorship": {
+            "required": true
+          }
+        },
+        "data": {
+          "label": {
+            "type": "text",
+            "label": "Label",
+            "required": true,
+            "max_length": 80
+          },
+          "seedlings": {
+            "type": "integer",
+            "label": "Seedlings",
+            "required": true,
+            "minimum": 0,
+            "maximum": 200
+          },
+          "loan": {
+            "type": "component",
+            "label": "Loan",
+            "required": false,
+            "name": "seed-tray"
+          }
+        },
+        "states": [
+          "default",
+          "refused"
+        ],
+        "tokens": [
+          "color.text",
+          "type.body"
+        ],
+        "accessibility": {
+          "role": "article",
+          "name": {
+            "field": "label"
+          },
+          "keyboard": [],
+          "forced_colors": true,
+          "reduced_motion": true
+        }
+      },
+      "errors": [
+        "data.loan: no contract has the name seed-tray"
+      ]
+    },
+    {
+      "name": "a contract that contains itself through the catalog",
+      "contract": {
+        "format": 2,
+        "name": "loan-card",
+        "version": "0.1.0",
+        "kind": "component",
+        "description": "A tray of seedlings with its label, its sow date and its stage.",
+        "ai_content": true,
+        "slots": {
+          "authorship": {
+            "required": true
+          }
+        },
+        "data": {
+          "label": {
+            "type": "text",
+            "label": "Label",
+            "required": true,
+            "max_length": 80
+          },
+          "seedlings": {
+            "type": "integer",
+            "label": "Seedlings",
+            "required": true,
+            "minimum": 0,
+            "maximum": 200
+          },
+          "loan": {
+            "type": "component",
+            "label": "Loan",
+            "required": false,
+            "name": "loan-card"
+          }
+        },
+        "states": [
+          "default",
+          "refused"
+        ],
+        "tokens": [
+          "color.text",
+          "type.body"
+        ],
+        "accessibility": {
+          "role": "article",
+          "name": {
+            "field": "label"
+          },
+          "keyboard": [],
+          "forced_colors": true,
+          "reduced_motion": true
+        }
+      },
+      "errors": [
+        "data.loan: the contract contains itself through loan-card"
+      ]
+    },
+    {
+      "name": "a text field with no max_length",
+      "contract": {
+        "format": 2,
+        "name": "seed-tray",
+        "version": "0.1.0",
+        "kind": "component",
+        "description": "A tray of seedlings with its label, its sow date and its stage.",
+        "ai_content": true,
+        "slots": {
+          "authorship": {
+            "required": true
+          }
+        },
+        "data": {
+          "label": {
+            "type": "text",
+            "label": "Label",
+            "required": true
+          },
+          "seedlings": {
+            "type": "integer",
+            "label": "Seedlings",
+            "required": true,
+            "minimum": 0,
+            "maximum": 200
+          },
+          "loan": {
+            "type": "component",
+            "label": "Loan",
+            "required": false,
+            "name": "loan-card"
+          }
+        },
+        "states": [
+          "default",
+          "refused"
+        ],
+        "tokens": [
+          "color.text",
+          "type.body"
+        ],
+        "accessibility": {
+          "role": "article",
+          "name": {
+            "field": "label"
+          },
+          "keyboard": [],
+          "forced_colors": true,
+          "reduced_motion": true
+        }
+      },
+      "errors": [
+        "data.label: missing key max_length"
+      ]
+    }
+  ]
+}

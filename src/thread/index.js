@@ -4,8 +4,10 @@
 import { createReader } from '../envelope/envelope.js';
 import { define as defineComponents } from '../components/index.js';
 import { BASE, el, sheet } from '../render/dom.js';
+import { registeredTag } from '../render/registry.js';
 
-// The element of each catalog contract that a part can show. A contract with no element shows a refusal.
+// The element of each catalog contract that a part can show. A registered contract has its own element
+// (registeredTag). A contract with no element shows a refusal.
 const TAGS = Object.freeze(Object.assign(Object.create(null), {
   text: 'mu-text', button: 'mu-button', field: 'mu-field', stack: 'mu-stack', grid: 'mu-grid', card: 'mu-card',
   'action-button': 'mu-action-button', 'editable-form': 'mu-editable-form', 'card-grid': 'mu-card-grid',
@@ -342,7 +344,7 @@ export class MuThread extends HTMLElement {
 
   // The element of the component validates the fill again. The application gives the binding of an action.
   #component(fill, message) {
-    const tag = TAGS[fill.component];
+    const tag = TAGS[fill.component] ?? registeredTag(fill.component);
     if (!tag) return el('p', { class: 'refusal' }, REFUSED_PART + `${fill.component}: the kit has no element for this component`);
     const node = document.createElement(tag);
     const binding = this.#binding(fill, message);

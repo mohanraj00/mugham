@@ -1,0 +1,70 @@
+{
+  "format": 2,
+  "name": "seed-tray",
+  "version": "0.1.0",
+  "kind": "component",
+  "description": "A tray of seedlings in a shared garden, with its label, its sow date, its count and its stage.",
+  "ai_content": true,
+  "slots": {
+    "authorship": {
+      "required": true
+    }
+  },
+  "data": {
+    "label": {
+      "type": "text",
+      "label": "Label",
+      "required": true,
+      "max_length": 80
+    },
+    "sown": {
+      "type": "date",
+      "label": "Sown",
+      "required": true
+    },
+    "seedlings": {
+      "type": "integer",
+      "label": "Seedlings",
+      "required": true,
+      "minimum": 0,
+      "maximum": 200
+    },
+    "stage": {
+      "type": "enum",
+      "label": "Stage",
+      "required": true,
+      "values": ["sown", "sprouted", "ready"]
+    },
+    "note": {
+      "type": "text",
+      "label": "Note",
+      "required": false,
+      "max_length": 200
+    }
+  },
+  "states": [
+    "default",
+    "refused"
+  ],
+  "tokens": [
+    "color.surface",
+    "color.text",
+    "color.text-muted",
+    "color.border",
+    "type.body",
+    "type.caption",
+    "space.2",
+    "space.4",
+    "radius.2",
+    "type.weight-strong"
+  ],
+  "accessibility": {
+    "role": "article",
+    "name": {
+      "field": "label"
+    },
+    "keyboard": [],
+    "forced_colors": true,
+    "reduced_motion": true
+  }
+}

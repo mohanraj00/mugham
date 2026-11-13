@@ -1,5 +1,7 @@
-// The browser validator of a fill. It gives the same errors as tools/catalog.py for each case in
-// tests/vectors/fills.json. A fill with an error is refused. The validator never changes the fill.
+// The browser validator of a fill and of a contract. It gives the same errors as tools/catalog.py for each
+// case in tests/vectors/fills.json and tests/vectors/contracts.json. A fill with an error is refused.
+// The validator never changes the fill or the contract.
+import CONTRACT_SCHEMA from '../../catalog/schema/contract.schema.json' with { type: 'json' };
 import FILL_SCHEMA from '../../catalog/schema/fill.schema.json' with { type: 'json' };
 
 const KEYWORDS = new Set(['$schema', '$id', '$defs', '$ref', 'title', 'description', 'type', 'properties', 'required',
@@ -132,6 +134,58 @@ export function schemaErrors(value, schema, root = schema, path = '', label = '(
       else if (schema.additionalProperties === false) errors.push(path ? `${path}: unknown key ${shown(key)}` : `${shown(key)}: unknown key`);
       else if (isObject(schema.additionalProperties)) errors.push(...schemaErrors(value[key], schema.additionalProperties, root, child, label));
     }
+  }
+  return errors;
+}
+
+// Each field of a contract, with the items of a list. The contract must agree with the schema.
+function fieldsOf(contract) {
+  return Object.entries(contract.data).flatMap(([name, field]) =>
+    field.type === 'list' ? [['data.' + name, field], [`data.${name}.items`, field.items]] : [['data.' + name, field]]);
+}
+
+const references = (contract) => fieldsOf(contract).filter(([, field]) => field.type === 'component').map(([path, field]) => [path, field.name]);
+
+function reaches(catalog, start, goal) {
+  const seen = new Set();
+  const todo = [start];
+  while (todo.length) {
+    const name = todo.pop();
+    if (name === goal) return true;
+    if (seen.has(name) || !own(catalog, name)) continue;
+    seen.add(name);
+    todo.push(...references(catalog[name]).map(([, target]) => target));
+  }
+  return false;
+}
+
+// The errors of one contract, with the rules of tools/catalog.py (catalog/schema/README.md). catalog maps a
+// component name to a valid contract. Each component field must name a contract in catalog.
+export function contractErrors(contract, catalog) {
+  const errors = schemaErrors(contract, CONTRACT_SCHEMA, CONTRACT_SCHEMA, '', '(contract)');
+  if (errors.length) return errors;
+  if (!contract.states.includes('default')) errors.push('states: must include default');
+  const { accessibility } = contract;
+  if (accessibility.role === 'none' && own(accessibility, 'name')) {
+    errors.push('accessibility.name: a component with the role none has no accessible name');
+  }
+  if (accessibility.role !== 'none' && !own(accessibility, 'name')) {
+    errors.push('accessibility.name: a component with a role needs an accessible name');
+  }
+  if (own(accessibility.name ?? {}, 'field')) {
+    const field = own(contract.data, accessibility.name.field) ? contract.data[accessibility.name.field] : undefined;
+    if (!field || field.type !== 'text' || !field.required) errors.push('accessibility.name: the field must be a required text field');
+  }
+  for (const [path, field] of fieldsOf(contract)) {
+    if ((field.min_length ?? 0) > (field.max_length ?? Infinity)) errors.push(path + ': min_length is more than max_length');
+    if ((field.minimum ?? -Infinity) > (field.maximum ?? Infinity)) errors.push(path + ': minimum is more than maximum');
+  }
+  if (contract.ai_content && !contract.slots?.authorship?.required) {
+    errors.push('slots.authorship: a contract with ai_content must declare a required authorship slot');
+  }
+  for (const [path, target] of references(contract)) {
+    if (!own(catalog, target)) errors.push(`${path}: no contract has the name ${target}`);
+    else if (reaches(catalog, target, contract.name)) errors.push(`${path}: the contract contains itself through ${target}`);
   }
   return errors;
 }

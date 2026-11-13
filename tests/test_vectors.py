@@ -1,4 +1,5 @@
-"""The Python validator gives the expected errors for each shared case in tests/vectors/fills.json."""
+"""The Python validator gives the expected errors for each shared case in tests/vectors/fills.json and
+tests/vectors/contracts.json."""
 import json
 from pathlib import Path
 import sys
@@ -8,6 +9,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'tools'))
 import catalog  # noqa: E402
 
 VECTORS = json.loads((Path(__file__).parent / 'vectors' / 'fills.json').read_text(encoding='utf-8'))
+CONTRACTS = json.loads((Path(__file__).parent / 'vectors' / 'contracts.json').read_text(encoding='utf-8'))
 
 
 class VectorTest(unittest.TestCase):
@@ -19,6 +21,11 @@ class VectorTest(unittest.TestCase):
         for case in VECTORS['cases']:
             with self.subTest(case=case['name']):
                 self.assertEqual(catalog.fill_errors(case['fill'], VECTORS['catalog']), case['errors'])
+
+    def test_each_contract_case(self):
+        for case in CONTRACTS['cases']:
+            with self.subTest(case=case['name']):
+                self.assertEqual(catalog.contract_errors(case['contract'], None, CONTRACTS['catalog']), case['errors'])
 
 
 if __name__ == '__main__':

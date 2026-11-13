@@ -1,9 +1,11 @@
 // The base class of each primitive. It validates a fill against the contract before it renders.
 import { actorErrors, authorErrors, fillErrors } from '../render/validate.js';
-import { CATALOG } from '../render/catalog.js';
+import { BRAND, CONTRACTS } from '../render/registry.js';
 import { BASE, el } from '../render/dom.js';
 
 export class MuElement extends HTMLElement {
+  // register (src/render/registry.js) reads this key to accept only a subclass of MuElement.
+  static [BRAND] = true;
   static component = '';
   static styles = [];
   static focus = false;
@@ -40,7 +42,7 @@ export class MuElement extends HTMLElement {
     const name = this.constructor.component;
     // A fill of a different component is refused for that reason first.
     const other = value !== null && typeof value === 'object' && !Array.isArray(value) && value.component !== name;
-    const errors = other ? [`component: must be ${name}`] : fillErrors(value, CATALOG);
+    const errors = other ? [`component: must be ${name}`] : fillErrors(value, CONTRACTS);
     if (errors.length === 0) errors.push(...authorErrors(value, this.#actor), ...this.check(value.data));
     const root = this.shadowRoot;
     if (errors.length) {
