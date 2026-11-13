@@ -76,7 +76,7 @@ These are the limits of the call:
 - The registry is global to the page. Each thread and each element of the page reads the same registry.
 - The thread binds no action to a registered component. Only `action-button` and `editable-form` send an action.
 - Each element gets `fill` and `actor` as own accessors that cannot change. A class field with the name `fill` or `actor` makes the constructor of the element throw a `TypeError`, so it cannot replace the validation.
-- If a script sets `fill` or `actor` before the upgrade of an element, the element gives the value to the setter in a microtask after its constructor. A newer value replaces the early value.
+- If a script sets `actor` before the upgrade of an element, the constructor gives it to the setter. If a script sets `fill` before the upgrade, the element gives it to the setter in a microtask after its constructor. A newer fill replaces the early fill.
 - The contract is in the registry before the definition of the element. Thus an element of the page that the definition upgrades reads the new contract. If the definition fails, the registry removes the contract.
 - The element must make its nodes only with `el` and `text` from `src/render/dom.js`. Then a markup string in a text field shows as text. The kit cannot check the code of the element, so the application owns this rule.
 - `tools/catalog.py` checks only the contracts in this folder. The application keeps its own contract files and its own tests.

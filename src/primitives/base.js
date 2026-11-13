@@ -12,7 +12,7 @@ export class MuElement extends HTMLElement {
 
   #fill = null;
   #actor = null;
-  // The values that a script gave before the upgrade, until the element replays them.
+  // The fill that a script gave before the upgrade, until the element replays it.
   #early = null;
 
   constructor() {
@@ -27,14 +27,16 @@ export class MuElement extends HTMLElement {
       const { get, set } = Object.getOwnPropertyDescriptor(MuElement.prototype, key);
       Object.defineProperty(this, key, { get, set, enumerable: false, configurable: false });
     }
-    // A value that a script gave before the upgrade goes through the setter after the constructor of the
-    // subclass completes, because check and render can read its fields. A newer value replaces it.
-    if (Object.keys(early).length === 0) return;
-    this.#early = early;
+    // An actor that a script gave before the upgrade goes through the setter now. With no fill, the setter
+    // calls no method of the subclass. An early fill goes through the setter after the constructor of the
+    // subclass completes, because check and render can read its fields. A newer fill replaces it.
+    if (Object.hasOwn(early, 'actor')) this.actor = early.actor;
+    if (!Object.hasOwn(early, 'fill')) return;
+    this.#early = { fill: early.fill };
     queueMicrotask(() => {
       const values = this.#early;
       this.#early = null;
-      for (const key of ['actor', 'fill']) if (values && Object.hasOwn(values, key)) this[key] = values[key];
+      if (values && Object.hasOwn(values, 'fill')) this.fill = values.fill;
     });
   }
 
@@ -49,7 +51,6 @@ export class MuElement extends HTMLElement {
   }
 
   set actor(value) {
-    if (this.#early) delete this.#early.actor;
     const errors = actorErrors(value);
     if (errors.length) throw new TypeError('actor: ' + errors.join('; '));
     this.#actor = value === null ? null

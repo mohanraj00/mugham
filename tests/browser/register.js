@@ -75,7 +75,30 @@ class PrivateNote extends PlotNote {
   }
 }
 
+// An element whose connectedCallback sets only the fill. The page gives the actor before the upgrade.
+class ConnectNote extends PlotNote {
+  static component = 'connect-note';
+
+  connectedCallback() {
+    this.fill = { component: 'connect-note', version: '0.1.0', data: { title: 'Plot 2', rows: 1 }, slots: { authorship: AGENT } };
+  }
+}
+
 async function run() {
+  // An actor before the upgrade is bound before a newer fill comes.
+  const bound = document.createElement('mu-app-connect-note');
+  bound.actor = AGENT;
+  stage.append(bound);
+  const later = document.createElement('mu-app-connect-note');
+  later.actor = AGENT;
+  register({ ...structuredClone(CONTRACT), name: 'connect-note' }, ConnectNote);
+  check('an actor before the upgrade: a fill in connectedCallback renders', bound.dataset.state === 'default'
+    && bound.actor?.id === AGENT.id && bound.shadowRoot.textContent.includes('Plot 2'), bound.shadowRoot?.textContent);
+  customElements.upgrade(later);
+  later.fill = { component: 'connect-note', version: '0.1.0', data: { title: 'Plot 1', rows: 1 }, slots: { authorship: AGENT } };
+  check('an actor before the upgrade: a fill after the registration renders', later.dataset.state === 'default'
+    && later.shadowRoot.textContent.includes('Plot 1'), later.shadowRoot?.textContent);
+
   // A value before the upgrade goes through the setter after the constructor of the subclass.
   const waiting = document.createElement('mu-app-private-note');
   waiting.actor = AGENT;
