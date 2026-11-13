@@ -10,7 +10,8 @@ const MARKUP = '<img src=x onerror="window.muUnsafe=1"><script>window.muUnsafe=1
 const results = [];
 const check = (name, ok, detail = '') => results.push({ name, ok: Boolean(ok), detail: String(detail) });
 const stage = document.getElementById('stage');
-const settle = () => new Promise((done) => setTimeout(done, 0));
+// The thread renders at the next frame, so a check waits for one frame and then one task.
+const settle = () => new Promise((done) => requestAnimationFrame(() => setTimeout(done, 0)));
 const fill = (component, data) => ({ component, version: '0.1.0', data });
 const actor = (type, id, name) => ({ mugham: { actor: name ? { type, id, name } : { type, id } } });
 const ROBIN = actor('human', 'u-robin', 'Robin');
@@ -437,6 +438,81 @@ async function run() {
   for (const event of say('q2', SAM, 'Again.')) noisy.push(event);
   await settle();
   check('live: the region does not repeat the stream errors', !live(noisy).textContent.includes('ignored'), live(noisy).textContent);
+
+  // Render cost. The thread copies the state of the reader one time for each render, so the count of
+  // copies is the count of renders. An event that changes no state gives no render. Many events in one
+  // frame give one render.
+  const frame = () => new Promise((done) => requestAnimationFrame(() => done()));
+  const copy = window.structuredClone;
+  let copies = 0;
+  window.structuredClone = (value, options) => {
+    copies += 1;
+    return copy(value, options);
+  };
+  try {
+    const busy = mount();
+    for (const event of say('c1', SAM, 'Hello.')) busy.push(event);
+    await settle();
+    copies = 0;
+    for (let count = 0; count < 2000; count += 1) busy.push({ type: 'CUSTOM', name: 'noise', value: count });
+    for (let count = 0; count < 50; count += 1) {
+      busy.push({ type: 'CUSTOM', name: 'noise' });
+      busy.push({ type: 'ACTIVITY_SNAPSHOT', messageId: 'c2', activityType: 'other', content: {} });
+      await new Promise((done) => setTimeout(done, 0));
+    }
+    await settle();
+    check('render: unknown and ignored events give no render', copies === 0, `${copies} renders`);
+    for (let count = 0; count < 120; count += 1) busy.push('not an event');
+    await settle();
+    copies = 0;
+    for (let count = 0; count < 500; count += 1) busy.push('not an event');
+    await settle();
+    check('render: errors after the error list is full give no render', copies === 0, `${copies} renders`);
+    busy.push({ type: 'TEXT_MESSAGE_START', messageId: 'c3', role: 'assistant', metadata: CATALOG_AGENT });
+    await settle();
+    copies = 0;
+    for (let count = 0; count < 1000; count += 1) busy.push({ type: 'TEXT_MESSAGE_CONTENT', messageId: 'c3', delta: 'a' });
+    await settle();
+    check('render: many events in one task give one render', copies === 1, `${copies} renders`);
+    copies = 0;
+    let frames = 0;
+    let counting = true;
+    const tick = () => {
+      if (!counting) return;
+      frames += 1;
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+    for (let count = 0; count < 200; count += 1) {
+      busy.push({ type: 'TEXT_MESSAGE_CONTENT', messageId: 'c3', delta: 'b' });
+      await new Promise((done) => setTimeout(done, 0));
+    }
+    await frame();
+    await settle();
+    counting = false;
+    check('render: events in many tasks give one render for each frame', copies >= 1 && copies <= frames + 1,
+      `${copies} renders, ${frames} frames`);
+    check('render: the text of all events shows', item(busy, 1).textContent.includes('a'.repeat(1000) + 'b'.repeat(200)));
+    check('render: the message stays partial', item(busy, 1).dataset.state === 'partial');
+    // A page can become hidden before its frame. Then no frame comes, and the timer does the update.
+    const raf = window.requestAnimationFrame;
+    window.requestAnimationFrame = () => 0;
+    try {
+      copies = 0;
+      busy.push({ type: 'TEXT_MESSAGE_CONTENT', messageId: 'c3', delta: 'c' });
+      await new Promise((done) => setTimeout(done, 150));
+    } finally {
+      window.requestAnimationFrame = raf;
+    }
+    check('render: with no frame, the update comes after a short delay', copies === 1
+      && item(busy, 1).textContent.includes('b'.repeat(200) + 'c'), `${copies} renders`);
+    copies = 0;
+    busy.push({ type: 'TEXT_MESSAGE_CONTENT', messageId: 'c3', delta: 'd' });
+    await new Promise((done) => setTimeout(done, 150));
+    check('render: a frame and a timer give one update', copies === 1, `${copies} renders`);
+  } finally {
+    window.structuredClone = copy;
+  }
 
   check('no markup ran', window.muUnsafe === undefined);
 

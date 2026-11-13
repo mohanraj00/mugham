@@ -24,6 +24,8 @@ const SOURCE_FAILED = 'The source of events failed.';
 const MAX_SUMMARY = 120;
 const MAX_UPDATES = 4;
 const MAX_NOTICES = 8;
+// The maximum delay in milliseconds of an update, also on a hidden page.
+const HIDDEN_DELAY = 100;
 
 const CSS = sheet(`
   :host { display: block; font: var(--mu-type-body); color: var(--mu-color-text); }
@@ -91,6 +93,8 @@ export class MuThread extends HTMLElement {
   // The stable text of the binding of each action element.
   #bindings = new WeakMap();
   #scheduled = false;
+  // The number of the last scheduled update.
+  #token = 0;
   #state = 'idle';
   #list = el('ol', { 'aria-label': 'Thread', part: 'list' });
   #stream = el('p', { class: 'stream', part: 'stream' });
@@ -121,19 +125,29 @@ export class MuThread extends HTMLElement {
     return this.#reader.result().messages;
   }
 
+  // An event that changes no state gives no update. Thus a stream of unknown events costs no render.
   push(event) {
-    this.#reader.push(event);
-    this.#schedule();
+    if (this.#reader.push(event)) this.#schedule();
   }
 
-  // The thread updates the page one time for each task, not one time for each event.
+  // The thread updates the page one time for each frame, not one time for each event. A page can
+  // become hidden before its frame, and a hidden page has no frames. Thus a timer also does the update.
+  // The first of the two does the update, and the other does nothing.
   #schedule() {
     if (this.#scheduled) return;
     this.#scheduled = true;
-    queueMicrotask(() => {
-      this.#scheduled = false;
-      this.#render();
-    });
+    const token = ++this.#token;
+    const update = () => {
+      if (this.#scheduled && this.#token === token) this.#flush();
+    };
+    if (document.visibilityState !== 'hidden') requestAnimationFrame(update);
+    setTimeout(update, HIDDEN_DELAY);
+  }
+
+  // Does a scheduled update now. A later frame then has no update to do.
+  #flush() {
+    this.#scheduled = false;
+    this.#render();
   }
 
   // Reads each event of an async source in order. The transport is the application's.
@@ -141,6 +155,8 @@ export class MuThread extends HTMLElement {
     this.#set('reading');
     try {
       for await (const event of source) this.push(event);
+      // The page shows all events before the state is ended.
+      if (this.#scheduled) this.#flush();
       this.#set('ended');
     } catch {
       this.#source.hidden = false;

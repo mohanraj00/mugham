@@ -170,7 +170,8 @@ export function readEnvelope(value, catalog = CATALOG) {
 
 // A reader of one AG-UI 1.0 stream. Call push for each event in the order of the transport.
 // result gives a copy of the runs, the messages in the order of their first event, the count of
-// ignored events and the errors of the stream.
+// ignored events and the errors of the stream. push gives false for an event that changed no run, no
+// message and no error. A reader of the stream can then skip its update.
 export function createReader(catalog = CATALOG) {
   const runs = [];
   const messages = [];
@@ -182,9 +183,20 @@ export function createReader(catalog = CATALOG) {
   let count = 0;
   let dataSize = 0;
   const runIds = new Set();
+  // Each path that changes no state calls fail or skip. changed is true if a call of fail adds an error.
+  let changed = false;
+  let unchanged = false;
 
   const fail = (error) => {
-    if (errors.length < MAX_STREAM_ERRORS) errors.push(error);
+    unchanged = true;
+    if (errors.length < MAX_STREAM_ERRORS) {
+      errors.push(error);
+      changed = true;
+    }
+  };
+  const skip = () => {
+    unchanged = true;
+    ignored += 1;
   };
   const header = (messageId) => {
     const value = { envelope: ENVELOPE_VERSION, agui: AGUI_VERSION };
@@ -218,7 +230,7 @@ export function createReader(catalog = CATALOG) {
     }
     const message = messages[entry.at];
     if (message.state === 'refused') {
-      ignored += 1;
+      skip();
       return null;
     }
     if (message.state === 'final') {
@@ -309,7 +321,7 @@ export function createReader(catalog = CATALOG) {
     },
     ACTIVITY_SNAPSHOT(event, at) {
       if (event.activityType !== FILL_ACTIVITY) {
-        ignored += 1;
+        skip();
         return;
       }
       if (!isId(event.messageId)) return fail(`${at}.messageId: ${ID_ERROR}`);
@@ -318,13 +330,13 @@ export function createReader(catalog = CATALOG) {
       if (entry && entry.kind !== 'activity') return fail(`${at}.messageId: the message is a text message`);
       if (!entry && messages.length >= MAX_MESSAGES) return fail(`${at}: the stream has ${MAX_MESSAGES} messages`);
       if (entry && event.replace === false) {
-        ignored += 1;
+        skip();
         return;
       }
       const old = entry ? messages[entry.at] : undefined;
       // A refused message stays refused.
       if (old && old.state === 'refused') {
-        ignored += 1;
+        skip();
         return;
       }
       const actor = actorOf(event);
@@ -363,12 +375,12 @@ export function createReader(catalog = CATALOG) {
     push(event) {
       const at = `events[${count}]`;
       count += 1;
-      if (!isObject(event) || typeof event.type !== 'string') return fail(`${at}: must be an object with a type`);
-      if (!own(handlers, event.type)) {
-        ignored += 1;
-        return;
-      }
-      handlers[event.type](event, at);
+      changed = false;
+      unchanged = false;
+      if (!isObject(event) || typeof event.type !== 'string') fail(`${at}: must be an object with a type`);
+      else if (!own(handlers, event.type)) skip();
+      else handlers[event.type](event, at);
+      return changed || !unchanged;
     },
     result() {
       return structuredClone({ runs, messages, ignored, errors });
