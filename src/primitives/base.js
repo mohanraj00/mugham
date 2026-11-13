@@ -30,7 +30,8 @@ export class MuElement extends HTMLElement {
   set actor(value) {
     const errors = actorErrors(value);
     if (errors.length) throw new TypeError('actor: ' + errors.join('; '));
-    this.#actor = value === null ? null : Object.freeze({ type: value.type, id: value.id });
+    this.#actor = value === null ? null
+      : Object.freeze({ type: value.type, id: value.id, ...(Object.hasOwn(value, 'name') ? { name: value.name } : {}) });
     if (this.#fill) this.fill = this.#fill;
   }
 

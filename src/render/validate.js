@@ -208,6 +208,9 @@ export function actorErrors(actor) {
   if (actor === undefined || typeof actor !== 'object' || Array.isArray(actor)) return ['must be an object or null'];
   if (!ACTOR_TYPES.has(actor.type)) return ['type: must be human, agent or system'];
   if (typeof actor.id !== 'string' || actor.id === '' || length(actor.id, 128) > 128) return ['id: must be a string of 1 to 128 characters'];
+  if (own(actor, 'name') && (typeof actor.name !== 'string' || actor.name === '' || length(actor.name, 80) > 80)) {
+    return ['name: must be a string of 1 to 80 characters'];
+  }
   return [];
 }
 
@@ -215,7 +218,9 @@ export function authorErrors(fill, actor) {
   const author = fill.slots?.authorship;
   if (!author) return [];
   if (!actor) return ['slots.authorship: no actor is bound, so the author cannot be checked'];
-  if (author.type !== actor.type || author.id !== actor.id) return ['slots.authorship: the author is not the bound actor'];
+  // A fill with no name shows only the type and the id. A fill with a name must give the name of the bound actor.
+  const name = own(author, 'name') && author.name !== actor.name;
+  if (author.type !== actor.type || author.id !== actor.id || name) return ['slots.authorship: the author is not the bound actor'];
   return [];
 }
 

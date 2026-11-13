@@ -10,7 +10,7 @@ const results = [];
 const check = (name, ok, detail = '') => results.push({ name, ok: Boolean(ok), detail: String(detail) });
 const fill = (component, data) => ({ component, version: '0.1.0', data });
 // An outer fill. Only the outer fill has slots, and a contract with ai_content requires the authorship slot.
-const AUTHOR = { type: 'agent', id: 'agent-check' };
+const AUTHOR = { type: 'agent', id: 'agent-check', name: 'Checker' };
 const outer = (component, data) => ({ ...fill(component, data), ...(CATALOG[component].slots?.authorship ? { slots: { authorship: AUTHOR } } : {}) });
 const fact = (label, value) => fill('fact', { label, value });
 const field = (name, label, value) => fill('field', { name, label, value });
@@ -168,7 +168,7 @@ const nestedSlots = slotted('card-grid', { label: 'Loans', cards: [{ ...fill('ca
 check('card-grid: refuses a nested card with its own slots', nestedSlots.dataset.state === 'refused'
   && nestedSlots.shadowRoot.textContent.includes('data.cards[0].slots: a nested fill takes the slots of its outer fill'), nestedSlots.shadowRoot.textContent);
 const markedSlots = slotted('card', LOAN, { authorship: { type: 'agent', id: MARKUP.slice(0, 128), name: MARKUP.slice(0, 80) },
-  citation: { source: MARKUP.slice(0, 120), locator: 'https://example.org/a?q=<script>x</script>' } }, { type: 'agent', id: MARKUP.slice(0, 128) });
+  citation: { source: MARKUP.slice(0, 120), locator: 'https://example.org/a?q=<script>x</script>' } }, { type: 'agent', id: MARKUP.slice(0, 128), name: MARKUP.slice(0, 80) });
 const markedText = deepText(markedSlots);
 check('card: markup in a slot shows as text', markedSlots.dataset.state !== 'refused' && deepQuery(markedSlots, 'img, script, a').length === 0
   && markedText.includes(MARKUP.slice(0, 40)) && markedText.includes('<script>x</script>') && !window.muUnsafe, markedText.slice(0, 200));
@@ -187,6 +187,14 @@ check('card: refuses an agent fill that names a person as the author', posing.da
   posing.shadowRoot.textContent);
 const otherAgent = slotted('card', LOAN, { authorship: { type: 'agent', id: 'agent-other' } });
 check('card: refuses an author with a different id', otherAgent.dataset.state === 'refused', otherAgent.shadowRoot.textContent);
+// A fill cannot show a name that is not the name of the bound actor.
+const otherName = slotted('card', LOAN, { authorship: { ...AUTHOR, name: 'Robin' } });
+check('card: refuses an author with a different name', otherName.dataset.state === 'refused'
+  && otherName.shadowRoot.textContent.includes('slots.authorship: the author is not the bound actor')
+  && !deepText(otherName).includes('Robin'), otherName.shadowRoot.textContent);
+const boundName = slotted('card', LOAN, { authorship: { ...AUTHOR, name: 'Checker' } });
+check('card: shows the name of the bound actor', boundName.dataset.state === 'default' && boundName.actor.name === 'Checker'
+  && deepText(boundName).includes('Checker'), boundName.shadowRoot.textContent);
 const rebind = slotted('card', LOAN, { authorship: AUTHOR });
 rebind.actor = PERSON;
 check('card: a new actor checks the fill again', rebind.dataset.state === 'refused' && rebind.fill === null, rebind.dataset.state);

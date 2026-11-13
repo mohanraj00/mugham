@@ -90,6 +90,16 @@ test('the author of a fill must be the bound actor', () => {
   assert.deepEqual(authorErrors(fill, null), ['slots.authorship: no actor is bound, so the author cannot be checked']);
   assert.deepEqual(authorErrors(fill, { type: 'human', id: 'agent-check' }), ['slots.authorship: the author is not the bound actor']);
   assert.deepEqual(authorErrors(fill, { type: 'agent', id: 'agent-other' }), ['slots.authorship: the author is not the bound actor']);
+  // A fill cannot give a name that is not the name of the bound actor. A fill with no name shows only the type and the id.
+  const named = { ...agent, name: 'Checker' };
+  assert.deepEqual(authorErrors({ ...fill, slots: { authorship: named } }, named), []);
+  assert.deepEqual(authorErrors(fill, named), []);
+  assert.deepEqual(authorErrors({ ...fill, slots: { authorship: { ...agent, name: 'Robin' } } }, named), ['slots.authorship: the author is not the bound actor']);
+  assert.deepEqual(authorErrors({ ...fill, slots: { authorship: named } }, agent), ['slots.authorship: the author is not the bound actor']);
+  assert.deepEqual(actorErrors(named), []);
+  assert.deepEqual(actorErrors({ ...agent, name: '' }), ['name: must be a string of 1 to 80 characters']);
+  assert.deepEqual(actorErrors({ ...agent, name: '\u{1F600}'.repeat(80) }), []);
+  assert.deepEqual(actorErrors({ ...agent, name: '\u{1F600}'.repeat(81) }), ['name: must be a string of 1 to 80 characters']);
   assert.deepEqual(actorErrors(null), []);
   assert.deepEqual(actorErrors(agent), []);
   assert.deepEqual(actorErrors({ type: 'person', id: 'x' }), ['type: must be human, agent or system']);
