@@ -11,6 +11,15 @@ Agents and LLMs: read [CONSTITUTION.md](CONSTITUTION.md) and [AGENTS.md](AGENTS.
 
 Status: release `v0.2.0` is the newest. It has the contract format 2, the design tokens, the primitives, the catalog components, the message envelope and the thread for people and agents. The offline mode is not built yet. The plan is in [docs/STATUS.md](docs/STATUS.md) and in the GitHub milestones.
 
+## Docs
+
+The [guides](docs/guides/README.md) show how to build a page with the kit. A check runs the code of each guide.
+
+- [Contracts](docs/guides/contracts.md): what a contract declares, how the kit refuses a fill, and how to register an application contract.
+- [Assemble a page](docs/guides/assemble.md): a stack, a grid of cards, an action with a receipt and a thread.
+- [Theme the kit](docs/guides/theme.md): each token, the two themes, forced colors, reduced motion and the parts a page must not change.
+- [For coding agents](docs/guides/agents.md): the rules, the file to read for each task and a checklist.
+
 ## What it gives
 
 - **A thread for people and agents.** Several people and several agents can be in one conversation. Each message names its actor.

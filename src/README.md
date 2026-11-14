@@ -19,6 +19,13 @@
 
 If the fill has an error, the element shows a refusal as text and keeps no data. A button sends a `mu-press` event. A field sends a `mu-edit` event. Neither sends an action.
 
+The guides give the full steps, with code that a check runs:
+
+- [Contracts](../docs/guides/contracts.md)
+- [Assemble a page](../docs/guides/assemble.md)
+- [Theme the kit](../docs/guides/theme.md)
+- [For coding agents](../docs/guides/agents.md)
+
 ## Checks
 
 `make check` runs the checks. `tools/browser_check.mjs` starts headless Chrome and runs each check page in `tests/browser/` in four media modes: light, dark, forced colors and reduced motion. It also reads the accessibility tree and sends real key events. CI uses Chrome for Testing 157.0.8103.50. The CI step checks the SHA-256 of the archive and the version before the check runs. An AppArmor profile for that binary only lets the Chrome sandbox run on Ubuntu 24.04.
