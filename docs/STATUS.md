@@ -1,6 +1,6 @@
 # Status
 
-2026-11-13. Release 0.2.0 is ready for the owner to tag. The kit has contract format 2, the tokens, the primitives, the catalog components, the message envelope and the thread for people and agents. An application can register its own contract and element. The kit has no workbench shell and no panels. [Decision 0001](decisions/0001-build-tools.md) gives the build tools and the dependency rule.
+2026-11-14. Release 0.2.1 is ready for the owner to tag. The kit has contract format 2, the tokens, the primitives, the catalog components, the message envelope and the thread for people and agents. An application can register its own contract and element. The kit has no workbench shell and no panels. [Decision 0001](decisions/0001-build-tools.md) gives the build tools and the dependency rule.
 
 ## Plan
 

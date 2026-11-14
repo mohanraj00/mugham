@@ -16,7 +16,7 @@ Start with the [quickstart](#quickstart) or the [guides](docs/guides/README.md).
 
 Agents and LLMs: read [CONSTITUTION.md](CONSTITUTION.md) and [AGENTS.md](AGENTS.md) first.
 
-Status: release `v0.2.0` is the newest. It has the contract format 2, the design tokens, the primitives, the catalog components, the message envelope and the thread for people and agents. The offline mode is not built yet. The plan is in [docs/STATUS.md](docs/STATUS.md) and in the GitHub milestones.
+Status: release `v0.2.1` is the newest. It has the contract format 2, the design tokens, the primitives, the catalog components, the message envelope and the thread for people and agents. The offline mode is not built yet. The plan is in [docs/STATUS.md](docs/STATUS.md) and in the GitHub milestones.
 
 ## Docs
 

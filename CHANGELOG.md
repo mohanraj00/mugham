@@ -4,6 +4,11 @@ Each release has an entry. The newest entry is first.
 
 ## Unreleased
 
+## 0.2.1, 2026-11-14
+
+- Four guides in `docs/guides/` (#63): contracts, page assembly, theming and coding agents. Each code block of a guide is an exact part of a checked file in `examples/guides/` or `catalog/`. The theming guide shows a second theme, `forest`. `tests/test_guides.py` and `tests/browser/guides.mjs` check the guides, and `tools/browser_check.mjs` runs the browser check in the four media modes. The README and `src/README.md` link the guides.
+- The thread example server `tools/thread_server.py` handles a busy port (#64). If the default port is in use, it takes a free port and prints its URL. If a port that the user gives with `--port` is in use, it prints one line and exits with code 1. The quickstart gives the advice for a busy port.
+- Three complete example apps in `examples/apps/` (#67): a support desk, a change review and a field inspection. They use one fixture API, `tools/apps_server.py`, with the Python standard library only. It binds to `127.0.0.1` and takes a free port if port 8770 is in use. `tests/test_apps_server.py` and `tests/browser/apps.mjs` check the API and the main flow of each app. The README lists each app in the quickstart.
 - The README leads with UIs that a coding agent or a model builds from declared components (#65). It has a section for coding agents. One image sequence of `examples/thread.html` replaces the screenshot gallery. `make screenshots` makes the four frames in the light theme and the dark theme from the example and its synthetic data. The gallery fixture `tests/browser/gallery.html` is removed.
 
 ## 0.2.0, 2026-11-13
