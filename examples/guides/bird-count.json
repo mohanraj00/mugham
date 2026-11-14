@@ -1,0 +1,58 @@
+{
+  "format": 2,
+  "name": "bird-count",
+  "version": "0.1.0",
+  "kind": "component",
+  "description": "A count of birds at one survey site on one day.",
+  "ai_content": true,
+  "slots": {
+    "authorship": {
+      "required": true
+    }
+  },
+  "data": {
+    "site": {
+      "type": "text",
+      "label": "Site",
+      "required": true,
+      "min_length": 1,
+      "max_length": 80
+    },
+    "date": {
+      "type": "date",
+      "label": "Date",
+      "required": true
+    },
+    "count": {
+      "type": "integer",
+      "label": "Count",
+      "required": true,
+      "minimum": 0,
+      "maximum": 300
+    }
+  },
+  "states": [
+    "default",
+    "refused"
+  ],
+  "tokens": [
+    "color.surface",
+    "color.text",
+    "color.text-muted",
+    "color.border",
+    "space.2",
+    "space.4",
+    "radius.2",
+    "type.body",
+    "type.caption"
+  ],
+  "accessibility": {
+    "role": "article",
+    "name": {
+      "field": "site"
+    },
+    "keyboard": [],
+    "forced_colors": true,
+    "reduced_motion": true
+  }
+}

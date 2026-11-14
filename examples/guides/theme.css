@@ -1,0 +1,37 @@
+/* A second theme for docs/guides/theme.md. It sets only kit tokens, on the element that holds the themed part.
+   Each color is #rrggbb, so tests/test_guides.py can check the contrast pairs of tests/test_tokens.py. */
+.theme-forest {
+  --mu-color-accent: #2b6a3c;
+  --mu-color-border: #6b7f70;
+  --mu-color-danger: #a3231a;
+  --mu-color-focus: #2b6a3c;
+  --mu-color-on-accent: #ffffff;
+  --mu-color-surface: #f5f8f3;
+  --mu-color-text: #16241a;
+  --mu-color-text-muted: #46584b;
+  --mu-radius-2: 0.25rem;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-mu-theme="light"]) .theme-forest {
+    --mu-color-accent: #8ccf9d;
+    --mu-color-border: #6a8070;
+    --mu-color-danger: #f4aba4;
+    --mu-color-focus: #8ccf9d;
+    --mu-color-on-accent: #0b1f11;
+    --mu-color-surface: #111a14;
+    --mu-color-text: #e2ece4;
+    --mu-color-text-muted: #9db3a3;
+  }
+}
+:root[data-mu-theme="dark"] .theme-forest {
+  --mu-color-accent: #8ccf9d;
+  --mu-color-border: #6a8070;
+  --mu-color-danger: #f4aba4;
+  --mu-color-focus: #8ccf9d;
+  --mu-color-on-accent: #0b1f11;
+  --mu-color-surface: #111a14;
+  --mu-color-text: #e2ece4;
+  --mu-color-text-muted: #9db3a3;
+}
+.theme-forest { background: var(--mu-color-surface); color: var(--mu-color-text); padding: var(--mu-space-4); }
+@media (forced-colors: active) { .theme-forest { background: Canvas; color: CanvasText; } }

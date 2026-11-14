@@ -7,6 +7,7 @@ import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import { extname, join, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { guideChecks } from '../tests/browser/guides.mjs';
 
 export const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const SERVED = ['src', 'catalog', 'examples', join('tests', 'browser')];
@@ -344,6 +345,10 @@ async function main() {
         ok: found.elements === elements && found.refused === refused, detail: JSON.stringify(found) });
       report.accessibility.push(...await axErrors(session, sessionId, expected, page));
     }
+    // The guide pages of docs/guides/. tests/browser/guides.mjs gives the expected results.
+    const guides = await guideChecks(session, sessionId, base, { evaluate, open, sleep });
+    report.examples.push(...guides.steps);
+    report.accessibility.push(...guides.accessibility);
     report.examples.push(...await threadExample(session, sessionId, report));
     for (const item of report.accessibility) if (!item.ok) report.errors.push(`accessibility: ${item.where}: no ${item.role} named ${item.name}`);
     for (const step of [...report.keyboard, ...report.examples]) if (!step.ok) report.errors.push(`${step.page}: ${step.step}: ${step.detail}`);

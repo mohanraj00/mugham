@@ -1,0 +1,144 @@
+[
+ {
+  "type": "RUN_STARTED",
+  "threadId": "t-1",
+  "runId": "r-1"
+ },
+ {
+  "type": "TEXT_MESSAGE_START",
+  "messageId": "m-1",
+  "role": "user",
+  "metadata": {
+   "mugham": {
+    "actor": {
+     "type": "human",
+     "id": "u-robin",
+     "name": "Robin"
+    }
+   }
+  }
+ },
+ {
+  "type": "TEXT_MESSAGE_CONTENT",
+  "messageId": "m-1",
+  "delta": "Can I keep the map book "
+ },
+ {
+  "type": "TEXT_MESSAGE_CONTENT",
+  "messageId": "m-1",
+  "delta": "for one more week?"
+ },
+ {
+  "type": "TEXT_MESSAGE_END",
+  "messageId": "m-1"
+ },
+ {
+  "type": "TEXT_MESSAGE_START",
+  "messageId": "m-2",
+  "role": "assistant",
+  "metadata": {
+   "mugham": {
+    "actor": {
+     "type": "agent",
+     "id": "agent-loans",
+     "name": "Loan helper"
+    }
+   }
+  }
+ },
+ {
+  "type": "TEXT_MESSAGE_CONTENT",
+  "messageId": "m-2",
+  "delta": "Yes. Press Renew to ask the library."
+ },
+ {
+  "type": "TEXT_MESSAGE_END",
+  "messageId": "m-2"
+ },
+ {
+  "type": "ACTIVITY_SNAPSHOT",
+  "messageId": "m-3",
+  "activityType": "mugham.fill",
+  "metadata": {
+   "mugham": {
+    "actor": {
+     "type": "agent",
+     "id": "agent-loans",
+     "name": "Loan helper"
+    }
+   }
+  },
+  "content": {
+   "format": 2,
+   "fill": {
+    "component": "card",
+    "version": "0.1.0",
+    "data": {
+     "title": "A short history of maps",
+     "date": "2026-12-09",
+     "date_label": "Due"
+    },
+    "slots": {
+     "authorship": {
+      "type": "agent",
+      "id": "agent-loans",
+      "name": "Loan helper"
+     }
+    }
+   }
+  }
+ },
+ {
+  "type": "ACTIVITY_SNAPSHOT",
+  "messageId": "m-4",
+  "activityType": "mugham.fill",
+  "metadata": {
+   "mugham": {
+    "actor": {
+     "type": "agent",
+     "id": "agent-loans",
+     "name": "Loan helper"
+    }
+   }
+  },
+  "content": {
+   "format": 2,
+   "fill": {
+    "component": "action-button",
+    "version": "0.1.0",
+    "data": {
+     "label": "Renew"
+    }
+   }
+  }
+ },
+ {
+  "type": "ACTIVITY_SNAPSHOT",
+  "messageId": "m-5",
+  "activityType": "mugham.fill",
+  "metadata": {
+   "mugham": {
+    "actor": {
+     "type": "agent",
+     "id": "agent-loans",
+     "name": "Loan helper"
+    }
+   }
+  },
+  "content": {
+   "format": 2,
+   "fill": {
+    "component": "banner",
+    "version": "0.1.0",
+    "data": {
+     "text": "Sale"
+    }
+   }
+  }
+ },
+ {
+  "type": "RUN_FINISHED",
+  "threadId": "t-1",
+  "runId": "r-1"
+ }
+]
