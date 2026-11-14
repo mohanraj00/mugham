@@ -5,7 +5,14 @@
 
 # mugham
 
-Mugham is a UI toolkit for agentic applications. The name is the Tamil word for "face".
+Mugham is a UI toolkit for agentic applications. A coding agent, or a model at run time, builds the UI from declared components. The page keeps control:
+
+- A model fills only declared components, with data that the contract accepts. It never sends markup, style or code.
+- Each message names its actor: a person, an agent or the system.
+- The page binds each tool in code. A fill never names a tool.
+- An action shows `Done` only after the receipt of your API comes back.
+
+Start with the [quickstart](#quickstart) or the [guides](docs/guides/README.md). The kit has no runtime dependency and no build step. The name is the Tamil word for "face".
 
 Agents and LLMs: read [CONSTITUTION.md](CONSTITUTION.md) and [AGENTS.md](AGENTS.md) first.
 
@@ -20,43 +27,67 @@ The [guides](docs/guides/README.md) show how to build a page with the kit. A che
 - [Theme the kit](docs/guides/theme.md): each token, the two themes, forced colors, reduced motion and the parts a page must not change.
 - [For coding agents](docs/guides/agents.md): the rules, the file to read for each task and a checklist.
 
+## The thread
+
+These four frames come from [examples/thread.html](examples/thread.html), in order. Two people and two agents talk about a synthetic library loan. If your viewer uses the dark theme, the images show the dark theme.
+
+1. **People and agents.** Robin and Sam are people. The catalog agent answers and fills a declared card. Each message shows the name and the type of its actor, and each agent message has a mark at its left edge. The card shows `Author:` with the agent that filled it.
+
+   <picture>
+     <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/thread-1-people-and-agents-dark.png">
+     <img src="docs/screenshots/thread-1-people-and-agents-light.png" alt="Messages from Robin, Person and Sam, Person, then two messages from Catalog agent, Agent. The second message has the card Field guide to moss, with the facts Shelf B-14 and Renewals 1 of 3." width="520">
+   </picture>
+
+2. **A refused part.** The catalog agent sends a component with the name `banner`. No contract has this name, so the thread does not show the part. It shows the refusal as text.
+
+   <picture>
+     <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/thread-2-refused-dark.png">
+     <img src="docs/screenshots/thread-2-refused-light.png" alt="A message from Catalog agent, Agent, with the text: Refused: the thread did not show this part. component: no contract has the name banner" width="520">
+   </picture>
+
+3. **The action is pending.** The renewal agent proposes the Renew action. The page binds the tool `library.renew` in code. A person presses the button, and it shows `Pending` while the request goes to the API.
+
+   <picture>
+     <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/thread-3-pending-dark.png">
+     <img src="docs/screenshots/thread-3-pending-light.png" alt="A message from Renewal agent, Agent, with a Renew button and the status Pending" width="520">
+   </picture>
+
+4. **The action is done.** The receipt of the API comes back. Only then does the button show `Done`, with the message and the reference of the receipt.
+
+   <picture>
+     <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/thread-4-done-dark.png">
+     <img src="docs/screenshots/thread-4-done-light.png" alt="The Renew button with the status Done: The loan is renewed to 2026-12-08. Reference: R-0001" width="520">
+   </picture>
+
+`make screenshots` makes these images again from the example and its synthetic data. It uses Node.js, Python 3 and Chrome. If Chrome is not at its usual path, set `CHROME` to the path of the Chrome executable. The images are not in the package.
+
+## Build a UI with a coding agent
+
+Give the agent the task and the guide. For example:
+
+```text
+Build a page with the mugham kit that <your task>.
+Read docs/guides/agents.md first and obey each rule.
+Use only components that have a contract in catalog/ or a contract that you register.
+Bind each tool in code. Show Done only after the receipt of the API.
+Verify the page with the checklist of the guide.
+```
+
+The guide [docs/guides/agents.md](docs/guides/agents.md) gives the rules, the file to read for each task and a checklist. The other [guides](docs/guides/README.md) give the code of each step.
+
+Run these checks:
+
+1. Verify the page with each item of the [checklist](docs/guides/agents.md#checklist).
+2. Load the page in a browser. Make sure that no element shows `Refused`, except for each fill that you planned to refuse.
+3. If the agent changes this repository, run `make check`. The checks need Python 3, Node.js and Chrome.
+
 ## What it gives
 
 - **A thread for people and agents.** Several people and several agents can be in one conversation. Each message names its actor.
 - **Declared components.** Cards, action buttons, editable forms and card grids come from a component catalog. A model fills a declared component with data. It never sends markup or code.
 - **Actions with receipts.** An action goes to the API of your application. The kit shows it as done only after the receipt comes back.
-- **Each device.** The kit runs as a progressive web app. In offline mode, it keeps each action in a queue and shows it as pending.
 - **Examples.** Synthetic examples show how to build a page from the catalog.
 - **No dependencies.** The kit uses only web standards and has no third-party runtime dependency. It works with any web framework, or with none.
-
-## Highlights
-
-The images show the light theme. If your viewer uses the dark theme, the images show the dark theme.
-
-**Actions with receipts.** The application binds the tool. A press shows `Pending`. The button shows `Done` or `Not done` only after the receipt of the API comes back.
-
-| Pending | Done | Not done |
-|---|---|---|
-| <picture>  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/action-button-pending-dark.png">  <img src="docs/screenshots/action-button-pending-light.png" alt="Renew button with the status Pending" width="300"></picture> | <picture>  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/action-button-done-dark.png">  <img src="docs/screenshots/action-button-done-light.png" alt="Renew button with the status Done" width="300"></picture> | <picture>  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/action-button-error-dark.png">  <img src="docs/screenshots/action-button-error-light.png" alt="Renew button with the status Not done and a reason" width="300"></picture> |
-
-**Cards and card grids.** A model fills a card with data. It never sends markup or style.
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/card-dark.png">
-  <img src="docs/screenshots/card-light.png" alt="A card: Field guide to moss, a summary, a due date, and the facts Shelf and Renewals" width="420">
-</picture>
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/card-grid-dark.png">
-  <img src="docs/screenshots/card-grid-light.png" alt="Three loan cards in two columns" width="600">
-</picture>
-
-**Editable forms.** A person edits the values and saves them as one action. The form shows `Done` only after the receipt comes back.
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/editable-form-done-dark.png">
-  <img src="docs/screenshots/editable-form-done-light.png" alt="A form with two fields, a Save button and the status Done" width="420">
-</picture>
 
 ## Catalog
 
@@ -78,16 +109,6 @@ Each component has a contract file in [catalog/](catalog/README.md). The contrac
 | `mu-excerpt` | A passage of a source as text with a marked span, the source name, the locator as text and an open button. | [excerpt.json](catalog/excerpt.json) |
 
 The first five components are primitives. The other components use them.
-
-### Make the screenshots again
-
-The images come from a fixture page with synthetic data, [tests/browser/gallery.html](tests/browser/gallery.html). The script uses Node.js and Chrome only. It writes the images to [docs/screenshots/](docs/screenshots/). The images are not in the package. The constitution allows 16 images maximum, so the images show only the highlights.
-
-```sh
-make screenshots
-```
-
-If Chrome is not at its usual path, set `CHROME` to the path of the Chrome executable.
 
 ## Quickstart
 

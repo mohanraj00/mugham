@@ -4,6 +4,8 @@ Each release has an entry. The newest entry is first.
 
 ## Unreleased
 
+- The README leads with UIs that a coding agent or a model builds from declared components (#65). It has a section for coding agents. One image sequence of `examples/thread.html` replaces the screenshot gallery. `make screenshots` makes the four frames in the light theme and the dark theme from the example and its synthetic data. The gallery fixture `tests/browser/gallery.html` is removed.
+
 ## 0.2.0, 2026-11-13
 
 - The registration of an application contract and element (#27). `register(contract, element)` checks the contract with the validator and the schema of the catalog, and it defines the element as `mu-app-<name>`. The frozen `CATALOG` does not change. `CONTRACTS` in `src/render/registry.js` gives the catalog contracts and the registered contracts to the elements, the envelope reader and the thread. The call refuses a catalog name, a name that is already registered, an invalid contract and an element that does not extend `MuElement`. `examples/register.html` shows a registered domain component. [catalog/README.md](catalog/README.md) gives the limits.

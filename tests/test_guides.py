@@ -101,13 +101,29 @@ class GuidesTest(unittest.TestCase):
     def test_the_readmes_link_each_guide(self):
         readme = (ROOT / 'README.md').read_text(encoding='utf-8')
         self.assertIn('\n## Docs\n', readme)
-        self.assertLess(readme.index('\n## Docs\n'), readme.index('\n## Highlights\n'))
+        self.assertLess(readme.index('\n## Docs\n'), readme.index('\n## The thread\n'))
         source = (ROOT / 'src' / 'README.md').read_text(encoding='utf-8')
         for name in NAMES:
             with self.subTest(guide=name):
                 self.assertIn('(docs/guides/%s)' % name, readme)
                 self.assertIn('(../docs/guides/%s)' % name, source)
 
+
+    def test_the_readme_shows_the_thread_and_the_agent_section(self):
+        readme = (ROOT / 'README.md').read_text(encoding='utf-8')
+        self.assertNotIn('\n## Highlights\n', readme)
+        agents = readme[readme.index('\n## Build a UI with a coding agent\n'):]
+        agents = agents[:agents.index('\n## ', 1)]
+        self.assertIn('(docs/guides/agents.md)', agents)
+        self.assertIn('make check', agents)
+        # Each image of docs/screenshots/ is in the README, each reference is a file, and each image has alt text.
+        images = sorted(path.name for path in (ROOT / 'docs' / 'screenshots').iterdir())
+        self.assertLessEqual(len(images), 16)
+        named = re.findall(r'(?:src|srcset)="docs/screenshots/([^"]+)"', readme)
+        self.assertEqual(sorted(set(named)), images)
+        for tag in re.findall(r'<img src="docs/screenshots/[^>]*>', readme):
+            with self.subTest(tag=tag):
+                self.assertRegex(tag, r'alt="[^"]{20,}"')
 
 if __name__ == '__main__':
     unittest.main()
