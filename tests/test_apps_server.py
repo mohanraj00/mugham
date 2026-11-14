@@ -126,6 +126,27 @@ class AppsServerTest(unittest.TestCase):
         self.assertFalse(self.act('inspection.close', inspection_id='I-0417')['ok'])
         self.assertFalse(self.act('inspection.save_findings', inspection_id='I-0417', pressure='4', seal='ok', note='')['ok'])
 
+    def test_each_save_adds_events_and_keeps_the_note(self):
+        path = '/api/inspection/I-0417/events'
+        self.assertTrue(self.act('inspection.save_findings', inspection_id='I-0417', pressure='4.2', seal='ok', note='Gate lock is stiff.')['ok'])
+        first = self.get(path)['events']
+        self.assertIn('Gate lock is stiff.', json.dumps(first))
+        self.assertIn('All items pass.', json.dumps(first))
+        # A pressure out of the normal range needs work. The summary of the agent names it, so it agrees with the checklist.
+        second = self.act('inspection.save_findings', inspection_id='I-0417', pressure='8', seal='ok', note='Checked again.')
+        self.assertTrue(second['ok'])
+        after = self.get(path)['events']
+        self.assertEqual(after[:len(first)], first)
+        added = json.dumps(after[len(first):])
+        self.assertIn('Checked again.', added)
+        self.assertIn(second['reference'], added)
+        self.assertIn('Outlet pressure needs work', added)
+        self.assertNotIn('All items pass', added)
+        checklist = [event['content']['fill'] for event in after[len(first):] if event.get('content', {}).get('fill', {}).get('component') == 'inspection-checklist']
+        self.assertEqual(len(checklist), 1)
+        self.assertIn('8 bar today', json.dumps(checklist[0]))
+        self.assertFalse(self.act('inspection.save_findings', inspection_id='I-0417', pressure='4', seal='ok', note='x' * 2001)['ok'])
+
     def test_a_bad_request_gets_no_receipt(self):
         headers = {'Content-Type': 'application/json'}
         self.assertEqual(self.call('POST', '/api/actions', '{"tool": "x"}', headers)[0], 400)

@@ -99,6 +99,8 @@ CHECKLIST = [
     {'name': 'generator', 'label': 'Backup generator test', 'result': 'pass', 'detail': 'Ran 15 minutes on 2026-11-01'},
     {'name': 'fence', 'label': 'Site gate and fence', 'result': 'pass', 'detail': 'No damage'},
 ]
+# The longest note, the same as the value limit of the field contract.
+MAX_NOTE = 2000
 SEALS = {'ok': 'pass', 'worn': 'attention', 'leak': 'fail'}
 NUMBER = re.compile(r'^\d{1,2}(\.\d{1,2})?$')
 
@@ -175,16 +177,21 @@ def inspection_events(inspection):
         fill('field', {'name': 'pressure', 'label': 'Outlet pressure in bar', 'value': '', 'hint': 'A number, for example 4.2.'}),
         fill('field', {'name': 'seal', 'label': 'Valve V3 seal', 'value': '', 'hint': 'Write ok, worn or leak.'}),
         fill('field', {'name': 'note', 'label': 'Note', 'value': ''})]}, authorship=FIELD_AGENT))
-    if inspection.get('findings'):
-        findings = inspection['findings']
-        words = 'The findings are saved as %s. ' % findings['reference']
-        words += ('Valve V3 seal needs work. I opened work order WO-5521 for a new seal. '
-                  if findings['seal'] != 'ok' else 'All items pass. ')
-        # The API adds events only at the end. A new snapshot with the same message id replaces the checklist.
-        events += checklist(inspection['items'])
-        events += text(iid + '-m3', FIELD_AGENT, words + 'Close the inspection when you leave the site.')
-        events += part(iid + '-close', FIELD_AGENT, fill('action-button', {'label': 'Close ' + iid,
-                                                                            'description': 'Send the checklist to the maintenance team.'}))
+    # The API adds events only at the end, so a page that read the events before gets each save. A new snapshot with
+    # the same message id replaces the checklist.
+    for number, save in enumerate(inspection['saves'], 1):
+        events += text('%s-save%d' % (iid, number), INSPECTOR, 'Findings: outlet pressure %s bar, valve V3 seal %s.%s' % (
+            save['pressure'], save['seal'], ' Note: ' + save['note'] if save['note'] else ''))
+        events += checklist(save['items'])
+        work = [item['label'] for item in save['items'] if item['result'] != 'pass']
+        words = 'The findings are saved as %s. ' % save['reference']
+        words += '%s needs work. ' % ' and '.join(work) if work else 'All items pass. '
+        if save['seal'] != 'ok':
+            words += 'I opened work order WO-5521 for the valve seal. '
+        events += text('%s-agent%d' % (iid, number), FIELD_AGENT, words + 'Close the inspection when you leave the site.')
+        if number == 1:
+            events += part(iid + '-close', FIELD_AGENT, fill('action-button', {'label': 'Close ' + iid,
+                                                                                'description': 'Send the checklist to the maintenance team.'}))
     if inspection.get('closed'):
         events += text(iid + '-m4', DISPATCH, '%s is closed. Reference %s.' % (iid, inspection['closed']))
     return events
@@ -194,7 +201,7 @@ def new_state():
     return {'lock': threading.Lock(), 'receipts': 0,
             'tickets': {item['id']: item for item in copy.deepcopy(TICKETS)},
             'changes': {item['id']: item for item in copy.deepcopy(CHANGES)},
-            'inspection': {'id': INSPECTION_ID, 'items': copy.deepcopy(CHECKLIST), 'findings': None, 'closed': None}}
+            'inspection': {'id': INSPECTION_ID, 'items': copy.deepcopy(CHECKLIST), 'saves': [], 'closed': None}}
 
 
 def decide(state, request):
@@ -239,7 +246,7 @@ def decide(state, request):
         if inspection['closed']:
             return no('The inspection %s is already closed.' % inspection['id'])
         if tool == 'inspection.close':
-            if not inspection['findings']:
+            if not inspection['saves']:
                 return no('Save the findings before you close the inspection.')
             status, body = yes('The inspection %s is closed.' % inspection['id'], 'INS')
             inspection['closed'] = body['reference']
@@ -250,13 +257,17 @@ def decide(state, request):
             return no('Give the outlet pressure as a number from 0.1 to 20.')
         if seal not in SEALS:
             return no('Write ok, worn or leak for the valve seal.')
+        note = args.get('note', '').strip() if isinstance(args.get('note'), str) else ''
+        if len(note) > MAX_NOTE:
+            return no('The note has more than %d characters.' % MAX_NOTE)
         status, body = yes('The findings for %s are saved.' % inspection['id'], 'INS')
         for item in inspection['items']:
             if item['name'] == 'pressure':
                 item.update(result='pass' if 1.5 <= float(pressure) <= 6 else 'attention', detail='%s bar today' % pressure)
             if item['name'] == 'seal':
                 item.update(result=SEALS[seal], detail='%s today' % seal.capitalize())
-        inspection['findings'] = {'reference': body['reference'], 'seal': seal}
+        inspection['saves'].append({'reference': body['reference'], 'pressure': pressure, 'seal': seal, 'note': note,
+                                    'items': copy.deepcopy(inspection['items'])})
         return status, body
     return no('The API does not know this tool.')
 
