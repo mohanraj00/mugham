@@ -1,4 +1,0 @@
-body { margin: 0; padding: var(--mu-space-4); background: var(--mu-color-surface); color: var(--mu-color-text); font: var(--mu-type-body); }
-main { display: flex; flex-direction: column; gap: var(--mu-space-4); }
-section { width: 480px; padding: var(--mu-space-4); background: var(--mu-color-surface); }
-#card-grid { width: 760px; }
