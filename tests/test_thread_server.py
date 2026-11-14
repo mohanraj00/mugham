@@ -3,6 +3,8 @@ src/thread/README.md and from issue #5: two people, two agents, a refused compon
 import http.client
 import json
 from pathlib import Path
+import socket
+import subprocess
 import sys
 import threading
 import unittest
@@ -89,6 +91,59 @@ class ThreadServerTest(unittest.TestCase):
         self.assertEqual(self.call('GET', '/src/thread/index.js')[0], 200)
         for path in ['/tools/thread_server.py', '/src/../tools/build.py', '/README.md', '/.git/config', '/src', '/examples/missing.js']:
             self.assertEqual(self.call('GET', path)[0], 404, path)
+
+
+def hold(port):
+    """Hold a port open on 127.0.0.1. Give None if another process already holds it."""
+    sock = socket.socket()
+    try:
+        sock.bind(('127.0.0.1', port))
+    except OSError:
+        sock.close()
+        return None
+    sock.listen()
+    return sock
+
+
+def start(*args):
+    return subprocess.Popen([sys.executable, '-B', str(ROOT / 'tools' / 'thread_server.py'), '--no-delay', *args],
+                            stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+
+
+class ThreadServerPortTest(unittest.TestCase):
+    def test_a_busy_default_port_gives_a_free_port_and_a_working_url(self):
+        held = hold(8765)  # If another process holds 8765, the condition of the test is true already.
+        process = start()
+        try:
+            url = process.stdout.readline().strip()
+            self.assertRegex(url, r'^http://127\.0\.0\.1:\d+/examples/thread\.html$')
+            port = int(url.split(':')[2].split('/')[0])
+            self.assertNotEqual(port, 8765)
+            connection = http.client.HTTPConnection('127.0.0.1', port, timeout=10)
+            connection.request('GET', '/examples/thread.html')
+            self.assertEqual(connection.getresponse().status, 200)
+            connection.close()
+        finally:
+            process.terminate()
+            process.communicate()
+            if held:
+                held.close()
+
+    def test_a_busy_chosen_port_gives_one_clear_line_and_a_non_zero_exit(self):
+        held = hold(0)
+        port = held.getsockname()[1]
+        try:
+            process = start('--port', str(port))
+            out, err = process.communicate(timeout=20)
+        finally:
+            held.close()
+        self.assertNotEqual(process.returncode, 0)
+        self.assertEqual(out, '')
+        lines = err.strip().splitlines()
+        self.assertEqual(len(lines), 1, err)
+        self.assertIn(str(port), lines[0])
+        self.assertIn('--port', lines[0])
+        self.assertNotIn('Traceback', err)
 
 
 if __name__ == '__main__':

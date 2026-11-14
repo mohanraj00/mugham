@@ -98,7 +98,9 @@ cd mugham
 python3 -m http.server 8000
 ```
 
-4. Open an example in the browser. The examples use synthetic data.
+   If port 8000 is in use, the command fails with an error. Choose a different port, for example `python3 -m http.server 8001`, and use that port in the next step.
+
+4. Open an example in the browser. The examples use synthetic data. The URLs below use port 8000.
    - `http://localhost:8000/examples/primitives.html`: each primitive.
    - `http://localhost:8000/examples/loans.html`: a card, an action button, a card grid and a form.
    - `http://localhost:8000/examples/citation.html`: a citation in a message, a citation with no source and a refused citation.
@@ -112,7 +114,7 @@ python3 -m http.server 8000
 python3 tools/thread_server.py
 ```
 
-   Then open `http://127.0.0.1:8765/examples/thread.html`. Two people and two agents talk about a loan. The thread refuses one undeclared component. The Renew action shows `Done` only after the receipt comes back.
+   The server prints the URL of the example. Open that URL. The default port is 8765. If that port is in use, the server takes a free port and prints its URL. To choose the port, use `python3 tools/thread_server.py --port 8766`. If a port that you chose is in use, the server prints one line that names the port and exits with an error. Then choose a different port. Two people and two agents talk about a loan. The thread refuses one undeclared component. The Renew action shows `Done` only after the receipt comes back.
 
 To use the kit in your own page, serve `src/` and `catalog/` from one origin, load `src/tokens/tokens.css`, then import `define` from `src/components/index.js` and call it. [src/README.md](src/README.md) gives the steps.
 
