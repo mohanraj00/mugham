@@ -1,0 +1,55 @@
+{
+  "format": 2,
+  "name": "check-item",
+  "version": "0.1.0",
+  "kind": "component",
+  "description": "One item of an inspection checklist, with its label, its result and a short detail.",
+  "ai_content": true,
+  "slots": {
+    "authorship": {
+      "required": true
+    }
+  },
+  "data": {
+    "label": {
+      "type": "text",
+      "label": "Label",
+      "required": true,
+      "min_length": 1,
+      "max_length": 80
+    },
+    "result": {
+      "type": "enum",
+      "label": "Result",
+      "required": true,
+      "values": [
+        "pass",
+        "attention",
+        "fail",
+        "open"
+      ]
+    },
+    "detail": {
+      "type": "text",
+      "label": "Detail",
+      "required": false,
+      "max_length": 120
+    }
+  },
+  "states": [
+    "default",
+    "refused"
+  ],
+  "tokens": [
+    "color.text",
+    "color.text-muted",
+    "type.body",
+    "type.caption"
+  ],
+  "accessibility": {
+    "role": "none",
+    "keyboard": [],
+    "forced_colors": true,
+    "reduced_motion": true
+  }
+}

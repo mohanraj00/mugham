@@ -12,6 +12,7 @@ check:
 	$(NODE) --test 'tests/**/*.test.mjs'
 	$(NODE) tools/browser_check.mjs
 	$(NODE) tests/browser/approval.mjs
+	$(NODE) tests/browser/apps.mjs
 
 # Write the README screenshots to docs/screenshots/ again.
 screenshots:
