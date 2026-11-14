@@ -1,0 +1,71 @@
+{
+  "format": 2,
+  "name": "inspection-checklist",
+  "version": "0.1.0",
+  "kind": "component",
+  "description": "The checklist of one site inspection, with the site and up to 20 items with their results.",
+  "ai_content": true,
+  "slots": {
+    "authorship": {
+      "required": true
+    }
+  },
+  "data": {
+    "title": {
+      "type": "text",
+      "label": "Title",
+      "required": true,
+      "min_length": 1,
+      "max_length": 80
+    },
+    "site": {
+      "type": "text",
+      "label": "Site",
+      "required": true,
+      "min_length": 1,
+      "max_length": 120
+    },
+    "items": {
+      "type": "list",
+      "label": "Items",
+      "required": true,
+      "max_items": 20,
+      "items": {
+        "type": "component",
+        "label": "Item",
+        "required": true,
+        "name": "check-item"
+      }
+    }
+  },
+  "states": [
+    "default",
+    "refused"
+  ],
+  "tokens": [
+    "color.surface",
+    "color.text",
+    "color.text-muted",
+    "color.border",
+    "color.accent",
+    "color.danger",
+    "type.body",
+    "type.caption",
+    "type.weight-strong",
+    "space.1",
+    "space.2",
+    "space.3",
+    "space.4",
+    "radius.1",
+    "radius.2"
+  ],
+  "accessibility": {
+    "role": "list",
+    "name": {
+      "field": "title"
+    },
+    "keyboard": [],
+    "forced_colors": true,
+    "reduced_motion": true
+  }
+}

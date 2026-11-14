@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; object-src 'none'; base-uri 'none'">
+  <title>Change review</title>
+  <link rel="stylesheet" href="../../../src/tokens/tokens.css">
+  <link rel="stylesheet" href="../app.css">
+  <script type="module" src="changes.js"></script>
+</head>
+<body>
+  <header class="bar"><h1>Timetable change review</h1><p class="muted">Signed in as Jordan M., reviewer. Synthetic data.</p></header>
+  <main class="layout" id="main">
+    <div class="pane">
+      <section class="stack" aria-labelledby="changes-title">
+        <h2 id="changes-title">Proposed changes</h2>
+        <div id="changes" class="stack"></div>
+      </section>
+      <section class="stack" aria-labelledby="log-title">
+        <h2 id="log-title">Decision log</h2>
+        <div id="log"></div>
+      </section>
+    </div>
+    <section class="pane detail" aria-labelledby="change-title">
+      <h2 id="change-title" tabindex="-1">No change open</h2>
+      <div id="change" class="stack"><p class="muted">Choose a change to read its evidence.</p></div>
+    </section>
+  </main>
+</body>
+</html>

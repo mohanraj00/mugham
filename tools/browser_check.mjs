@@ -37,6 +37,22 @@ const EXAMPLES = {
   'examples/provenance.html': [2, 1, [['article', 'Renewal rule for short loans'], ['button', 'Open source: Synthetic library rules, section 4']]],
   'examples/register.html': [4, 1, [['article', 'Tray A1'], ['list', 'Thread'], ['article', 'Message from Garden helper, Agent'], ['article', 'Tray B2']]],
 };
+// Each example app, the kit elements of its first view, and the roles and names that its accessibility tree must have.
+// tools/apps_server.py serves the apps. tests/browser/apps.mjs checks the main flow of each app.
+const APPS = {
+  'examples/apps/': [0, [['list', 'Example apps'], ['link', 'Support desk'], ['link', 'Change review'], ['link', 'Field inspection']]],
+  'examples/apps/support/': [9, [['group', 'Ticket queue'], ['article', 'T-2041 Charged twice for one ride'], ['button', 'Open T-2041'],
+    ['heading', 'No ticket open']]],
+  'examples/apps/changes/': [6, [['article', 'CR-311 Run route 12 every 15 minutes on Saturday'], ['button', 'Open CR-311'],
+    ['heading', 'Decision log']]],
+  'examples/apps/inspection/': [6, [['list', 'Thread'], ['article', 'Message from Field agent, Agent'], ['list', 'Checklist I-0417'],
+    ['form', 'Findings for I-0417'], ['textbox', 'Outlet pressure in bar'], ['button', 'Save findings']]],
+};
+// The theme and the width of each app check. The phone width is 375 CSS pixels.
+const APP_VIEWS = {
+  light: [MODES.light, null], dark: [MODES.dark, null],
+  'phone light': [MODES.light, 375], 'phone dark': [MODES.dark, 375],
+};
 const CHROME = process.env.CHROME || (process.platform === 'darwin'
   ? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' : 'google-chrome');
 export const sleep = (ms) => new Promise((done) => setTimeout(done, ms));
@@ -155,13 +171,13 @@ async function axErrors(session, sessionId, expected, where) {
   return expected.map(([role, name]) => ({ where, role, name, ok: named.some(([r, n]) => r === role && n === name) }));
 }
 
-// Starts tools/thread_server.py with no delay. It gives the URL of the example on its first line.
-async function threadServer() {
-  const server = spawn(process.env.PYTHON || 'python3', ['-B', join(ROOT, 'tools', 'thread_server.py'), '--port', '0', '--no-delay'],
+// Starts a Python server of tools/ on a free port. The server gives its URL on its first line of output.
+export async function pythonServer(name, args) {
+  const server = spawn(process.env.PYTHON || 'python3', ['-B', join(ROOT, 'tools', name), ...args],
     { stdio: ['ignore', 'pipe', 'inherit'] });
   const url = await new Promise((done, fail) => {
     let out = '';
-    const timer = setTimeout(() => fail(new Error('tools/thread_server.py did not start')), 10000);
+    const timer = setTimeout(() => fail(new Error(`tools/${name} did not start`)), 10000);
     server.stdout.on('data', (chunk) => {
       out += chunk;
       if (out.includes('\n')) {
@@ -169,10 +185,13 @@ async function threadServer() {
         done(out.split('\n')[0].trim());
       }
     });
-    server.on('exit', () => fail(new Error('tools/thread_server.py stopped')));
+    server.on('exit', () => fail(new Error(`tools/${name} stopped`)));
   });
   return { server, url };
 }
+
+// Starts tools/thread_server.py with no delay. It gives the URL of the example on its first line.
+const threadServer = () => pythonServer('thread_server.py', ['--port', '0', '--no-delay']);
 
 // The thread example through server-sent events: two people, two agents, one refused component and
 // one action. The action shows done only after the receipt of the API comes back.
@@ -228,12 +247,63 @@ async function threadExample(session, sessionId, report) {
   return steps;
 }
 
+// The example apps in each theme and at the phone width: the page loads with no error, shows its kit elements with no
+// refusal, has the roles and names, has no horizontal scroll, and its body text has a contrast of 4.5 or more.
+async function appPages(session, sessionId, report) {
+  const steps = [];
+  const { server, url } = await pythonServer('apps_server.py', ['--port', '0']);
+  const base = url.slice(0, url.indexOf('/examples/'));
+  try {
+    for (const [view, [features, width]] of Object.entries(APP_VIEWS)) {
+      await session.send('Emulation.setEmulatedMedia', { features }, sessionId);
+      if (width) await session.send('Emulation.setDeviceMetricsOverride', { width, height: 812, deviceScaleFactor: 2, mobile: true }, sessionId);
+      else await session.send('Emulation.clearDeviceMetricsOverride', {}, sessionId);
+      for (const [page, [elements, expected]] of Object.entries(APPS)) {
+        await open(session, sessionId, `${base}/${page}`);
+        let found = null;
+        for (let i = 0; i < 100; i += 1) {
+          found = await evaluate(session, sessionId, `(() => {
+            const all = [];
+            const walk = (root) => { for (const node of root.querySelectorAll('*')) {
+              if (node.tagName.startsWith('MU-')) all.push(node);
+              if (node.shadowRoot) walk(node.shadowRoot);
+            } };
+            walk(document);
+            const rgb = (value) => value.match(/[0-9.]+/g).slice(0, 3).map(Number);
+            const lum = (value) => { const [r, g, b] = rgb(value).map((c) => { c /= 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; });
+              return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
+            const style = getComputedStyle(document.body);
+            const [light, dark] = [lum(style.color), lum(style.backgroundColor)].sort((a, b) => b - a);
+            return { ready: !document.getElementById('main').dataset.state || document.getElementById('main').dataset.state === 'ready',
+              elements: all.length, refused: all.filter((node) => node.dataset.state === 'refused').length,
+              scroll: document.documentElement.scrollWidth - innerWidth, width: innerWidth,
+              dark: matchMedia('(prefers-color-scheme: dark)').matches, background: lum(style.backgroundColor),
+              contrast: Math.round(((light + 0.05) / (dark + 0.05)) * 10) / 10 };
+          })()`);
+          if (found.ready && found.elements >= elements) break;
+          await sleep(50);
+        }
+        const theme = view.endsWith('dark') ? found.dark && found.background < 0.1 : !found.dark && found.background > 0.8;
+        const ok = found.ready && found.elements === elements && found.refused === 0 && found.scroll <= 0
+          && (!width || found.width === width) && theme && found.contrast >= 4.5;
+        steps.push({ page, step: `${view}: ${elements} kit elements, no refusal, no horizontal scroll, the theme and a contrast of 4.5`, ok,
+          detail: JSON.stringify(found) });
+        report.accessibility.push(...await axErrors(session, sessionId, expected, `${page} ${view}`));
+      }
+    }
+  } finally {
+    await session.send('Emulation.clearDeviceMetricsOverride', {}, sessionId);
+    server.kill();
+  }
+  return steps;
+}
+
 async function main() {
   const server = await serve();
   const base = `http://127.0.0.1:${server.address().port}`;
   const profile = mkdtempSync(join(tmpdir(), 'mugham-chrome-'));
   const report = { passed: false, chrome: '', pages: {}, accessibility: [], keyboard: [], examples: [], errors: [],
-    scope: 'Headless Chrome on this machine: the check pages in four media modes, the accessibility tree, the keyboard and the example pages. No screen reader.' };
+    scope: 'Headless Chrome on this machine: the check pages in four media modes, the accessibility tree, the keyboard the example pages, and the example apps in the light theme, the dark theme and at the phone width. No screen reader.' };
   let chrome;
   try {
     const started = await startChrome(profile);
@@ -350,6 +420,7 @@ async function main() {
     report.examples.push(...guides.steps);
     report.accessibility.push(...guides.accessibility);
     report.examples.push(...await threadExample(session, sessionId, report));
+    report.examples.push(...await appPages(session, sessionId, report));
     for (const item of report.accessibility) if (!item.ok) report.errors.push(`accessibility: ${item.where}: no ${item.role} named ${item.name}`);
     for (const step of [...report.keyboard, ...report.examples]) if (!step.ok) report.errors.push(`${step.page}: ${step.step}: ${step.detail}`);
     for (const problem of problems) report.errors.push('page error: ' + problem);

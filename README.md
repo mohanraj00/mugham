@@ -125,6 +125,16 @@ python3 tools/thread_server.py
 
    The server prints the URL of the example. Open that URL. The default port is 8765. If that port is in use, the server takes a free port and prints its URL. To choose the port, use `python3 tools/thread_server.py --port 8766`. If a port that you chose is in use, the server prints one line that names the port and exits with an error. Then choose a different port. Two people and two agents talk about a loan. The thread refuses one undeclared component. The Renew action shows `Done` only after the receipt comes back.
 
+6. For the example apps, start the fixture API of the apps. It prints the URL of each app. The default port is 8770. If that port is in use, the server takes a free port.
+
+```sh
+python3 tools/apps_server.py
+```
+
+   - `http://127.0.0.1:8770/examples/apps/support/`: a support desk. A person opens a ticket, corrects the reply that an agent drafts, and sends it.
+   - `http://127.0.0.1:8770/examples/apps/changes/`: a change review. An agent proposes a timetable change with a citation and source excerpts. A reviewer approves it with a confirm step and gets a receipt reference.
+   - `http://127.0.0.1:8770/examples/apps/inspection/`: a field inspection for a phone. A registered checklist component, a findings form and a close action with a confirm step.
+
 To use the kit in your own page, serve `src/` and `catalog/` from one origin, load `src/tokens/tokens.css`, then import `define` from `src/components/index.js` and call it. [src/README.md](src/README.md) gives the steps.
 
 Each release has the archive `mugham.tar` and its `mugham.tar.sha256` file as release assets. Two builds of the same source give the same bytes. The release publishes no package ([decision 0004](docs/decisions/0004-package.md)).

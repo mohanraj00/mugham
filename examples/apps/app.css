@@ -1,0 +1,51 @@
+/* The layout of the example apps. The colors and the type come from the tokens of the kit. */
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; background: var(--mu-color-surface); color: var(--mu-color-text); font: var(--mu-type-body); }
+h1, h2, p { margin: 0; }
+h1 { font-size: 1.25rem; }
+h2 { font-size: 1.05rem; }
+a { color: var(--mu-color-accent); }
+:focus-visible { outline: 2px solid var(--mu-color-focus); outline-offset: 2px; }
+
+.bar {
+  display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between;
+  gap: var(--mu-space-1) var(--mu-space-4); padding: var(--mu-space-3) var(--mu-space-4);
+  border-bottom: 1px solid var(--mu-color-border);
+}
+.muted { font: var(--mu-type-caption); color: var(--mu-color-text-muted); }
+.alert { color: var(--mu-color-danger); }
+
+.layout {
+  display: grid; gap: var(--mu-space-4); padding: var(--mu-space-4); max-width: 80rem; margin: 0 auto;
+  grid-template-columns: minmax(0, 24rem) minmax(0, 1fr); align-items: start;
+}
+.pane { min-width: 0; display: flex; flex-direction: column; gap: var(--mu-space-3); }
+.detail { border: 1px solid var(--mu-color-border); border-radius: var(--mu-radius-2); padding: var(--mu-space-4); }
+.detail h2:focus { outline: none; }
+.detail h2:focus-visible { outline: 2px solid var(--mu-color-focus); }
+.stack { display: flex; flex-direction: column; gap: var(--mu-space-3); }
+.actions { display: flex; flex-wrap: wrap; gap: var(--mu-space-3); }
+
+.log { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--mu-space-2); }
+.log li { border-left: 3px solid var(--mu-color-accent); padding-left: var(--mu-space-2); overflow-wrap: anywhere; }
+
+/* A narrow screen shows the panes in one column. */
+@media (max-width: 52rem) {
+  .layout { grid-template-columns: minmax(0, 1fr); padding: var(--mu-space-3); }
+  .detail { padding: var(--mu-space-3); }
+}
+
+/* The field app is for a phone first. It keeps one column on each screen. */
+.phone { max-width: 34rem; margin: 0 auto; padding: var(--mu-space-3); display: flex; flex-direction: column; gap: var(--mu-space-3); }
+
+.apps { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--mu-space-4);
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--mu-size-column-medium)), 1fr)); }
+.apps li { border: 1px solid var(--mu-color-border); border-radius: var(--mu-radius-2); padding: var(--mu-space-4);
+  display: flex; flex-direction: column; gap: var(--mu-space-2); }
+
+@media (forced-colors: active) {
+  body { background: Canvas; color: CanvasText; }
+  .bar, .detail, .apps li { border-color: CanvasText; }
+  .log li { border-left-color: CanvasText; }
+  .muted, .alert { color: CanvasText; }
+}
