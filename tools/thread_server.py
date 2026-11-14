@@ -19,6 +19,7 @@ SERVED = ('src', 'catalog', 'examples')
 TYPES = {'.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json', '.css': 'text/css', '.svg': 'image/svg+xml'}
 EVENTS = ROOT / 'examples' / 'thread-events.json'
 MAX_BODY = 4096
+DEFAULT_PORT = 8765
 # The synthetic API knows one tool and one loan.
 TOOL = 'library.renew'
 LOAN = 'L-0001'
@@ -129,10 +130,17 @@ def make_server(port=0, delay=1.0):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument('--port', type=int, default=8765, help='the port, or 0 for a free port')
+    parser.add_argument('--port', type=int, help='the port, or 0 for a free port. The default is %d, or a free port if it is busy' % DEFAULT_PORT)
     parser.add_argument('--no-delay', action='store_true', help='send the events with no delay, for the checks')
     args = parser.parse_args(argv)
-    server = make_server(args.port, 0.0 if args.no_delay else 1.0)
+    delay = 0.0 if args.no_delay else 1.0
+    try:
+        server = make_server(DEFAULT_PORT if args.port is None else args.port, delay)
+    except OSError as error:
+        if args.port is not None:
+            print('The server cannot use port %d: %s. Choose a different port with the --port option.' % (args.port, error.strerror or error), file=sys.stderr)
+            return 1
+        server = make_server(0, delay)
     print('http://127.0.0.1:%d/examples/thread.html' % server.server_address[1], flush=True)
     try:
         server.serve_forever()
