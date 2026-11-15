@@ -7,12 +7,16 @@ Each JSON file in this folder is the contract of one component. [schema/README.m
 | `text.json` | `mu-text` | primitive | A run of text. |
 | `button.json` | `mu-button` | primitive | A button that sends a `mu-press` event. |
 | `field.json` | `mu-field` | primitive | A labeled text input that sends a `mu-edit` event. A typed field also asks for the edit type. |
+| `long-text-field.json` | `mu-long-text-field` | primitive | A labeled text area for text of more than one line. |
+| `number-field.json` | `mu-number-field` | primitive | A labeled input for a number, with an optional range. |
+| `date-field.json` | `mu-date-field` | primitive | A labeled input for a date as `YYYY-MM-DD`, with an optional range. |
+| `choice-field.json` | `mu-choice-field` | primitive | A labeled radio group with 1 to 20 choices. |
 | `stack.json` | `mu-stack` | primitive | A labeled group in one column or one row. |
 | `grid.json` | `mu-grid` | primitive | A labeled group in columns. |
 | `fact.json` | in `mu-card` | component | A label and a value. |
 | `card.json` | `mu-card` | component | A title, a summary, a date and up to six facts. |
 | `action-button.json` | `mu-action-button` | component | A button for one action. |
-| `editable-form.json` | `mu-editable-form` | component | Up to 20 fields, submitted as one action. |
+| `editable-form.json` | `mu-editable-form` | component | Up to 20 fields of the five input types, submitted as one action. |
 | `card-grid.json` | `mu-card-grid` | component | A labeled list of cards. |
 | `citation.json` | `mu-citation` | component | A source name, a locator as text, an optional quote and an open button. |
 | `excerpt.json` | `mu-excerpt` | component | A passage as text with a marked span, the source name, the locator as text and an open button. |
@@ -186,3 +190,23 @@ If the binding has a `typed` list, the request has an `edits` list with one edit
 | `time` | The time of the last change of the value or the type, as an ISO 8601 text in UTC, for example `2026-11-15T09:30:00.000Z`. |
 
 A field that did not change has no edit. A disabled field has no edit, because the form does not send its value. A change of the edit type after a request also makes the values new, so the receipt of that request does not show `Done`.
+
+### Input types
+
+An editable form accepts five field contracts. Each one has the data fields `name`, `label`, `hint`, `error`, `disabled` and `typed`, and the same states. A typed edit works the same with each input type.
+
+| Contract | Value | Other data | The request sends |
+|---|---|---|---|
+| `field` | Text of 200 characters at most. | | A string. |
+| `long-text-field` | Text of 10000 characters at most, with line breaks. | | A string. |
+| `number-field` | A number. | `minimum` and `maximum`, both optional. | A number, for example `12.5`. |
+| `date-field` | A date as `YYYY-MM-DD`. | `earliest` and `latest`, both optional. | A string, for example `2026-12-01`. |
+| `choice-field` | One of the choices. | `choices`: 1 to 20 unique texts. | The text of the choice. |
+
+The form refuses a fill in which the data of a field do not agree. Examples are a minimum that is more than the maximum, a value outside the range, and a value that is not one of the choices. The refusal names the field, for example `data.fields[2].data.value: the number is outside the range`.
+
+A person can type a value that the field does not accept, for example a text that is not a number, a date that does not exist, or a value outside the range. Then a submit sends no action. The field shows the reason as text, for example `Give a number from 1 to 12.`, and the focus goes to the field. The reason also shows when the focus leaves the field.
+
+Enter in a one-line field submits the form. Enter in long text adds a line. In a choice, the arrow keys select the next or the previous choice.
+
+The date field is a text input, not the date picker of the browser. Thus it has the same role, the same text and the same keyboard in each browser.

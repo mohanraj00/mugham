@@ -35,6 +35,8 @@ const EXAMPLES = {
   'examples/citation.html': [3, 1, [['group', 'Citation'], ['button', 'Open source: Synthetic weather notes, page 3'], ['article', 'Message from agent-weather']]],
   'examples/excerpt.html': [2, 1, [['group', 'Source excerpt'], ['button', 'Open source: Synthetic harbor guide, section 2'], ['article', 'Message from agent-reader']]],
   'examples/provenance.html': [2, 1, [['article', 'Renewal rule for short loans'], ['button', 'Open source: Synthetic library rules, section 4']]],
+  'examples/inputs.html': [6, 0, [['form', 'Loan details'], ['textbox', 'Shelf code'], ['textbox', 'Note'], ['textbox', 'Copies'],
+    ['textbox', 'Due date'], ['group', 'Branch'], ['radio', 'Harbor']]],
   'examples/register.html': [4, 1, [['article', 'Tray A1'], ['list', 'Thread'], ['article', 'Message from Garden helper, Agent'], ['article', 'Tray B2']]],
 };
 // Each example app, the kit elements of its first view, and the roles and names that its accessibility tree must have.
@@ -371,6 +373,22 @@ async function main() {
             detail: `${first} ${next}` });
           report.accessibility.push(...await axErrors(session, sessionId, [['group', 'Edit type'], ['radio', 'Judgment'],
             ['radio', 'Correction'], ['radio', 'Override']], page + ' edit type'));
+        }
+        // Long text: Enter adds a line and does not submit. A choice: an arrow key selects the next choice.
+        if (await evaluate(session, sessionId, 'typeof window.muFocusLongText === "function"')) {
+          await evaluate(session, sessionId, 'window.muFocusLongText()');
+          await key(session, sessionId, 'Enter', 'Enter', 13, '\r');
+          const text = await evaluate(session, sessionId, 'window.muInputs()');
+          report.keyboard.push({ page, step: 'Enter in long text adds a line and does not submit the form',
+            ok: text.submits === 0 && text.note === 'Keep dry.\n', detail: JSON.stringify(text) });
+          await evaluate(session, sessionId, 'window.muFocusChoice()');
+          await key(session, sessionId, 'ArrowDown', 'ArrowDown', 40);
+          const choice = await evaluate(session, sessionId, 'window.muInputs()');
+          report.keyboard.push({ page, step: 'ArrowDown selects the next choice', ok: choice.branch === 'South' && choice.submits === 0,
+            detail: JSON.stringify(choice) });
+          report.accessibility.push(...await axErrors(session, sessionId, [['form', 'Input form'], ['textbox', 'Note'],
+            ['textbox', 'Copies'], ['textbox', 'Due date'], ['group', 'Branch'], ['radio', 'North'], ['radio', 'South'],
+            ['radio', 'Harbor']], page + ' input types'));
         }
         // The confirm step: Enter opens it, Escape closes it, and only the confirm button sends the action.
         // The accessibility tree must name the group and its buttons. See catalog/README.md#actions.

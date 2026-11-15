@@ -1,6 +1,6 @@
 // The catalog components: card, action button, editable form, card grid, citation and excerpt.
 import { MuElement } from '../primitives/base.js';
-import { define as definePrimitives } from '../primitives/index.js';
+import { define as definePrimitives, FIELDS } from '../primitives/index.js';
 import { ActionState } from '../actions/action.js';
 import { el, sheet } from '../render/dom.js';
 
@@ -328,6 +328,11 @@ export class MuEditableForm extends ActionElement {
     // The application labels of the fields tell what the request does. A form with no field that a person can
     // edit sends no such value, because the form does not send a disabled field.
     if (!data.fields.some((item) => !item.data.disabled)) return ['data.fields: the form needs at least one field that a person can edit'];
+    // A field can give a value or a range that do not agree. The form refuses the fill, as the field does.
+    for (const [index, item] of data.fields.entries()) {
+      const errors = FIELDS[item.component][1].rules(item.data);
+      if (errors.length) return [`data.fields[${index}].${errors[0]}`];
+    }
     const names = data.fields.map((item) => item.data.name);
     if (!names.every((name) => typeof name === 'string' && FIELD_NAME.test(name))) return ['data.fields: each field needs a name'];
     if (new Set(names).size !== names.length) return ['data.fields: the field names must be unique'];
@@ -361,7 +366,7 @@ export class MuEditableForm extends ActionElement {
   render(data) {
     this.#sent = null;
     this.#fields = data.fields.map((item) => {
-      const node = document.createElement('mu-field');
+      const node = document.createElement(FIELDS[item.component][0]);
       node.fill = item;
       return node;
     });
@@ -376,9 +381,16 @@ export class MuEditableForm extends ActionElement {
       event.preventDefault();
       // A changed typed field needs an edit type. The first such field tells why and takes the focus.
       if (this.dataset.state === 'refused' || !this.fill) return;
+      const open = this.action.state === 'default' || this.action.state === 'error';
+      // A value that its contract does not accept sends no action. The first such field tells why and takes the focus.
+      const wrong = this.#fields.find((node) => !node.fill.data.disabled && node.problem);
+      if (wrong) {
+        if (open) wrong.needValue();
+        return;
+      }
       const untyped = this.#fields.find((node) => node.fill.data.typed && !node.fill.data.disabled && node.changed && !node.editType);
       if (untyped) {
-        if (this.action.state === 'default' || this.action.state === 'error') untyped.needType();
+        if (open) untyped.needType();
         return;
       }
       const values = this.values();
@@ -387,11 +399,12 @@ export class MuEditableForm extends ActionElement {
       // Keep the values only for an accepted request. A refused submit does not change them.
       this.send(values, () => { this.#sent = snapshot; }, edits);
     });
-    // Each input is in the shadow root of its mu-field, so the browser does not connect it to this form.
-    // Thus Enter in a field submits the form here, as Enter does in a plain form.
+    // Each input is in the shadow root of its field, so the browser does not connect it to this form.
+    // Thus Enter in a field submits the form here, as Enter does in a plain form. Enter in long text adds a
+    // line, and Enter in a choice does not submit.
     form.addEventListener('keydown', (event) => {
       if (event.key !== 'Enter' || event.isComposing || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
-      if (event.target.localName !== 'mu-field') return;
+      if (!this.#fields.includes(event.target) || !event.target.constructor.submitOnEnter) return;
       event.preventDefault();
       form.requestSubmit(submit);
     });

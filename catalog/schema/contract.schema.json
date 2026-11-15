@@ -81,7 +81,8 @@
         {"$ref": "#/$defs/date_field"},
         {"$ref": "#/$defs/enum_field"},
         {"$ref": "#/$defs/list_field"},
-        {"$ref": "#/$defs/component_field"}
+        {"$ref": "#/$defs/component_field"},
+        {"$ref": "#/$defs/components_field"}
       ]
     },
     "scalar_field": {
@@ -165,7 +166,8 @@
         "items": {
           "oneOf": [
             {"$ref": "#/$defs/scalar_field"},
-            {"$ref": "#/$defs/component_field"}
+            {"$ref": "#/$defs/component_field"},
+            {"$ref": "#/$defs/components_field"}
           ]
         }
       }
@@ -179,6 +181,17 @@
         "label": {"$ref": "#/$defs/label"},
         "required": {"type": "boolean"},
         "name": {"$ref": "#/$defs/name"}
+      }
+    },
+    "components_field": {
+      "type": "object",
+      "required": ["type", "label", "required", "names"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {"const": "component"},
+        "label": {"$ref": "#/$defs/label"},
+        "required": {"type": "boolean"},
+        "names": {"type": "array", "minItems": 2, "maxItems": 12, "uniqueItems": true, "items": {"$ref": "#/$defs/name"}}
       }
     }
   }

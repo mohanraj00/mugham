@@ -674,6 +674,84 @@ for (const [index, type] of ['judgment', 'correction', 'override'].entries()) {
     && !Object.hasOwn(sent[0].arguments, 'shelf'), JSON.stringify(sent));
 }
 
+// A form with each input type (catalog/editable-form.json names each field contract).
+const INPUT_FORM = { title: 'Loan details', submit_label: 'Save', fields: [
+  field('shelf', 'Shelf code', 'B-14'),
+  fill('long-text-field', { name: 'note', label: 'Note', value: 'Keep dry.' }),
+  fill('number-field', { name: 'copies', label: 'Copies', value: 3, minimum: 1, maximum: 12, typed: true }),
+  fill('date-field', { name: 'due', label: 'Due date', value: '2026-12-01', earliest: '2026-11-01', typed: true }),
+  fill('choice-field', { name: 'branch', label: 'Branch', value: 'North', choices: ['North', 'South', 'Harbor'] }),
+] };
+const INPUT_EDITABLE = { shelf: 'Shelf code', note: 'Note', copies: 'Copies', due: 'Due date', branch: 'Branch' };
+const INPUT_BINDING = { tool: 'library.update_loan', label: 'Save', title: 'Loan details', editable: INPUT_EDITABLE,
+  typed: ['copies', 'due'], editor: EDITOR };
+const inputOf = (node, name) => {
+  const inner = [...node.shadowRoot.querySelectorAll('[data-state]')].find((item) => item.fill?.data.name === name);
+  return { node: inner, root: inner.shadowRoot, input: inner.shadowRoot.querySelector('input:not([type="radio"]), textarea'),
+    radios: [...inner.shadowRoot.querySelectorAll('[part="choices"] input')],
+    types: [...inner.shadowRoot.querySelectorAll('[part="edit-type"] input')] };
+};
+{
+  const { node, sent } = typedForm(INPUT_BINDING, INPUT_FORM);
+  check('input form: a form with each input type renders', node.dataset.state === 'default'
+    && ['mu-field', 'mu-long-text-field', 'mu-number-field', 'mu-date-field', 'mu-choice-field'].every((tag) => node.shadowRoot.querySelector(tag)),
+  `${node.dataset.state} ${node.shadowRoot.textContent.slice(0, 200)}`);
+  node.shadowRoot.querySelector('form').requestSubmit();
+  check('input form: the values have the type of each contract', sent.length === 1 && sent[0].arguments.copies === 3
+    && sent[0].arguments.due === '2026-12-01' && sent[0].arguments.branch === 'North' && sent[0].arguments.note === 'Keep dry.'
+    && sent[0].edits.length === 0, JSON.stringify(sent));
+  node.receipt({ id: sent[0].id, ok: true });
+  // A number that is not valid sends no action. The field tells why and takes the focus.
+  const copies = inputOf(node, 'copies');
+  typeIn(copies.input, 'seven');
+  node.shadowRoot.querySelector('form').requestSubmit();
+  const problem = copies.root.querySelector('[part="problem"]').textContent;
+  check('input form: a value that is not a number sends no action', sent.length === 1, sent.length);
+  check('input form: the reason shows as text and the focus goes to the field', problem === 'Give a number, for example 12 or 12.5.'
+    && copies.root.activeElement === copies.input && copies.input.getAttribute('aria-invalid') === 'true', `${problem} ${copies.root.activeElement?.tagName}`);
+  typeIn(copies.input, '40');
+  node.shadowRoot.querySelector('form').requestSubmit();
+  check('input form: a number outside the range sends no action', sent.length === 1
+    && copies.root.querySelector('[part="problem"]').textContent === 'Give a number from 1 to 12.', copies.root.textContent);
+  const due = inputOf(node, 'due');
+  typeIn(copies.input, '4');
+  typeIn(due.input, '2026-10-31');
+  node.shadowRoot.querySelector('form').requestSubmit();
+  check('input form: a date outside the range sends no action', sent.length === 1
+    && due.root.querySelector('[part="problem"]').textContent === 'Give a date on or after 2026-11-01.', due.root.textContent);
+  // Valid values of a typed number and a typed date need their edit types. Then the edits have the contract types.
+  typeIn(due.input, '2026-12-08');
+  node.shadowRoot.querySelector('form').requestSubmit();
+  check('input form: a typed number with no edit type sends no action', sent.length === 1
+    && copies.root.querySelector('[part="reason"]').textContent === 'Choose an edit type.', copies.root.textContent);
+  copies.types[1].click();
+  due.types[2].click();
+  inputOf(node, 'branch').radios[1].click();
+  const note = inputOf(node, 'note');
+  typeIn(note.input, 'Keep dry.\nNo sun.');
+  node.shadowRoot.querySelector('form').requestSubmit();
+  const edits = Object.fromEntries((sent[1]?.edits ?? []).map((item) => [item.field, item]));
+  check('input form: a typed edit of a number and of a date has the values of the contract types', sent.length === 2
+    && edits.copies?.type === 'correction' && edits.copies.old_value === 3 && edits.copies.new_value === 4
+    && edits.due?.type === 'override' && edits.due.old_value === '2026-12-01' && edits.due.new_value === '2026-12-08'
+    && sent[1].arguments.branch === 'South' && sent[1].arguments.note === 'Keep dry.\nNo sun.' && Object.keys(edits).length === 2,
+  JSON.stringify(sent[1]));
+}
+{
+  // The form refuses a field that its own contract accepts but whose data do not agree, as the field does.
+  const outside = mount('editable-form', { ...INPUT_FORM, fields: [INPUT_FORM.fields[0],
+    fill('number-field', { name: 'copies', label: 'Copies', value: 30, maximum: 12 })] });
+  check('input form: refuses a number outside the range of its field', outside.dataset.state === 'refused'
+    && refusedText(outside).includes('data.fields[1].data.value: the number is outside the range'), refusedText(outside));
+  const choice = mount('editable-form', { ...INPUT_FORM, fields: [fill('choice-field', { name: 'branch', label: 'Branch', value: 'East', choices: ['North'] })] });
+  check('input form: refuses a value that is not one of the choices', choice.dataset.state === 'refused'
+    && refusedText(choice).includes('data.fields[0].data.value: the value is not one of the choices'), refusedText(choice));
+  const other = mount('editable-form', { ...INPUT_FORM, fields: [fill('button', { label: 'Shelf code' })] });
+  check('input form: refuses a component that the form does not name', other.dataset.state === 'refused'
+    && refusedText(other).includes('data.fields[0].component: must be field or long-text-field or number-field or date-field or choice-field'),
+  refusedText(other));
+}
+
 // A new fill after done has new values. The old receipt does not confirm them.
 const refill = mount('editable-form', FORM);
 const refillSubmits = [];
@@ -863,6 +941,23 @@ window.muFocusTyped = () => {
   return true;
 };
 window.muTyped = () => typedTarget.shadowRoot.querySelector('mu-field').editType;
+// The runner presses Enter in long text and an arrow key in a choice. Enter adds a line and does not submit the form.
+const inputTarget = document.createElement('mu-editable-form');
+inputTarget.actor = AUTHOR;
+inputTarget.fill = outer('editable-form', { ...INPUT_FORM, title: 'Input form' });
+inputTarget.action = { ...INPUT_BINDING, title: 'Input form' };
+let inputSubmits = 0;
+inputTarget.addEventListener('mu-action', () => { inputSubmits += 1; });
+keyboard.append(inputTarget);
+window.muFocusLongText = () => {
+  const area = inputOf(inputTarget, 'note').input;
+  area.focus();
+  area.setSelectionRange(area.value.length, area.value.length);
+  return true;
+};
+window.muFocusChoice = () => { inputOf(inputTarget, 'branch').radios[0].focus(); return true; };
+window.muInputs = () => ({ submits: inputSubmits, note: inputOf(inputTarget, 'note').node.value,
+  branch: inputOf(inputTarget, 'branch').node.value });
 window.muFocusField = () => { enterForm.shadowRoot.querySelector('mu-field').shadowRoot.querySelector('input').focus(); return true; };
 window.muFormSubmits = () => formSubmits;
 // The runner opens the confirm step of this button and this form with the keyboard.

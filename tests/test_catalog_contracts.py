@@ -34,6 +34,10 @@ VALID = {
     'text': {'text': 'Weather at sea', 'variant': 'caption'},
     'button': {'label': 'Renew', 'emphasis': 'secondary', 'disabled': False},
     'field': {'name': 'shelf', 'label': 'Shelf code', 'value': 'B-14', 'hint': 'A letter and a number.'},
+    'long-text-field': {'name': 'note', 'label': 'Note', 'value': 'Keep dry.\nNo sun.', 'hint': 'Two lines at most.'},
+    'number-field': {'name': 'copies', 'label': 'Copies', 'value': 3, 'minimum': 1, 'maximum': 12, 'typed': True},
+    'date-field': {'name': 'due', 'label': 'Due date', 'value': '2026-12-01', 'earliest': '2026-11-01', 'latest': '2027-02-28'},
+    'choice-field': {'name': 'branch', 'label': 'Branch', 'value': 'North', 'choices': ['North', 'South', 'Harbor']},
     'stack': {'label': 'Loan details', 'direction': 'row', 'gap': 'small'},
     'grid': {'label': 'Reading list', 'min_column': 'wide'},
     'fact': FACT['data'],
@@ -47,6 +51,20 @@ VALID = {
 
 
 class CatalogContractTest(unittest.TestCase):
+    def test_a_form_accepts_each_input_type_and_no_other_component(self):
+        inputs = ['field', 'long-text-field', 'number-field', 'date-field', 'choice-field']
+        form = {'title': 'Loan details', 'submit_label': 'Save', 'fields': [fill(name, VALID[name]) for name in inputs]}
+        self.assertEqual(catalog.fill_errors(outer('editable-form', form), CATALOG), [])
+        other = {**form, 'fields': [fill('button', VALID['button'])]}
+        self.assertEqual(catalog.fill_errors(outer('editable-form', other), CATALOG),
+                         ['data.fields[0].component: must be ' + ' or '.join(inputs)])
+
+    def test_a_number_and_a_date_field_refuse_a_value_of_a_different_type(self):
+        self.assertIn('data.value: must be a number',
+                      catalog.fill_errors(fill('number-field', {**VALID['number-field'], 'value': '3'}), CATALOG))
+        self.assertIn('data.value: must be a date as YYYY-MM-DD',
+                      catalog.fill_errors(fill('date-field', {**VALID['date-field'], 'value': '2026-02-30'}), CATALOG))
+
     def test_the_catalog_is_valid_and_complete(self):
         self.assertEqual(ERRORS, [])
         self.assertEqual(sorted(CATALOG), sorted(VALID))

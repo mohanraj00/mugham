@@ -189,8 +189,13 @@ def fields_of(contract):
             yield 'data.%s.items' % name, field['items']
 
 
+def targets(field):
+    """Return the component names that a component field accepts: its name, or each item of its names."""
+    return field['names'] if 'names' in field else [field['name']]
+
+
 def references(contract):
-    return [(path, field['name']) for path, field in fields_of(contract) if field['type'] == 'component']
+    return [(path, target) for path, field in fields_of(contract) if field['type'] == 'component' for target in targets(field)]
 
 
 def contract_errors(contract, filename=None, catalog=None, invalid=()):
@@ -292,8 +297,8 @@ def value_errors(value, field, path, catalog, depth):
             errors += value_errors(item, field['items'], '%s[%d]' % (path, index), catalog, depth)
         return errors
     if kind == 'component':
-        if isinstance(value, dict) and value.get('component') != field['name']:
-            return ['%s.component: must be %s' % (path, field['name'])]
+        if isinstance(value, dict) and value.get('component') not in targets(field):
+            return ['%s.component: must be %s' % (path, ' or '.join(targets(field)))]
         return fill_errors(value, catalog, path, depth + 1)
     raise ValueError('unknown field type ' + kind)
 
