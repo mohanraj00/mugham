@@ -502,10 +502,15 @@ export class MuFormCard extends ActionElement {
     if (!open.length) return ['data.sections: the card needs at least one field that a person can edit'];
     const computed = lines.find(({ line }) => line.read_only && line.field.data.typed);
     if (computed) return [`data.sections: the read-only field ${computed.line.field.data.name} cannot have an edit type`];
-    // The request sends the bound value, so a read-only line with the same name must show that value.
+    // The request sends the bound value, so a read-only line with the same name must show that value. A new
+    // binding checks the values that the card shows now, because a computed value can replace a value of the fill.
     const bound = this.action.arguments ?? {};
-    const shown = lines.find(({ line }) => line.read_only && Object.hasOwn(bound, line.field.data.name)
-      && line.field.data.value !== bound[line.field.data.name]);
+    const current = data === this.fill?.data ? this.#base : Object.create(null);
+    const shown = lines.find(({ line }) => {
+      const name = line.field.data.name;
+      const value = Object.hasOwn(current, name) ? current[name] : line.field.data.value;
+      return line.read_only && Object.hasOwn(bound, name) && value !== bound[name];
+    });
     if (shown) return [`data.sections: the read-only field ${shown.line.field.data.name} does not show the bound value`];
     const editable = this.action.editable;
     if (!editable) return [];

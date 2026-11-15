@@ -973,6 +973,24 @@ const cardStatus = (node) => node.shadowRoot.querySelector('[part="status"]').te
   const moved = agreed.computed({ form_id: 'F-9999' });
   check('form card: refuses a computed value other than the bound argument', moved[0] === 'form_id: the value is not the bound value'
     && lineOf(agreed, 'form_id').row?.textContent.includes('F-0001'), JSON.stringify(moved));
+  // A bind checks the values that the card shows now. A computed value from before the bind can conflict with the bound value.
+  const early = mount('form-card', bound('F-0001'));
+  const earlyErrors = early.computed({ form_id: 'F-9999' });
+  early.action = CARD_BINDING;
+  check('form card: refuses a computed value from before the bind that is not the bound value', earlyErrors.length === 0
+    && early.dataset.state === 'refused' && refusedText(early).includes('data.sections: the read-only field form_id does not show the bound value'),
+    refusedText(early));
+  const rebound = formCard(CARD_BINDING, bound('F-0001')).node;
+  rebound.action = null;
+  const unboundErrors = rebound.computed({ form_id: 'F-9999' });
+  rebound.action = CARD_BINDING;
+  check('form card: refuses a computed value from an unbound card after the next bind', unboundErrors.length === 0
+    && rebound.dataset.state === 'refused' && refusedText(rebound).includes('data.sections: the read-only field form_id does not show the bound value'),
+    refusedText(rebound));
+  const kept = mount('form-card', bound('F-0001'));
+  kept.computed({ form_id: 'F-0001' });
+  kept.action = CARD_BINDING;
+  check('form card: accepts a computed value from before the bind that is the bound value', kept.dataset.state === 'default', refusedText(kept));
 }
 {
   // A long card: 2 sections of 30 editable fields. The binding of the application gives each of the 60 names.
