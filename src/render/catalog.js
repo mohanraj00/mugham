@@ -15,8 +15,11 @@ import longTextField from '../../catalog/long-text-field.json' with { type: 'jso
 import numberField from '../../catalog/number-field.json' with { type: 'json' };
 import stack from '../../catalog/stack.json' with { type: 'json' };
 import text from '../../catalog/text.json' with { type: 'json' };
+import table from '../../catalog/table.json' with { type: 'json' };
+import tableRow from '../../catalog/table-row.json' with { type: 'json' };
 
 export const CATALOG = Object.freeze(Object.assign(Object.create(null), {
   'action-button': actionButton, button, card, 'card-grid': cardGrid, 'choice-field': choiceField, citation, 'date-field': dateField,
-  'editable-form': editableForm, excerpt, fact, field, grid, 'long-text-field': longTextField, 'number-field': numberField, stack, text,
+  'editable-form': editableForm, excerpt, fact, field, grid, 'long-text-field': longTextField, 'number-field': numberField, stack,
+  text, table, 'table-row': tableRow,
 }));
