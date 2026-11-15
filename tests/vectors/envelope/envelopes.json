@@ -262,7 +262,7 @@
       "type": "component",
       "format": 2,
       "fill": {
-       "component": "chart",
+       "component": "unknown-chart",
        "version": "0.1.0",
        "data": {}
       }
@@ -283,7 +283,7 @@
      {
       "type": "refusal",
       "errors": [
-       "component: no contract has the name chart"
+       "component: no contract has the name unknown-chart"
       ]
      }
     ]
