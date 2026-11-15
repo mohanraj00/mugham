@@ -26,6 +26,7 @@ Each JSON file in this folder is the contract of one component. [schema/README.m
 | `diff-part.json` | in `mu-diff` | component | A titled part of a diff with up to 200 changes. A person opens and closes it. |
 | `diff.json` | `mu-diff` | component | The difference between two versions of a text or a list of fields, in up to 20 parts. |
 | `excerpt.json` | `mu-excerpt` | component | A passage as text with a marked span, the source name, the locator as text and an open button. |
+| `source-status.json` | `mu-source-status` | component | The state of an offline data source as text, with the time of the last confirmed read and the reason. |
 | `table.json` | `mu-table` | component | Text headers and rows, keyboard sorting and optional row status text. See [Table](../docs/table.md). |
 | `table-row.json` | in `mu-table` | component | Text cells and optional status text. |
 | `status.json` | `mu-status` | component | One state with short text, a fixed label and a border style. |

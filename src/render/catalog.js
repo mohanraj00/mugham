@@ -20,6 +20,7 @@ import grid from '../../catalog/grid.json' with { type: 'json' };
 import longTextField from '../../catalog/long-text-field.json' with { type: 'json' };
 import numberField from '../../catalog/number-field.json' with { type: 'json' };
 import image from '../../catalog/image.json' with { type: 'json' };
+import sourceStatus from '../../catalog/source-status.json' with { type: 'json' };
 import stack from '../../catalog/stack.json' with { type: 'json' };
 import status from '../../catalog/status.json' with { type: 'json' };
 import text from '../../catalog/text.json' with { type: 'json' };
@@ -32,6 +33,6 @@ export const CATALOG = Object.freeze(Object.assign(Object.create(null), {
   'action-button': actionButton, button, card, 'card-grid': cardGrid, 'choice-field': choiceField, citation, 'date-field': dateField,
   diff, 'diff-change': diffChange, 'diff-part': diffPart, 'editable-form': editableForm, excerpt, fact, field,
   'form-card': formCard, 'form-line': formLine, 'form-section': formSection, grid, image,
-  'long-text-field': longTextField, 'number-field': numberField, stack, status, text, table, 'table-row': tableRow,
+  'long-text-field': longTextField, 'number-field': numberField, 'source-status': sourceStatus, stack, status, text, table, 'table-row': tableRow,
   chart, 'chart-series': chartSeries,
 }));

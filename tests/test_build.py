@@ -1,5 +1,7 @@
 """Tests of tools/build.py. Each expected result comes from docs/decisions/0001-build-tools.md."""
 import hashlib
+import posixpath
+import re
 import io
 import json
 import os
@@ -152,6 +154,45 @@ class BuildTest(unittest.TestCase):
         (out / 'old').write_text('x')
         with self.assertRaises(SystemExit):
             build.build(self.root, out, epoch=0)
+
+
+# A static import or export at the start of a line, and a dynamic import. The kit has no other form of import.
+SPECIFIER = re.compile(r"""^\s*(?:import|export)\s[^'";]*?\bfrom\s*(['"])([^'"]+)\1"""
+                       r"""|^\s*import\s*(['"])([^'"]+)\3|\bimport\(\s*(['"])([^'"]+)\5""", re.M)
+
+
+def specifiers(code):
+    return [match[1] or match[3] or match[5] for match in SPECIFIER.findall(code)]
+
+
+class PackageImportTest(unittest.TestCase):
+    """The constitution: the published kit has no third-party runtime dependency. The check reads the built archive."""
+
+    def test_each_import_of_the_package_is_a_file_of_the_package(self):
+        with tempfile.TemporaryDirectory() as out:
+            archive = build.build(build.ROOT, out, 0)
+            with tarfile.open(archive) as tar:
+                # Each member name starts with the folder mugham/.
+                files = {item.name.removeprefix('mugham/'): tar.extractfile(item).read().decode('utf-8')
+                         for item in tar.getmembers() if item.name.endswith('.js')}
+        self.assertIn('src/offline/source.js', files)
+        names = set(build.tracked_files(build.ROOT))
+        for name, code in files.items():
+            for specifier in specifiers(code):
+                with self.subTest(file=name, specifier=specifier):
+                    self.assertTrue(specifier.startswith(('./', '../')), 'a bare or remote import')
+                    target = posixpath.normpath(posixpath.join(posixpath.dirname(name), specifier))
+                    self.assertIn(target, names)
+                    self.assertTrue(target.startswith(('src/', 'catalog/')), 'an import outside the package')
+
+    def test_the_pattern_finds_each_form_of_import(self):
+        code = "import { a } from './a.js';\nimport b from '../b.json' with { type: 'json' };\nexport { c } from './c.js';\n" \
+            "import './d.js';\nconst e = await import('./e.js');\nconst text = 'a word from \\'x\\'';\n"
+        self.assertEqual(specifiers(code), ['./a.js', '../b.json', './c.js', './d.js', './e.js'])
+
+    def test_the_offline_source_imports_nothing(self):
+        code = (build.ROOT / 'src/offline/source.js').read_text(encoding='utf-8')
+        self.assertEqual(specifiers(code), [])
 
 
 if __name__ == '__main__':

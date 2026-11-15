@@ -113,7 +113,7 @@ Load the theme style sheet after `tokens.css`. A theme on `:root` has the same s
 
 Each rule protects a principle of the [constitution](../../CONSTITUTION.md#principles).
 
-- **Do not hide, cover or recolor the state text.** The parts `status`, `reference` and `state` show `Pending`, `Done`, `Not done`, `Partial` and the reference of a receipt. Principle 6 needs the true state in words. The color is never the only signal.
+- **Do not hide, cover or recolor the state text.** The parts `status`, `reference` and `state` show `Pending`, `Done`, `Not done`, `Partial` and the reference of a receipt. The parts `source` and `checked` of `mu-source-status` show the state of an offline data source and the time of its last confirmed read. Principle 6 needs the true state in words. The color is never the only signal.
 - **Keep the table sort text visible.** The part `sort-status` gives the sorted column and its direction.
 - **Keep the chart labels and focus visible.** The parts `chart`, `point`, `bar`, `segment` and `value` show the data and the current point. Keep the series numbers and line patterns distinct.
 - **Do not remove the focus ring.** Do not set `outline: none` on a part. If you set `--mu-color-focus`, keep 3:1 against the surface. The kit draws the ring with `:focus-visible` in each shadow root.

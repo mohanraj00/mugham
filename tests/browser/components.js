@@ -34,9 +34,11 @@ const VALID = {
   'form-card': { title: 'Membership form', submit_label: 'Send changes', sections: [fill('form-section', { title: 'Member',
     lines: [fill('form-line', { line: '1.1', field: field('member_name', 'Name', 'Robin Vale') })] })] },
   diff: DIFF,
+  'source-status': { label: 'Tool library', state: 'ready', checked: '2026-11-15T09:30:00.000Z' },
 };
 const TAGS = { card: 'mu-card', 'action-button': 'mu-action-button', 'editable-form': 'mu-editable-form', 'card-grid': 'mu-card-grid',
-  'form-card': 'mu-form-card', diff: 'mu-diff' };
+  'form-card': 'mu-form-card', diff: 'mu-diff',
+  'source-status': 'mu-source-status' };
 
 function mount(name, data) {
   const node = document.createElement(TAGS[name]);
@@ -128,6 +130,7 @@ const MARKED = {
   ] })] },
   diff: { title: MARKUP, before_label: MARKUP.slice(0, 40), after_label: MARKUP.slice(0, 40), parts: [fill('diff-part', { title: MARKUP.slice(0, 80),
     changes: [change(MARKUP, 'changed', MARKUP, `${MARKUP}!`), change(MARKUP, 'added', undefined, MARKUP), change(MARKUP, 'unchanged', MARKUP, MARKUP)] })] },
+  'source-status': { label: MARKUP.slice(0, 80), state: 'error', checked: MARKUP.slice(0, 40), reason: MARKUP.slice(0, 200) },
 };
 for (const [name, data] of Object.entries(MARKED)) {
   const node = mount(name, data);
@@ -377,6 +380,45 @@ check('excerpt: the styles have a forced colors rule for the mark', excerptSheet
 if (matchMedia('(forced-colors: active)').matches) {
   const forced = getComputedStyle(passageMark[0]);
   check('excerpt: in forced colors the mark keeps its underline', forced.textDecorationLine.includes('underline'), forced.textDecorationLine);
+}
+
+// The status of an offline data source (docs/contracts/data-source.md). Each state shows as text.
+{
+  const CHECKED = '2026-11-15T09:30:00.000Z';
+  const cases = [
+    [{ state: 'ready', checked: CHECKED }, 'default', 'Tool library|Ready|Checked: 2026-11-15T09:30:00.000Z'],
+    [{ state: 'stale', checked: CHECKED, reason: 'The device is offline.' }, 'default',
+      'Tool library|Stale|The device is offline.|Last checked: 2026-11-15T09:30:00.000Z'],
+    [{ state: 'empty' }, 'empty', 'Tool library|Empty|No records.'],
+    [{ state: 'error', reason: 'The source failed.' }, 'error', 'Tool library|Error|The source failed.'],
+  ];
+  for (const [data, state, words] of cases) {
+    const node = mount('source-status', { label: 'Tool library', ...data });
+    const box = node.shadowRoot.querySelector('[role="status"]');
+    const shown = [...box.querySelectorAll('p')].map((item) => item.textContent).join('|');
+    check(`source-status: the ${data.state} state shows as text`, node.dataset.state === state && box.getAttribute('aria-label') === 'Tool library'
+      && shown === words, `${node.dataset.state} ${shown}`);
+  }
+  for (const [data, error] of [
+    [{ state: 'ready' }, 'data.checked: a ready source needs the time of its last read'],
+    [{ state: 'stale', reason: 'The device is offline.' }, 'data.checked: a stale source needs the time of its last read'],
+    [{ state: 'error' }, 'data.reason: a source with an error needs a reason'],
+    [{ state: 'offline', checked: CHECKED }, 'data.state: must be one of ready, stale, empty, error'],
+  ]) {
+    const node = mount('source-status', { label: 'Tool library', ...data });
+    check(`source-status: refuses ${JSON.stringify(data)}`, node.dataset.state === 'refused' && node.shadowRoot.textContent.includes(error),
+      node.shadowRoot.textContent);
+  }
+  const sheets = mount('source-status', VALID['source-status']).shadowRoot.adoptedStyleSheets;
+  check('source-status: the styles have a forced colors rule', sheets.some((item) => [...item.cssRules].some((rule) => rule.cssText.includes('forced-colors'))));
+  if (matchMedia('(forced-colors: active)').matches) {
+    const probe = document.createElement('span');
+    stage.append(probe);
+    probe.style.color = 'CanvasText';
+    const box = mount('source-status', { label: 'Tool library', state: 'error', reason: 'The source failed.' }).shadowRoot.querySelector('[role="status"]');
+    check('source-status: in forced colors the error border uses CanvasText', getComputedStyle(box).borderTopColor === getComputedStyle(probe).color,
+      getComputedStyle(box).borderTopColor);
+  }
 }
 
 // The diff. Each change shows its kind as text. A part is a details element that a person opens and closes.

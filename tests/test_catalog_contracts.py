@@ -55,6 +55,7 @@ VALID = {
     'form-section': {'title': 'Household', 'lines': [LINE, LINE_READ_ONLY]},
     'form-card': {'title': 'Membership form', 'submit_label': 'Send changes', 'sections': [SECTION]},
     'citation': {'quote': 'A short loan can get one renewal.'},
+    'source-status': {'label': 'Tool library', 'state': 'stale', 'checked': '2026-11-15T09:30:00.000Z', 'reason': 'The device is offline.'},
     'excerpt': {'passage': 'A short loan can get one renewal of seven days.', 'span_start': 13, 'span_end': 32},
     'diff-change': CHANGE['data'],
     'diff-part': PART['data'],
@@ -198,6 +199,13 @@ class CatalogContractTest(unittest.TestCase):
         for change, error in cases:
             with self.subTest(change=change):
                 self.assertEqual(catalog.fill_errors({**base, 'data': {**base['data'], **change}}, CATALOG), [error])
+
+    def test_the_source_status_has_the_four_states_of_the_interface(self):
+        # docs/contracts/data-source.md: ready, stale, empty and error.
+        self.assertEqual(CATALOG['source-status']['data']['state']['values'], ['ready', 'stale', 'empty', 'error'])
+        self.assertFalse(CATALOG['source-status']['ai_content'])
+        self.assertEqual(catalog.fill_errors(fill('source-status', {'label': 'Tool library', 'state': 'offline'}), CATALOG),
+                         ['data.state: must be one of ready, stale, empty, error'])
 
     def test_a_diff_has_up_to_20_parts_of_200_changes(self):
         large = fill('diff-part', {'title': 'Loan', 'changes': [CHANGE] * 200})

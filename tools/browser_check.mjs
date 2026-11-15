@@ -44,6 +44,7 @@ const EXAMPLES = {
   'examples/loans.html': [9, 0, [['article', 'Field guide to moss'], ['button', 'Renew'], ['list', 'Current loans'], ['form', 'Change a loan']]],
   'examples/citation.html': [3, 1, [['group', 'Citation'], ['button', 'Open source: Synthetic weather notes, page 3'], ['article', 'Message from agent-weather']]],
   'examples/diff.html': [2, 0, [['group', 'Hall booking B-0042'], ['group', 'Weekly timetable'], ['article', 'Message from Bookings agent']]],
+  'examples/offline.html': [5, 0, [['status', 'Tool library'], ['list', 'Tools'], ['button', 'Go offline']]],
   'examples/excerpt.html': [2, 1, [['group', 'Source excerpt'], ['button', 'Open source: Synthetic harbor guide, section 2'], ['article', 'Message from agent-reader']]],
   'examples/provenance.html': [2, 1, [['article', 'Renewal rule for short loans'], ['button', 'Open source: Synthetic library rules, section 4']]],
   'examples/inputs.html': [6, 0, [['form', 'Loan details'], ['textbox', 'Shelf code'], ['textbox', 'Note'], ['textbox', 'Copies'],
@@ -299,6 +300,52 @@ async function threadExample(session, sessionId, report) {
       ['article', 'Message from Catalog agent, Agent'], ['article', 'Message from Renewal agent, Agent'], ['button', 'Renew']], page));
   } finally {
     server.kill();
+  }
+  return steps;
+}
+
+// The offline source example (docs/contracts/data-source.md). Each button changes the network or the source. The
+// status shows each state as text, and the page shows records only for ready or stale. A failed source shows no records.
+async function offlineExample(session, sessionId, base) {
+  const page = 'examples/offline.html';
+  const steps = [];
+  await open(session, sessionId, `${base}/${page}`);
+  const read = () => evaluate(session, sessionId, `(() => {
+    const status = document.querySelector('mu-source-status');
+    const box = status?.shadowRoot?.querySelector('[role="status"]');
+    return box ? { state: box.querySelector('[part="state"]').textContent, reason: box.querySelector('[part="reason"]')?.textContent || '',
+      checked: box.querySelector('[part="checked"]')?.textContent || '',
+      cards: document.querySelector('mu-card-grid')?.shadowRoot.querySelectorAll('mu-card').length ?? 0 } : null;
+  })()`);
+  const wait = async (expected) => {
+    let value = await read();
+    for (let i = 0; i < 100 && value?.state !== expected; i += 1) {
+      await sleep(20);
+      value = await read();
+    }
+    return value;
+  };
+  const flow = [
+    [null, 'Ready', 3, '', 'Checked: '],
+    ['network', 'Stale', 3, 'The device is offline.', 'Last checked: '],
+    ['damage', 'Error', 0, 'The source failed.', ''],
+    ['damage', 'Stale', 3, 'The device is offline.', 'Last checked: '],
+    ['network', 'Ready', 3, '', 'Checked: '],
+    ['records', 'Empty', 0, '', 'Checked: '],
+    ['network', 'Empty', 0, '', 'Checked: '],
+    ['damage', 'Error', 0, 'The source failed.', ''],
+    ['network', 'Error', 0, 'The source failed.', ''],
+    ['damage', 'Empty', 0, '', 'Checked: '],
+  ];
+  let online = true;
+  for (const [id, state, cards, reason, checked] of flow) {
+    if (id === 'network') online = !online;
+    if (id) await evaluate(session, sessionId, `document.getElementById('${id}').click(), true`);
+    await sleep(50);
+    const value = await wait(state);
+    steps.push({ page, step: `${id ? `after ${id}, ` : ''}${online ? 'online' : 'offline'}: ${state} with ${cards} records`,
+      ok: value?.state === state && value.cards === cards && value.reason === reason && value.checked.startsWith(checked) && (checked || !value.checked),
+      detail: JSON.stringify(value) });
   }
   return steps;
 }
@@ -625,6 +672,7 @@ async function main() {
     report.examples.push(...guides.steps);
     report.accessibility.push(...guides.accessibility);
     report.examples.push(...await threadExample(session, sessionId, report));
+    report.examples.push(...await offlineExample(session, sessionId, base));
     report.examples.push(...await membershipFlow(session, sessionId, base));
     report.examples.push(...await appPages(session, sessionId, report));
     for (const item of report.accessibility) if (!item.ok) report.errors.push(`accessibility: ${item.where}: no ${item.role} named ${item.name}`);

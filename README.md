@@ -16,7 +16,7 @@ Start with the [quickstart](#quickstart) or the [guides](docs/guides/README.md).
 
 Agents and LLMs: read [CONSTITUTION.md](CONSTITUTION.md) and [AGENTS.md](AGENTS.md) first.
 
-Status: release `v0.2.1` is the newest. It has the contract format 2, the design tokens, the primitives, the catalog components, the message envelope and the thread for people and agents. The offline mode is not built yet. The plan is in [docs/STATUS.md](docs/STATUS.md) and in the GitHub milestones.
+Status: release `v0.2.1` is the newest. It has the contract format 2, the design tokens, the primitives, the catalog components, the message envelope and the thread for people and agents. The offline data source interface is on the main branch, and it is not released yet. A reader of a local bundle, a cache or a database belongs to the application. The plan is in [docs/STATUS.md](docs/STATUS.md) and in the GitHub milestones.
 
 ## Docs
 
@@ -113,6 +113,7 @@ Each component has a contract file in [catalog/](catalog/README.md). The contrac
 | `mu-citation` | The source of a claim: a source name, a locator as text and an open button. | [citation.json](catalog/citation.json) |
 | `mu-diff` | The difference between two versions of a text or a list of fields. Each change shows as added, removed, changed or unchanged in words. A person opens and closes each part. | [diff.json](catalog/diff.json) |
 | `mu-excerpt` | A passage of a source as text with a marked span, the source name, the locator as text and an open button. | [excerpt.json](catalog/excerpt.json) |
+| `mu-source-status` | The state of an offline data source as text: ready, stale, empty or error, with the time of the last confirmed read. The application fills it, not a model. | [source-status.json](catalog/source-status.json) |
 
 The first five components are primitives. The other components use them.
 
@@ -145,6 +146,7 @@ python3 -m http.server 8000
    - `http://localhost:8000/examples/diff.html`: a diff of two versions of a synthetic hall booking, and a large diff that starts closed.
    - `http://localhost:8000/examples/excerpt.html`: an excerpt of a synthetic document in a message, and a refused excerpt.
    - `http://localhost:8000/examples/provenance.html`: a card with the authorship slot and the citation slot, and a refused card.
+   - `http://localhost:8000/examples/offline.html`: an offline data source of a synthetic tool library in each state, offline and online.
    - `http://localhost:8000/examples/register.html`: an application contract and element for a synthetic seed tray, a refused fill, and the tray in a thread.
 
 5. For the thread example, stop the static server and start the example server. It streams synthetic agent events as server-sent events and gives the receipt of each action:

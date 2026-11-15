@@ -864,6 +864,48 @@ export class MuExcerpt extends MuElement {
   }
 }
 
+// The words of each state of an offline data source. The state shows as text, so it does not depend on color.
+const SOURCE_STATES = Object.freeze({ ready: 'Ready', stale: 'Stale', empty: 'Empty', error: 'Error' });
+
+// The state of an offline data source of the application (docs/contracts/data-source.md). The application fills
+// it from a result of read in src/offline/source.js. The thread does not show it.
+export class MuSourceStatus extends MuElement {
+  static component = 'source-status';
+  static styles = [sheet(`
+    :host { display: block; }
+    .status {
+      color: var(--mu-color-text); font: var(--mu-type-body); padding: var(--mu-space-1) var(--mu-space-2);
+      border: 1px solid var(--mu-color-border); border-radius: var(--mu-radius-2);
+      display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--mu-space-1) var(--mu-space-2);
+    }
+    .status[data-state="error"] { border-color: var(--mu-color-danger); }
+    p { margin: 0; overflow-wrap: anywhere; }
+    .state { font-weight: var(--mu-type-weight-strong); }
+    .muted { font: var(--mu-type-caption); color: var(--mu-color-text-muted); }
+    @media (forced-colors: active) { .status, .status[data-state="error"] { border-color: CanvasText; } .muted { color: CanvasText; } }
+  `)];
+
+  // The contract format cannot make one field depend on another, so the element checks the time and the reason.
+  check(data) {
+    if ((data.state === 'ready' || data.state === 'stale') && !data.checked) return [`data.checked: a ${data.state} source needs the time of its last read`];
+    if (data.state === 'error' && !data.reason) return ['data.reason: a source with an error needs a reason'];
+    return [];
+  }
+
+  state(data) {
+    return { ready: 'default', stale: 'default', empty: 'empty', error: 'error' }[data.state];
+  }
+
+  render(data) {
+    const time = data.checked ? el('p', { class: 'muted', part: 'checked' }, `${data.state === 'stale' ? 'Last checked' : 'Checked'}: ${data.checked}`) : null;
+    const empty = data.state === 'empty' ? el('p', { part: 'empty' }, 'No records.') : null;
+    const reason = data.reason ? el('p', { part: 'reason' }, data.reason) : null;
+    return [el('div', { class: 'status', role: 'status', 'aria-label': data.label, part: 'source', 'data-state': data.state },
+      el('p', { class: 'muted', part: 'label' }, data.label), el('p', { class: 'state', part: 'state' }, SOURCE_STATES[data.state]),
+      empty, reason, time)];
+  }
+}
+
 // The words of each kind of change. The kind shows as text, so it does not depend on color.
 const KINDS = Object.freeze({ added: 'Added', removed: 'Removed', changed: 'Changed', unchanged: 'Unchanged' });
 // A diff with more changes than this starts with each part closed.
@@ -985,7 +1027,7 @@ export function define(registry = customElements) {
   definePrimitives(registry);
   for (const [name, element] of [['mu-action-button', MuActionButton], ['mu-card', MuCard],
     ['mu-card-grid', MuCardGrid], ['mu-editable-form', MuEditableForm], ['mu-form-card', MuFormCard], ['mu-citation', MuCitation], ['mu-diff', MuDiff],
-    ['mu-excerpt', MuExcerpt], ['mu-table', MuTable], ['mu-status', MuStatus], ['mu-image', MuImage], ['mu-chart', MuChart]]) {
+    ['mu-excerpt', MuExcerpt], ['mu-table', MuTable], ['mu-status', MuStatus], ['mu-source-status', MuSourceStatus], ['mu-image', MuImage], ['mu-chart', MuChart]]) {
     if (!registry.get(name)) registry.define(name, element);
   }
 }

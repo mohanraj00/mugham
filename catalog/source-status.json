@@ -1,0 +1,69 @@
+{
+  "format": 2,
+  "name": "source-status",
+  "version": "0.1.0",
+  "kind": "component",
+  "description": "The state of an offline data source of the application as text: ready, stale, empty or error.",
+  "ai_content": false,
+  "data": {
+    "label": {
+      "type": "text",
+      "label": "Label",
+      "required": true,
+      "min_length": 1,
+      "max_length": 80
+    },
+    "state": {
+      "type": "enum",
+      "label": "State",
+      "required": true,
+      "values": [
+        "ready",
+        "stale",
+        "empty",
+        "error"
+      ]
+    },
+    "checked": {
+      "type": "text",
+      "label": "Checked",
+      "required": false,
+      "min_length": 1,
+      "max_length": 40
+    },
+    "reason": {
+      "type": "text",
+      "label": "Reason",
+      "required": false,
+      "min_length": 1,
+      "max_length": 200
+    }
+  },
+  "states": [
+    "default",
+    "empty",
+    "error",
+    "refused"
+  ],
+  "tokens": [
+    "color.text",
+    "color.text-muted",
+    "color.border",
+    "color.danger",
+    "space.1",
+    "space.2",
+    "radius.2",
+    "type.body",
+    "type.caption",
+    "type.weight-strong"
+  ],
+  "accessibility": {
+    "role": "status",
+    "name": {
+      "field": "label"
+    },
+    "keyboard": [],
+    "forced_colors": true,
+    "reduced_motion": true
+  }
+}
