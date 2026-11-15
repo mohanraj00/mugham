@@ -81,6 +81,31 @@ const refusedField = mount('field', VALID.field);
 refusedField.fill = fill('field', { label: 7 });
 check('field: a refused field gives no value', refusedField.value === null, refusedField.value);
 
+// A typed field asks for the edit type after a change (catalog/README.md, "Typed edits").
+const typed = mount('field', { label: 'Due date', value: '2026-12-01', typed: true });
+const typedInput = typed.shadowRoot.querySelector('input');
+const typedGroup = typed.shadowRoot.querySelector('fieldset');
+const typedEvents = [];
+typed.addEventListener('mu-edit', (event) => typedEvents.push(event.detail));
+check('field: a typed field shows no edit type before a change', typedGroup?.hidden === true && typed.editType === null && !typed.changed);
+const untypedField = mount('field', VALID.field);
+check('field: a field that is not typed has no edit type group', untypedField.shadowRoot.querySelector('fieldset') === null);
+typedInput.value = '2026-12-08';
+typedInput.dispatchEvent(new Event('input'));
+const typeRadios = [...typedGroup.querySelectorAll('input[type="radio"]')];
+check('field: a change of a typed field shows the edit type group', !typedGroup.hidden && typed.changed && typeRadios.length === 3
+  && typeRadios.every((radio) => radio.labels.length === 1), typeRadios.length);
+const meanings = typeRadios.map((radio) => typed.shadowRoot.getElementById(radio.getAttribute('aria-describedby') ?? '')?.textContent);
+check('field: each edit type has a description as text', meanings.every((text) => typeof text === 'string' && text.length > 0), meanings.join('|'));
+typeRadios[2].click();
+check('field: a type sends a mu-edit event with the type', typed.editType === 'override'
+  && typedEvents.at(-1)?.field === 'type' && typedEvents.at(-1)?.value === 'override', JSON.stringify(typedEvents));
+check('field: the field gives the old value and the time of the change', typed.initial === '2026-12-01'
+  && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(typed.editedAt ?? ''), `${typed.initial} ${typed.editedAt}`);
+typedInput.value = '2026-12-01';
+typedInput.dispatchEvent(new Event('input'));
+check('field: the old value again clears the type', typedGroup.hidden && typed.editType === null && !typed.changed);
+
 // A blank label gives no accessible name, so the contract refuses it.
 for (const name of ['button', 'field', 'stack', 'grid']) {
   const blank = mount(name, { ...VALID[name], label: '' });
@@ -113,6 +138,12 @@ if (mode === 'forced-colors') {
     `${style.color} ${style.borderTopColor}`);
   check('forced colors: the field border is visible', fieldStyle.borderTopStyle === 'solid' && parseFloat(fieldStyle.borderTopWidth) >= 1,
     `${fieldStyle.borderTopStyle} ${fieldStyle.borderTopWidth}`);
+  const groupStyle = getComputedStyle(typedGroup);
+  typedInput.value = '2026-12-09';
+  typedInput.dispatchEvent(new Event('input'));
+  check('forced colors: the edit type group border is visible', groupStyle.borderTopStyle === 'solid'
+    && parseFloat(groupStyle.borderTopWidth) >= 1 && groupStyle.borderTopColor === resolved('FieldText'),
+  `${groupStyle.borderTopStyle} ${groupStyle.borderTopWidth} ${groupStyle.borderTopColor}`);
 }
 if (mode === 'dark') {
   check('dark: the media query matches', media('(prefers-color-scheme: dark)'));

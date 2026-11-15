@@ -4,6 +4,8 @@ Each release has an entry. The newest entry is first.
 
 ## Unreleased
 
+- Typed form edits (#9). A field with `typed: true` asks for the edit type after a person changes its value: judgment, correction or override. The binding of the form gives the typed names and the person who edits, with `typed` and `editor`. The form refuses a fill whose typed flags do not agree with the binding. A changed typed field with no type sends no action, and the field shows `Choose an edit type.` The request gets an `edits` list. Each edit has the field, the type, the old value, the new value, the actor and the time. [catalog/README.md](catalog/README.md#typed-edits) gives the rules.
+
 ## 0.2.1, 2026-11-14
 
 - Four guides in `docs/guides/` (#63): contracts, page assembly, theming and coding agents. Each code block of a guide is an exact part of a checked file in `examples/guides/` or `catalog/`. The theming guide shows a second theme, `forest`. `tests/test_guides.py` and `tests/browser/guides.mjs` check the guides, and `tools/browser_check.mjs` runs the browser check in the four media modes. The README and `src/README.md` link the guides.

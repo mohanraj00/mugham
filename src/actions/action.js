@@ -15,6 +15,10 @@ const MAX_CONFIRM_MESSAGE = 200;
 const MAX_CONFIRM_LABEL = 40;
 // A receipt reference, for example a record id, has 80 characters at most.
 const MAX_REFERENCE = 80;
+// The edit types of a typed field (catalog/README.md, "Typed edits"). An actor id has 128 characters at most.
+const EDIT_TYPES = new Set(['judgment', 'correction', 'override']);
+const MAX_ACTOR_ID = 128;
+const ISO_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
 
 // Returns true if the text has more than max characters. The loop stops at max + 1, so a very long text
 // does not make a copy of all its characters.
@@ -80,7 +84,39 @@ export function bindingErrors(binding) {
   // A form shows the editable value, so a bound value for the same name would go in the request unseen.
   const overlap = entries && args !== null && typeof args === 'object' ? entries.find(([name]) => Object.hasOwn(args, name)) : null;
   if (overlap) errors.push(`a bound argument cannot be editable: ${overlap[0]}`);
+  // The application gives the typed names and the person who edits, so a fill cannot remove the type of an edit.
+  const typed = binding.typed ?? [];
+  const names = entries ? new Set(entries.map(([name]) => name)) : new Set();
+  if (!Array.isArray(typed) || new Set(typed).size !== typed.length || !typed.every((name) => names.has(name))) {
+    errors.push('typed must list names that editable gives, each one time');
+  }
+  const editor = binding.editor;
+  const person = editor !== null && typeof editor === 'object' && !Array.isArray(editor)
+    && Object.keys(editor).every((key) => key === 'type' || key === 'id') && editor.type === 'human' && text(editor.id, MAX_ACTOR_ID);
+  if ((editor !== undefined || (Array.isArray(typed) && typed.length > 0)) && !person) {
+    errors.push('editor must be a person: { type: human, id } with an id of 1 to 128 characters');
+  }
   return errors;
+}
+
+// Returns the frozen edits of a request, or null if an edit is not valid. Each edit names a typed field
+// that the request sends, one time, with a type, the old value and the time. The new value comes from the
+// request and the actor from the binding, so an edit cannot name a different value or a different person.
+function editsOf(edits, binding, values) {
+  if (!Array.isArray(edits)) return null;
+  const seen = new Set();
+  const result = [];
+  for (const edit of edits) {
+    if (edit === null || typeof edit !== 'object' || Array.isArray(edit)) return null;
+    if (!Object.keys(edit).every((key) => ['field', 'type', 'old_value', 'time'].includes(key))) return null;
+    const { field, type, old_value: old, time } = edit;
+    if (!binding.typed.includes(field) || seen.has(field) || !Object.hasOwn(values, field)) return null;
+    if (!EDIT_TYPES.has(type) || !scalar(old) || old === values[field]) return null;
+    if (typeof time !== 'string' || !ISO_TIME.test(time) || Number.isNaN(Date.parse(time))) return null;
+    seen.add(field);
+    result.push(Object.freeze({ field, type, old_value: old, new_value: values[field], actor: binding.editor, time }));
+  }
+  return Object.freeze(result);
 }
 
 export class ActionState {
@@ -132,6 +168,16 @@ export class ActionState {
     return this.#binding ? this.#binding.editable : null;
   }
 
+  // The editable names that need an edit type. Without a binding, the value is null.
+  get typed() {
+    return this.#binding ? this.#binding.typed : null;
+  }
+
+  // The person who edits a typed form, as { type, id }. Without a binding or an editor, the value is null.
+  get editor() {
+    return this.#binding ? this.#binding.editor : null;
+  }
+
   bind(binding) {
     if (binding === null) {
       this.#binding = null;
@@ -145,6 +191,8 @@ export class ActionState {
     if (errors.length) return errors;
     this.#binding = Object.freeze({ tool: binding.tool, label: binding.label ?? '', title: binding.title ?? '', description: binding.description ?? '', arguments: Object.freeze({ ...(binding.arguments ?? {}) }),
       editable: Object.freeze(Object.assign(Object.create(null), binding.editable ?? {})),
+      typed: Object.freeze([...(binding.typed ?? [])]),
+      editor: binding.editor ? Object.freeze({ type: binding.editor.type, id: binding.editor.id }) : null,
       confirm: binding.confirm ? Object.freeze({ message: binding.confirm.message, label: binding.confirm.label }) : null });
     this.#request = null;
     this.#state = 'default';
@@ -156,13 +204,18 @@ export class ActionState {
   // Returns a request, or null if the action cannot start now. The extra values come from a fill,
   // so they cannot change an argument that the application binds: the bound arguments come last.
   // Each extra value needs a name that the binding gives as editable. If the binding has a confirm step,
-  // the action starts only when confirmed is true, after a person confirms.
-  start(extra = {}, confirmed = false) {
+  // the action starts only when confirmed is true, after a person confirms. If the binding has typed names,
+  // the request needs a list of edits, and the request carries them with the new values and the editor.
+  start(extra = {}, confirmed = false, edits = undefined) {
     if (!this.#binding || this.#state === 'pending' || this.#state === 'done') return null;
     if (this.#binding.confirm && confirmed !== true) return null;
     if (Object.keys(extra).some((name) => !Object.hasOwn(this.#binding.editable, name))) return null;
+    const typed = this.#binding.typed.length > 0;
+    if (!typed && edits !== undefined && !(Array.isArray(edits) && edits.length === 0)) return null;
+    const checked = typed ? editsOf(edits, this.#binding, extra) : null;
+    if (typed && !checked) return null;
     this.#request = Object.freeze({ id: crypto.randomUUID(), tool: this.#binding.tool,
-      arguments: Object.freeze({ ...extra, ...this.#binding.arguments }) });
+      arguments: Object.freeze({ ...extra, ...this.#binding.arguments }), ...(typed ? { edits: checked } : {}) });
     this.#state = 'pending';
     this.#message = '';
     this.#reference = '';

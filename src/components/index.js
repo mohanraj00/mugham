@@ -162,11 +162,11 @@ class ActionElement extends MuElement {
 
   // The started function runs only for an accepted request, before the element sends the event.
   // If the binding has a confirm step, the element shows it first and sends the action only after a person confirms.
-  send(extra, started) {
+  send(extra, started, edits) {
     if (this.dataset.state === 'refused' || !this.fill || this.#asking) return;
     const confirm = this.#action.confirm;
     if (!confirm) {
-      this.#start(extra, started, false);
+      this.#start(extra, started, false, edits);
       return;
     }
     const state = this.#action.state;
@@ -178,7 +178,7 @@ class ActionElement extends MuElement {
     cancel.addEventListener('click', () => this.#close());
     accept.addEventListener('click', () => {
       this.#close();
-      this.#start(extra, started, true);
+      this.#start(extra, started, true, edits);
     });
     step.addEventListener('keydown', (event) => {
       if (event.key !== 'Escape') return;
@@ -202,8 +202,8 @@ class ActionElement extends MuElement {
     if (focused) this.#control.focus();
   }
 
-  #start(extra, started, confirmed) {
-    const request = this.#action.start(extra, confirmed);
+  #start(extra, started, confirmed, edits) {
+    const request = this.#action.start(extra, confirmed, edits);
     if (!request) return;
     started?.(request);
     this.#update();
@@ -308,8 +308,13 @@ export class MuEditableForm extends ActionElement {
   #fields = [];
   #sent = null;
 
+  // A change of a value or of an edit type after the request makes the data new.
   stale() {
-    return JSON.stringify(this.values()) !== this.#sent;
+    return this.#snapshot() !== this.#sent;
+  }
+
+  #snapshot() {
+    return JSON.stringify([this.values(), this.#fields.map((node) => node.editType)]);
   }
 
   // A form also needs a unique name for each field, so that the values have keys.
@@ -334,7 +339,17 @@ export class MuEditableForm extends ActionElement {
     if (other) return [`data.fields: the application does not accept the field ${other}`];
     const relabeled = data.fields.find((item) => item.data.label !== editable[item.data.name]);
     if (relabeled) return [`data.fields: the label of the field ${relabeled.data.name} is not the label of the application`];
+    // The application gives the typed names, so a fill cannot remove the type of an edit or add one.
+    const typed = this.action.typed;
+    const retyped = data.fields.find((item) => Boolean(item.data.typed) !== typed.includes(item.data.name));
+    if (retyped) return [`data.fields: the edit type of the field ${retyped.data.name} is not the rule of the application`];
     return [];
+  }
+
+  // The edits of the typed fields that changed, without the new value and the actor. The action path adds them.
+  #edits() {
+    return this.#fields.filter((node) => node.fill.data.typed && !node.fill.data.disabled && node.changed)
+      .map((node) => ({ field: node.fill.data.name, type: node.editType, old_value: node.initial, time: node.editedAt }));
   }
 
   // A person cannot edit a disabled field, so its value does not go in the request.
@@ -359,9 +374,18 @@ export class MuEditableForm extends ActionElement {
     form.addEventListener('mu-edit', () => this.reopen());
     form.addEventListener('submit', (event) => {
       event.preventDefault();
+      // A changed typed field needs an edit type. The first such field tells why and takes the focus.
+      if (this.dataset.state === 'refused' || !this.fill) return;
+      const untyped = this.#fields.find((node) => node.fill.data.typed && !node.fill.data.disabled && node.changed && !node.editType);
+      if (untyped) {
+        if (this.action.state === 'default' || this.action.state === 'error') untyped.needType();
+        return;
+      }
       const values = this.values();
+      const snapshot = this.#snapshot();
+      const edits = this.action.typed?.length ? this.#edits() : undefined;
       // Keep the values only for an accepted request. A refused submit does not change them.
-      this.send(values, () => { this.#sent = JSON.stringify(values); });
+      this.send(values, () => { this.#sent = snapshot; }, edits);
     });
     // Each input is in the shadow root of its mu-field, so the browser does not connect it to this form.
     // Thus Enter in a field submits the form here, as Enter does in a plain form.
