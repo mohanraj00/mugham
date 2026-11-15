@@ -11,8 +11,10 @@ import field from '../../catalog/field.json' with { type: 'json' };
 import grid from '../../catalog/grid.json' with { type: 'json' };
 import stack from '../../catalog/stack.json' with { type: 'json' };
 import text from '../../catalog/text.json' with { type: 'json' };
+import table from '../../catalog/table.json' with { type: 'json' };
+import tableRow from '../../catalog/table-row.json' with { type: 'json' };
 
 export const CATALOG = Object.freeze(Object.assign(Object.create(null), {
   'action-button': actionButton, button, card, 'card-grid': cardGrid, citation, 'editable-form': editableForm, excerpt,
-  fact, field, grid, stack, text,
+  fact, field, grid, stack, text, table, 'table-row': tableRow,
 }));

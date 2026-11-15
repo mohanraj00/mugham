@@ -1,0 +1,33 @@
+{
+  "format": 2,
+  "name": "table",
+  "version": "0.1.0",
+  "kind": "component",
+  "description": "Text columns and rows with optional status text. Columns must not be empty. Each row has one cell per column. Each status is in status_values. The sort key is a zero-based column index. Sort direction needs a sort key. Equal cells keep their input order. A new fill resets the sort.",
+  "ai_content": true,
+  "slots": { "authorship": { "required": true } },
+  "data": {
+    "label": { "type": "text", "label": "Table name", "required": true, "min_length": 1, "max_length": 120 },
+    "columns": {
+      "type": "list", "label": "Column headers", "required": true, "max_items": 12,
+      "items": { "type": "text", "label": "Header", "required": true, "min_length": 1, "max_length": 80 }
+    },
+    "rows": {
+      "type": "list", "label": "Rows", "required": true, "max_items": 500,
+      "items": { "type": "component", "label": "Row", "required": true, "name": "table-row" }
+    },
+    "sort_key": { "type": "integer", "label": "Column index to sort", "required": false, "minimum": 0, "maximum": 11 },
+    "sort_direction": { "type": "enum", "label": "Sort direction", "required": false, "values": ["ascending", "descending"] },
+    "status_values": {
+      "type": "list", "label": "Allowed row status values", "required": false, "max_items": 20,
+      "items": { "type": "text", "label": "Status", "required": true, "min_length": 1, "max_length": 80 }
+    }
+  },
+  "states": ["default", "empty", "refused"],
+  "tokens": ["color.text", "color.text-muted", "color.border", "color.surface", "space.2", "space.3", "type.body", "type.caption", "type.weight-strong"],
+  "accessibility": {
+    "role": "group", "name": { "field": "label" },
+    "keyboard": ["Tab", "Shift+Tab", "Enter", "Space"],
+    "forced_colors": true, "reduced_motion": true
+  }
+}

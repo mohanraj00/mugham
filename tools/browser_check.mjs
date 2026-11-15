@@ -20,6 +20,7 @@ const MODES = {
 };
 // Each check page, and the roles and names that its accessibility tree must have in light mode.
 const PAGES = {
+  'tests/browser/table.html': [['button', 'Keyboard target'], ['group', 'Sample rows'], ['table', 'Sample rows'], ['columnheader', 'Name'], ['columnheader', 'Status'], ['cell', 'Ready']],
   'tests/browser/primitives.html': [['button', 'Keyboard target'], ['textbox', 'Shelf code']],
   'tests/browser/components.html': [['button', 'Keyboard target'], ['article', 'Field guide to moss'], ['list', 'Loans'],
     ['form', 'Loan details'], ['textbox', 'Branch'], ['group', 'Citation'], ['button', 'Open source: Keyboard source'],
@@ -31,6 +32,7 @@ const PAGES = {
 // Each example page, the number of kit elements, the number of refused elements and the roles and names.
 const EXAMPLES = {
   'examples/narration.html': [2, 0, [['article', 'Tray A1'], ['heading', 'Matching narration'], ['heading', 'Different narration']]],
+  'examples/table.html': [2, 0, [['table', 'Synthetic plots'], ['columnheader', 'Plot'], ['cell', 'Ready']]],
   'examples/primitives.html': [16, 1, [['button', 'Renew'], ['group', 'Loan details'], ['group', 'Reading list'], ['textbox', 'Shelf code']]],
   'examples/loans.html': [9, 0, [['article', 'Field guide to moss'], ['button', 'Renew'], ['list', 'Current loans'], ['form', 'Change a loan']]],
   'examples/citation.html': [3, 1, [['group', 'Citation'], ['button', 'Open source: Synthetic weather notes, page 3'], ['article', 'Message from agent-weather']]],
@@ -346,6 +348,16 @@ async function main() {
         await key(session, sessionId, ' ', 'Space', 32, ' ');
         const presses = await evaluate(session, sessionId, 'window.muPresses()');
         report.keyboard.push({ page, step: 'Enter and Space press the button', ok: presses === 2, detail: presses });
+        if (await evaluate(session, sessionId, 'typeof window.muFocusTable === "function"')) {
+          await evaluate(session, sessionId, 'window.muFocusTable()');
+          for (const [value, code, number, text, sort, first] of [
+            ['Enter', 'Enter', 13, '\r', 'ascending', 'Plot A'], [' ', 'Space', 32, ' ', 'descending', 'Plot B']]) {
+            await key(session, sessionId, value, code, number, text);
+            const found = await evaluate(session, sessionId, 'window.muTableSort()');
+            report.keyboard.push({ page, step: `${code} sorts the table and keeps focus`,
+              ok: found.sort === sort && found.first === first && found.focused === 'Name', detail: JSON.stringify(found) });
+          }
+        }
         // The open button of a citation: Enter and Space press it. Each press sends one mu-open event.
         if (await evaluate(session, sessionId, 'typeof window.muFocusCitation === "function"')) {
           await evaluate(session, sessionId, 'window.muFocusCitation()');
