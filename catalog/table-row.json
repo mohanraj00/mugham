@@ -1,0 +1,19 @@
+{
+  "format": 2,
+  "name": "table-row",
+  "version": "0.1.0",
+  "kind": "component",
+  "description": "A row in a table. Cells follow the column order. The optional status is text from the application or the service. The table checks the cell count and the allowed status values.",
+  "ai_content": true,
+  "slots": { "authorship": { "required": true } },
+  "data": {
+    "cells": {
+      "type": "list", "label": "Cells", "required": true, "max_items": 12,
+      "items": { "type": "text", "label": "Cell", "required": true, "max_length": 500 }
+    },
+    "status": { "type": "text", "label": "Row status", "required": false, "min_length": 1, "max_length": 80 }
+  },
+  "states": ["default"],
+  "tokens": ["color.text", "color.border", "type.body"],
+  "accessibility": { "role": "none", "keyboard": [], "forced_colors": true, "reduced_motion": true }
+}

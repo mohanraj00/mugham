@@ -44,6 +44,8 @@ VALID = {
     'citation': {'quote': 'A short loan can get one renewal.'},
     'source-status': {'label': 'Tool library', 'state': 'stale', 'checked': '2026-11-15T09:30:00.000Z', 'reason': 'The device is offline.'},
     'excerpt': {'passage': 'A short loan can get one renewal of seven days.', 'span_start': 13, 'span_end': 32},
+    'table': {'label': 'Sample rows', 'columns': ['Name'], 'rows': [fill('table-row', {'cells': ['Plot A']})]},
+    'table-row': {'cells': ['Plot A'], 'status': 'Ready'},
 }
 
 
