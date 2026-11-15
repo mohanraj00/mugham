@@ -9,6 +9,7 @@ import { MuTable } from './table.js';
 export { MuTable } from './table.js';
 
 const FIELD_NAME = /^[a-z][a-z0-9]*(_[a-z0-9]+)*$/;
+const boundError = (name) => `data.sections: the read-only field ${name} does not show the bound value`;
 const CARD_CSS = sheet(`
   :host { display: block; }
   article, form {
@@ -502,16 +503,10 @@ export class MuFormCard extends ActionElement {
     if (!open.length) return ['data.sections: the card needs at least one field that a person can edit'];
     const computed = lines.find(({ line }) => line.read_only && line.field.data.typed);
     if (computed) return [`data.sections: the read-only field ${computed.line.field.data.name} cannot have an edit type`];
-    // The request sends the bound value, so a read-only line with the same name must show that value. A new
-    // binding checks the values that the card shows now, because a computed value can replace a value of the fill.
-    const bound = this.action.arguments ?? {};
-    const current = data === this.fill?.data ? this.#base : Object.create(null);
-    const shown = lines.find(({ line }) => {
-      const name = line.field.data.name;
-      const value = Object.hasOwn(current, name) ? current[name] : line.field.data.value;
-      return line.read_only && Object.hasOwn(bound, name) && value !== bound[name];
-    });
-    if (shown) return [`data.sections: the read-only field ${shown.line.field.data.name} does not show the bound value`];
+    // A render shows the values of the fill, so the bound rule checks them.
+    const conflict = this.#unbound(lines.filter(({ line }) => line.read_only)
+      .map(({ line }) => [line.field.data.name, line.field.data.value ?? '']));
+    if (conflict) return [boundError(conflict)];
     const editable = this.action.editable;
     if (!editable) return [];
     const other = open.find((line) => !Object.hasOwn(editable, line.field.data.name));
@@ -522,6 +517,27 @@ export class MuFormCard extends ActionElement {
     const retyped = open.find((line) => Boolean(line.field.data.typed) !== typed.includes(line.field.data.name));
     if (retyped) return [`data.sections: the edit type of the field ${retyped.field.data.name} is not the rule of the application`];
     return [];
+  }
+
+  // The rule of the bound values: the request sends the bound arguments, so a read-only line with the name of a
+  // bound argument shows that value. Each render, each computed value, each binding and each send uses this
+  // function. It gives the name of the first line that shows a different value, or null.
+  #unbound(shown) {
+    const bound = this.action.arguments ?? {};
+    const found = shown.find(([name, value]) => Object.hasOwn(bound, name) && value !== bound[name]);
+    return found ? found[0] : null;
+  }
+
+  // The values that the read-only lines show now: the value of the fill or the newest computed value.
+  #shown() {
+    return [...this.#lines].filter(([, line]) => line.readOnly).map(([name]) => [name, this.#base[name]]);
+  }
+
+  // A new binding can give a bound value that a shown value does not agree with. Then the card refuses its fill.
+  rebound() {
+    const conflict = this.fill ? this.#unbound(this.#shown()) : null;
+    if (conflict) this.refuse([boundError(conflict)]);
+    else super.rebound();
   }
 
   // A receipt of a done request makes the sent values the confirmed values. Their changed markers go.
@@ -557,8 +573,7 @@ export class MuFormCard extends ActionElement {
         errors.push(`${name}: the field is not read-only`);
         continue;
       }
-      const bound = this.action.arguments ?? {};
-      if (Object.hasOwn(bound, name) && value !== bound[name]) {
+      if (this.#unbound([[name, value]])) {
         errors.push(`${name}: the value is not the bound value`);
         continue;
       }
@@ -703,6 +718,12 @@ export class MuFormCard extends ActionElement {
       }
       if (!this.#changes.size) {
         this.#note.replaceChildren(NO_CHANGES);
+        return;
+      }
+      // The card never sends while a read-only line shows a value that is not the bound value.
+      const conflict = this.#unbound(this.#shown());
+      if (conflict) {
+        this.refuse([boundError(conflict)]);
         return;
       }
       const values = Object.fromEntries([...this.#changes].map(([name, change]) => [name, change.value]));

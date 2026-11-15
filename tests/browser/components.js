@@ -991,6 +991,59 @@ const cardStatus = (node) => node.shadowRoot.querySelector('[part="status"]').te
   kept.computed({ form_id: 'F-0001' });
   kept.action = CARD_BINDING;
   check('form card: accepts a computed value from before the bind that is the bound value', kept.dataset.state === 'default', refusedText(kept));
+
+  // The rule of the bound values in many orders of the operations. After each step, a card that is not refused and
+  // has a bound form_id shows that value. A submit sends no action while the rule does not hold.
+  const OPERATIONS = {
+    'fill F-0001': (node) => { node.fill = outer('form-card', bound('F-0001')); },
+    'fill F-9999': (node) => { node.fill = outer('form-card', bound('F-9999')); },
+    'same fill': (node) => { node.fill = node.fill; },
+    'computed F-0001': (node) => { node.computed({ form_id: 'F-0001' }); },
+    'computed F-9999': (node) => { node.computed({ form_id: 'F-9999' }); },
+    bind: (node) => { node.action = CARD_BINDING; },
+    unbind: (node) => { node.action = null; },
+    'same actor': (node) => { node.actor = AUTHOR; },
+  };
+  const names = Object.keys(OPERATIONS);
+  const shownValue = (node) => lineOf(node, 'form_id').row?.querySelector('[part="value"]')?.textContent;
+  // A fixed seed gives the same orders in each run.
+  let seed = 7;
+  const next = () => { seed = (seed * 1103515245 + 12345) % 2147483648; return seed; };
+  const orders = names.flatMap((first) => names.flatMap((second) => names.map((third) => [first, second, third])));
+  for (let count = 0; count < 300; count += 1) orders.push(Array.from({ length: 7 }, () => names[next() % names.length]));
+  const broken = [];
+  let submits = 0;
+  for (const order of orders) {
+    const node = mount('form-card', bound('F-9999'));
+    const sent = [];
+    node.addEventListener('mu-action', (event) => sent.push(event.detail));
+    for (const [step, operation] of order.entries()) {
+      try { OPERATIONS[operation](node); } catch (error) { broken.push(`${order.slice(0, step + 1).join(', ')}: ${error.message}`); break; }
+      const boundValue = node.action.arguments?.form_id;
+      if (node.dataset.state !== 'refused' && boundValue !== undefined && shownValue(node) !== boundValue) {
+        broken.push(`${order.slice(0, step + 1).join(', ')}: shows ${shownValue(node)}, sends ${boundValue}`);
+        break;
+      }
+    }
+    if (node.dataset.state !== 'refused' && node.action.arguments?.form_id !== undefined) {
+      lineOf(node, 'member_name').value?.click();
+      const name = lineOf(node, 'member_name');
+      const input = name.root?.querySelector('input');
+      if (input) {
+        typeIn(input, 'Robin Vale Junior');
+        name.save.click();
+        cardSubmit(node);
+        const request = sent.at(-1);
+        if (request) submits += 1;
+        if (request && request.arguments.form_id !== shownValue(node) && node.dataset.state !== 'refused') {
+          broken.push(`${order.join(', ')}, submit: shows ${shownValue(node)}, sends ${request.arguments.form_id}`);
+        }
+      }
+    }
+    node.remove();
+  }
+  check(`form card: each read-only bound line shows the bound value in ${orders.length} orders of the operations`,
+    broken.length === 0 && submits > 0, `${submits} submits. ${broken.slice(0, 5).join(' | ')}`);
 }
 {
   // A long card: 2 sections of 30 editable fields. The binding of the application gives each of the 60 names.

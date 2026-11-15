@@ -229,7 +229,7 @@ The binding is the binding of an editable form: `tool`, `label`, `title`, `argum
 - A field that is not read-only is not in `editable`, or its label is not the label in `editable`.
 - A read-only field has `typed`, because a person cannot edit it.
 - The typed flags do not agree with `typed` of the binding.
-- A read-only field has the name of a bound argument, and its value is not the bound value. The request sends the bound value, so the card shows only that value. A new binding checks the values that the card shows at that time, with each computed value.
+- A read-only field has the name of a bound argument, and its value is not the bound value. The request sends the bound value, so the card shows only that value. The card checks this rule at each render, at each computed value, at each new binding and before each send. If a shown value is not the bound value, the card refuses its fill and sends no action.
 
 These are the rules of the card:
 
