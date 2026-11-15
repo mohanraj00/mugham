@@ -24,8 +24,11 @@ const VALID = {
   'action-button': { label: 'Renew' },
   'editable-form': FORM,
   'card-grid': { label: 'Loans', cards: [fill('card', LOAN), fill('card', { title: 'Weather at sea' })] },
+  'form-card': { title: 'Membership form', submit_label: 'Send changes', sections: [fill('form-section', { title: 'Member',
+    lines: [fill('form-line', { line: '1.1', field: field('member_name', 'Name', 'Robin Vale') })] })] },
 };
-const TAGS = { card: 'mu-card', 'action-button': 'mu-action-button', 'editable-form': 'mu-editable-form', 'card-grid': 'mu-card-grid' };
+const TAGS = { card: 'mu-card', 'action-button': 'mu-action-button', 'editable-form': 'mu-editable-form', 'card-grid': 'mu-card-grid',
+  'form-card': 'mu-form-card' };
 
 function mount(name, data) {
   const node = document.createElement(TAGS[name]);
@@ -110,6 +113,11 @@ const MARKED = {
   'action-button': { label: MARKUP.slice(0, 40), description: MARKUP },
   'editable-form': { title: MARKUP, submit_label: MARKUP.slice(0, 40), fields: [field('shelf', MARKUP.slice(0, 80), MARKUP)] },
   'card-grid': { label: MARKUP.slice(0, 80), cards: [fill('card', { title: MARKUP })] },
+  'form-card': { title: MARKUP, submit_label: MARKUP.slice(0, 40), sections: [fill('form-section', { title: MARKUP.slice(0, 80), lines: [
+    fill('form-line', { line: MARKUP.slice(0, 12), field: fill('field', { name: 'note', label: MARKUP.slice(0, 80), value: MARKUP.slice(0, 200), hint: MARKUP }) }),
+    fill('form-line', { read_only: true, field: fill('long-text-field', { name: 'summary', label: MARKUP.slice(0, 80), value: MARKUP }) }),
+    fill('form-line', { field: fill('choice-field', { name: 'plan', label: MARKUP.slice(0, 80), value: MARKUP.slice(0, 80), choices: [MARKUP.slice(0, 80)] }) }),
+  ] })] },
 };
 for (const [name, data] of Object.entries(MARKED)) {
   const node = mount(name, data);
@@ -752,6 +760,222 @@ const inputOf = (node, name) => {
   refusedText(other));
 }
 
+// The form card (catalog/form-card.json). A person reads the form first and edits one field in place.
+const line = (input, extra = {}) => fill('form-line', { ...extra, field: input });
+const section = (title, lines) => fill('form-section', { title, lines });
+const CARD_FORM = { title: 'Membership form', submit_label: 'Send changes', sections: [
+  section('Member', [line(field('member_name', 'Name', 'Robin Vale'), { line: '1.1' }),
+    line(fill('long-text-field', { name: 'address', label: 'Address', hint: 'The street and the town.' }), { line: '1.2' })]),
+  section('Household', [
+    line(fill('number-field', { name: 'adults', label: 'Adults', value: 2, minimum: 1, maximum: 8, typed: true }), { line: '2.1' }),
+    line(fill('number-field', { name: 'children', label: 'Children', value: 1, minimum: 0, maximum: 8 }), { line: '2.2' }),
+    line(fill('number-field', { name: 'household', label: 'Household size', value: 3 }), { line: '2.3', read_only: true }),
+    line(fill('date-field', { name: 'start', label: 'Start date', value: '2026-12-01', typed: true })),
+    line(fill('choice-field', { name: 'plan', label: 'Plan', value: 'Basic', choices: ['Basic', 'Family', 'Senior'] }))]),
+] };
+const CARD_EDITABLE = { member_name: 'Name', address: 'Address', adults: 'Adults', children: 'Children', start: 'Start date', plan: 'Plan' };
+const CARD_BINDING = { tool: 'members.update_form', label: 'Send changes', title: 'Membership form', arguments: { form_id: 'F-0001' },
+  editable: CARD_EDITABLE, typed: ['adults', 'start'], editor: EDITOR };
+function formCard(binding = CARD_BINDING, data = CARD_FORM) {
+  const node = mount('form-card', data);
+  const sent = [];
+  node.addEventListener('mu-action', (event) => sent.push(event.detail));
+  node.action = binding;
+  return { node, sent };
+}
+// The parts of one line, by the field name.
+const lineOf = (node, name) => {
+  const row = [...node.shadowRoot.querySelectorAll('[part="line"]')].find((item) => item.dataset.name === name);
+  const editor = row?.querySelector('[part="editor"]');
+  const inner = editor?.querySelector('[data-state]');
+  return { row, value: row?.querySelector('[part="value"]'), changed: row?.querySelector('[part="changed"]'),
+    editor, inner, root: inner?.shadowRoot, save: editor?.querySelector('[part="save"]'), cancel: editor?.querySelector('[part="cancel"]'),
+    reason: editor?.querySelector('[part="reason"]') };
+};
+const cardSubmit = (node) => node.shadowRoot.querySelector('form').requestSubmit();
+const cardStatus = (node) => node.shadowRoot.querySelector('[part="status"]').textContent;
+{
+  const { node, sent } = formCard();
+  const rows = [...node.shadowRoot.querySelectorAll('[part="line"]')];
+  check('form card: renders a valid fill in the default state', node.dataset.state === 'default' && rows.length === 7,
+    `${node.dataset.state} ${rows.length} ${node.shadowRoot.textContent.slice(0, 200)}`);
+  check('form card: each section is a named group', [...node.shadowRoot.querySelectorAll('[part="section"]')]
+    .map((item) => `${item.getAttribute('role')}:${item.getAttribute('aria-label')}`).join('|') === 'group:Member|group:Household',
+  [...node.shadowRoot.querySelectorAll('[part="section"]')].map((item) => item.outerHTML.slice(0, 80)).join('|'));
+  const adults = lineOf(node, 'adults');
+  check('form card: a field shows as a line number, a label and a value', adults.row.querySelector('[part="line-number"]')?.textContent === '2.1'
+    && adults.row.querySelector('[part="label"]')?.textContent === 'Adults' && adults.value.textContent === '2', adults.row.textContent);
+  check('form card: the read state has no input', deepQuery(node, 'input, textarea').length === 0, deepQuery(node, 'input, textarea').length);
+  const address = lineOf(node, 'address');
+  check('form card: a field with no value shows an empty marker as text', address.value.textContent === 'No value', address.value.textContent);
+  check('form card: the help text shows in the read state', address.row.textContent.includes('The street and the town.'), address.row.textContent);
+  const household = lineOf(node, 'household');
+  check('form card: a read-only field has no editor button', household.value.tagName !== 'BUTTON' && household.value.textContent === '3'
+    && household.row.querySelector('[part="read-only"]')?.textContent === 'Read-only', household.row.innerHTML.slice(0, 200));
+  check('form card: an editable value is a button with the label in its name', adults.value.tagName === 'BUTTON'
+    && adults.value.getAttribute('aria-label') === 'Edit Adults: 2', adults.value.getAttribute('aria-label'));
+  check('form card: the plan shows its choice as text', lineOf(node, 'plan').value.textContent === 'Basic', lineOf(node, 'plan').value.textContent);
+
+  // A click on a value opens its editor. Save keeps the new value, and the focus goes back to the value.
+  let children = lineOf(node, 'children');
+  children.value.click();
+  children = lineOf(node, 'children');
+  const input = children.root?.querySelector('input');
+  check('form card: a click opens the editor of the field', children.editor && children.inner?.localName === 'mu-number-field'
+    && input?.value === '1' && children.root.activeElement === input && children.editor.getAttribute('aria-label') === 'Edit Children',
+  children.row.innerHTML.slice(0, 200));
+  typeIn(input, '2');
+  children.save.click();
+  children = lineOf(node, 'children');
+  check('form card: Save keeps the new value and closes the editor', !children.editor && children.value.textContent === '2', children.row.textContent);
+  check('form card: a changed field shows a changed marker as text', children.changed?.textContent === 'Changed'
+    && children.value.getAttribute('aria-label') === 'Edit Children: 2, changed', children.row.textContent);
+  check('form card: the focus goes back to the value after Save', node.shadowRoot.activeElement === children.value,
+    node.shadowRoot.activeElement?.outerHTML.slice(0, 80));
+
+  // Cancel restores the old value. Escape cancels.
+  let plan = lineOf(node, 'plan');
+  plan.value.click();
+  plan = lineOf(node, 'plan');
+  plan.root.querySelectorAll('[part="choices"] input')[1].click();
+  plan.cancel.click();
+  plan = lineOf(node, 'plan');
+  check('form card: Cancel restores the old value', !plan.editor && plan.value.textContent === 'Basic' && !plan.changed
+    && node.shadowRoot.activeElement === plan.value, plan.row.textContent);
+  let name = lineOf(node, 'member_name');
+  name.value.click();
+  name = lineOf(node, 'member_name');
+  const nameInput = name.root.querySelector('input');
+  typeIn(nameInput, 'Robin Vale-Ash');
+  nameInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, composed: true, cancelable: true }));
+  name = lineOf(node, 'member_name');
+  check('form card: Escape cancels the edit', !name.editor && name.value.textContent === 'Robin Vale' && !name.changed
+    && node.shadowRoot.activeElement === name.value, name.row.textContent);
+
+  // A value that the field does not accept stays in the editor, and the field tells why.
+  let adultsLine = lineOf(node, 'adults');
+  adultsLine.value.click();
+  adultsLine = lineOf(node, 'adults');
+  typeIn(adultsLine.root.querySelector('input'), '9');
+  adultsLine.save.click();
+  adultsLine = lineOf(node, 'adults');
+  check('form card: Save of a value outside the range keeps the editor and tells why', adultsLine.editor
+    && adultsLine.root.querySelector('[part="problem"]').textContent === 'Give a number from 1 to 8.', adultsLine.row.textContent);
+  // A typed field needs an edit type before Save.
+  typeIn(adultsLine.root.querySelector('input'), '3');
+  adultsLine.save.click();
+  adultsLine = lineOf(node, 'adults');
+  check('form card: Save of a typed field with no edit type keeps the editor', adultsLine.editor
+    && adultsLine.root.querySelector('[part="reason"]').textContent === 'Choose an edit type.', adultsLine.row.textContent);
+  adultsLine.root.querySelectorAll('[part="edit-type"] input')[1].click();
+  adultsLine.save.click();
+  adultsLine = lineOf(node, 'adults');
+  check('form card: Save of a typed field with an edit type keeps the value', !adultsLine.editor && adultsLine.value.textContent === '3'
+    && adultsLine.changed?.textContent === 'Changed', adultsLine.row.textContent);
+
+  // A submit with an open editor sends no action. The editor tells why.
+  let start = lineOf(node, 'start');
+  start.value.click();
+  start = lineOf(node, 'start');
+  cardSubmit(node);
+  start = lineOf(node, 'start');
+  check('form card: a submit with an open editor sends no action', sent.length === 0
+    && start.reason?.textContent === 'Save or cancel this field first.', `${sent.length} ${start.row.textContent}`);
+  start.cancel.click();
+
+  // The card sends the changes as one action. It shows Pending, and Done only after the receipt.
+  cardSubmit(node);
+  check('form card: the changes go as one action', sent.length === 1 && sent[0].tool === 'members.update_form'
+    && JSON.stringify(sent[0].arguments) === JSON.stringify({ children: 2, adults: 3, form_id: 'F-0001' }), JSON.stringify(sent));
+  const edit = sent[0]?.edits?.[0];
+  check('form card: the request records the edit type of a typed field', sent[0]?.edits?.length === 1 && edit.field === 'adults'
+    && edit.type === 'correction' && edit.old_value === 2 && edit.new_value === 3 && edit.actor.id === 'person-ana' && ISO.test(edit.time),
+  JSON.stringify(sent[0]?.edits));
+  check('form card: pending until the receipt', node.dataset.state === 'pending' && cardStatus(node) === 'Pending'
+    && lineOf(node, 'children').changed?.textContent === 'Changed', `${node.dataset.state} ${cardStatus(node)}`);
+  lineOf(node, 'plan').value.click();
+  check('form card: no editor opens while the action is pending', !lineOf(node, 'plan').editor
+    && lineOf(node, 'plan').value.getAttribute('aria-disabled') === 'true', lineOf(node, 'plan').row.innerHTML.slice(0, 160));
+  check('form card: a receipt with a different id changes nothing', !node.receipt({ id: 'other', ok: true }) && node.dataset.state === 'pending');
+  node.receipt({ id: sent[0].id, ok: true });
+  check('form card: Done only after the receipt, and the markers go', node.dataset.state === 'done' && cardStatus(node) === 'Done'
+    && !lineOf(node, 'children').changed && !lineOf(node, 'adults').changed && lineOf(node, 'children').value.textContent === '2',
+  `${node.dataset.state} ${cardStatus(node)} ${lineOf(node, 'children').row.textContent}`);
+
+  // After Done, the saved values are the old values of the next edit.
+  adultsLine = lineOf(node, 'adults');
+  adultsLine.value.click();
+  adultsLine = lineOf(node, 'adults');
+  typeIn(adultsLine.root.querySelector('input'), '4');
+  adultsLine.root.querySelectorAll('[part="edit-type"] input')[2].click();
+  adultsLine.save.click();
+  cardSubmit(node);
+  check('form card: after Done the next edit starts from the saved value', sent.length === 2
+    && sent[1].edits?.[0]?.old_value === 3 && sent[1].edits[0].new_value === 4 && sent[1].edits[0].type === 'override'
+    && JSON.stringify(sent[1].arguments) === JSON.stringify({ adults: 4, form_id: 'F-0001' }), JSON.stringify(sent[1]));
+  node.receipt({ id: sent[1].id, ok: false, message: 'The service refused the change.' });
+  check('form card: Not done with the reason, and the marker stays', node.dataset.state === 'error'
+    && cardStatus(node) === 'Not done: The service refused the change.' && lineOf(node, 'adults').changed?.textContent === 'Changed',
+  `${node.dataset.state} ${cardStatus(node)}`);
+
+  // The application sends new computed values for a read-only field. The card checks each value against its field contract.
+  check('form card: shows a new computed value', node.computed({ household: 4 }).length === 0
+    && lineOf(node, 'household').value.textContent === '4', lineOf(node, 'household').row.textContent);
+  const notReadOnly = node.computed({ children: 5 });
+  check('form card: refuses a computed value for a field that a person edits', notReadOnly[0] === 'children: the field is not read-only'
+    && lineOf(node, 'children').value.textContent === '2', notReadOnly.join('; '));
+  const wrongType = node.computed({ household: 'many' });
+  check('form card: refuses a computed value that the field contract does not accept', wrongType[0] === 'household: data.value: must be a number'
+    && lineOf(node, 'household').value.textContent === '4', wrongType.join('; '));
+  check('form card: refuses a computed value for a name that the card does not have', node.computed({ pets: 1 })[0] === 'pets: the card has no field with this name');
+}
+{
+  // With no change, a submit sends no action, and the card tells why.
+  const { node, sent } = formCard();
+  cardSubmit(node);
+  check('form card: a submit with no change sends no action', sent.length === 0
+    && node.shadowRoot.querySelector('[part="note"]')?.textContent === 'No changes to send.', node.shadowRoot.textContent.slice(-120));
+}
+{
+  // The application gives the title, the editable names, their labels and the typed names. The card refuses a fill that does not agree.
+  const refused = (name, data, expected, binding = CARD_BINDING) => {
+    const { node } = formCard(binding, data);
+    check(`form card: refuses ${name}`, node.dataset.state === 'refused' && refusedText(node).includes(expected), refusedText(node));
+  };
+  const lines = (index, change) => CARD_FORM.sections.map((item, at) => (at === 1 ? section(item.data.title,
+    item.data.lines.map((entry, place) => (place === index ? change(entry) : entry))) : item));
+  const withField = (entry, data) => line(fill(entry.data.field.component, { ...entry.data.field.data, ...data }), { ...entry.data, field: undefined });
+  refused('a different title', { ...CARD_FORM, title: 'Other form' }, 'data.title: the title is not the title of the application');
+  refused('a different submit label', { ...CARD_FORM, submit_label: 'Send' }, 'data.submit_label: the label is not the label of the application');
+  refused('a field that the application does not accept', { ...CARD_FORM, sections: lines(1, (entry) => withField(entry, { name: 'pets', label: 'Pets' })) },
+    'data.sections: the application does not accept the field pets');
+  refused('a field with a different label', { ...CARD_FORM, sections: lines(1, (entry) => withField(entry, { label: 'Kids' })) },
+    'data.sections: the label of the field children is not the label of the application');
+  refused('a typed flag that does not agree', { ...CARD_FORM, sections: lines(1, (entry) => withField(entry, { typed: true })) },
+    'data.sections: the edit type of the field children is not the rule of the application');
+  refused('a read-only field with an edit type', { ...CARD_FORM, sections: lines(2, (entry) => withField(entry, { typed: true })) },
+    'data.sections: the read-only field household cannot have an edit type');
+  refused('a disabled field', { ...CARD_FORM, sections: lines(1, (entry) => withField(entry, { disabled: true })) },
+    'data.sections[1].data.lines[1].data.field.data.disabled: a form card uses read_only');
+  refused('a value outside the range of its field', { ...CARD_FORM, sections: lines(0, (entry) => withField(entry, { value: 12 })) },
+    'data.sections[1].data.lines[0].data.field.data.value: the number is outside the range');
+  refused('two fields with one name', { ...CARD_FORM, sections: lines(1, (entry) => withField(entry, { name: 'adults', label: 'Adults' })) },
+    'data.sections: the field names must be unique');
+  const readOnly = { ...CARD_FORM, submit_label: 'Send changes', sections: [section('Household', [CARD_FORM.sections[1].data.lines[2]])] };
+  refused('a card with no field that a person can edit', readOnly, 'data.sections: the card needs at least one field that a person can edit');
+}
+{
+  // Markup in the value of a field shows as text in the editor too, and makes no element.
+  const marked = mount('form-card', { title: 'Membership form', submit_label: 'Send changes', sections: [section('Member', [
+    line(fill('field', { name: 'note', label: MARKUP.slice(0, 80), value: MARKUP.slice(0, 200), hint: MARKUP })),
+    line(fill('choice-field', { name: 'plan', label: 'Plan', value: MARKUP.slice(0, 80), choices: ['Basic', MARKUP.slice(0, 80)] }))])] });
+  lineOf(marked, 'note').value.click();
+  lineOf(marked, 'plan').value.click();
+  const editorInput = lineOf(marked, 'note').root?.querySelector('input');
+  check('form card: markup in the editor shows as text', editorInput?.value === MARKUP.slice(0, 200)
+    && deepQuery(marked, 'img, script').length === 0 && deepText(marked).includes(MARKUP.slice(0, 80)), deepText(marked).slice(0, 200));
+}
+
 // A new fill after done has new values. The old receipt does not confirm them.
 const refill = mount('editable-form', FORM);
 const refillSubmits = [];
@@ -886,6 +1110,23 @@ if (mode === 'forced-colors') {
 if (mode === 'reduced-motion') {
   check('reduced motion: no transition on the action button', actionStyle.transitionDuration.split(',').every((d) => parseFloat(d) === 0), actionStyle.transitionDuration);
 }
+// The form card: the value buttons and the section line in each mode. These checks move no focus, because the
+// keyboard steps of the runner start from the last focus.
+const modeCard = formCard();
+const modeValue = getComputedStyle(lineOf(modeCard.node, 'children').value);
+const modeSection = getComputedStyle(modeCard.node.shadowRoot.querySelector('[part="section"]'));
+if (mode === 'forced-colors') {
+  check('forced colors: the value button of a form card uses ButtonText', modeValue.color === resolved('ButtonText')
+    && modeValue.borderTopColor === resolved('ButtonText'), `${modeValue.color} ${modeValue.borderTopColor}`);
+  check('forced colors: the section line of a form card uses CanvasText', modeSection.borderTopColor === resolved('CanvasText'), modeSection.borderTopColor);
+}
+if (mode === 'reduced-motion') {
+  check('reduced motion: no transition on the value button of a form card',
+    modeValue.transitionDuration.split(',').every((d) => parseFloat(d) === 0), modeValue.transitionDuration);
+}
+if (mode === 'light' || mode === 'dark') {
+  check(`${mode}: the value button of a form card uses the text color of the theme`, modeValue.color === cardStyle.color, `${modeValue.color} ${cardStyle.color}`);
+}
 if (mode === 'dark') check('dark: the card uses the dark surface', cardStyle.backgroundColor === 'rgb(23, 27, 33)', cardStyle.backgroundColor);
 if (mode === 'light') check('light: the card uses the light surface', cardStyle.backgroundColor === 'rgb(255, 255, 255)', cardStyle.backgroundColor);
 check('no markup ran', window.muUnsafe === undefined);
@@ -958,6 +1199,21 @@ window.muFocusLongText = () => {
 window.muFocusChoice = () => { inputOf(inputTarget, 'branch').radios[0].focus(); return true; };
 window.muInputs = () => ({ submits: inputSubmits, note: inputOf(inputTarget, 'note').node.value,
   branch: inputOf(inputTarget, 'branch').node.value });
+// The runner edits one field of this form card with the keyboard only: Enter or Space opens the editor,
+// Escape cancels, Enter in the field saves, and Tab and Space on Save save.
+const cardTarget = document.createElement('mu-form-card');
+cardTarget.actor = AUTHOR;
+cardTarget.fill = outer('form-card', { ...CARD_FORM, title: 'Keyboard card' });
+cardTarget.action = { ...CARD_BINDING, title: 'Keyboard card' };
+keyboard.append(cardTarget);
+window.muFocusCardValue = () => { lineOf(cardTarget, 'children').value.focus(); return true; };
+window.muCardType = (value) => { typeIn(lineOf(cardTarget, 'children').root.querySelector('input'), value); return true; };
+window.muCard = () => {
+  const parts = lineOf(cardTarget, 'children');
+  const active = cardTarget.shadowRoot.activeElement;
+  return { editing: Boolean(parts.editor), focus: active?.getAttribute('aria-label') ?? active?.localName ?? '',
+    inner: parts.root?.activeElement?.localName ?? '', value: parts.value?.textContent ?? '' };
+};
 window.muFocusField = () => { enterForm.shadowRoot.querySelector('mu-field').shadowRoot.querySelector('input').focus(); return true; };
 window.muFormSubmits = () => formSubmits;
 // The runner opens the confirm step of this button and this form with the keyboard.

@@ -10,11 +10,11 @@ import { registeredTag } from '../render/registry.js';
 // (registeredTag). A contract with no element shows a refusal.
 const TAGS = Object.freeze(Object.assign(Object.create(null), {
   text: 'mu-text', button: 'mu-button', field: 'mu-field', stack: 'mu-stack', grid: 'mu-grid', card: 'mu-card',
-  'action-button': 'mu-action-button', 'editable-form': 'mu-editable-form', 'card-grid': 'mu-card-grid',
+  'action-button': 'mu-action-button', 'editable-form': 'mu-editable-form', 'form-card': 'mu-form-card', 'card-grid': 'mu-card-grid',
   citation: 'mu-citation', excerpt: 'mu-excerpt',
 }));
 // The components with an action. The application gives the binding of each one.
-const ACTIONS = new Set(['action-button', 'editable-form']);
+const ACTIONS = new Set(['action-button', 'editable-form', 'form-card']);
 const TYPES = Object.freeze({ human: 'Person', agent: 'Agent', system: 'System' });
 // The envelope reader accepts only a message with a valid actor, so the element accepts this actor.
 const actorOf = ({ actor }) => ({ type: actor.type, id: actor.id, ...(actor.name === undefined ? {} : { name: actor.name }) });

@@ -108,6 +108,7 @@ Each component has a contract file in [catalog/](catalog/README.md). The contrac
 | fact | A label and a value in a card. It has no element of its own. | [fact.json](catalog/fact.json) |
 | `mu-action-button` | A button for one action. It shows done only after the receipt comes back. | [action-button.json](catalog/action-button.json) |
 | `mu-editable-form` | Up to 20 fields: text, long text, a number, a date or a choice. A person edits the values and submits them as one action. | [editable-form.json](catalog/editable-form.json) |
+| `mu-form-card` | A long form in sections, as labels and values. A person edits one field in place and sends the changes as one action. Some fields are read-only. | [form-card.json](catalog/form-card.json) |
 | `mu-card-grid` | A labeled list of cards in columns of equal width. | [card-grid.json](catalog/card-grid.json) |
 | `mu-citation` | The source of a claim: a source name, a locator as text and an open button. | [citation.json](catalog/citation.json) |
 | `mu-excerpt` | A passage of a source as text with a marked span, the source name, the locator as text and an open button. | [excerpt.json](catalog/excerpt.json) |
@@ -138,6 +139,7 @@ python3 -m http.server 8000
    - `http://localhost:8000/examples/primitives.html`: each primitive.
    - `http://localhost:8000/examples/loans.html`: a card, an action button, a card grid and a form.
    - `http://localhost:8000/examples/inputs.html`: a form with each input type, and a typed edit of a number and a date.
+   - `http://localhost:8000/examples/membership.html`: a form card with 3 sections and 25 fields in a thread, with read-only fields that the service computes.
    - `http://localhost:8000/examples/citation.html`: a citation in a message, a citation with no source and a refused citation.
    - `http://localhost:8000/examples/excerpt.html`: an excerpt of a synthetic document in a message, and a refused excerpt.
    - `http://localhost:8000/examples/provenance.html`: a card with the authorship slot and the citation slot, and a refused card.

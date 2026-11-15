@@ -37,6 +37,8 @@ const EXAMPLES = {
   'examples/provenance.html': [2, 1, [['article', 'Renewal rule for short loans'], ['button', 'Open source: Synthetic library rules, section 4']]],
   'examples/inputs.html': [6, 0, [['form', 'Loan details'], ['textbox', 'Shelf code'], ['textbox', 'Note'], ['textbox', 'Copies'],
     ['textbox', 'Due date'], ['group', 'Branch'], ['radio', 'Harbor']]],
+  'examples/membership.html': [2, 0, [['list', 'Thread'], ['article', 'Message from Forms agent, Agent'], ['form', 'Membership form'],
+    ['group', 'Household'], ['button', 'Edit Children: 1'], ['button', 'Send changes']]],
   'examples/register.html': [4, 1, [['article', 'Tray A1'], ['list', 'Thread'], ['article', 'Message from Garden helper, Agent'], ['article', 'Tray B2']]],
 };
 // Each example app, the kit elements of its first view, and the roles and names that its accessibility tree must have.
@@ -249,6 +251,51 @@ async function threadExample(session, sessionId, report) {
   return steps;
 }
 
+// The membership example: a person edits one value in the form card of the thread and sends it. The card shows
+// Pending, then Done only after the receipt, and it shows the new computed value of a read-only field.
+async function membershipFlow(session, sessionId, base) {
+  const page = 'examples/membership.html';
+  const steps = [];
+  const step = (name, ok, detail) => steps.push({ page, step: name, ok: Boolean(ok), detail: JSON.stringify(detail) });
+  await open(session, sessionId, `${base}/${page}`);
+  const card = `document.querySelector('mu-thread')?.shadowRoot?.querySelector('mu-form-card')`;
+  const row = (name) => `[...${card}.shadowRoot.querySelectorAll('[part="line"]')].find((item) => item.dataset.name === '${name}')`;
+  const read = () => evaluate(session, sessionId, `(() => {
+    const node = ${card};
+    if (!node) return null;
+    return { state: node.dataset.state, status: node.shadowRoot.querySelector('[part="status"]').textContent,
+      children: ${row('children')}.querySelector('[part="value"]').textContent,
+      changed: Boolean(${row('children')}.querySelector('[part="changed"]')),
+      size: ${row('household_size')}.querySelector('[part="value"]').textContent };
+  })()`);
+  let value = await read();
+  for (let i = 0; i < 100 && !value; i += 1) {
+    await sleep(50);
+    value = await read();
+  }
+  step('the form card shows in the thread', value?.state === 'default', value);
+  if (value?.state !== 'default') return steps;
+  const edited = await evaluate(session, sessionId, `(() => {
+    ${row('children')}.querySelector('[part="value"]').click();
+    const editor = ${row('children')}.querySelector('[part="editor"]');
+    const input = editor.querySelector('[data-state]').shadowRoot.querySelector('input');
+    input.value = '2';
+    input.dispatchEvent(new Event('input', { bubbles: true, composed: true }));
+    editor.querySelector('[part="save"]').click();
+    ${card}.shadowRoot.querySelector('form').requestSubmit();
+    return true;
+  })()`);
+  value = await read();
+  step('a sent change shows Pending before the receipt', edited && value.state === 'pending' && value.children === '2' && value.changed, value);
+  for (let i = 0; i < 60 && value.state === 'pending'; i += 1) {
+    await sleep(50);
+    value = await read();
+  }
+  step('the receipt shows Done and the new computed value', value.state === 'done' && value.status.includes('Done')
+    && value.children === '2' && !value.changed && value.size === '4', value);
+  return steps;
+}
+
 // The example apps in each theme and at the phone width: the page loads with no error, shows its kit elements with no
 // refusal, has the roles and names, has no horizontal scroll, and its body text has a contrast of 4.5 or more.
 async function appPages(session, sessionId, report) {
@@ -390,6 +437,34 @@ async function main() {
             ['textbox', 'Copies'], ['textbox', 'Due date'], ['group', 'Branch'], ['radio', 'North'], ['radio', 'South'],
             ['radio', 'Harbor']], page + ' input types'));
         }
+        // A form card: Enter opens the editor of a value, Escape cancels, Enter in the field saves, and Space on Save saves.
+        // The focus goes back to the value after each step.
+        if (await evaluate(session, sessionId, 'typeof window.muFocusCardValue === "function"')) {
+          const card = () => evaluate(session, sessionId, 'window.muCard()');
+          const push = (step, ok, detail) => report.keyboard.push({ page, step, ok, detail: JSON.stringify(detail) });
+          await evaluate(session, sessionId, 'window.muFocusCardValue()');
+          await key(session, sessionId, 'Enter', 'Enter', 13, '\r');
+          let state = await card();
+          push('Enter on a value of a form card opens its editor', state.editing && state.inner === 'input', state);
+          report.accessibility.push(...await axErrors(session, sessionId, [['form', 'Keyboard card'], ['group', 'Household'],
+            ['group', 'Edit Children'], ['textbox', 'Children'], ['button', 'Save'], ['button', 'Cancel'], ['button', 'Edit Adults: 2']],
+          page + ' form card editor'));
+          await key(session, sessionId, 'Escape', 'Escape', 27);
+          state = await card();
+          push('Escape cancels the editor and the focus goes back to the value', !state.editing && state.focus === 'Edit Children: 1', state);
+          await key(session, sessionId, 'Enter', 'Enter', 13, '\r');
+          await evaluate(session, sessionId, 'window.muCardType("4")');
+          await key(session, sessionId, 'Enter', 'Enter', 13, '\r');
+          state = await card();
+          push('Enter in the field saves and the focus goes back to the value', !state.editing && state.value === '4'
+            && state.focus === 'Edit Children: 4, changed', state);
+          await key(session, sessionId, ' ', 'Space', 32, ' ');
+          await key(session, sessionId, 'Tab', 'Tab', 9);
+          await key(session, sessionId, ' ', 'Space', 32, ' ');
+          state = await card();
+          push('Space opens the editor, and Tab and Space on Save save', !state.editing && state.value === '4'
+            && state.focus === 'Edit Children: 4, changed', state);
+        }
         // The confirm step: Enter opens it, Escape closes it, and only the confirm button sends the action.
         // The accessibility tree must name the group and its buttons. See catalog/README.md#actions.
         if (await evaluate(session, sessionId, 'typeof window.muFocusConfirm === "function"')) {
@@ -451,6 +526,7 @@ async function main() {
     report.examples.push(...guides.steps);
     report.accessibility.push(...guides.accessibility);
     report.examples.push(...await threadExample(session, sessionId, report));
+    report.examples.push(...await membershipFlow(session, sessionId, base));
     report.examples.push(...await appPages(session, sessionId, report));
     for (const item of report.accessibility) if (!item.ok) report.errors.push(`accessibility: ${item.where}: no ${item.role} named ${item.name}`);
     for (const step of [...report.keyboard, ...report.examples]) if (!step.ok) report.errors.push(`${step.page}: ${step.step}: ${step.detail}`);
