@@ -114,6 +114,7 @@ Load the theme style sheet after `tokens.css`. A theme on `:root` has the same s
 Each rule protects a principle of the [constitution](../../CONSTITUTION.md#principles).
 
 - **Do not hide, cover or recolor the state text.** The parts `status`, `reference` and `state` show `Pending`, `Done`, `Not done`, `Partial` and the reference of a receipt. Principle 6 needs the true state in words. The color is never the only signal.
+- **Keep the table sort text visible.** The part `sort-status` gives the sorted column and its direction.
 - **Do not remove the focus ring.** Do not set `outline: none` on a part. If you set `--mu-color-focus`, keep 3:1 against the surface. The kit draws the ring with `:focus-visible` in each shadow root.
 - **Do not hide or change the provenance.** The parts `provenance`, `authorship`, `citation`, `locator` and `open` show the actor and the source of the content. Principle 3 needs the actor of each content.
 - **Do not hide the refusal, the confirm step or the thread notices.** The parts `confirm`, `cancel`, `accept`, `stream` and `source` show what a person must know before an action, and the errors of a stream. The parts `edit-type` and `reason` ask for the type of an edit and tell why a submit sent no action. The part `problem` tells why a value is not valid. In a form card, the parts `changed`, `read-only` and `note` tell which values changed, which values a person cannot edit, and why a submit sent nothing. Principle 4 needs the type of each form edit.
@@ -122,7 +123,7 @@ Each rule protects a principle of the [constitution](../../CONSTITUTION.md#princ
 - **Do not change the meaning of a color.** `--mu-color-danger` shows a refusal and an error. Do not give it a color that a person can read as success.
 - **Do not put content into a style.** A token value comes from the application, never from a model, a tool or a document. Principle 5 keeps untrusted content as data.
 
-A page can style these parts for layout, for example a margin or a width, if it keeps each rule above: `actions`, `button`, `card`, `choices`, `empty`, `excerpt`, `facts`, `form`, `input`, `label`, `layout`, `list`, `mark`, `passage`, `quote`, `span` and `text`. The form card adds the layout parts `section`, `lines`, `line`, `line-number`, `value`, `editor` and `save`. `seed-tray` in [examples/register.js](../../examples/register.js) shows that an application element can add its own part, for example `tray`.
+A page can style these parts for layout, for example a margin or a width, if it keeps each rule above: `actions`, `button`, `card`, `choices`, `empty`, `excerpt`, `facts`, `form`, `input`, `label`, `layout`, `list`, `mark`, `passage`, `quote`, `span`, `table` and `text`. The form card adds the layout parts `section`, `lines`, `line`, `line-number`, `value`, `editor` and `save`. `seed-tray` in [examples/register.js](../../examples/register.js) shows that an application element can add its own part, for example `tray`.
 
 ## Run the page
 

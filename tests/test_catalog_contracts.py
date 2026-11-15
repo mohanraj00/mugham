@@ -54,6 +54,8 @@ VALID = {
     'form-card': {'title': 'Membership form', 'submit_label': 'Send changes', 'sections': [SECTION]},
     'citation': {'quote': 'A short loan can get one renewal.'},
     'excerpt': {'passage': 'A short loan can get one renewal of seven days.', 'span_start': 13, 'span_end': 32},
+    'table': {'label': 'Sample rows', 'columns': ['Name'], 'rows': [fill('table-row', {'cells': ['Plot A']})]},
+    'table-row': {'cells': ['Plot A'], 'status': 'Ready'},
 }
 
 

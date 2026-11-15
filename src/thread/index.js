@@ -11,7 +11,7 @@ import { registeredTag } from '../render/registry.js';
 const TAGS = Object.freeze(Object.assign(Object.create(null), {
   text: 'mu-text', button: 'mu-button', field: 'mu-field', stack: 'mu-stack', grid: 'mu-grid', card: 'mu-card',
   'action-button': 'mu-action-button', 'editable-form': 'mu-editable-form', 'form-card': 'mu-form-card', 'card-grid': 'mu-card-grid',
-  citation: 'mu-citation', excerpt: 'mu-excerpt',
+  citation: 'mu-citation', excerpt: 'mu-excerpt', table: 'mu-table',
 }));
 // The components with an action. The application gives the binding of each one.
 const ACTIONS = new Set(['action-button', 'editable-form', 'form-card']);
