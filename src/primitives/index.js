@@ -59,6 +59,12 @@ export class MuButton extends MuElement {
 }
 
 let fieldCount = 0;
+// The edit types of a typed field, with their meaning (catalog/README.md, "Typed edits").
+const TYPES = [
+  ['judgment', 'Judgment', 'The old value was not wrong. I chose a different value.'],
+  ['correction', 'Correction', 'The old value was wrong.'],
+  ['override', 'Override', 'I replace a value from a rule, a service or an agent.'],
+];
 
 export class MuField extends MuElement {
   static component = 'field';
@@ -74,13 +80,95 @@ export class MuField extends MuElement {
     input[aria-invalid="true"] { border-color: var(--mu-color-danger); border-width: 2px; }
     .hint { font: var(--mu-type-caption); color: var(--mu-color-text-muted); }
     .error { font: var(--mu-type-caption); color: var(--mu-color-danger); }
+    fieldset {
+      margin: 0; padding: var(--mu-space-2); border: 1px solid var(--mu-color-border); border-radius: var(--mu-radius-1);
+      display: flex; flex-direction: column; gap: var(--mu-space-1);
+    }
+    fieldset[hidden] { display: none; }
+    fieldset[aria-invalid="true"] { border-color: var(--mu-color-danger); border-width: 2px; }
+    legend { font: var(--mu-type-caption); padding: 0 var(--mu-space-1); }
+    .type { display: flex; flex-wrap: wrap; align-items: center; gap: 0 var(--mu-space-2); min-height: 2.75rem; }
+    .type input { min-height: auto; margin: 0; }
     @media (forced-colors: active) {
-      input { border-color: FieldText; }
+      input, fieldset { border-color: FieldText; }
       .hint, .error { color: CanvasText; }
     }
   `)];
 
   #input = null;
+  #initial = '';
+  #group = null;
+  #reason = null;
+  #editedAt = null;
+
+  // The value of the fill. A typed edit compares the value with it.
+  get initial() {
+    return this.fill ? this.#initial : null;
+  }
+
+  // True if the value is not the value of the fill.
+  get changed() {
+    return this.value !== null && this.value !== this.#initial;
+  }
+
+  // The edit type of a changed typed field: judgment, correction or override. Else null.
+  get editType() {
+    if (!this.#group || !this.changed) return null;
+    return this.#group.querySelector('input:checked')?.value ?? null;
+  }
+
+  // The time of the last change of the value or the type, as an ISO 8601 text in UTC. Else null.
+  get editedAt() {
+    return this.fill && this.changed ? this.#editedAt : null;
+  }
+
+  // Shows the reason of a refused submit in the group, and moves the focus to the group.
+  // Returns false if the field needs no edit type now.
+  needType() {
+    if (!this.#group || !this.changed || this.editType) return false;
+    this.#mark(true);
+    const radio = this.#group.querySelector('input');
+    radio.focus();
+    return true;
+  }
+
+  // A description names a hidden element too, so the reason text and the description exist only while they apply.
+  #mark(invalid) {
+    this.#group.setAttribute('aria-invalid', invalid ? 'true' : 'false');
+    this.#reason.replaceChildren(invalid ? 'Choose an edit type.' : '');
+    if (invalid) this.#group.setAttribute('aria-describedby', this.#reason.id);
+    else this.#group.removeAttribute('aria-describedby');
+  }
+
+  // The group shows only while the value is not the value of the fill. The old value again clears the type.
+  #sync() {
+    if (!this.#group) return;
+    const open = this.changed;
+    this.#group.hidden = !open;
+    if (!open) {
+      for (const radio of this.#group.querySelectorAll('input')) radio.checked = false;
+      this.#mark(false);
+    }
+  }
+
+  #typeGroup(id) {
+    const reason = el('span', { id: id + '-reason', class: 'error', part: 'reason' });
+    const radios = TYPES.map(([value, label, meaning]) => {
+      const radio = el('input', { type: 'radio', id: `${id}-${value}`, name: id + '-type', 'aria-describedby': `${id}-${value}-meaning` });
+      radio.value = value;
+      radio.addEventListener('change', () => {
+        this.#editedAt = new Date().toISOString();
+        this.#mark(false);
+        this.dispatchEvent(new CustomEvent('mu-edit', { bubbles: true, composed: true, detail: { field: 'type', value } }));
+      });
+      return el('div', { class: 'type' }, radio, el('label', { for: radio.id }, label),
+        el('span', { id: `${id}-${value}-meaning`, class: 'hint' }, meaning));
+    });
+    const group = el('fieldset', { part: 'edit-type' }, el('legend', {}, 'Edit type'), ...radios, reason);
+    group.hidden = true;
+    this.#reason = reason;
+    return group;
+  }
 
   get value() {
     // A refused field keeps no data.
@@ -99,6 +187,8 @@ export class MuField extends MuElement {
     const input = el('input', { id, type: 'text', part: 'input', 'aria-invalid': data.error ? 'true' : false,
       'aria-describedby': described || false });
     input.value = data.value ?? '';
+    this.#initial = input.value;
+    this.#editedAt = null;
     input.disabled = Boolean(data.disabled);
     // The contract limits the value. maxLength counts UTF-16 units, so it never permits more code points
     // than the limit. A value from a script or a paste can still be longer, so the handler cuts it.
@@ -107,15 +197,20 @@ export class MuField extends MuElement {
     input.addEventListener('input', () => {
       const points = [...input.value];
       if (points.length > limit) input.value = points.slice(0, limit).join('');
+      this.#editedAt = new Date().toISOString();
+      this.#sync();
       this.dispatchEvent(new CustomEvent('mu-edit', { bubbles: true, composed: true,
         detail: { field: 'value', value: input.value } }));
     });
     this.#input = input;
+    // A typed field asks for the edit type after a change. A disabled field has no edit.
+    this.#group = data.typed && !data.disabled ? this.#typeGroup(id) : null;
     return [el('div', { class: 'box' },
       el('label', { for: id, part: 'label' }, data.label),
       input,
       data.hint ? el('span', { id: id + '-hint', class: 'hint' }, data.hint) : null,
-      data.error ? el('span', { id: id + '-error', class: 'error' }, data.error) : null)];
+      data.error ? el('span', { id: id + '-error', class: 'error' }, data.error) : null,
+      this.#group)];
   }
 }
 

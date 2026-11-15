@@ -6,7 +6,7 @@ Each JSON file in this folder is the contract of one component. [schema/README.m
 |---|---|---|---|
 | `text.json` | `mu-text` | primitive | A run of text. |
 | `button.json` | `mu-button` | primitive | A button that sends a `mu-press` event. |
-| `field.json` | `mu-field` | primitive | A labeled text input that sends a `mu-edit` event. |
+| `field.json` | `mu-field` | primitive | A labeled text input that sends a `mu-edit` event. A typed field also asks for the edit type. |
 | `stack.json` | `mu-stack` | primitive | A labeled group in one column or one row. |
 | `grid.json` | `mu-grid` | primitive | A labeled group in columns. |
 | `fact.json` | in `mu-card` | component | A label and a value. |
@@ -103,6 +103,8 @@ A binding has these keys. Only `tool` is necessary.
 | `description` | The description of an action button, 1 to 200 characters. |
 | `title` | The title of an editable form, 1 to 120 characters. |
 | `editable` | The names that an editable form can send, each with its label. |
+| `typed` | Optional. The editable names that need an edit type. See "Typed edits". |
+| `editor` | The person who edits a typed form: `{ type: 'human', id }`. `id` has 1 to 128 characters. It is necessary if `typed` has a name. |
 | `confirm` | Optional. The confirm step: `{ message, label }`. `message` has 1 to 200 characters. `label` has 1 to 40 characters. |
 
 The application gives the label of the action. The element refuses a fill with a different label: the `label` of an action button or the `submit_label` of an editable form. A binding with no label accepts no fill. Thus a fill cannot show "View details" on a button that sends a different action. The application also gives the `description` of an action button. The button refuses a fill with a different description, because a description can name the target of the bound arguments. A binding with no description accepts no fill with a description.
@@ -148,3 +150,39 @@ form.action = { tool: 'library.update_loan', label: 'Save', title: 'Change a loa
 ```
 
 The form refuses a fill with a different `title`, because the title names the target of the bound arguments. A binding with no title accepts no form fill. The form also refuses a fill with no field that a person can edit, because only the application labels of the fields tell what the request does. The form also refuses a fill with a field name that `editable` does not give, or with a field label that is not the label in `editable`. The form does not send the value of a disabled field, because a person cannot edit it. A new fill lets the form save again, because a receipt from before the fill does not confirm the new values. This check occurs when the fill or the binding changes. A binding with no `editable` map accepts no field. If a second submit occurs while a request is pending, the form refuses it. The refused submit does not change the values of the pending request.
+
+### Typed edits
+
+Principle 4 of the constitution says that each form edit records its type. The edit types are these:
+
+| Type | Meaning |
+|---|---|
+| `judgment` | The person chose a different value. The old value was not wrong. |
+| `correction` | The old value was wrong. The new value corrects it. |
+| `override` | The person replaced a value from a rule, a service or an agent with their own decision. |
+
+A field with `typed: true` in its fill is a typed field. When a person changes the value of a typed field, the field shows a radio group with the name `Edit type`. The group has the three types. If the person changes the value back to the old value, the group closes, and the field has no edit.
+
+The application gives the typed names and the person who edits, because the fill comes from a model:
+
+```js
+form.action = { tool: 'library.update_loan', label: 'Save', title: 'Change a loan', arguments: { loan_id: 'L-0001' },
+  editable: { due_date: 'Due date', note: 'Note' }, typed: ['due_date'], editor: { type: 'human', id: 'person-ana' } };
+```
+
+The form refuses a fill in which the `typed` flag of a field does not agree with `typed` of the binding. A binding with no `typed` list accepts no typed field. Each name in `typed` must be a name in `editable`.
+
+If a typed field changed and has no edit type, a submit sends no action. The field shows `Choose an edit type.` as text, and the focus goes to the group. The type is not a decision of the kit. The application or its service reads the type and decides.
+
+If the binding has a `typed` list, the request has an `edits` list with one edit for each typed field that changed:
+
+| Key | Content |
+|---|---|
+| `field` | The field name. |
+| `type` | `judgment`, `correction` or `override`. |
+| `old_value` | The value of the fill. |
+| `new_value` | The value that the request sends in `arguments`. |
+| `actor` | The `editor` of the binding: `{ type: 'human', id }`. |
+| `time` | The time of the last change of the value or the type, as an ISO 8601 text in UTC, for example `2026-11-15T09:30:00.000Z`. |
+
+A field that did not change has no edit. A disabled field has no edit, because the form does not send its value. A change of the edit type after a request also makes the values new, so the receipt of that request does not show `Done`.

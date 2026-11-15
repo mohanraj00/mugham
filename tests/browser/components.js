@@ -555,6 +555,125 @@ locked.action = { tool: 'library.update_loan', label: 'Save', title: 'Loan detai
 locked.shadowRoot.querySelector('form').requestSubmit();
 check('editable-form: a disabled field sends no value', lockedSubmits.length === 1
   && !Object.hasOwn(lockedSubmits[0].arguments, 'branch'), JSON.stringify(lockedSubmits));
+// Typed edits (catalog/README.md, "Typed edits"). Principle 4: each form edit records its type.
+const EDITOR = { type: 'human', id: 'person-ana' };
+const TYPED_FORM = { ...FORM, fields: [fill('field', { name: 'shelf', label: 'Shelf code', value: 'B-14', typed: true }),
+  field('branch', 'Branch', 'North')] };
+const TYPED_BINDING = { tool: 'library.update_loan', label: 'Save', title: 'Loan details', editable: EDITABLE,
+  typed: ['shelf'], editor: EDITOR };
+const ISO = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
+const typedParts = (node) => {
+  const inner = node.shadowRoot.querySelector('mu-field').shadowRoot;
+  return { input: inner.querySelector('input'), group: inner.querySelector('fieldset'), radios: [...inner.querySelectorAll('input[type="radio"]')],
+    text: inner.textContent };
+};
+const typeIn = (input, value) => {
+  input.value = value;
+  input.dispatchEvent(new Event('input', { bubbles: true, composed: true }));
+};
+const choose = (radio) => radio.click();
+function typedForm(binding = TYPED_BINDING, data = TYPED_FORM) {
+  const node = mount('editable-form', data);
+  const sent = [];
+  node.addEventListener('mu-action', (event) => sent.push(event.detail));
+  node.action = binding;
+  return { node, sent, ...typedParts(node) };
+}
+
+{
+  const { node, sent, input, group, radios } = typedForm();
+  check('typed edit: the form with a typed field renders', node.dataset.state === 'default', `${node.dataset.state} ${node.shadowRoot.textContent}`);
+  check('typed edit: no edit type before a change', group && group.hidden, group?.hidden);
+  typeIn(input, 'C-2');
+  check('typed edit: a change asks for the edit type', !group.hidden && group.getAttribute('aria-label') === null
+    && group.querySelector('legend')?.textContent === 'Edit type'
+    && radios.map((radio) => radio.labels[0]?.textContent.split(':')[0]).join('|') === 'Judgment|Correction|Override',
+  radios.map((radio) => radio.labels[0]?.textContent).join('|'));
+  check('typed edit: the three types are one radio group', new Set(radios.map((radio) => radio.name)).size === 1
+    && radios.map((radio) => radio.value).join('|') === 'judgment|correction|override', radios.map((radio) => radio.name + radio.value).join('|'));
+  typeIn(input, 'B-14');
+  check('typed edit: the old value again closes the group', group.hidden && radios.every((radio) => !radio.checked), group.hidden);
+  node.shadowRoot.querySelector('form').requestSubmit();
+  check('typed edit: an unchanged typed field sends no edit', sent.length === 1 && Array.isArray(sent[0].edits) && sent[0].edits.length === 0,
+    JSON.stringify(sent));
+}
+
+// Each edit type goes in the request with the old value, the new value, the actor id and the time.
+for (const [index, type] of ['judgment', 'correction', 'override'].entries()) {
+  const { node, sent, input, radios } = typedForm();
+  typeIn(input, 'C-2');
+  choose(radios[index]);
+  const before = Date.now();
+  node.shadowRoot.querySelector('form').requestSubmit();
+  const edit = sent[0]?.edits?.[0];
+  check(`typed edit: ${type} goes in the request`, sent.length === 1 && sent[0].edits.length === 1 && edit.field === 'shelf'
+    && edit.type === type && edit.old_value === 'B-14' && edit.new_value === 'C-2' && sent[0].arguments.shelf === 'C-2'
+    && edit.actor.type === 'human' && edit.actor.id === 'person-ana' && ISO.test(edit.time)
+    && Math.abs(Date.parse(edit.time) - before) < 60000, JSON.stringify(sent));
+  check(`typed edit: ${type} is pending until the receipt`, node.dataset.state === 'pending', node.dataset.state);
+  node.receipt({ id: sent[0].id, ok: true });
+  check(`typed edit: ${type} is done after the receipt`, node.dataset.state === 'done', node.dataset.state);
+}
+
+// A changed typed field with no type sends no action. The field tells why, and the focus goes to the group.
+{
+  const { node, sent, input, group, radios, } = typedForm();
+  typeIn(input, 'C-2');
+  node.shadowRoot.querySelector('form').requestSubmit();
+  const inner = node.shadowRoot.querySelector('mu-field').shadowRoot;
+  const reason = inner.getElementById(group.getAttribute('aria-describedby') ?? '')?.textContent;
+  check('typed edit: a missing type sends no action', sent.length === 0 && node.dataset.state === 'default', `${sent.length} ${node.dataset.state}`);
+  check('typed edit: a missing type shows the reason as text', reason === 'Choose an edit type.'
+    && group.getAttribute('aria-invalid') === 'true', `${reason} ${group.getAttribute('aria-invalid')}`);
+  check('typed edit: a missing type moves the focus to the group', inner.activeElement === radios[0], inner.activeElement?.value);
+  choose(radios[1]);
+  check('typed edit: a type removes the reason', !inner.textContent.includes('Choose an edit type.')
+    && group.getAttribute('aria-invalid') !== 'true', inner.textContent);
+  node.shadowRoot.querySelector('form').requestSubmit();
+  check('typed edit: the submit after the type sends the edit', sent.length === 1 && sent[0].edits[0]?.type === 'correction', JSON.stringify(sent));
+}
+
+// A change of the type while the request is pending makes the values new, so the receipt does not show done.
+{
+  const { node, sent, input, radios } = typedForm();
+  typeIn(input, 'C-2');
+  choose(radios[0]);
+  node.shadowRoot.querySelector('form').requestSubmit();
+  choose(radios[2]);
+  node.receipt({ id: sent[0].id, ok: true });
+  check('typed edit: a new type while pending does not show done', node.dataset.state === 'default', node.dataset.state);
+  node.shadowRoot.querySelector('form').requestSubmit();
+  check('typed edit: the next save sends the new type', sent.length === 2 && sent[1].edits[0].type === 'override', JSON.stringify(sent));
+}
+
+// The application gives the typed names. A fill cannot remove the type of an edit or add one.
+{
+  const untyped = mount('editable-form', FORM);
+  untyped.action = TYPED_BINDING;
+  check('typed edit: a fill without the typed flag of the application is refused', untyped.dataset.state === 'refused'
+    && refusedText(untyped).includes('data.fields: the edit type of the field shelf is not the rule of the application'), refusedText(untyped));
+  const extra = mount('editable-form', TYPED_FORM);
+  extra.action = { tool: 'library.update_loan', label: 'Save', title: 'Loan details', editable: EDITABLE };
+  check('typed edit: a binding with no typed list accepts no typed field', extra.dataset.state === 'refused'
+    && refusedText(extra).includes('the edit type of the field shelf'), refusedText(extra));
+  const plain = mount('editable-form', FORM);
+  const plainSent = [];
+  plain.addEventListener('mu-action', (event) => plainSent.push(event.detail));
+  plain.action = { tool: 'library.update_loan', label: 'Save', title: 'Loan details', editable: EDITABLE };
+  plain.shadowRoot.querySelector('form').requestSubmit();
+  check('typed edit: a form with no typed field sends no edits list', plainSent.length === 1 && !('edits' in plainSent[0]), JSON.stringify(plainSent));
+}
+
+// A disabled typed field has no editor, so it has no edit.
+{
+  const data = { ...FORM, fields: [field('branch', 'Branch', 'North'),
+    fill('field', { name: 'shelf', label: 'Shelf code', value: 'B-14', typed: true, disabled: true })] };
+  const { node, sent } = typedForm(TYPED_BINDING, data);
+  node.shadowRoot.querySelector('form').requestSubmit();
+  check('typed edit: a disabled typed field sends no edit', sent.length === 1 && sent[0].edits.length === 0
+    && !Object.hasOwn(sent[0].arguments, 'shelf'), JSON.stringify(sent));
+}
+
 // A new fill after done has new values. The old receipt does not confirm them.
 const refill = mount('editable-form', FORM);
 const refillSubmits = [];
@@ -731,6 +850,19 @@ enterForm.action = { tool: 'library.update_loan', label: 'Save', title: 'Loan de
 let formSubmits = 0;
 enterForm.addEventListener('mu-action', () => { formSubmits += 1; });
 keyboard.append(enterForm);
+// The runner gives the type of a typed edit with the keyboard: Tab to the group, Space, then an arrow key.
+const typedTarget = document.createElement('mu-editable-form');
+typedTarget.actor = AUTHOR;
+typedTarget.fill = outer('editable-form', { ...TYPED_FORM, title: 'Typed form' });
+typedTarget.action = { ...TYPED_BINDING, title: 'Typed form' };
+keyboard.append(typedTarget);
+window.muFocusTyped = () => {
+  const input = typedTarget.shadowRoot.querySelector('mu-field').shadowRoot.querySelector('input');
+  input.focus();
+  typeIn(input, 'C-3');
+  return true;
+};
+window.muTyped = () => typedTarget.shadowRoot.querySelector('mu-field').editType;
 window.muFocusField = () => { enterForm.shadowRoot.querySelector('mu-field').shadowRoot.querySelector('input').focus(); return true; };
 window.muFormSubmits = () => formSubmits;
 // The runner opens the confirm step of this button and this form with the keyboard.

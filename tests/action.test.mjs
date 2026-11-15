@@ -208,3 +208,84 @@ test('a receipt can carry a reference as text with a length limit', () => {
   assert.equal(action.receipt({ id: request.id, ok: false }), true);
   assert.equal(action.reference, '');
 });
+
+// Typed edits (catalog/README.md, "Typed edits"). Principle 4: each form edit records its type.
+const TYPED = { tool: 'library.update_loan', editable: { due_date: 'Due date', note: 'Note' }, typed: ['due_date'],
+  editor: { type: 'human', id: 'person-ana' } };
+const TIME = '2026-11-15T09:30:00.000Z';
+
+test('a typed binding names editable fields and a person as the editor', () => {
+  assert.deepEqual(bindingErrors(TYPED), []);
+  assert.deepEqual(bindingErrors({ tool: 'library.update_loan', editable: { note: 'Note' }, typed: [] }), []);
+  const NAMES = ['typed must list names that editable gives, each one time'];
+  assert.deepEqual(bindingErrors({ ...TYPED, typed: 'due_date' }), NAMES);
+  assert.deepEqual(bindingErrors({ ...TYPED, typed: ['shelf'] }), NAMES);
+  assert.deepEqual(bindingErrors({ ...TYPED, typed: ['due_date', 'due_date'] }), NAMES);
+  const EDITOR = ['editor must be a person: { type: human, id } with an id of 1 to 128 characters'];
+  assert.deepEqual(bindingErrors({ ...TYPED, editor: undefined }), EDITOR);
+  assert.deepEqual(bindingErrors({ ...TYPED, editor: { type: 'agent', id: 'agent-check' } }), EDITOR);
+  assert.deepEqual(bindingErrors({ ...TYPED, editor: { type: 'human', id: '' } }), EDITOR);
+  assert.deepEqual(bindingErrors({ ...TYPED, editor: { type: 'human', id: 'p'.repeat(129) } }), EDITOR);
+  assert.deepEqual(bindingErrors({ ...TYPED, editor: { type: 'human', id: 'person-ana', role: 'admin' } }), EDITOR);
+  assert.deepEqual(bindingErrors({ ...TYPED, editor: { type: 'human', id: 'p'.repeat(128) } }), []);
+});
+
+test('the request of a typed binding has each edit with its type, the values, the actor and the time', () => {
+  for (const type of ['judgment', 'correction', 'override']) {
+    const action = new ActionState();
+    action.bind(TYPED);
+    const request = action.start({ due_date: '2026-12-08', note: 'x' }, false,
+      [{ field: 'due_date', type, old_value: '2026-12-01', time: TIME }]);
+    assert.deepEqual(JSON.parse(JSON.stringify(request.edits)), [{ field: 'due_date', type, old_value: '2026-12-01',
+      new_value: '2026-12-08', actor: { type: 'human', id: 'person-ana' }, time: TIME }]);
+    assert.ok(Object.isFrozen(request.edits) && Object.isFrozen(request.edits[0]) && Object.isFrozen(request.edits[0].actor));
+  }
+  const action = new ActionState();
+  action.bind(TYPED);
+  assert.deepEqual(action.start({ due_date: '2026-12-01' }, false, []).edits, []);
+  const plain = new ActionState();
+  plain.bind({ tool: 'library.update_loan', editable: { note: 'Note' } });
+  assert.equal('edits' in plain.start({ note: 'x' }), false);
+});
+
+test('a request with a bad edit is refused', () => {
+  const edit = { field: 'due_date', type: 'judgment', old_value: '2026-12-01', time: TIME };
+  const bad = [
+    [{ ...edit, type: undefined }],
+    [{ ...edit, type: 'guess' }],
+    [{ ...edit, field: 'note' }],
+    [{ ...edit, old_value: '2026-12-08' }],
+    [{ ...edit, old_value: { day: 1 } }],
+    [{ ...edit, time: 'yesterday' }],
+    [{ ...edit, actor: { type: 'agent', id: 'agent-check' } }],
+    [edit, edit],
+    'due_date',
+  ];
+  for (const edits of bad) {
+    const action = new ActionState();
+    action.bind(TYPED);
+    assert.equal(action.start({ due_date: '2026-12-08' }, false, edits), null, JSON.stringify(edits));
+    assert.equal(action.state, 'default');
+  }
+  // An edit needs a value in the request. A typed binding needs an edits list.
+  const missing = new ActionState();
+  missing.bind(TYPED);
+  assert.equal(missing.start({ note: 'x' }, false, [edit]), null);
+  assert.equal(missing.start({ due_date: '2026-12-08' }), null);
+  const plain = new ActionState();
+  plain.bind({ tool: 'library.update_loan', editable: { note: 'Note' } });
+  assert.equal(plain.start({ note: 'x' }, false, [{ ...edit, field: 'note' }]), null);
+});
+
+test('the typed names and the editor come from the binding', () => {
+  const action = new ActionState();
+  assert.equal(action.typed, null);
+  assert.equal(action.editor, null);
+  action.bind(TYPED);
+  assert.deepEqual([...action.typed], ['due_date']);
+  assert.deepEqual({ ...action.editor }, { type: 'human', id: 'person-ana' });
+  assert.ok(Object.isFrozen(action.typed) && Object.isFrozen(action.editor));
+  action.bind({ tool: 'library.renew' });
+  assert.deepEqual([...action.typed], []);
+  assert.equal(action.editor, null);
+});

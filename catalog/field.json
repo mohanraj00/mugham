@@ -3,7 +3,7 @@
   "name": "field",
   "version": "0.1.0",
   "kind": "primitive",
-  "description": "A labeled text input. A person edits the value.",
+  "description": "A labeled text input. A person edits the value. If the field is typed, the person also gives the type of each edit.",
   "ai_content": false,
   "data": {
     "name": {
@@ -42,6 +42,11 @@
       "type": "boolean",
       "label": "Disabled",
       "required": false
+    },
+    "typed": {
+      "type": "boolean",
+      "label": "Typed",
+      "required": false
     }
   },
   "states": [
@@ -70,7 +75,12 @@
     },
     "keyboard": [
       "Tab",
-      "Shift+Tab"
+      "Shift+Tab",
+      "ArrowUp",
+      "ArrowDown",
+      "ArrowLeft",
+      "ArrowRight",
+      "Space"
     ],
     "forced_colors": true,
     "reduced_motion": true

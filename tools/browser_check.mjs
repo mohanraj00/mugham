@@ -359,6 +359,19 @@ async function main() {
           const submits = await evaluate(session, sessionId, 'window.muFormSubmits()');
           report.keyboard.push({ page, step: 'Enter in a field submits the form', ok: submits === 1, detail: submits });
         }
+        // A typed edit: after a change, Tab goes to the edit type group. Space selects the first type, and an arrow key the next.
+        if (await evaluate(session, sessionId, 'typeof window.muFocusTyped === "function"')) {
+          await evaluate(session, sessionId, 'window.muFocusTyped()');
+          await key(session, sessionId, 'Tab', 'Tab', 9);
+          await key(session, sessionId, ' ', 'Space', 32, ' ');
+          const first = await evaluate(session, sessionId, 'window.muTyped()');
+          await key(session, sessionId, 'ArrowDown', 'ArrowDown', 40);
+          const next = await evaluate(session, sessionId, 'window.muTyped()');
+          report.keyboard.push({ page, step: 'Tab, Space and ArrowDown select the edit type', ok: first === 'judgment' && next === 'correction',
+            detail: `${first} ${next}` });
+          report.accessibility.push(...await axErrors(session, sessionId, [['group', 'Edit type'], ['radio', 'Judgment'],
+            ['radio', 'Correction'], ['radio', 'Override']], page + ' edit type'));
+        }
         // The confirm step: Enter opens it, Escape closes it, and only the confirm button sends the action.
         // The accessibility tree must name the group and its buttons. See catalog/README.md#actions.
         if (await evaluate(session, sessionId, 'typeof window.muFocusConfirm === "function"')) {
