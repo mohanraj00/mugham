@@ -1,0 +1,31 @@
+{
+  "format": 2,
+  "name": "chart",
+  "version": "0.1.0",
+  "kind": "component",
+  "description": "An SVG chart with a table view. Categories and series must not be empty. Each series has one value per category. Stacks keep positive and negative totals separate. Arrow keys move through points in series order and wrap at each end. A new fill resets the point and closes the table.",
+  "ai_content": true,
+  "slots": { "authorship": { "required": true } },
+  "data": {
+    "title": { "type": "text", "label": "Chart title", "required": true, "min_length": 1, "max_length": 120 },
+    "type": { "type": "enum", "label": "Chart type", "required": true, "values": ["bar", "line", "stacked_bar"] },
+    "categories": {
+      "type": "list", "label": "Categories or dates as text", "required": true, "max_items": 50,
+      "items": { "type": "text", "label": "Category", "required": true, "min_length": 1, "max_length": 80 }
+    },
+    "series": {
+      "type": "list", "label": "Data series", "required": true, "max_items": 6,
+      "items": { "type": "component", "label": "Series", "required": true, "name": "chart-series" }
+    },
+    "units": { "type": "text", "label": "Value units", "required": true, "min_length": 1, "max_length": 40 },
+    "x_label": { "type": "text", "label": "Horizontal axis label", "required": true, "min_length": 1, "max_length": 80 },
+    "y_label": { "type": "text", "label": "Vertical axis label", "required": true, "min_length": 1, "max_length": 80 }
+  },
+  "states": ["default", "refused"],
+  "tokens": ["color.text", "color.text-muted", "color.border", "color.surface", "color.focus", "space.2", "space.3", "type.body", "type.caption", "type.weight-strong"],
+  "accessibility": {
+    "role": "group", "name": { "field": "title" },
+    "keyboard": ["Tab", "Shift+Tab", "Enter", "Space", "ArrowRight", "ArrowLeft", "ArrowDown", "ArrowUp"],
+    "forced_colors": true, "reduced_motion": true
+  }
+}

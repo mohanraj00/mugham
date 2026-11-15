@@ -21,6 +21,7 @@ const MODES = {
 };
 // Each check page, and the roles and names that its accessibility tree must have in light mode.
 const PAGES = {
+  'tests/browser/chart.html': [['button', 'Keyboard target'], ['group', 'Weekly tickets'], ['image', 'Received, Week 1: 12 tickets'], ['table', 'Weekly tickets'], ['columnheader', 'Received'], ['cell', '12 tickets']],
   'tests/browser/table.html': [['button', 'Keyboard target'], ['group', 'Sample rows'], ['table', 'Sample rows'], ['columnheader', 'Name'], ['columnheader', 'Status'], ['cell', 'Ready']],
   'tests/browser/status.html': [['button', 'Keyboard target'], ['group', 'Synthetic check A.'], ['group', 'Synthetic check B.'], ['group', 'Synthetic check C.'], ['group', 'Synthetic check D.']],
   'tests/browser/image.html': [['button', 'Keyboard target'], ['group', 'Image'], ['button', 'Open image at full size: Two rooms with a door.']],
@@ -34,6 +35,7 @@ const PAGES = {
 };
 // Each example page, the number of kit elements, the number of refused elements and the roles and names.
 const EXAMPLES = {
+  'examples/chart.html': [6, 0, [['group', 'Synthetic weekly tickets'], ['group', 'Synthetic weekly visits'], ['group', 'Synthetic weekly tasks'], ['button', 'Show data table']]],
   'examples/narration.html': [2, 0, [['article', 'Tray A1'], ['heading', 'Matching narration'], ['heading', 'Different narration']]],
   'examples/table.html': [2, 0, [['table', 'Synthetic plots'], ['columnheader', 'Plot'], ['cell', 'Ready']]],
   'examples/status.html': [5, 1, [['group', 'Synthetic check A.'], ['group', 'Synthetic check B.'], ['group', 'Synthetic check C.'], ['group', 'Synthetic check D.']]],
@@ -397,6 +399,20 @@ async function main() {
         await key(session, sessionId, ' ', 'Space', 32, ' ');
         const presses = await evaluate(session, sessionId, 'window.muPresses()');
         report.keyboard.push({ page, step: 'Enter and Space press the button', ok: presses === 2, detail: presses });
+        if (await evaluate(session, sessionId, 'typeof window.muChartKeys === "function"')) {
+          for (const [name, code, expectedPoint] of [['Tab', 9, 0], ['ArrowRight', 39, 1], ['ArrowDown', 40, 2],
+            ['ArrowLeft', 37, 1], ['ArrowUp', 38, 0], ['ArrowUp', 38, 5]]) {
+            await key(session, sessionId, name, name, code);
+            const found = await evaluate(session, sessionId, 'window.muChartKeys()');
+            report.keyboard.push({ page, step: `${name} moves to chart point ${expectedPoint}`, ok: found.point === expectedPoint, detail: JSON.stringify(found) });
+          }
+          await key(session, sessionId, 'Tab', 'Tab', 9);
+          for (const [name, code, text, expectedTable] of [['Enter', 13, '\r', true], [' ', 32, ' ', false]]) {
+            await key(session, sessionId, name, name === ' ' ? 'Space' : name, code, text);
+            const found = await evaluate(session, sessionId, 'window.muChartKeys()');
+            report.keyboard.push({ page, step: `${name} toggles the chart table`, ok: found.table === expectedTable, detail: JSON.stringify(found) });
+          }
+        }
         if (await evaluate(session, sessionId, 'typeof window.muFocusTable === "function"')) {
           await evaluate(session, sessionId, 'window.muFocusTable()');
           for (const [value, code, number, text, sort, first] of [

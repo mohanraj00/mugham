@@ -52,6 +52,8 @@ VALID = {
     'table-row': {'cells': ['Plot A'], 'status': 'Ready'},
     'status': {'state': 'pending', 'text': 'Synthetic check A.'},
     'image': {'url': '/examples/floor-plan.svg', 'alt': 'Two rooms with a door.', 'width': 480, 'height': 320},
+    'chart': {'title': 'Weekly tickets', 'type': 'bar', 'categories': ['Week 1'], 'series': [fill('chart-series', {'label': 'Received', 'values': [12]})], 'units': 'tickets', 'x_label': 'Week', 'y_label': 'Count'},
+    'chart-series': {'label': 'Received', 'values': [12]},
 }
 
 
