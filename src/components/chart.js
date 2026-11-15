@@ -114,8 +114,6 @@ export class MuChart extends MuElement {
     plot.setAttribute('viewBox', `0 0 ${number(width)} 500`);
     plot.setAttribute('width', number(width));
     plot.setAttribute('height', '500');
-    plot.setAttribute('role', 'group');
-    plot.setAttribute('aria-labelledby', 'chart-title');
     const axis = line(left, y(0), right, y(0));
     axis.setAttribute('class', 'axis');
     plot.append(axis, line(left, top, left, bottom));

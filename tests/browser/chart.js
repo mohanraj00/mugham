@@ -27,6 +27,7 @@ for (const type of ['bar', 'line', 'stacked_bar']) {
   const root = node.shadowRoot;
   check(`${type}: exported chart class and named group`, node instanceof MuChart && node.dataset.state === 'default'
     && root.querySelector('[role="group"]').getAttribute('aria-labelledby') === 'chart-title'
+    && root.querySelectorAll('[aria-labelledby="chart-title"]').length === 1
     && root.querySelector('#chart-title').textContent === DATA.title);
   check(`${type}: SVG points and finite geometry`, root.querySelector('svg')?.namespaceURI === 'http://www.w3.org/2000/svg'
     && points(root).length === 6 && finite(root));
