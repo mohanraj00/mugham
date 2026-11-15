@@ -21,6 +21,7 @@ const MODES = {
 // Each check page, and the roles and names that its accessibility tree must have in light mode.
 const PAGES = {
   'tests/browser/table.html': [['button', 'Keyboard target'], ['group', 'Sample rows'], ['table', 'Sample rows'], ['columnheader', 'Name'], ['columnheader', 'Status'], ['cell', 'Ready']],
+  'tests/browser/status.html': [['button', 'Keyboard target'], ['group', 'Synthetic check A.'], ['group', 'Synthetic check B.'], ['group', 'Synthetic check C.'], ['group', 'Synthetic check D.']],
   'tests/browser/primitives.html': [['button', 'Keyboard target'], ['textbox', 'Shelf code']],
   'tests/browser/components.html': [['button', 'Keyboard target'], ['article', 'Field guide to moss'], ['list', 'Loans'],
     ['form', 'Loan details'], ['textbox', 'Branch'], ['group', 'Citation'], ['button', 'Open source: Keyboard source'],
@@ -33,6 +34,7 @@ const PAGES = {
 const EXAMPLES = {
   'examples/narration.html': [2, 0, [['article', 'Tray A1'], ['heading', 'Matching narration'], ['heading', 'Different narration']]],
   'examples/table.html': [2, 0, [['table', 'Synthetic plots'], ['columnheader', 'Plot'], ['cell', 'Ready']]],
+  'examples/status.html': [5, 1, [['group', 'Synthetic check A.'], ['group', 'Synthetic check B.'], ['group', 'Synthetic check C.'], ['group', 'Synthetic check D.']]],
   'examples/primitives.html': [16, 1, [['button', 'Renew'], ['group', 'Loan details'], ['group', 'Reading list'], ['textbox', 'Shelf code']]],
   'examples/loans.html': [9, 0, [['article', 'Field guide to moss'], ['button', 'Renew'], ['list', 'Current loans'], ['form', 'Change a loan']]],
   'examples/citation.html': [3, 1, [['group', 'Citation'], ['button', 'Open source: Synthetic weather notes, page 3'], ['article', 'Message from agent-weather']]],
