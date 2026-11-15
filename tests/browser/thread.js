@@ -205,6 +205,22 @@ async function run() {
     && excerpt.shadowRoot.textContent.includes('Source: Synthetic loan rules')
     && excerpt.shadowRoot.textContent.includes('Author: agent a-catalog'), item(excerpted, 0).textContent);
 
+  // A diff part shows as its element, with the kind of each change as text and the actor of the envelope as its author.
+  const diffed = mount();
+  diffed.push(snapshot('d1', CATALOG_AGENT, { format: 2, fill: { ...fill('diff', { title: 'Loan L-0001', parts: [fill('diff-part', { title: 'Loan',
+    changes: [fill('diff-change', { label: 'Shelf', change: 'changed', before: 'B-14', after: 'C-02' })] })] }), slots: { authorship: CATALOG_AGENT_ID } } }));
+  await settle();
+  const diff = item(diffed, 0).querySelector('mu-diff');
+  check('diff: a diff part shows as its element', diff?.dataset.state === 'default'
+    && diff.shadowRoot.querySelector('[part="kind"]')?.textContent === 'Changed'
+    && diff.shadowRoot.textContent.includes('Author: agent a-catalog'), item(diffed, 0).textContent);
+  // A part of a diff has no element of its own, so the thread refuses it as a top-level fill.
+  const loosePart = mount();
+  loosePart.push(snapshot('d2', CATALOG_AGENT, { format: 2, fill: fill('diff-part', { title: 'Loan', changes: [] }) }));
+  await settle();
+  check('diff: a diff-part fill with no diff shows a refusal', item(loosePart, 0).querySelector('.refusal')?.textContent.includes('diff-part'),
+    item(loosePart, 0).textContent);
+
   // A fill of a component with no element shows a refusal.
   const noElement = mount();
   noElement.push(snapshot('f1', CATALOG_AGENT, { format: 2, fill: { ...fill('fact', { label: 'Shelf', value: 'B-14' }), slots: { authorship: CATALOG_AGENT_ID } } }));

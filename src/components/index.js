@@ -7,6 +7,12 @@ import { fillErrors } from '../render/validate.js';
 import { CONTRACTS } from '../render/registry.js';
 import { MuTable } from './table.js';
 export { MuTable } from './table.js';
+import { MuStatus } from './status.js';
+export { MuStatus } from './status.js';
+import { MuImage } from './image.js';
+export { MuImage } from './image.js';
+import { MuChart } from './chart.js';
+export { MuChart } from './chart.js';
 
 const FIELD_NAME = /^[a-z][a-z0-9]*(_[a-z0-9]+)*$/;
 const boundError = (name) => `data.sections: the read-only field ${name} does not show the bound value`;
@@ -858,11 +864,128 @@ export class MuExcerpt extends MuElement {
   }
 }
 
+// The words of each kind of change. The kind shows as text, so it does not depend on color.
+const KINDS = Object.freeze({ added: 'Added', removed: 'Removed', changed: 'Changed', unchanged: 'Unchanged' });
+// A diff with more changes than this starts with each part closed.
+const OPEN_LIMIT = 20;
+
+function counts(changes) {
+  const found = changes.map((item) => item.data.change);
+  const words = Object.keys(KINDS).map((kind) => [kind, found.filter((value) => value === kind).length])
+    .filter(([, count]) => count > 0).map(([kind, count]) => `${count} ${kind}`);
+  return words.length ? words.join(', ') : 'no changes';
+}
+
+export class MuDiff extends MuElement {
+  static component = 'diff';
+  static styles = [sheet(`
+    :host { display: block; }
+    .diff {
+      color: var(--mu-color-text); font: var(--mu-type-body); padding: var(--mu-space-2) var(--mu-space-3);
+      border: 1px solid var(--mu-color-border); border-radius: var(--mu-radius-2);
+      display: flex; flex-direction: column; gap: var(--mu-space-2);
+    }
+    p { margin: 0; overflow-wrap: anywhere; }
+    .title { font-weight: var(--mu-type-weight-strong); }
+    .muted { font: var(--mu-type-caption); color: var(--mu-color-text-muted); }
+    details { border-block-start: 1px solid var(--mu-color-border); padding-block-start: var(--mu-space-2); }
+    summary { cursor: pointer; min-height: 2.75rem; display: flex; flex-wrap: wrap; align-items: center; gap: var(--mu-space-1) var(--mu-space-2); }
+    summary .name { font-weight: var(--mu-type-weight-strong); }
+    ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--mu-space-2); }
+    li { display: flex; flex-direction: column; gap: var(--mu-space-1); padding-inline-start: var(--mu-space-2);
+      border-inline-start: 3px solid var(--mu-color-border); }
+    li[data-state="added"] { border-inline-start-color: var(--mu-color-accent); }
+    li[data-state="removed"] { border-inline-start-color: var(--mu-color-danger); }
+    li[data-state="changed"] { border-inline-start-style: double; }
+    .kind { font: var(--mu-type-caption); font-weight: var(--mu-type-weight-strong); }
+    .head { display: flex; flex-wrap: wrap; gap: var(--mu-space-1) var(--mu-space-2); align-items: baseline; }
+    .value { white-space: pre-wrap; }
+    del { text-decoration: line-through; }
+    ins { text-decoration: underline; }
+    .provenance { display: flex; flex-direction: column; gap: var(--mu-space-1); }
+    @media (forced-colors: active) {
+      .diff, details, li, li[data-state] { border-color: CanvasText; } .muted { color: CanvasText; }
+    }
+  `)];
+
+  // The contract format cannot compare two fields, so the element checks the values of each change.
+  check(data) {
+    for (const [p, part] of data.parts.entries()) {
+      for (const [c, item] of part.data.changes.entries()) {
+        const { change, before, after } = item.data;
+        const at = `data.parts[${p}].data.changes[${c}]`;
+        const has = [before !== undefined, after !== undefined];
+        if (change === 'added' && (has[0] || !has[1])) return [`${at}: added needs after and no before`];
+        if (change === 'removed' && (!has[0] || has[1])) return [`${at}: removed needs before and no after`];
+        if (change === 'changed' && !(has[0] && has[1] && before !== after)) return [`${at}: changed needs a before and a different after`];
+        if (change === 'unchanged' && !(has[0] && has[1] && before === after)) return [`${at}: unchanged needs the same before and after`];
+      }
+    }
+    return [];
+  }
+
+  state(data) {
+    return data.parts.some((part) => part.data.changes.length) ? 'default' : 'empty';
+  }
+
+  render(data) {
+    const before = data.before_label ?? 'Before';
+    const after = data.after_label ?? 'After';
+    const all = data.parts.flatMap((part) => part.data.changes);
+    const head = [el('p', { class: 'title', part: 'title' }, data.title),
+      el('p', { class: 'muted', part: 'versions' }, `${before} to ${after}`)];
+    if (!all.length) {
+      head.push(el('p', { class: 'muted', part: 'empty' }, 'No changes.'));
+      return [el('div', { class: 'diff', role: 'group', 'aria-label': data.title, part: 'diff' }, ...head, provenance(this.fill.slots))];
+    }
+    head.push(el('p', { class: 'muted', part: 'counts' }, `In all: ${counts(all)}.`));
+    const parts = data.parts.map((part) => this.#part(part.data, before, after, all.length <= OPEN_LIMIT));
+    return [el('div', { class: 'diff', role: 'group', 'aria-label': data.title, part: 'diff' }, ...head, ...parts, provenance(this.fill.slots))];
+  }
+
+  // A part is a details element, so Enter and Space on its summary open and close it.
+  #part(data, before, after, open) {
+    const summary = el('summary', { part: 'summary' }, el('span', { class: 'name' }, data.title),
+      el('span', { class: 'muted', part: 'counts' }, counts(data.changes)));
+    const node = el('details', { part: 'part', 'data-state': data.changes.length ? 'default' : 'empty' }, summary);
+    // A part with no difference starts closed.
+    node.open = open && data.changes.some((item) => item.data.change !== 'unchanged');
+    if (!data.changes.length) {
+      node.append(el('p', { class: 'muted', part: 'empty' }, 'No changes.'));
+      return node;
+    }
+    const list = el('ul', { part: 'changes' });
+    for (const { data: item } of data.changes) list.append(this.#change(item, before, after));
+    node.append(list);
+    return node;
+  }
+
+  #change(item, before, after) {
+    const shown = (value) => (value === '' ? el('span', { class: 'muted' }, 'No value') : value);
+    const row = el('li', { part: 'change', 'data-state': item.change },
+      el('p', { class: 'head' }, el('span', { class: 'kind', part: 'kind' }, KINDS[item.change]),
+        el('span', { part: 'label' }, item.label)));
+    if (item.change === 'unchanged') {
+      row.append(el('p', { class: 'value', part: 'value' }, shown(item.before)));
+      return row;
+    }
+    if (item.before !== undefined) {
+      row.append(el('p', { class: 'value' }, el('span', { class: 'muted', part: 'version' }, `${before}: `),
+        el('del', { part: 'before' }, shown(item.before))));
+    }
+    if (item.after !== undefined) {
+      row.append(el('p', { class: 'value' }, el('span', { class: 'muted', part: 'version' }, `${after}: `),
+        el('ins', { part: 'after' }, shown(item.after))));
+    }
+    return row;
+  }
+}
+
 export function define(registry = customElements) {
   definePrimitives(registry);
   for (const [name, element] of [['mu-action-button', MuActionButton], ['mu-card', MuCard],
-    ['mu-card-grid', MuCardGrid], ['mu-editable-form', MuEditableForm], ['mu-form-card', MuFormCard], ['mu-citation', MuCitation],
-    ['mu-excerpt', MuExcerpt], ['mu-table', MuTable]]) {
+    ['mu-card-grid', MuCardGrid], ['mu-editable-form', MuEditableForm], ['mu-form-card', MuFormCard], ['mu-citation', MuCitation], ['mu-diff', MuDiff],
+    ['mu-excerpt', MuExcerpt], ['mu-table', MuTable], ['mu-status', MuStatus], ['mu-image', MuImage], ['mu-chart', MuChart]]) {
     if (!registry.get(name)) registry.define(name, element);
   }
 }

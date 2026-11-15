@@ -45,8 +45,8 @@ envelopes=[
    envelope=env(messageId='m-1',actor=AC,state='final',parts=[{'type':'component','format':2,'fill':fact('2026-11-20')}]),
    result=env(messageId='m-1',actor=AC,state='final',parts=[{'type':'component','format':2,'fill':fact('2026-11-20')}])),
  dict(name='an undeclared component shows as a refusal', schema=True,
-   envelope=env(messageId='m-1',actor=AC,state='final',parts=[{'type':'component','format':2,'fill':{'component':'chart','version':'0.1.0','data':{}}}]),
-   result=env(messageId='m-1',actor=AC,state='final',parts=[{'type':'refusal','errors':['component: no contract has the name chart']}])),
+   envelope=env(messageId='m-1',actor=AC,state='final',parts=[{'type':'component','format':2,'fill':{'component':'unknown-chart','version':'0.1.0','data':{}}}]),
+   result=env(messageId='m-1',actor=AC,state='final',parts=[{'type':'refusal','errors':['component: no contract has the name unknown-chart']}])),
  dict(name='a component part of fill format 1 shows as a refusal', schema=False,
    envelope=env(messageId='m-1',actor=AC,state='final',parts=[{'type':'component','format':1,'fill':fact('2026-11-20')}]),
    result=env(messageId='m-1',actor=AC,state='final',parts=[{'type':'refusal','errors':['parts[0].format: must be 2']}])),
@@ -143,12 +143,12 @@ streams=[
     refused('m-3',['metadata.mugham.actor: a required field is missing'])],
    'ignored':2,'errors':[]}),
  dict(name='an undeclared component shows as a refusal', events=[
-   ev('ACTIVITY_SNAPSHOT',messageId='m-1',activityType='mugham.fill',content={'format':2,'fill':{'component':'chart','version':'0.1.0','data':{}}},metadata=meta(AC)),
+   ev('ACTIVITY_SNAPSHOT',messageId='m-1',activityType='mugham.fill',content={'format':2,'fill':{'component':'unknown-chart','version':'0.1.0','data':{}}},metadata=meta(AC)),
    ev('ACTIVITY_SNAPSHOT',messageId='m-2',activityType='mugham.fill',content={'format':1,'fill':fact('2026-11-20')},metadata=meta(AC)),
    ev('ACTIVITY_SNAPSHOT',messageId='m-3',activityType='other.progress',content={'html':'<b>50%</b>'},metadata=meta(AC)),
    ev('ACTIVITY_DELTA',messageId='m-1',activityType='mugham.fill',patch=[{'op':'replace','path':'/fill/component','value':'fact'}])],
   expected={'runs':[],'messages':[
-    msg('m-1',AC,'activity','final',[{'type':'refusal','errors':['component: no contract has the name chart']}],run=False),
+    msg('m-1',AC,'activity','final',[{'type':'refusal','errors':['component: no contract has the name unknown-chart']}],run=False),
     msg('m-2',AC,'activity','final',[{'type':'refusal','errors':['content.format: must be 2']}],run=False)],
    'ignored':2,'errors':[]}),
  dict(name='markup in a text delta stays text', events=[

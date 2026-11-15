@@ -8,10 +8,11 @@ import { tmpdir } from 'node:os';
 import { extname, join, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { guideChecks } from '../tests/browser/guides.mjs';
+import { imageKeyboardChecks } from '../tests/browser/image.js';
 
 export const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const SERVED = ['src', 'catalog', 'examples', join('tests', 'browser')];
-const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.json': 'application/json', '.css': 'text/css' };
+const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.json': 'application/json', '.css': 'text/css', '.svg': 'image/svg+xml' };
 const MODES = {
   light: [{ name: 'prefers-color-scheme', value: 'light' }],
   dark: [{ name: 'prefers-color-scheme', value: 'dark' }],
@@ -20,22 +21,29 @@ const MODES = {
 };
 // Each check page, and the roles and names that its accessibility tree must have in light mode.
 const PAGES = {
+  'tests/browser/chart.html': [['button', 'Keyboard target'], ['group', 'Weekly tickets'], ['image', 'Received, Week 1: 12 tickets'], ['table', 'Weekly tickets'], ['columnheader', 'Received'], ['cell', '12 tickets']],
   'tests/browser/table.html': [['button', 'Keyboard target'], ['group', 'Sample rows'], ['table', 'Sample rows'], ['columnheader', 'Name'], ['columnheader', 'Status'], ['cell', 'Ready']],
+  'tests/browser/status.html': [['button', 'Keyboard target'], ['group', 'Synthetic check A.'], ['group', 'Synthetic check B.'], ['group', 'Synthetic check C.'], ['group', 'Synthetic check D.']],
+  'tests/browser/image.html': [['button', 'Keyboard target'], ['group', 'Image'], ['button', 'Open image at full size: Two rooms with a door.']],
   'tests/browser/primitives.html': [['button', 'Keyboard target'], ['textbox', 'Shelf code']],
   'tests/browser/components.html': [['button', 'Keyboard target'], ['article', 'Field guide to moss'], ['list', 'Loans'],
     ['form', 'Loan details'], ['textbox', 'Branch'], ['group', 'Citation'], ['button', 'Open source: Keyboard source'],
-    ['group', 'Source excerpt'], ['button', 'Open source: Keyboard excerpt source']],
+    ['group', 'Source excerpt'], ['button', 'Open source: Keyboard excerpt source'], ['group', 'Keyboard diff']],
   'tests/browser/thread.html': [['button', 'Keyboard target'], ['list', 'Thread'], ['article', 'Message from Robin, Person'],
     ['article', 'Message from Renewal agent, Agent']],
   'tests/browser/register.html': [['button', 'Keyboard target'], ['article', 'Plot 4'], ['article', 'Plot 7']],
 };
 // Each example page, the number of kit elements, the number of refused elements and the roles and names.
 const EXAMPLES = {
+  'examples/chart.html': [6, 0, [['group', 'Synthetic weekly tickets'], ['group', 'Synthetic weekly visits'], ['group', 'Synthetic weekly tasks'], ['button', 'Show data table']]],
   'examples/narration.html': [2, 0, [['article', 'Tray A1'], ['heading', 'Matching narration'], ['heading', 'Different narration']]],
   'examples/table.html': [2, 0, [['table', 'Synthetic plots'], ['columnheader', 'Plot'], ['cell', 'Ready']]],
+  'examples/status.html': [5, 1, [['group', 'Synthetic check A.'], ['group', 'Synthetic check B.'], ['group', 'Synthetic check C.'], ['group', 'Synthetic check D.']]],
+  'examples/image.html': [4, 1, [['group', 'Image'], ['article', 'Synthetic floor plan'], ['article', 'Message from agent-plan']]],
   'examples/primitives.html': [16, 1, [['button', 'Renew'], ['group', 'Loan details'], ['group', 'Reading list'], ['textbox', 'Shelf code']]],
   'examples/loans.html': [9, 0, [['article', 'Field guide to moss'], ['button', 'Renew'], ['list', 'Current loans'], ['form', 'Change a loan']]],
   'examples/citation.html': [3, 1, [['group', 'Citation'], ['button', 'Open source: Synthetic weather notes, page 3'], ['article', 'Message from agent-weather']]],
+  'examples/diff.html': [2, 0, [['group', 'Hall booking B-0042'], ['group', 'Weekly timetable'], ['article', 'Message from Bookings agent']]],
   'examples/excerpt.html': [2, 1, [['group', 'Source excerpt'], ['button', 'Open source: Synthetic harbor guide, section 2'], ['article', 'Message from agent-reader']]],
   'examples/provenance.html': [2, 1, [['article', 'Renewal rule for short loans'], ['button', 'Open source: Synthetic library rules, section 4']]],
   'examples/inputs.html': [6, 0, [['form', 'Loan details'], ['textbox', 'Shelf code'], ['textbox', 'Note'], ['textbox', 'Copies'],
@@ -176,6 +184,47 @@ async function axErrors(session, sessionId, expected, where) {
   const { nodes } = await session.send('Accessibility.getFullAXTree', {}, sessionId);
   const named = nodes.filter((node) => !node.ignored).map((node) => [node.role?.value, node.name?.value]);
   return expected.map(([role, name]) => ({ where, role, name, ok: named.some(([r, n]) => r === role && n === name) }));
+}
+
+// The generic rules of decision 0006. They cover the risks of the axe-core rules that apply to the markup of the kit.
+// Each control in the accessibility tree has a name. In each root, an id is unique and each id reference finds its
+// target. Each role, each value of an ARIA attribute and each tabindex is valid. A tabindex above 0 changes the focus order.
+const CONTROLS = new Set(['button', 'checkbox', 'combobox', 'DisclosureTriangle', 'link', 'listbox', 'menuitem', 'radio',
+  'searchbox', 'slider', 'spinbutton', 'switch', 'tab', 'textbox']);
+export async function pageRules(session, sessionId, where) {
+  const { nodes } = await session.send('Accessibility.getFullAXTree', {}, sessionId);
+  const unnamed = nodes.filter((node) => !node.ignored && CONTROLS.has(node.role?.value) && !node.name?.value?.trim())
+    .map((node) => node.role.value);
+  const markup = await evaluate(session, sessionId, `(() => {
+    const ROLES = new Set(['alert', 'article', 'button', 'checkbox', 'dialog', 'form', 'group', 'heading', 'img', 'link', 'list',
+      'listitem', 'log', 'main', 'navigation', 'none', 'presentation', 'radio', 'radiogroup', 'region', 'status', 'textbox']);
+    const VALUES = { 'aria-invalid': ['true', 'false'], 'aria-live': ['off', 'polite', 'assertive'], 'aria-disabled': ['true', 'false'], tabindex: ['-1', '0'] };
+    const problems = [];
+    const check = (root, label) => {
+      const ids = new Map();
+      for (const node of root.querySelectorAll('[id]')) ids.set(node.id, (ids.get(node.id) || 0) + 1);
+      for (const [id, count] of ids) if (count > 1) problems.push(label + ': the id ' + id + ' shows ' + count + ' times');
+      for (const node of root.querySelectorAll('[aria-describedby], [aria-labelledby], label[for]')) {
+        const refs = [node.getAttribute('aria-describedby'), node.getAttribute('aria-labelledby'), node.getAttribute('for')]
+          .filter(Boolean).join(' ').split(/\\s+/).filter(Boolean);
+        for (const ref of refs) if (!ids.has(ref)) problems.push(label + ': ' + node.tagName.toLowerCase() + ' refers to the missing id ' + ref);
+      }
+      for (const node of root.querySelectorAll('[role]')) {
+        if (!ROLES.has(node.getAttribute('role'))) problems.push(label + ': the role ' + node.getAttribute('role') + ' is not known');
+      }
+      for (const [name, values] of Object.entries(VALUES)) {
+        for (const node of root.querySelectorAll('[' + name + ']')) {
+          if (!values.includes(node.getAttribute(name))) problems.push(label + ': ' + name + '="' + node.getAttribute(name) + '"');
+        }
+      }
+      for (const node of root.querySelectorAll('*')) if (node.shadowRoot) check(node.shadowRoot, node.tagName.toLowerCase());
+    };
+    check(document, 'document');
+    return problems;
+  })()`);
+  return [{ page: where, step: 'each control has a name', ok: unnamed.length === 0, detail: unnamed.join(' ') },
+    { page: where, step: 'each id is unique, each id reference finds its target, and each role and ARIA value is valid',
+      ok: markup.length === 0, detail: markup.slice(0, 10).join('; ') }];
 }
 
 // Starts a Python server of tools/ on a free port. The server gives its URL on its first line of output.
@@ -386,8 +435,10 @@ async function main() {
         report.pages[page][mode] = checks ? checks.results : [];
         if (!checks) report.errors.push(`${page} ${mode}: the checks did not run`);
         for (const item of report.pages[page][mode]) if (!item.ok) report.errors.push(`${page} ${mode}: ${item.name}: ${item.detail}`);
+        if (page === 'tests/browser/image.html' && checks) report.keyboard.push(...await imageKeyboardChecks(session, sessionId, { evaluate, key, axErrors }, page));
         if (mode !== 'light' || !checks) continue;
         report.accessibility.push(...await axErrors(session, sessionId, expected, page));
+        report.examples.push(...await pageRules(session, sessionId, page));
         // Keyboard: Tab moves the focus to the first button. Enter and Space press it.
         await evaluate(session, sessionId, 'document.activeElement && document.activeElement.blur(), true');
         await key(session, sessionId, 'Tab', 'Tab', 9);
@@ -397,6 +448,20 @@ async function main() {
         await key(session, sessionId, ' ', 'Space', 32, ' ');
         const presses = await evaluate(session, sessionId, 'window.muPresses()');
         report.keyboard.push({ page, step: 'Enter and Space press the button', ok: presses === 2, detail: presses });
+        if (await evaluate(session, sessionId, 'typeof window.muChartKeys === "function"')) {
+          for (const [name, code, expectedPoint] of [['Tab', 9, 0], ['ArrowRight', 39, 1], ['ArrowDown', 40, 2],
+            ['ArrowLeft', 37, 1], ['ArrowUp', 38, 0], ['ArrowUp', 38, 5]]) {
+            await key(session, sessionId, name, name, code);
+            const found = await evaluate(session, sessionId, 'window.muChartKeys()');
+            report.keyboard.push({ page, step: `${name} moves to chart point ${expectedPoint}`, ok: found.point === expectedPoint, detail: JSON.stringify(found) });
+          }
+          await key(session, sessionId, 'Tab', 'Tab', 9);
+          for (const [name, code, text, expectedTable] of [['Enter', 13, '\r', true], [' ', 32, ' ', false]]) {
+            await key(session, sessionId, name, name === ' ' ? 'Space' : name, code, text);
+            const found = await evaluate(session, sessionId, 'window.muChartKeys()');
+            report.keyboard.push({ page, step: `${name} toggles the chart table`, ok: found.table === expectedTable, detail: JSON.stringify(found) });
+          }
+        }
         if (await evaluate(session, sessionId, 'typeof window.muFocusTable === "function"')) {
           await evaluate(session, sessionId, 'window.muFocusTable()');
           for (const [value, code, number, text, sort, first] of [
@@ -414,6 +479,16 @@ async function main() {
           await key(session, sessionId, ' ', 'Space', 32, ' ');
           const opens = await evaluate(session, sessionId, 'window.muCitationOpens()');
           report.keyboard.push({ page, step: 'Enter and Space press the open button of a citation', ok: opens === 2, detail: opens });
+        }
+        // A part of a diff: Enter on its summary closes the open part, and Space opens it again.
+        if (await evaluate(session, sessionId, 'typeof window.muFocusDiff === "function"')) {
+          await evaluate(session, sessionId, 'window.muFocusDiff()');
+          await key(session, sessionId, 'Enter', 'Enter', 13, '\r');
+          const closed = await evaluate(session, sessionId, 'window.muDiffOpen()');
+          await key(session, sessionId, ' ', 'Space', 32, ' ');
+          const reopened = await evaluate(session, sessionId, 'window.muDiffOpen()');
+          report.keyboard.push({ page, step: 'Enter closes and Space opens a part of a diff', ok: closed === false && reopened === true,
+            detail: `${closed} ${reopened}` });
         }
         if (await evaluate(session, sessionId, 'typeof window.muFocusField === "function"')) {
           await evaluate(session, sessionId, 'window.muFocusField()');
@@ -533,7 +608,18 @@ async function main() {
       report.examples.push({ page, step: `${elements} kit elements and ${refused} refused`,
         ok: found.elements === elements && found.refused === refused, detail: JSON.stringify(found) });
       report.accessibility.push(...await axErrors(session, sessionId, expected, page));
+      report.examples.push(...await pageRules(session, sessionId, page));
     }
+    // The fixture of decision 0006 has one defect of each kind. The generic rules must find each one.
+    await open(session, sessionId, `${base}/tests/browser/rules.html`);
+    for (let i = 0; i < 100 && !await evaluate(session, sessionId, 'window.muRulesReady === true'); i += 1) await sleep(50);
+    const [names, markup] = await pageRules(session, sessionId, 'tests/browser/rules.html');
+    const found = markup.detail.split('; ');
+    const wanted = ['document: the id twice shows 2 times', 'document: input refers to the missing id nowhere',
+      'document: the role bogus is not known', 'document: aria-live="loud"', 'document: tabindex="3"', 'div: label refers to the missing id missing'];
+    report.examples.push({ page: 'tests/browser/rules.html', step: 'the generic rules find each defect of the fixture',
+      ok: !names.ok && names.detail === 'button' && !markup.ok && found.length === wanted.length && wanted.every((item) => found.includes(item)),
+      detail: `${names.detail} | ${markup.detail}` });
     // The guide pages of docs/guides/. tests/browser/guides.mjs gives the expected results.
     const guides = await guideChecks(session, sessionId, base, { evaluate, open, sleep });
     report.examples.push(...guides.steps);

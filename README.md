@@ -111,6 +111,7 @@ Each component has a contract file in [catalog/](catalog/README.md). The contrac
 | `mu-form-card` | A long form in sections, as labels and values. A person edits one field in place and sends the changes as one action. Some fields are read-only. | [form-card.json](catalog/form-card.json) |
 | `mu-card-grid` | A labeled list of cards in columns of equal width. | [card-grid.json](catalog/card-grid.json) |
 | `mu-citation` | The source of a claim: a source name, a locator as text and an open button. | [citation.json](catalog/citation.json) |
+| `mu-diff` | The difference between two versions of a text or a list of fields. Each change shows as added, removed, changed or unchanged in words. A person opens and closes each part. | [diff.json](catalog/diff.json) |
 | `mu-excerpt` | A passage of a source as text with a marked span, the source name, the locator as text and an open button. | [excerpt.json](catalog/excerpt.json) |
 
 The first five components are primitives. The other components use them.
@@ -141,6 +142,7 @@ python3 -m http.server 8000
    - `http://localhost:8000/examples/inputs.html`: a form with each input type, and a typed edit of a number and a date.
    - `http://localhost:8000/examples/membership.html`: a form card with 3 sections and 25 fields in a thread, with read-only fields that the service computes.
    - `http://localhost:8000/examples/citation.html`: a citation in a message, a citation with no source and a refused citation.
+   - `http://localhost:8000/examples/diff.html`: a diff of two versions of a synthetic hall booking, and a large diff that starts closed.
    - `http://localhost:8000/examples/excerpt.html`: an excerpt of a synthetic document in a message, and a refused excerpt.
    - `http://localhost:8000/examples/provenance.html`: a card with the authorship slot and the citation slot, and a refused card.
    - `http://localhost:8000/examples/register.html`: an application contract and element for a synthetic seed tray, a refused fill, and the tray in a thread.
