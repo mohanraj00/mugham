@@ -19,13 +19,21 @@ const LOAN = { title: 'Field guide to moss', summary: 'A short guide for walks i
   date_label: 'Due', facts: [fact('Shelf', 'B-14'), fact('Renewals', '1 of 3')] };
 const FORM = { title: 'Loan details', submit_label: 'Save', fields: [field('shelf', 'Shelf code', 'B-14'), field('branch', 'Branch', 'North')] };
 const EDITABLE = { shelf: 'Shelf code', branch: 'Branch' };
+// The diff component (catalog/diff.json). Two versions of a synthetic loan record and its rules text.
+const change = (label, kind, before, after) => fill('diff-change', { label, change: kind,
+  ...(before === undefined ? {} : { before }), ...(after === undefined ? {} : { after }) });
+const DIFF_LOAN = fill('diff-part', { title: 'Loan', changes: [change('Shelf', 'changed', 'B-14', 'C-02'),
+  change('Branch', 'unchanged', 'North', 'North'), change('Note', 'added', undefined, 'Keep dry.'), change('Fine', 'removed', '0.50')] });
+const DIFF_RULES = fill('diff-part', { title: 'Rules', changes: [change('Line 1', 'unchanged', 'A loan lasts two weeks.', 'A loan lasts two weeks.')] });
+const DIFF = { title: 'Loan L-0001', before_label: 'Version 3', after_label: 'Version 4', parts: [DIFF_LOAN, DIFF_RULES] };
 const VALID = {
   card: LOAN,
   'action-button': { label: 'Renew' },
   'editable-form': FORM,
   'card-grid': { label: 'Loans', cards: [fill('card', LOAN), fill('card', { title: 'Weather at sea' })] },
+  diff: DIFF,
 };
-const TAGS = { card: 'mu-card', 'action-button': 'mu-action-button', 'editable-form': 'mu-editable-form', 'card-grid': 'mu-card-grid' };
+const TAGS = { card: 'mu-card', 'action-button': 'mu-action-button', 'editable-form': 'mu-editable-form', 'card-grid': 'mu-card-grid', diff: 'mu-diff' };
 
 function mount(name, data) {
   const node = document.createElement(TAGS[name]);
@@ -110,6 +118,8 @@ const MARKED = {
   'action-button': { label: MARKUP.slice(0, 40), description: MARKUP },
   'editable-form': { title: MARKUP, submit_label: MARKUP.slice(0, 40), fields: [field('shelf', MARKUP.slice(0, 80), MARKUP)] },
   'card-grid': { label: MARKUP.slice(0, 80), cards: [fill('card', { title: MARKUP })] },
+  diff: { title: MARKUP, before_label: MARKUP.slice(0, 40), after_label: MARKUP.slice(0, 40), parts: [fill('diff-part', { title: MARKUP.slice(0, 80),
+    changes: [change(MARKUP, 'changed', MARKUP, `${MARKUP}!`), change(MARKUP, 'added', undefined, MARKUP), change(MARKUP, 'unchanged', MARKUP, MARKUP)] })] },
 };
 for (const [name, data] of Object.entries(MARKED)) {
   const node = mount(name, data);
@@ -359,6 +369,82 @@ check('excerpt: the styles have a forced colors rule for the mark', excerptSheet
 if (matchMedia('(forced-colors: active)').matches) {
   const forced = getComputedStyle(passageMark[0]);
   check('excerpt: in forced colors the mark keeps its underline', forced.textDecorationLine.includes('underline'), forced.textDecorationLine);
+}
+
+// The diff. Each change shows its kind as text. A part is a details element that a person opens and closes.
+{
+  const node = mount('diff', DIFF);
+  const root = node.shadowRoot;
+  const parts = [...root.querySelectorAll('details[part="part"]')];
+  const rows = [...root.querySelectorAll('[part="change"]')];
+  const text = (item, part) => item?.querySelector(`[part="${part}"]`)?.textContent;
+  check('diff: renders a valid fill in the default state', node.dataset.state === 'default' && parts.length === 2 && rows.length === 5, node.dataset.state);
+  check('diff: is a group named by the title', root.querySelector('[role="group"]')?.getAttribute('aria-label') === 'Loan L-0001');
+  check('diff: shows the title, the versions and the counts as text', text(root, 'title') === 'Loan L-0001'
+    && text(root, 'versions') === 'Version 3 to Version 4' && text(root, 'counts') === 'In all: 1 added, 1 removed, 1 changed, 2 unchanged.',
+  root.textContent.slice(0, 200));
+  check('diff: the summary of a part shows its title and counts', parts[0].querySelector('summary').textContent === 'Loan1 added, 1 removed, 1 changed, 1 unchanged'
+    && parts[1].querySelector('summary').textContent === 'Rules1 unchanged', parts.map((item) => item.querySelector('summary').textContent).join(' | '));
+  check('diff: a small diff opens each part with a difference', parts[0].open && !parts[1].open, parts.map((item) => item.open).join(' '));
+  check('diff: each change shows its kind as text', rows.map((item) => text(item, 'kind')).join(' ') === 'Changed Unchanged Added Removed Unchanged'
+    && rows.map((item) => item.dataset.state).join(' ') === 'changed unchanged added removed unchanged', rows.map((item) => item.textContent).join(' | '));
+  const [changed, same, added, removed] = rows;
+  check('diff: a changed value shows the two versions as text', text(changed, 'before') === 'B-14' && text(changed, 'after') === 'C-02'
+    && [...changed.querySelectorAll('[part="version"]')].map((item) => item.textContent).join('|') === 'Version 3: |Version 4: '
+    && changed.querySelector('del')?.textContent === 'B-14' && changed.querySelector('ins')?.textContent === 'C-02', changed.textContent);
+  check('diff: an added value shows only the after version', text(added, 'after') === 'Keep dry.' && !added.querySelector('del'), added.textContent);
+  check('diff: a removed value shows only the before version', text(removed, 'before') === '0.50' && !removed.querySelector('ins'), removed.textContent);
+  check('diff: an unchanged value shows one time', text(same, 'value') === 'North' && !same.querySelector('del, ins'), same.textContent);
+  const struck = getComputedStyle(changed.querySelector('del')).textDecorationLine;
+  const marked = getComputedStyle(changed.querySelector('ins')).textDecorationLine;
+  check('diff: a removed value has a line through and an added value an underline', struck.includes('line-through') && marked.includes('underline'),
+    `${struck} ${marked}`);
+  parts[0].querySelector('summary').click();
+  parts[1].querySelector('summary').click();
+  check('diff: a click on a summary closes and opens its part', !parts[0].open && parts[1].open, parts.map((item) => item.open).join(' '));
+  check('diff: shows the author as text', root.textContent.includes('Author: agent agent-check (Checker)'), root.textContent.slice(-80));
+  const large = mount('diff', { ...DIFF, parts: [fill('diff-part', { title: 'Lines', changes: Array.from({ length: 21 }, (_, index) =>
+    change(`Line ${index + 1}`, 'changed', 'Old', 'New')) })] });
+  check('diff: a diff of more than 20 changes starts with each part closed', large.dataset.state === 'default'
+    && [...large.shadowRoot.querySelectorAll('details')].every((item) => !item.open), large.shadowRoot.textContent.slice(0, 120));
+  const blank = mount('diff', { ...DIFF, parts: [fill('diff-part', { title: 'Loan', changes: [change('Note', 'changed', '', 'Keep dry.')] }),
+    fill('diff-part', { title: 'Rules', changes: [] })] });
+  check('diff: an empty value shows No value as text', text(blank.shadowRoot, 'before') === 'No value', blank.shadowRoot.textContent);
+  const emptyPart = blank.shadowRoot.querySelectorAll('details')[1];
+  check('diff: a part with no changes says so', emptyPart.dataset.state === 'empty' && text(emptyPart, 'empty') === 'No changes.'
+    && emptyPart.querySelector('summary').textContent === 'Rulesno changes', emptyPart.textContent);
+  for (const data of [{ ...DIFF, parts: [] }, { ...DIFF, parts: [fill('diff-part', { title: 'Loan', changes: [] })] }]) {
+    const none = mount('diff', data);
+    check(`diff: empty state with ${data.parts.length} parts`, none.dataset.state === 'empty' && text(none.shadowRoot, 'empty') === 'No changes.'
+      && !none.shadowRoot.querySelector('details'), none.shadowRoot.textContent);
+  }
+  for (const [item, error] of [
+    [change('Note', 'added', 'Old', 'New'), 'data.parts[0].data.changes[0]: added needs after and no before'],
+    [change('Note', 'added'), 'data.parts[0].data.changes[0]: added needs after and no before'],
+    [change('Fine', 'removed', '0.50', ''), 'data.parts[0].data.changes[0]: removed needs before and no after'],
+    [change('Shelf', 'changed', 'B-14', 'B-14'), 'data.parts[0].data.changes[0]: changed needs a before and a different after'],
+    [change('Shelf', 'changed', 'B-14'), 'data.parts[0].data.changes[0]: changed needs a before and a different after'],
+    [change('Branch', 'unchanged', 'North', 'South'), 'data.parts[0].data.changes[0]: unchanged needs the same before and after'],
+    [change('Branch', 'unchanged', 'North'), 'data.parts[0].data.changes[0]: unchanged needs the same before and after'],
+  ]) {
+    const errors = [];
+    const refused = document.createElement('mu-diff');
+    refused.addEventListener('mu-refused', (event) => errors.push(...event.detail.errors));
+    stage.append(refused);
+    refused.actor = AUTHOR;
+    refused.fill = outer('diff', { ...DIFF, parts: [fill('diff-part', { title: 'Loan', changes: [item] })] });
+    check(`diff: refuses ${item.data.change} with ${'before' in item.data ? 'before' : 'no before'} and ${'after' in item.data ? 'after' : 'no after'}`
+      + (item.data.before === item.data.after ? ' the same' : ''), refused.dataset.state === 'refused' && errors.includes(error)
+      && refused.shadowRoot.textContent.includes(error) && !refused.shadowRoot.querySelector('details'), `${errors.join('; ')} | ${refused.shadowRoot.textContent}`);
+  }
+  const sheets = node.shadowRoot.adoptedStyleSheets;
+  check('diff: the styles have a forced colors rule', sheets.some((item) => [...item.cssRules].some((rule) => rule.cssText.includes('forced-colors'))));
+  if (matchMedia('(forced-colors: active)').matches) {
+    const forced = getComputedStyle(changed);
+    const resolve = (value) => { const probe = document.createElement('span'); stage.append(probe); probe.style.color = value; return getComputedStyle(probe).color; };
+    check('diff: in forced colors the change border uses CanvasText and the line through stays', forced.borderInlineStartColor === resolve('CanvasText')
+      && getComputedStyle(changed.querySelector('del')).textDecorationLine.includes('line-through'), forced.borderInlineStartColor);
+  }
 }
 
 // The action path. The button is pending after a press, and done only after the receipt.
@@ -899,5 +985,12 @@ keyboardExcerpt.fill = { ...fill('excerpt', { passage: 'Keyboard passage with a 
   slots: { authorship: AUTHOR, citation: { source: 'Keyboard excerpt source', locator: 'https://example.org/keyboard/excerpt' } } };
 keyboardExcerpt.addEventListener('mu-open', (event) => event.preventDefault());
 keyboard.append(keyboardExcerpt);
+// The runner opens and closes a part of this diff with Enter and Space.
+const keyboardDiff = document.createElement('mu-diff');
+keyboardDiff.actor = AUTHOR;
+keyboardDiff.fill = outer('diff', { ...DIFF, title: 'Keyboard diff' });
+keyboard.append(keyboardDiff);
+window.muFocusDiff = () => { keyboardDiff.shadowRoot.querySelector('summary').focus(); return true; };
+window.muDiffOpen = () => keyboardDiff.shadowRoot.querySelector('details').open;
 window.muPresses = () => presses;
 window.muChecks = { mode, results };

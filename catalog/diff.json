@@ -1,0 +1,81 @@
+{
+  "format": 2,
+  "name": "diff",
+  "version": "0.1.0",
+  "kind": "component",
+  "description": "The difference between two versions of a text or a list of fields, in parts that a person can open and close.",
+  "ai_content": true,
+  "slots": {
+    "authorship": {
+      "required": true
+    }
+  },
+  "data": {
+    "title": {
+      "type": "text",
+      "label": "Title",
+      "required": true,
+      "min_length": 1,
+      "max_length": 120
+    },
+    "before_label": {
+      "type": "text",
+      "label": "Before label",
+      "required": false,
+      "min_length": 1,
+      "max_length": 40
+    },
+    "after_label": {
+      "type": "text",
+      "label": "After label",
+      "required": false,
+      "min_length": 1,
+      "max_length": 40
+    },
+    "parts": {
+      "type": "list",
+      "label": "Parts",
+      "required": true,
+      "max_items": 20,
+      "items": {
+        "type": "component",
+        "label": "Part",
+        "required": true,
+        "name": "diff-part"
+      }
+    }
+  },
+  "states": [
+    "default",
+    "empty",
+    "refused"
+  ],
+  "tokens": [
+    "color.text",
+    "color.text-muted",
+    "color.border",
+    "color.accent",
+    "color.danger",
+    "space.1",
+    "space.2",
+    "space.3",
+    "radius.2",
+    "type.body",
+    "type.caption",
+    "type.weight-strong"
+  ],
+  "accessibility": {
+    "role": "group",
+    "name": {
+      "field": "title"
+    },
+    "keyboard": [
+      "Tab",
+      "Shift+Tab",
+      "Enter",
+      "Space"
+    ],
+    "forced_colors": true,
+    "reduced_motion": true
+  }
+}
