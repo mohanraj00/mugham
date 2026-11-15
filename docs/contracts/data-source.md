@@ -53,6 +53,7 @@ The kit checks the request before it calls the source. If the filter or the key 
 - If the result is not valid, the result is `error` with the reason `The source gave a result that is not valid.` The key `errors` gives each problem, for the developer. For example, a `ready` result with no record is not valid, and an `empty` result with a record is not valid.
 - An `error` result never has records. If a source gives records with `error`, the kit removes them. The kit keeps the reason and the `checked` time of the source.
 - A `get` result must have only the record with the requested key. A `list` result must have only records that agree with `where`, and at most `limit` records. Else the result is not valid.
+- The kit copies the request one time, before it checks the request. The kit checks the request and the result against that copy, and the source gets a different copy. Thus a change of the request object during a read, by the application or by the source, does not change the check.
 - The time of the read is the time when the source answers. A `checked` time after the time of the read is not valid.
 - If `options.maxAge` is given in milliseconds, and a `ready` result has a `checked` time older than the limit, the result is `stale`. Its reason is `The data is older than the limit.`
 - The kit copies and freezes each record. A later change in the source does not change a result that a component shows.

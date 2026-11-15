@@ -105,6 +105,37 @@ test('a result that is not valid shows an error with each problem', async () => 
   }
 });
 
+test('a change of the request during a read does not change the check', async () => {
+  // The application changes its filter while the source has not answered. The kit checks the sent filter.
+  let answer;
+  const slow = { list: () => new Promise((done) => { answer = done; }) };
+  const filter = { where: { shelf: 'A' }, limit: 1 };
+  const pending = read(slow, { list: filter }, options);
+  await new Promise((done) => setTimeout(done, 0));
+  filter.where.shelf = 'B';
+  filter.limit = 5;
+  answer({ state: 'ready', records: [LADDER], checked: CHECKED });
+  const kept = await pending;
+  assert.equal(kept.state, 'ready', JSON.stringify(kept.errors));
+  assert.deepEqual(kept.records, [LADDER]);
+  const late = { where: { shelf: 'A' }, limit: 1 };
+  const twice = read(slow, { list: late }, options);
+  await new Promise((done) => setTimeout(done, 0));
+  late.limit = 5;
+  answer({ state: 'ready', records: [{ ...LADDER, key: 'T-03' }, LADDER], checked: CHECKED });
+  assert.deepEqual((await twice).errors, ['records: more than the limit 1']);
+  // A source that changes its argument does not change the check.
+  const changer = { list: async (sent) => { sent.where.shelf = 'B'; return { state: 'ready', records: [DRILL], checked: CHECKED }; } };
+  assert.deepEqual((await read(changer, { list: { where: { shelf: 'A' } } }, options)).errors, ['records[0]: does not agree with the filter']);
+  // A getter cannot give one value to the check and a different value to the source.
+  let reads = 0;
+  const shifting = { get get() { reads += 1; return reads === 1 ? 'T-01' : 'T-02'; } };
+  const keyed = { get: async (key) => ({ state: 'ready', records: [key === 'T-01' ? LADDER : DRILL], checked: CHECKED }) };
+  const one = await read(keyed, shifting, options);
+  assert.equal(one.state, 'ready', JSON.stringify(one.errors));
+  assert.deepEqual(one.records, [LADDER]);
+});
+
 test('the kit checks the request before it calls the source', async () => {
   let calls = 0;
   const counted = { get: async () => { calls += 1; }, list: async () => { calls += 1; } };

@@ -82,11 +82,27 @@ const failed = (reason, extra = {}) => Object.freeze({ state: 'error', records: 
 
 // Reads one request from a source: { get: key } or { list: filter }. The result is frozen and has the keys
 // state, records, checked and reason. options: timeout and maxAge in milliseconds, and now() for the tests.
-export async function read(source, request, options = {}) {
+// A frozen copy of a request, with each value read one time. A value that is not plain stays as it is, and the check refuses it.
+function snapshot(request) {
+  if (!isPlain(request)) return request;
+  const copy = { ...request };
+  if (isPlain(copy.list)) {
+    copy.list = { ...copy.list };
+    if (isPlain(copy.list.where)) copy.list.where = Object.freeze({ ...copy.list.where });
+    Object.freeze(copy.list);
+  }
+  return Object.freeze(copy);
+}
+
+export async function read(source, input, options = {}) {
+  // The kit checks the request and the result against one copy. A change of the request object during the read,
+  // by the application or by the source, thus does not change the check.
+  const request = snapshot(input);
   const keys = isPlain(request) ? own(request) : [];
   const kind = keys.length === 1 ? keys[0] : null;
   const valid = (kind === 'get' && isText(request.get, 1, 128)) || (kind === 'list' && filterErrors(request.list).length === 0);
   if (!valid || typeof source?.[kind] !== 'function') return failed('The request is not valid.');
+  // The source gets a different copy, so it cannot change the copy that the kit checks.
   const argument = kind === 'get' ? request.get : { ...request.list, ...(request.list.where ? { where: { ...request.list.where } } : {}) };
   let timer;
   let result;
