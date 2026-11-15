@@ -98,12 +98,17 @@ Each component has a contract file in [catalog/](catalog/README.md). The contrac
 | `mu-text` | Shows a run of text. It never shows the value as markup. | [text.json](catalog/text.json) |
 | `mu-button` | Sends a press event to the code that contains it. | [button.json](catalog/button.json) |
 | `mu-field` | A labeled text input, with a hint, an error and a disabled state. | [field.json](catalog/field.json) |
+| `mu-long-text-field` | A labeled text area for text of more than one line. | [long-text-field.json](catalog/long-text-field.json) |
+| `mu-number-field` | A labeled input for a number, with an optional range. | [number-field.json](catalog/number-field.json) |
+| `mu-date-field` | A labeled input for a date as `YYYY-MM-DD`, with an optional range. | [date-field.json](catalog/date-field.json) |
+| `mu-choice-field` | A labeled radio group with 1 to 20 choices. | [choice-field.json](catalog/choice-field.json) |
 | `mu-stack` | Puts its child elements in one column or one row. | [stack.json](catalog/stack.json) |
 | `mu-grid` | Puts its child elements in columns of equal width. | [grid.json](catalog/grid.json) |
 | `mu-card` | Shows a title, a summary, a date and up to six facts. | [card.json](catalog/card.json) |
 | fact | A label and a value in a card. It has no element of its own. | [fact.json](catalog/fact.json) |
 | `mu-action-button` | A button for one action. It shows done only after the receipt comes back. | [action-button.json](catalog/action-button.json) |
-| `mu-editable-form` | Up to 20 text fields. A person edits the values and submits them as one action. | [editable-form.json](catalog/editable-form.json) |
+| `mu-editable-form` | Up to 20 fields: text, long text, a number, a date or a choice. A person edits the values and submits them as one action. | [editable-form.json](catalog/editable-form.json) |
+| `mu-form-card` | A long form in sections, as labels and values. A person edits one field in place and sends the changes as one action. Some fields are read-only. | [form-card.json](catalog/form-card.json) |
 | `mu-card-grid` | A labeled list of cards in columns of equal width. | [card-grid.json](catalog/card-grid.json) |
 | `mu-citation` | The source of a claim: a source name, a locator as text and an open button. | [citation.json](catalog/citation.json) |
 | `mu-diff` | The difference between two versions of a text or a list of fields. Each change shows as added, removed, changed or unchanged in words. A person opens and closes each part. | [diff.json](catalog/diff.json) |
@@ -135,6 +140,8 @@ python3 -m http.server 8000
 4. Open an example in the browser. The examples use synthetic data. The URLs below use port 8000.
    - `http://localhost:8000/examples/primitives.html`: each primitive.
    - `http://localhost:8000/examples/loans.html`: a card, an action button, a card grid and a form.
+   - `http://localhost:8000/examples/inputs.html`: a form with each input type, and a typed edit of a number and a date.
+   - `http://localhost:8000/examples/membership.html`: a form card with 3 sections and 25 fields in a thread, with read-only fields that the service computes.
    - `http://localhost:8000/examples/citation.html`: a citation in a message, a citation with no source and a refused citation.
    - `http://localhost:8000/examples/diff.html`: a diff of two versions of a synthetic hall booking, and a large diff that starts closed.
    - `http://localhost:8000/examples/excerpt.html`: an excerpt of a synthetic document in a message, and a refused excerpt.

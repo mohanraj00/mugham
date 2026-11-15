@@ -31,6 +31,10 @@ test('a binding needs a valid tool name and scalar arguments', () => {
   assert.deepEqual(bindingErrors({ tool: 'library.renew', editable: { 'Shelf Code': 'Shelf code' } }), LIST);
   assert.deepEqual(bindingErrors({ tool: 'library.renew', editable: { shelf: '' } }), LIST);
   assert.deepEqual(bindingErrors({ tool: 'library.renew', editable: { shelf: 'S'.repeat(81) } }), LIST);
+  // A form card has up to 10 sections of 40 fields, so the binding accepts 400 editable names and no more.
+  const names = (count) => Object.fromEntries(Array.from({ length: count }, (_, index) => [`field_${index}`, `Field ${index}`]));
+  assert.deepEqual(bindingErrors({ tool: 'library.renew', editable: names(400) }), []);
+  assert.deepEqual(bindingErrors({ tool: 'library.renew', editable: names(401) }), LIST);
 });
 
 test('an extra value needs a name that the binding gives as editable', () => {

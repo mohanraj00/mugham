@@ -3,7 +3,7 @@
   "name": "editable-form",
   "version": "0.1.0",
   "kind": "component",
-  "description": "A form with up to 20 text fields. A person edits the values and submits them as one action, with the type of each edit of a typed field.",
+  "description": "A form with up to 20 fields of text, long text, numbers, dates and choices. A person edits the values and submits them as one action, with the type of each edit of a typed field.",
   "ai_content": true,
   "slots": {
     "authorship": {
@@ -27,7 +27,13 @@
         "type": "component",
         "label": "Field",
         "required": true,
-        "name": "field"
+        "names": [
+          "field",
+          "long-text-field",
+          "number-field",
+          "date-field",
+          "choice-field"
+        ]
       }
     },
     "submit_label": {

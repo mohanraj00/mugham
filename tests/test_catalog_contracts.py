@@ -16,6 +16,10 @@ def fill(component, data):
 FACT = fill('fact', {'label': 'Shelf', 'value': 'B-14'})
 CARD = fill('card', {'title': 'Field guide to moss', 'date': '2026-12-01', 'date_label': 'Due', 'facts': [FACT, FACT]})
 AUTHOR = {'type': 'agent', 'id': 'agent-check'}
+LINE = fill('form-line', {'line': '2.1', 'field': fill('number-field', {'name': 'adults', 'label': 'Adults', 'value': 2})})
+LINE_READ_ONLY = fill('form-line', {'line': '2.3', 'read_only': True,
+                                    'field': fill('number-field', {'name': 'household', 'label': 'Household size', 'value': 3})})
+SECTION = fill('form-section', {'title': 'Household', 'lines': [LINE, LINE_READ_ONLY]})
 CITE = {'source': 'Synthetic loan rules', 'locator': 'https://example.org/rules/loans'}
 CHANGE = fill('diff-change', {'label': 'Shelf', 'change': 'changed', 'before': 'B-14', 'after': 'C-02'})
 PART = fill('diff-part', {'title': 'Loan', 'changes': [CHANGE]})
@@ -36,6 +40,10 @@ VALID = {
     'text': {'text': 'Weather at sea', 'variant': 'caption'},
     'button': {'label': 'Renew', 'emphasis': 'secondary', 'disabled': False},
     'field': {'name': 'shelf', 'label': 'Shelf code', 'value': 'B-14', 'hint': 'A letter and a number.'},
+    'long-text-field': {'name': 'note', 'label': 'Note', 'value': 'Keep dry.\nNo sun.', 'hint': 'Two lines at most.'},
+    'number-field': {'name': 'copies', 'label': 'Copies', 'value': 3, 'minimum': 1, 'maximum': 12, 'typed': True},
+    'date-field': {'name': 'due', 'label': 'Due date', 'value': '2026-12-01', 'earliest': '2026-11-01', 'latest': '2027-02-28'},
+    'choice-field': {'name': 'branch', 'label': 'Branch', 'value': 'North', 'choices': ['North', 'South', 'Harbor']},
     'stack': {'label': 'Loan details', 'direction': 'row', 'gap': 'small'},
     'grid': {'label': 'Reading list', 'min_column': 'wide'},
     'fact': FACT['data'],
@@ -43,6 +51,9 @@ VALID = {
     'action-button': {'label': 'Renew', 'description': 'Renew the loan for two weeks.'},
     'editable-form': {'title': 'Loan details', 'submit_label': 'Save', 'fields': [fill('field', {'name': 'shelf', 'label': 'Shelf code'})]},
     'card-grid': {'label': 'Loans', 'cards': [CARD]},
+    'form-line': {'line': '2.1', 'field': fill('number-field', {'name': 'adults', 'label': 'Adults', 'value': 2})},
+    'form-section': {'title': 'Household', 'lines': [LINE, LINE_READ_ONLY]},
+    'form-card': {'title': 'Membership form', 'submit_label': 'Send changes', 'sections': [SECTION]},
     'citation': {'quote': 'A short loan can get one renewal.'},
     'source-status': {'label': 'Tool library', 'state': 'stale', 'checked': '2026-11-15T09:30:00.000Z', 'reason': 'The device is offline.'},
     'excerpt': {'passage': 'A short loan can get one renewal of seven days.', 'span_start': 13, 'span_end': 32},
@@ -52,10 +63,38 @@ VALID = {
     'table': {'label': 'Sample rows', 'columns': ['Name'], 'rows': [fill('table-row', {'cells': ['Plot A']})]},
     'table-row': {'cells': ['Plot A'], 'status': 'Ready'},
     'status': {'state': 'pending', 'text': 'Synthetic check A.'},
+    'image': {'url': '/examples/floor-plan.svg', 'alt': 'Two rooms with a door.', 'width': 480, 'height': 320},
+    'chart': {'title': 'Weekly tickets', 'type': 'bar', 'categories': ['Week 1'], 'series': [fill('chart-series', {'label': 'Received', 'values': [12]})], 'units': 'tickets', 'x_label': 'Week', 'y_label': 'Count'},
+    'chart-series': {'label': 'Received', 'values': [12]},
 }
 
 
 class CatalogContractTest(unittest.TestCase):
+    def test_a_form_accepts_each_input_type_and_no_other_component(self):
+        inputs = ['field', 'long-text-field', 'number-field', 'date-field', 'choice-field']
+        form = {'title': 'Loan details', 'submit_label': 'Save', 'fields': [fill(name, VALID[name]) for name in inputs]}
+        self.assertEqual(catalog.fill_errors(outer('editable-form', form), CATALOG), [])
+        other = {**form, 'fields': [fill('button', VALID['button'])]}
+        self.assertEqual(catalog.fill_errors(outer('editable-form', other), CATALOG),
+                         ['data.fields[0].component: must be ' + ' or '.join(inputs)])
+
+    def test_a_form_card_permits_more_than_20_fields(self):
+        lines = [fill('form-line', {'field': fill('field', {'name': 'line_%d' % i, 'label': 'Line %d' % i})}) for i in range(25)]
+        sections = [fill('form-section', {'title': 'Part %d' % i, 'lines': lines[i * 9:(i + 1) * 9]}) for i in range(3)]
+        card = {'title': 'Membership form', 'submit_label': 'Send changes', 'sections': sections}
+        self.assertEqual(catalog.fill_errors(outer('form-card', card), CATALOG), [])
+
+    def test_a_form_line_accepts_only_the_input_types(self):
+        line = {'field': fill('button', VALID['button'])}
+        self.assertEqual(catalog.fill_errors(outer('form-line', line), CATALOG),
+                         ['data.field.component: must be field or long-text-field or number-field or date-field or choice-field'])
+
+    def test_a_number_and_a_date_field_refuse_a_value_of_a_different_type(self):
+        self.assertIn('data.value: must be a number',
+                      catalog.fill_errors(fill('number-field', {**VALID['number-field'], 'value': '3'}), CATALOG))
+        self.assertIn('data.value: must be a date as YYYY-MM-DD',
+                      catalog.fill_errors(fill('date-field', {**VALID['date-field'], 'value': '2026-02-30'}), CATALOG))
+
     def test_the_catalog_is_valid_and_complete(self):
         self.assertEqual(ERRORS, [])
         self.assertEqual(sorted(CATALOG), sorted(VALID))

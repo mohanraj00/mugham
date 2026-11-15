@@ -1,0 +1,97 @@
+{
+  "format": 2,
+  "name": "number-field",
+  "version": "0.1.0",
+  "kind": "primitive",
+  "description": "A labeled number input. A person edits the number. The input refuses a value that is not a number or that is outside the range.",
+  "ai_content": false,
+  "data": {
+    "name": {
+      "type": "text",
+      "label": "Name",
+      "required": false,
+      "max_length": 40
+    },
+    "label": {
+      "type": "text",
+      "label": "Label",
+      "required": true,
+      "min_length": 1,
+      "max_length": 80
+    },
+    "value": {
+      "type": "number",
+      "label": "Value",
+      "required": false,
+      "editable": true
+    },
+    "minimum": {
+      "type": "number",
+      "label": "Minimum",
+      "required": false
+    },
+    "maximum": {
+      "type": "number",
+      "label": "Maximum",
+      "required": false
+    },
+    "hint": {
+      "type": "text",
+      "label": "Hint",
+      "required": false,
+      "max_length": 200
+    },
+    "error": {
+      "type": "text",
+      "label": "Error",
+      "required": false,
+      "max_length": 200
+    },
+    "disabled": {
+      "type": "boolean",
+      "label": "Disabled",
+      "required": false
+    },
+    "typed": {
+      "type": "boolean",
+      "label": "Typed",
+      "required": false
+    }
+  },
+  "states": [
+    "default",
+    "disabled",
+    "error"
+  ],
+  "tokens": [
+    "color.surface",
+    "color.text",
+    "color.text-muted",
+    "color.border",
+    "color.focus",
+    "color.danger",
+    "space.1",
+    "space.2",
+    "radius.1",
+    "type.body",
+    "type.caption",
+    "motion.fast"
+  ],
+  "accessibility": {
+    "role": "textbox",
+    "name": {
+      "field": "label"
+    },
+    "keyboard": [
+      "Tab",
+      "Shift+Tab",
+      "ArrowUp",
+      "ArrowDown",
+      "ArrowLeft",
+      "ArrowRight",
+      "Space"
+    ],
+    "forced_colors": true,
+    "reduced_motion": true
+  }
+}

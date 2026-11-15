@@ -8,10 +8,11 @@ import { tmpdir } from 'node:os';
 import { extname, join, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { guideChecks } from '../tests/browser/guides.mjs';
+import { imageKeyboardChecks } from '../tests/browser/image.js';
 
 export const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const SERVED = ['src', 'catalog', 'examples', join('tests', 'browser')];
-const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.json': 'application/json', '.css': 'text/css' };
+const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.json': 'application/json', '.css': 'text/css', '.svg': 'image/svg+xml' };
 const MODES = {
   light: [{ name: 'prefers-color-scheme', value: 'light' }],
   dark: [{ name: 'prefers-color-scheme', value: 'dark' }],
@@ -20,8 +21,10 @@ const MODES = {
 };
 // Each check page, and the roles and names that its accessibility tree must have in light mode.
 const PAGES = {
+  'tests/browser/chart.html': [['button', 'Keyboard target'], ['group', 'Weekly tickets'], ['image', 'Received, Week 1: 12 tickets'], ['table', 'Weekly tickets'], ['columnheader', 'Received'], ['cell', '12 tickets']],
   'tests/browser/table.html': [['button', 'Keyboard target'], ['group', 'Sample rows'], ['table', 'Sample rows'], ['columnheader', 'Name'], ['columnheader', 'Status'], ['cell', 'Ready']],
   'tests/browser/status.html': [['button', 'Keyboard target'], ['group', 'Synthetic check A.'], ['group', 'Synthetic check B.'], ['group', 'Synthetic check C.'], ['group', 'Synthetic check D.']],
+  'tests/browser/image.html': [['button', 'Keyboard target'], ['group', 'Image'], ['button', 'Open image at full size: Two rooms with a door.']],
   'tests/browser/primitives.html': [['button', 'Keyboard target'], ['textbox', 'Shelf code']],
   'tests/browser/components.html': [['button', 'Keyboard target'], ['article', 'Field guide to moss'], ['list', 'Loans'],
     ['form', 'Loan details'], ['textbox', 'Branch'], ['group', 'Citation'], ['button', 'Open source: Keyboard source'],
@@ -32,9 +35,11 @@ const PAGES = {
 };
 // Each example page, the number of kit elements, the number of refused elements and the roles and names.
 const EXAMPLES = {
+  'examples/chart.html': [6, 0, [['group', 'Synthetic weekly tickets'], ['group', 'Synthetic weekly visits'], ['group', 'Synthetic weekly tasks'], ['button', 'Show data table']]],
   'examples/narration.html': [2, 0, [['article', 'Tray A1'], ['heading', 'Matching narration'], ['heading', 'Different narration']]],
   'examples/table.html': [2, 0, [['table', 'Synthetic plots'], ['columnheader', 'Plot'], ['cell', 'Ready']]],
   'examples/status.html': [5, 1, [['group', 'Synthetic check A.'], ['group', 'Synthetic check B.'], ['group', 'Synthetic check C.'], ['group', 'Synthetic check D.']]],
+  'examples/image.html': [4, 1, [['group', 'Image'], ['article', 'Synthetic floor plan'], ['article', 'Message from agent-plan']]],
   'examples/primitives.html': [16, 1, [['button', 'Renew'], ['group', 'Loan details'], ['group', 'Reading list'], ['textbox', 'Shelf code']]],
   'examples/loans.html': [9, 0, [['article', 'Field guide to moss'], ['button', 'Renew'], ['list', 'Current loans'], ['form', 'Change a loan']]],
   'examples/citation.html': [3, 1, [['group', 'Citation'], ['button', 'Open source: Synthetic weather notes, page 3'], ['article', 'Message from agent-weather']]],
@@ -42,6 +47,10 @@ const EXAMPLES = {
   'examples/offline.html': [5, 0, [['status', 'Tool library'], ['list', 'Tools'], ['button', 'Go offline']]],
   'examples/excerpt.html': [2, 1, [['group', 'Source excerpt'], ['button', 'Open source: Synthetic harbor guide, section 2'], ['article', 'Message from agent-reader']]],
   'examples/provenance.html': [2, 1, [['article', 'Renewal rule for short loans'], ['button', 'Open source: Synthetic library rules, section 4']]],
+  'examples/inputs.html': [6, 0, [['form', 'Loan details'], ['textbox', 'Shelf code'], ['textbox', 'Note'], ['textbox', 'Copies'],
+    ['textbox', 'Due date'], ['group', 'Branch'], ['radio', 'Harbor']]],
+  'examples/membership.html': [2, 0, [['list', 'Thread'], ['article', 'Message from Forms agent, Agent'], ['form', 'Membership form'],
+    ['group', 'Household'], ['button', 'Edit Children: 1'], ['button', 'Send changes']]],
   'examples/register.html': [4, 1, [['article', 'Tray A1'], ['list', 'Thread'], ['article', 'Message from Garden helper, Agent'], ['article', 'Tray B2']]],
 };
 // Each example app, the kit elements of its first view, and the roles and names that its accessibility tree must have.
@@ -341,6 +350,51 @@ async function offlineExample(session, sessionId, base) {
   return steps;
 }
 
+// The membership example: a person edits one value in the form card of the thread and sends it. The card shows
+// Pending, then Done only after the receipt, and it shows the new computed value of a read-only field.
+async function membershipFlow(session, sessionId, base) {
+  const page = 'examples/membership.html';
+  const steps = [];
+  const step = (name, ok, detail) => steps.push({ page, step: name, ok: Boolean(ok), detail: JSON.stringify(detail) });
+  await open(session, sessionId, `${base}/${page}`);
+  const card = `document.querySelector('mu-thread')?.shadowRoot?.querySelector('mu-form-card')`;
+  const row = (name) => `[...${card}.shadowRoot.querySelectorAll('[part="line"]')].find((item) => item.dataset.name === '${name}')`;
+  const read = () => evaluate(session, sessionId, `(() => {
+    const node = ${card};
+    if (!node) return null;
+    return { state: node.dataset.state, status: node.shadowRoot.querySelector('[part="status"]').textContent,
+      children: ${row('children')}.querySelector('[part="value"]').textContent,
+      changed: Boolean(${row('children')}.querySelector('[part="changed"]')),
+      size: ${row('household_size')}.querySelector('[part="value"]').textContent };
+  })()`);
+  let value = await read();
+  for (let i = 0; i < 100 && !value; i += 1) {
+    await sleep(50);
+    value = await read();
+  }
+  step('the form card shows in the thread', value?.state === 'default', value);
+  if (value?.state !== 'default') return steps;
+  const edited = await evaluate(session, sessionId, `(() => {
+    ${row('children')}.querySelector('[part="value"]').click();
+    const editor = ${row('children')}.querySelector('[part="editor"]');
+    const input = editor.querySelector('[data-state]').shadowRoot.querySelector('input');
+    input.value = '2';
+    input.dispatchEvent(new Event('input', { bubbles: true, composed: true }));
+    editor.querySelector('[part="save"]').click();
+    ${card}.shadowRoot.querySelector('form').requestSubmit();
+    return true;
+  })()`);
+  value = await read();
+  step('a sent change shows Pending before the receipt', edited && value.state === 'pending' && value.children === '2' && value.changed, value);
+  for (let i = 0; i < 60 && value.state === 'pending'; i += 1) {
+    await sleep(50);
+    value = await read();
+  }
+  step('the receipt shows Done and the new computed value', value.state === 'done' && value.status.includes('Done')
+    && value.children === '2' && !value.changed && value.size === '4', value);
+  return steps;
+}
+
 // The example apps in each theme and at the phone width: the page loads with no error, shows its kit elements with no
 // refusal, has the roles and names, has no horizontal scroll, and its body text has a contrast of 4.5 or more.
 async function appPages(session, sessionId, report) {
@@ -428,6 +482,7 @@ async function main() {
         report.pages[page][mode] = checks ? checks.results : [];
         if (!checks) report.errors.push(`${page} ${mode}: the checks did not run`);
         for (const item of report.pages[page][mode]) if (!item.ok) report.errors.push(`${page} ${mode}: ${item.name}: ${item.detail}`);
+        if (page === 'tests/browser/image.html' && checks) report.keyboard.push(...await imageKeyboardChecks(session, sessionId, { evaluate, key, axErrors }, page));
         if (mode !== 'light' || !checks) continue;
         report.accessibility.push(...await axErrors(session, sessionId, expected, page));
         report.examples.push(...await pageRules(session, sessionId, page));
@@ -440,6 +495,20 @@ async function main() {
         await key(session, sessionId, ' ', 'Space', 32, ' ');
         const presses = await evaluate(session, sessionId, 'window.muPresses()');
         report.keyboard.push({ page, step: 'Enter and Space press the button', ok: presses === 2, detail: presses });
+        if (await evaluate(session, sessionId, 'typeof window.muChartKeys === "function"')) {
+          for (const [name, code, expectedPoint] of [['Tab', 9, 0], ['ArrowRight', 39, 1], ['ArrowDown', 40, 2],
+            ['ArrowLeft', 37, 1], ['ArrowUp', 38, 0], ['ArrowUp', 38, 5]]) {
+            await key(session, sessionId, name, name, code);
+            const found = await evaluate(session, sessionId, 'window.muChartKeys()');
+            report.keyboard.push({ page, step: `${name} moves to chart point ${expectedPoint}`, ok: found.point === expectedPoint, detail: JSON.stringify(found) });
+          }
+          await key(session, sessionId, 'Tab', 'Tab', 9);
+          for (const [name, code, text, expectedTable] of [['Enter', 13, '\r', true], [' ', 32, ' ', false]]) {
+            await key(session, sessionId, name, name === ' ' ? 'Space' : name, code, text);
+            const found = await evaluate(session, sessionId, 'window.muChartKeys()');
+            report.keyboard.push({ page, step: `${name} toggles the chart table`, ok: found.table === expectedTable, detail: JSON.stringify(found) });
+          }
+        }
         if (await evaluate(session, sessionId, 'typeof window.muFocusTable === "function"')) {
           await evaluate(session, sessionId, 'window.muFocusTable()');
           for (const [value, code, number, text, sort, first] of [
@@ -486,6 +555,50 @@ async function main() {
             detail: `${first} ${next}` });
           report.accessibility.push(...await axErrors(session, sessionId, [['group', 'Edit type'], ['radio', 'Judgment'],
             ['radio', 'Correction'], ['radio', 'Override']], page + ' edit type'));
+        }
+        // Long text: Enter adds a line and does not submit. A choice: an arrow key selects the next choice.
+        if (await evaluate(session, sessionId, 'typeof window.muFocusLongText === "function"')) {
+          await evaluate(session, sessionId, 'window.muFocusLongText()');
+          await key(session, sessionId, 'Enter', 'Enter', 13, '\r');
+          const text = await evaluate(session, sessionId, 'window.muInputs()');
+          report.keyboard.push({ page, step: 'Enter in long text adds a line and does not submit the form',
+            ok: text.submits === 0 && text.note === 'Keep dry.\n', detail: JSON.stringify(text) });
+          await evaluate(session, sessionId, 'window.muFocusChoice()');
+          await key(session, sessionId, 'ArrowDown', 'ArrowDown', 40);
+          const choice = await evaluate(session, sessionId, 'window.muInputs()');
+          report.keyboard.push({ page, step: 'ArrowDown selects the next choice', ok: choice.branch === 'South' && choice.submits === 0,
+            detail: JSON.stringify(choice) });
+          report.accessibility.push(...await axErrors(session, sessionId, [['form', 'Input form'], ['textbox', 'Note'],
+            ['textbox', 'Copies'], ['textbox', 'Due date'], ['group', 'Branch'], ['radio', 'North'], ['radio', 'South'],
+            ['radio', 'Harbor']], page + ' input types'));
+        }
+        // A form card: Enter opens the editor of a value, Escape cancels, Enter in the field saves, and Space on Save saves.
+        // The focus goes back to the value after each step.
+        if (await evaluate(session, sessionId, 'typeof window.muFocusCardValue === "function"')) {
+          const card = () => evaluate(session, sessionId, 'window.muCard()');
+          const push = (step, ok, detail) => report.keyboard.push({ page, step, ok, detail: JSON.stringify(detail) });
+          await evaluate(session, sessionId, 'window.muFocusCardValue()');
+          await key(session, sessionId, 'Enter', 'Enter', 13, '\r');
+          let state = await card();
+          push('Enter on a value of a form card opens its editor', state.editing && state.inner === 'input', state);
+          report.accessibility.push(...await axErrors(session, sessionId, [['form', 'Keyboard card'], ['group', 'Household'],
+            ['group', 'Edit Children'], ['textbox', 'Children'], ['button', 'Save'], ['button', 'Cancel'], ['button', 'Edit Adults: 2']],
+          page + ' form card editor'));
+          await key(session, sessionId, 'Escape', 'Escape', 27);
+          state = await card();
+          push('Escape cancels the editor and the focus goes back to the value', !state.editing && state.focus === 'Edit Children: 1', state);
+          await key(session, sessionId, 'Enter', 'Enter', 13, '\r');
+          await evaluate(session, sessionId, 'window.muCardType("4")');
+          await key(session, sessionId, 'Enter', 'Enter', 13, '\r');
+          state = await card();
+          push('Enter in the field saves and the focus goes back to the value', !state.editing && state.value === '4'
+            && state.focus === 'Edit Children: 4, changed', state);
+          await key(session, sessionId, ' ', 'Space', 32, ' ');
+          await key(session, sessionId, 'Tab', 'Tab', 9);
+          await key(session, sessionId, ' ', 'Space', 32, ' ');
+          state = await card();
+          push('Space opens the editor, and Tab and Space on Save save', !state.editing && state.value === '4'
+            && state.focus === 'Edit Children: 4, changed', state);
         }
         // The confirm step: Enter opens it, Escape closes it, and only the confirm button sends the action.
         // The accessibility tree must name the group and its buttons. See catalog/README.md#actions.
@@ -560,6 +673,7 @@ async function main() {
     report.accessibility.push(...guides.accessibility);
     report.examples.push(...await threadExample(session, sessionId, report));
     report.examples.push(...await offlineExample(session, sessionId, base));
+    report.examples.push(...await membershipFlow(session, sessionId, base));
     report.examples.push(...await appPages(session, sessionId, report));
     for (const item of report.accessibility) if (!item.ok) report.errors.push(`accessibility: ${item.where}: no ${item.role} named ${item.name}`);
     for (const step of [...report.keyboard, ...report.examples]) if (!step.ok) report.errors.push(`${step.page}: ${step.step}: ${step.detail}`);
