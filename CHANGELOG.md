@@ -5,6 +5,7 @@ Each release has an entry. The newest entry is first.
 ## Unreleased
 
 - Typed form edits (#9). A field with `typed: true` asks for the edit type after a person changes its value: judgment, correction or override. The binding of the form gives the typed names and the person who edits, with `typed` and `editor`. The form refuses a fill whose typed flags do not agree with the binding. A changed typed field with no type sends no action, and the field shows `Choose an edit type.` The request gets an `edits` list. Each edit has the field, the type, the old value, the new value, the actor and the time. [catalog/README.md](catalog/README.md#typed-edits) gives the rules.
+- The offline data source interface (#26). An application module, the source, gives records with `get(key)` and `list(filter)`. `read(source, request, options)` in `src/offline/source.js` checks the request and the result, and gives a frozen result with the state `ready`, `stale`, `empty` or `error`. A failed source, a source that does not answer and a result that is not valid show an error and no records. `mu-source-status` shows the state as text. `examples/offline.html` shows each state, offline and online. [docs/contracts/data-source.md](docs/contracts/data-source.md) gives the rules.
 
 ## 0.2.1, 2026-11-14
 

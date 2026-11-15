@@ -33,6 +33,7 @@ const EXAMPLES = {
   'examples/primitives.html': [16, 1, [['button', 'Renew'], ['group', 'Loan details'], ['group', 'Reading list'], ['textbox', 'Shelf code']]],
   'examples/loans.html': [9, 0, [['article', 'Field guide to moss'], ['button', 'Renew'], ['list', 'Current loans'], ['form', 'Change a loan']]],
   'examples/citation.html': [3, 1, [['group', 'Citation'], ['button', 'Open source: Synthetic weather notes, page 3'], ['article', 'Message from agent-weather']]],
+  'examples/offline.html': [5, 0, [['status', 'Tool library'], ['list', 'Tools'], ['button', 'Go offline']]],
   'examples/excerpt.html': [2, 1, [['group', 'Source excerpt'], ['button', 'Open source: Synthetic harbor guide, section 2'], ['article', 'Message from agent-reader']]],
   'examples/provenance.html': [2, 1, [['article', 'Renewal rule for short loans'], ['button', 'Open source: Synthetic library rules, section 4']]],
   'examples/register.html': [4, 1, [['article', 'Tray A1'], ['list', 'Thread'], ['article', 'Message from Garden helper, Agent'], ['article', 'Tray B2']]],
@@ -247,6 +248,52 @@ async function threadExample(session, sessionId, report) {
   return steps;
 }
 
+// The offline source example (docs/contracts/data-source.md). Each button changes the network or the source. The
+// status shows each state as text, and the page shows records only for ready or stale. A failed source shows no records.
+async function offlineExample(session, sessionId, base) {
+  const page = 'examples/offline.html';
+  const steps = [];
+  await open(session, sessionId, `${base}/${page}`);
+  const read = () => evaluate(session, sessionId, `(() => {
+    const status = document.querySelector('mu-source-status');
+    const box = status?.shadowRoot?.querySelector('[role="status"]');
+    return box ? { state: box.querySelector('[part="state"]').textContent, reason: box.querySelector('[part="reason"]')?.textContent || '',
+      checked: box.querySelector('[part="checked"]')?.textContent || '',
+      cards: document.querySelector('mu-card-grid')?.shadowRoot.querySelectorAll('mu-card').length ?? 0 } : null;
+  })()`);
+  const wait = async (expected) => {
+    let value = await read();
+    for (let i = 0; i < 100 && value?.state !== expected; i += 1) {
+      await sleep(20);
+      value = await read();
+    }
+    return value;
+  };
+  const flow = [
+    [null, 'Ready', 3, '', 'Checked: '],
+    ['network', 'Stale', 3, 'The device is offline.', 'Last checked: '],
+    ['damage', 'Error', 0, 'The source failed.', ''],
+    ['damage', 'Stale', 3, 'The device is offline.', 'Last checked: '],
+    ['network', 'Ready', 3, '', 'Checked: '],
+    ['records', 'Empty', 0, '', 'Checked: '],
+    ['network', 'Empty', 0, '', 'Checked: '],
+    ['damage', 'Error', 0, 'The source failed.', ''],
+    ['network', 'Error', 0, 'The source failed.', ''],
+    ['damage', 'Empty', 0, '', 'Checked: '],
+  ];
+  let online = true;
+  for (const [id, state, cards, reason, checked] of flow) {
+    if (id === 'network') online = !online;
+    if (id) await evaluate(session, sessionId, `document.getElementById('${id}').click(), true`);
+    await sleep(50);
+    const value = await wait(state);
+    steps.push({ page, step: `${id ? `after ${id}, ` : ''}${online ? 'online' : 'offline'}: ${state} with ${cards} records`,
+      ok: value?.state === state && value.cards === cards && value.reason === reason && value.checked.startsWith(checked) && (checked || !value.checked),
+      detail: JSON.stringify(value) });
+  }
+  return steps;
+}
+
 // The example apps in each theme and at the phone width: the page loads with no error, shows its kit elements with no
 // refusal, has the roles and names, has no horizontal scroll, and its body text has a contrast of 4.5 or more.
 async function appPages(session, sessionId, report) {
@@ -433,6 +480,7 @@ async function main() {
     report.examples.push(...guides.steps);
     report.accessibility.push(...guides.accessibility);
     report.examples.push(...await threadExample(session, sessionId, report));
+    report.examples.push(...await offlineExample(session, sessionId, base));
     report.examples.push(...await appPages(session, sessionId, report));
     for (const item of report.accessibility) if (!item.ok) report.errors.push(`accessibility: ${item.where}: no ${item.role} named ${item.name}`);
     for (const step of [...report.keyboard, ...report.examples]) if (!step.ok) report.errors.push(`${step.page}: ${step.step}: ${step.detail}`);

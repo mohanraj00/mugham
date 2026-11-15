@@ -16,6 +16,7 @@ Each JSON file in this folder is the contract of one component. [schema/README.m
 | `card-grid.json` | `mu-card-grid` | component | A labeled list of cards. |
 | `citation.json` | `mu-citation` | component | A source name, a locator as text, an optional quote and an open button. |
 | `excerpt.json` | `mu-excerpt` | component | A passage as text with a marked span, the source name, the locator as text and an open button. |
+| `source-status.json` | `mu-source-status` | component | The state of an offline data source as text, with the time of the last confirmed read and the reason. |
 
 The contracts with `ai_content` set to `true` are `card`, `card-grid`, `citation`, `editable-form`, `excerpt` and `fact`. Each of them requires the authorship slot. `card`, `card-grid` and `citation` also accept the citation slot. `excerpt` requires the citation slot, because the slot gives the locator of the passage.
 

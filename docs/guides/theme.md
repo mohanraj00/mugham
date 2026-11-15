@@ -113,7 +113,7 @@ Load the theme style sheet after `tokens.css`. A theme on `:root` has the same s
 
 Each rule protects a principle of the [constitution](../../CONSTITUTION.md#principles).
 
-- **Do not hide, cover or recolor the state text.** The parts `status`, `reference` and `state` show `Pending`, `Done`, `Not done`, `Partial` and the reference of a receipt. Principle 6 needs the true state in words. The color is never the only signal.
+- **Do not hide, cover or recolor the state text.** The parts `status`, `reference` and `state` show `Pending`, `Done`, `Not done`, `Partial` and the reference of a receipt. The parts `source` and `checked` of `mu-source-status` show the state of an offline data source and the time of its last confirmed read. Principle 6 needs the true state in words. The color is never the only signal.
 - **Do not remove the focus ring.** Do not set `outline: none` on a part. If you set `--mu-color-focus`, keep 3:1 against the surface. The kit draws the ring with `:focus-visible` in each shadow root.
 - **Do not hide or change the provenance.** The parts `provenance`, `authorship`, `citation`, `locator` and `open` show the actor and the source of the content. Principle 3 needs the actor of each content.
 - **Do not hide the refusal, the confirm step or the thread notices.** The parts `confirm`, `cancel`, `accept`, `stream` and `source` show what a person must know before an action, and the errors of a stream. The parts `edit-type` and `reason` ask for the type of an edit and tell why a submit sent no action. Principle 4 needs the type of each form edit.

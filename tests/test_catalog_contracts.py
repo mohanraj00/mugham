@@ -42,6 +42,7 @@ VALID = {
     'editable-form': {'title': 'Loan details', 'submit_label': 'Save', 'fields': [fill('field', {'name': 'shelf', 'label': 'Shelf code'})]},
     'card-grid': {'label': 'Loans', 'cards': [CARD]},
     'citation': {'quote': 'A short loan can get one renewal.'},
+    'source-status': {'label': 'Tool library', 'state': 'stale', 'checked': '2026-11-15T09:30:00.000Z', 'reason': 'The device is offline.'},
     'excerpt': {'passage': 'A short loan can get one renewal of seven days.', 'span_start': 13, 'span_end': 32},
 }
 
@@ -151,6 +152,13 @@ class CatalogContractTest(unittest.TestCase):
         for change, error in cases:
             with self.subTest(change=change):
                 self.assertEqual(catalog.fill_errors({**base, 'data': {**base['data'], **change}}, CATALOG), [error])
+
+    def test_the_source_status_has_the_four_states_of_the_interface(self):
+        # docs/contracts/data-source.md: ready, stale, empty and error.
+        self.assertEqual(CATALOG['source-status']['data']['state']['values'], ['ready', 'stale', 'empty', 'error'])
+        self.assertFalse(CATALOG['source-status']['ai_content'])
+        self.assertEqual(catalog.fill_errors(fill('source-status', {'label': 'Tool library', 'state': 'offline'}), CATALOG),
+                         ['data.state: must be one of ready, stale, empty, error'])
 
     def test_a_kit_component_declares_no_tool(self):
         # The application binds each tool in code. A fill cannot select one. See catalog/README.md.
