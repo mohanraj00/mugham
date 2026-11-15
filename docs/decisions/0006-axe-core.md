@@ -1,4 +1,4 @@
-# 0005: axe-core as a test-only tool
+# 0006: axe-core as a test-only tool
 
 Status: proposed, 2026-11-15. Issue: mohanraj00/mugham#39.
 

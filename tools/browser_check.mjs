@@ -171,7 +171,7 @@ async function axErrors(session, sessionId, expected, where) {
   return expected.map(([role, name]) => ({ where, role, name, ok: named.some(([r, n]) => r === role && n === name) }));
 }
 
-// The generic rules of decision 0005. They cover the risks of the axe-core rules that apply to the markup of the kit.
+// The generic rules of decision 0006. They cover the risks of the axe-core rules that apply to the markup of the kit.
 // Each control in the accessibility tree has a name. In each root, an id is unique and each id reference finds its
 // target. Each role, each value of an ARIA attribute and each tabindex is valid. A tabindex above 0 changes the focus order.
 const CONTROLS = new Set(['button', 'checkbox', 'combobox', 'DisclosureTriangle', 'link', 'listbox', 'menuitem', 'radio',
@@ -471,7 +471,7 @@ async function main() {
       report.accessibility.push(...await axErrors(session, sessionId, expected, page));
       report.examples.push(...await pageRules(session, sessionId, page));
     }
-    // The fixture of decision 0005 has one defect of each kind. The generic rules must find each one.
+    // The fixture of decision 0006 has one defect of each kind. The generic rules must find each one.
     await open(session, sessionId, `${base}/tests/browser/rules.html`);
     for (let i = 0; i < 100 && !await evaluate(session, sessionId, 'window.muRulesReady === true'); i += 1) await sleep(50);
     const [names, markup] = await pageRules(session, sessionId, 'tests/browser/rules.html');

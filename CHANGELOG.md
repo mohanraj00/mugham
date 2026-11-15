@@ -4,7 +4,7 @@ Each release has an entry. The newest entry is first.
 
 ## Unreleased
 
-- Decision 0005 on axe-core (#39). The proposed choice rejects axe-core, so the kit keeps zero development dependencies. The record maps each axe-core risk that applies to the markup of the kit to a project rule. The browser check gets generic rules for each check page and each example: each control has a name, each id is unique, each id reference finds its target, and each role, ARIA value and `tabindex` is valid. `tests/browser/rules.html` has one defect of each kind, and the check fails if the rules miss one.
+- Decision 0006 on axe-core (#39). The proposed choice rejects axe-core, so the kit keeps zero development dependencies. The record maps each axe-core risk that applies to the markup of the kit to a project rule. The browser check gets generic rules for each check page and each example: each control has a name, each id is unique, each id reference finds its target, and each role, ARIA value and `tabindex` is valid. `tests/browser/rules.html` has one defect of each kind, and the check fails if the rules miss one.
 - Typed form edits (#9). A field with `typed: true` asks for the edit type after a person changes its value: judgment, correction or override. The binding of the form gives the typed names and the person who edits, with `typed` and `editor`. The form refuses a fill whose typed flags do not agree with the binding. A changed typed field with no type sends no action, and the field shows `Choose an edit type.` The request gets an `edits` list. Each edit has the field, the type, the old value, the new value, the actor and the time. [catalog/README.md](catalog/README.md#typed-edits) gives the rules.
 
 ## 0.2.1, 2026-11-14
