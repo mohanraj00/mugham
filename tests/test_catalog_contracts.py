@@ -17,6 +17,8 @@ FACT = fill('fact', {'label': 'Shelf', 'value': 'B-14'})
 CARD = fill('card', {'title': 'Field guide to moss', 'date': '2026-12-01', 'date_label': 'Due', 'facts': [FACT, FACT]})
 AUTHOR = {'type': 'agent', 'id': 'agent-check'}
 CITE = {'source': 'Synthetic loan rules', 'locator': 'https://example.org/rules/loans'}
+CHANGE = fill('diff-change', {'label': 'Shelf', 'change': 'changed', 'before': 'B-14', 'after': 'C-02'})
+PART = fill('diff-part', {'title': 'Loan', 'changes': [CHANGE]})
 
 
 def outer(name, data):
@@ -44,6 +46,9 @@ VALID = {
     'citation': {'quote': 'A short loan can get one renewal.'},
     'source-status': {'label': 'Tool library', 'state': 'stale', 'checked': '2026-11-15T09:30:00.000Z', 'reason': 'The device is offline.'},
     'excerpt': {'passage': 'A short loan can get one renewal of seven days.', 'span_start': 13, 'span_end': 32},
+    'diff-change': CHANGE['data'],
+    'diff-part': PART['data'],
+    'diff': {'title': 'Loan rules, version 3 to version 4', 'before_label': 'Version 3', 'after_label': 'Version 4', 'parts': [PART]},
     'table': {'label': 'Sample rows', 'columns': ['Name'], 'rows': [fill('table-row', {'cells': ['Plot A']})]},
     'table-row': {'cells': ['Plot A'], 'status': 'Ready'},
 }
@@ -161,6 +166,26 @@ class CatalogContractTest(unittest.TestCase):
         self.assertFalse(CATALOG['source-status']['ai_content'])
         self.assertEqual(catalog.fill_errors(fill('source-status', {'label': 'Tool library', 'state': 'offline'}), CATALOG),
                          ['data.state: must be one of ready, stale, empty, error'])
+
+    def test_a_diff_has_up_to_20_parts_of_200_changes(self):
+        large = fill('diff-part', {'title': 'Loan', 'changes': [CHANGE] * 200})
+        base = outer('diff', VALID['diff'])
+        self.assertEqual(catalog.fill_errors({**base, 'data': {**base['data'], 'parts': [large] * 20}}, CATALOG), [])
+        cases = [
+            ({'parts': [PART] * 21}, 'data.parts: more than 20 items'),
+            ({'parts': [fill('diff-part', {'title': 'Loan', 'changes': [CHANGE] * 201})]}, 'data.parts[0].data.changes: more than 200 items'),
+            ({'parts': [CHANGE]}, 'data.parts[0].component: must be diff-part'),
+        ]
+        for change, error in cases:
+            with self.subTest(error=error):
+                self.assertEqual(catalog.fill_errors({**base, 'data': {**base['data'], **change}}, CATALOG), [error])
+
+    def test_a_diff_change_has_one_of_four_kinds(self):
+        for kind in ('added', 'removed', 'changed', 'unchanged'):
+            with self.subTest(kind=kind):
+                self.assertEqual(catalog.fill_errors(fill('diff-change', {'label': 'Shelf', 'change': kind}), CATALOG), [])
+        self.assertEqual(catalog.fill_errors(fill('diff-change', {'label': 'Shelf', 'change': 'moved'}), CATALOG),
+                         ['data.change: must be one of added, removed, changed, unchanged'])
 
     def test_a_kit_component_declares_no_tool(self):
         # The application binds each tool in code. A fill cannot select one. See catalog/README.md.
