@@ -1,0 +1,19 @@
+{
+  "fill": {
+    "component": "card",
+    "version": "0.1.0",
+    "data": {
+      "title": "Tray A1",
+      "date": "2026-11-15",
+      "facts": [
+        { "component": "fact", "version": "0.1.0", "data": { "label": "Count", "value": "12" } },
+        { "component": "fact", "version": "0.1.0", "data": { "label": "Status", "value": "ready" } }
+      ]
+    },
+    "slots": { "authorship": { "type": "system", "id": "fixture", "name": "Synthetic source" } }
+  },
+  "cases": [
+    { "title": "Matching narration", "narration": "The tray has [Count: 12] items, with [Status: ready] on [Date: 2026-11-15]." },
+    { "title": "Different narration", "narration": "The tray has [Count: 13] items, with [Status: ready] on [Date: 2026-11-15]." }
+  ]
+}
