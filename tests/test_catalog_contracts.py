@@ -48,6 +48,8 @@ VALID = {
     'diff-change': CHANGE['data'],
     'diff-part': PART['data'],
     'diff': {'title': 'Loan rules, version 3 to version 4', 'before_label': 'Version 3', 'after_label': 'Version 4', 'parts': [PART]},
+    'table': {'label': 'Sample rows', 'columns': ['Name'], 'rows': [fill('table-row', {'cells': ['Plot A']})]},
+    'table-row': {'cells': ['Plot A'], 'status': 'Ready'},
 }
 
 

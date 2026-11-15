@@ -3,6 +3,8 @@ import { MuElement } from '../primitives/base.js';
 import { define as definePrimitives } from '../primitives/index.js';
 import { ActionState } from '../actions/action.js';
 import { el, sheet } from '../render/dom.js';
+import { MuTable } from './table.js';
+export { MuTable } from './table.js';
 
 const FIELD_NAME = /^[a-z][a-z0-9]*(_[a-z0-9]+)*$/;
 const CARD_CSS = sheet(`
@@ -625,7 +627,7 @@ export function define(registry = customElements) {
   definePrimitives(registry);
   for (const [name, element] of [['mu-action-button', MuActionButton], ['mu-card', MuCard],
     ['mu-card-grid', MuCardGrid], ['mu-editable-form', MuEditableForm], ['mu-citation', MuCitation], ['mu-diff', MuDiff],
-    ['mu-excerpt', MuExcerpt]]) {
+    ['mu-excerpt', MuExcerpt], ['mu-table', MuTable]]) {
     if (!registry.get(name)) registry.define(name, element);
   }
 }

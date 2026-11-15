@@ -6,6 +6,8 @@ Each release has an entry. The newest entry is first.
 
 - The diff component `mu-diff` (#30), with the contracts `diff`, `diff-part` and `diff-change`. A diff shows the changes between two versions of a text or a list of fields, in up to 20 parts of 200 changes. Each change shows its kind as text: `Added`, `Removed`, `Changed` or `Unchanged`. The element refuses a change whose values do not agree with its kind. Each part is a `details` element that a person opens and closes with a mouse or a keyboard. A diff of more than 20 changes starts with each part closed. `mu-thread` shows a diff part. `examples/diff.html` shows a diff of two synthetic versions. [catalog/README.md](catalog/README.md) gives the rules.
 - Typed form edits (#9). A field with `typed: true` asks for the edit type after a person changes its value: judgment, correction or override. The binding of the form gives the typed names and the person who edits, with `typed` and `editor`. The form refuses a fill whose typed flags do not agree with the binding. A changed typed field with no type sends no action, and the field shows `Choose an edit type.` The request gets an `edits` list. Each edit has the field, the type, the old value, the new value, the actor and the time. [catalog/README.md](catalog/README.md#typed-edits) gives the rules.
+- A deterministic check compares explicit narration claims with card values and reports each difference by field name. Decision 0005, tests and a synthetic example define its scope (#40).
+- The table component `mu-table` (#31) shows text headers, rows and optional row status text, with keyboard sorting and an empty state. `examples/table.html` shows synthetic rows.
 
 ## 0.2.1, 2026-11-14
 
