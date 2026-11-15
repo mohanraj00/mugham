@@ -1,0 +1,87 @@
+{
+  "format": 2,
+  "name": "form-card",
+  "version": "0.1.0",
+  "kind": "component",
+  "description": "A long form in sections that shows each field as a label and a value. A person edits one field in place and sends the changes as one action.",
+  "ai_content": true,
+  "slots": {
+    "authorship": {
+      "required": true
+    }
+  },
+  "data": {
+    "title": {
+      "type": "text",
+      "label": "Title",
+      "required": true,
+      "min_length": 1,
+      "max_length": 120
+    },
+    "sections": {
+      "type": "list",
+      "label": "Sections",
+      "required": true,
+      "max_items": 10,
+      "items": {
+        "type": "component",
+        "label": "Section",
+        "required": true,
+        "name": "form-section"
+      }
+    },
+    "submit_label": {
+      "type": "text",
+      "label": "Submit label",
+      "required": true,
+      "min_length": 1,
+      "max_length": 40
+    }
+  },
+  "states": [
+    "default",
+    "disabled",
+    "confirm",
+    "pending",
+    "done",
+    "error"
+  ],
+  "tokens": [
+    "color.surface",
+    "color.text",
+    "color.text-muted",
+    "color.border",
+    "color.accent",
+    "color.on-accent",
+    "color.danger",
+    "color.focus",
+    "space.1",
+    "space.2",
+    "space.3",
+    "space.4",
+    "radius.2",
+    "type.body",
+    "type.caption",
+    "type.weight-strong",
+    "motion.fast"
+  ],
+  "accessibility": {
+    "role": "form",
+    "name": {
+      "field": "title"
+    },
+    "keyboard": [
+      "Tab",
+      "Shift+Tab",
+      "Enter",
+      "Space",
+      "Escape",
+      "ArrowUp",
+      "ArrowDown",
+      "ArrowLeft",
+      "ArrowRight"
+    ],
+    "forced_colors": true,
+    "reduced_motion": true
+  }
+}

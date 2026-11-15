@@ -941,6 +941,66 @@
       "errors": [
         "data.label: missing key max_length"
       ]
+    },
+    {
+      "name": "a component field can name a list of components",
+      "contract": {
+        "format": 2,
+        "name": "seed-tray",
+        "version": "0.1.0",
+        "kind": "component",
+        "description": "A tray of seedlings with its label, its sow date and its stage.",
+        "ai_content": true,
+        "slots": {
+          "authorship": {
+            "required": true
+          }
+        },
+        "data": {
+          "label": {
+            "type": "text",
+            "label": "Label",
+            "required": true,
+            "max_length": 80
+          },
+          "seedlings": {
+            "type": "integer",
+            "label": "Seedlings",
+            "required": true,
+            "minimum": 0,
+            "maximum": 200
+          },
+          "loan": {
+            "type": "component",
+            "label": "Loan",
+            "required": false,
+            "names": [
+              "loan-card",
+              "seed-tray-label"
+            ]
+          }
+        },
+        "states": [
+          "default",
+          "refused"
+        ],
+        "tokens": [
+          "color.text",
+          "type.body"
+        ],
+        "accessibility": {
+          "role": "article",
+          "name": {
+            "field": "label"
+          },
+          "keyboard": [],
+          "forced_colors": true,
+          "reduced_motion": true
+        }
+      },
+      "errors": [
+        "data.loan: no contract has the name seed-tray-label"
+      ]
     }
   ]
 }

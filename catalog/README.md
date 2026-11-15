@@ -7,12 +7,19 @@ Each JSON file in this folder is the contract of one component. [schema/README.m
 | `text.json` | `mu-text` | primitive | A run of text. |
 | `button.json` | `mu-button` | primitive | A button that sends a `mu-press` event. |
 | `field.json` | `mu-field` | primitive | A labeled text input that sends a `mu-edit` event. A typed field also asks for the edit type. |
+| `long-text-field.json` | `mu-long-text-field` | primitive | A labeled text area for text of more than one line. |
+| `number-field.json` | `mu-number-field` | primitive | A labeled input for a number, with an optional range. |
+| `date-field.json` | `mu-date-field` | primitive | A labeled input for a date as `YYYY-MM-DD`, with an optional range. |
+| `choice-field.json` | `mu-choice-field` | primitive | A labeled radio group with 1 to 20 choices. |
 | `stack.json` | `mu-stack` | primitive | A labeled group in one column or one row. |
 | `grid.json` | `mu-grid` | primitive | A labeled group in columns. |
 | `fact.json` | in `mu-card` | component | A label and a value. |
 | `card.json` | `mu-card` | component | A title, a summary, a date and up to six facts. |
 | `action-button.json` | `mu-action-button` | component | A button for one action. |
-| `editable-form.json` | `mu-editable-form` | component | Up to 20 fields, submitted as one action. |
+| `editable-form.json` | `mu-editable-form` | component | Up to 20 fields of the five input types, submitted as one action. |
+| `form-line.json` | in `mu-form-card` | component | One field of a form card, with an optional line number and a read-only flag. |
+| `form-section.json` | in `mu-form-card` | component | A titled group of up to 40 form lines. |
+| `form-card.json` | `mu-form-card` | component | Up to 10 sections of form lines. A person reads the values and edits one field in place. The changes go as one action. |
 | `card-grid.json` | `mu-card-grid` | component | A labeled list of cards. |
 | `citation.json` | `mu-citation` | component | A source name, a locator as text, an optional quote and an open button. |
 | `diff-change.json` | in `mu-diff` | component | One change: a label, the kind of the change, and the value before and after. |
@@ -26,7 +33,7 @@ Each JSON file in this folder is the contract of one component. [schema/README.m
 | `chart.json` | `mu-chart` | component | SVG bar, line and stacked bar charts with a table view. See [Chart](../docs/chart.md). |
 | `chart-series.json` | in `mu-chart` | component | A text label and up to 50 numeric values. Requires the authorship slot when used as an outer fill. |
 
-The contracts with `ai_content` set to `true` are `card`, `card-grid`, `chart`, `chart-series`, `citation`, `diff`, `editable-form`, `excerpt`, `fact`, `image`, `status`, `table` and `table-row`. Each of them requires the authorship slot. `card`, `card-grid` and `citation` also accept the citation slot. `excerpt` requires the citation slot, because the slot gives the locator of the passage.
+The contracts with `ai_content` set to `true` are `card`, `card-grid`, `chart`, `chart-series`, `citation`, `diff`, `editable-form`, `excerpt`, `fact`, `form-card`, `image`, `status`, `table` and `table-row`. Each of them requires the authorship slot. `card`, `card-grid` and `citation` also accept the citation slot. `excerpt` requires the citation slot, because the slot gives the locator of the passage.
 
 The span of an excerpt starts at `span_start` and stops before `span_end`. Both count code points of the passage, the same as each text limit of the kit. The element refuses a span that is empty or that goes past the end of the passage. [schema/README.md](schema/README.md#slots) gives the slots.
 
@@ -94,7 +101,7 @@ These are the limits of the call:
 
 - A registration stays until the page closes. The kit has no call that removes a contract. Register each contract before the first fill of that component. A fill that the reader refused before the registration stays refused.
 - The registry is global to the page. Each thread and each element of the page reads the same registry.
-- The thread binds no action to a registered component. Only `action-button` and `editable-form` send an action.
+- The thread binds no action to a registered component. Only `action-button`, `editable-form` and `form-card` send an action.
 - Each element gets `fill` and `actor` as own accessors that cannot change. A class field with the name `fill` or `actor` makes the constructor of the element throw a `TypeError`, so it cannot replace the validation.
 - If a script sets `actor` before the upgrade of an element, the constructor gives it to the setter. If a script sets `fill` before the upgrade, the element gives it to the setter in a microtask after its constructor. A newer fill replaces the early fill.
 - The contract is in the registry before the definition of the element. Thus an element of the page that the definition upgrades reads the new contract. If the definition fails, the registry removes the contract.
@@ -122,7 +129,7 @@ A binding has these keys. Only `tool` is necessary.
 | `label` | The label of the action, 1 to 80 characters. |
 | `description` | The description of an action button, 1 to 200 characters. |
 | `title` | The title of an editable form, 1 to 120 characters. |
-| `editable` | The names that an editable form can send, each with its label. |
+| `editable` | The names that an editable form or a form card can send, each with its label. Up to 400 names, because a form card has up to 10 sections of 40 fields. |
 | `typed` | Optional. The editable names that need an edit type. See "Typed edits". |
 | `editor` | The person who edits a typed form: `{ type: 'human', id }`. `id` has 1 to 128 characters. It is necessary if `typed` has a name. |
 | `confirm` | Optional. The confirm step: `{ message, label }`. `message` has 1 to 200 characters. `label` has 1 to 40 characters. |
@@ -200,9 +207,57 @@ If the binding has a `typed` list, the request has an `edits` list with one edit
 |---|---|
 | `field` | The field name. |
 | `type` | `judgment`, `correction` or `override`. |
-| `old_value` | The value of the fill. |
+| `old_value` | The value of the fill, as the control shows it. For example, a text area changes a CRLF line break to LF. |
 | `new_value` | The value that the request sends in `arguments`. |
 | `actor` | The `editor` of the binding: `{ type: 'human', id }`. |
 | `time` | The time of the last change of the value or the type, as an ISO 8601 text in UTC, for example `2026-11-15T09:30:00.000Z`. |
 
 A field that did not change has no edit. A disabled field has no edit, because the form does not send its value. A change of the edit type after a request also makes the values new, so the receipt of that request does not show `Done`.
+
+### Input types
+
+An editable form accepts five field contracts. Each one has the data fields `name`, `label`, `hint`, `error`, `disabled` and `typed`, and the same states. A typed edit works the same with each input type.
+
+| Contract | Value | Other data | The request sends |
+|---|---|---|---|
+| `field` | Text of 200 characters at most. | | A string. |
+| `long-text-field` | Text of 10000 characters at most, with line breaks. | | A string. |
+| `number-field` | A number. | `minimum` and `maximum`, both optional. | A number, for example `12.5`. |
+| `date-field` | A date as `YYYY-MM-DD`. | `earliest` and `latest`, both optional. | A string, for example `2026-12-01`. |
+| `choice-field` | One of the choices. | `choices`: 1 to 20 unique texts. | The text of the choice. |
+
+The form refuses a fill in which the data of a field do not agree. Examples are a minimum that is more than the maximum, a value outside the range, and a value that is not one of the choices. The refusal names the field, for example `data.fields[2].data.value: the number is outside the range`.
+
+A person can type a value that the field does not accept, for example a text that is not a number, a date that does not exist, or a value outside the range. Then a submit sends no action. The field shows the reason as text, for example `Give a number from 1 to 12.`, and the focus goes to the field. The reason also shows when the focus leaves the field.
+
+Enter in a one-line field submits the form. Enter in long text adds a line. In a choice, the arrow keys select the next or the previous choice.
+
+The date field is a text input, not the date picker of the browser. Thus it has the same role, the same text and the same keyboard in each browser.
+
+### Form card
+
+A form card shows a long form as labels and values. A person reads the form first, and then edits one field at a time. The card has up to 10 sections, and each section has up to 40 lines. Thus a card can have more than 20 fields.
+
+Each `form-line` has one field of the five input types, an optional `line` text of 12 characters at most, for example `2.1`, and an optional `read_only` flag. The `hint` of the field is the help text. A form card uses `read_only`, so it refuses a field with `disabled`.
+
+The binding is the binding of an editable form: `tool`, `label`, `title`, `arguments`, `editable`, and `typed` and `editor` for typed edits. `label` is the `submit_label` of the card. The card refuses a fill in these conditions:
+
+- Two fields have the same name.
+- No field is editable.
+- A field that is not read-only is not in `editable`, or its label is not the label in `editable`.
+- A read-only field has `typed`, because a person cannot edit it.
+- The typed flags do not agree with `typed` of the binding.
+- A read-only field has the name of a bound argument, and its value is not the bound value. The request sends the bound value, so the card shows only that value. The card checks this rule at each render, at each computed value, at each new binding and before each send. If a shown value is not the bound value, the card refuses its fill and sends no action.
+
+These are the rules of the card:
+
+- In the read state, each line shows the line number, the label and the value as text. A field with no value shows `No value`.
+- An editable value is a button. A click, Enter or Space opens the editor of the field with the current value. The editor has `Save` and `Cancel`. Escape cancels. Enter in a one-line field saves. After `Save` or `Cancel`, the focus goes back to the value.
+- `Save` checks the value with the rules of the field. A changed typed field also needs an edit type. A value that is the confirmed value again is not a change.
+- A changed field shows `Changed` as text until a receipt with `ok` set to `true` comes back for that value.
+- A read-only field has no editor and shows `Read-only` as text. The request never sends its value.
+- A submit sends only the changed fields in `arguments`, as one action. If an editor is open, the card sends no action and shows `Save or cancel this field first.` If nothing changed, the card shows `No changes to send.`
+- While the request is pending or the confirm step shows, the card opens no editor.
+- The old value of a typed edit is the confirmed value of the field: the value of the fill, of a computed value or of a done receipt.
+
+The application computes the read-only fields. When the service gives new values, the application calls `card.computed({ name: value })`. The card checks each value against the contract of its field. It shows the values only if all of them are valid. It refuses a value for a bound argument that is not the bound value. It returns the errors, for example `fee: the field is not read-only`.

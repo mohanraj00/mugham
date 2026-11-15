@@ -5,8 +5,8 @@
 - `render/dom.js`: the only way the kit makes DOM nodes. Data goes only into text nodes and into a short list of attributes.
 - `render/catalog.js`: the contracts that the kit knows.
 - `render/registry.js`: the registration call for an application contract and its element. [catalog/README.md](../catalog/README.md#application-contracts) gives the rules.
-- `primitives/`: the custom elements `mu-text`, `mu-button`, `mu-field`, `mu-stack` and `mu-grid`.
-- `components/`: the custom elements `mu-card`, `mu-action-button`, `mu-editable-form`, `mu-card-grid`, `mu-citation`, `mu-excerpt` and `mu-diff`.
+- `primitives/`: the custom elements `mu-text`, `mu-button`, `mu-stack` and `mu-grid`. `primitives/fields.js` has the input fields `mu-field`, `mu-long-text-field`, `mu-number-field`, `mu-date-field` and `mu-choice-field`.
+- `components/`: the custom elements `mu-card`, `mu-action-button`, `mu-editable-form`, `mu-form-card`, `mu-card-grid`, `mu-citation`, `mu-excerpt` and `mu-diff`.
 - `envelope/envelope.js`: the message envelope and the reader of an AG-UI 1.0 stream. [docs/contracts/envelope.md](../docs/contracts/envelope.md) gives the rules. A component part goes to `render/validate.js`.
 - `thread/index.js`: the custom element `mu-thread`. It reads AG-UI 1.0 events through `envelope/` and shows each message with its actor. [thread/README.md](thread/README.md) is its contract.
 - `actions/action.js`: the action path. A request stays pending until a receipt with the same id comes back.

@@ -1,0 +1,101 @@
+{
+  "format": 2,
+  "name": "choice-field",
+  "version": "0.1.0",
+  "kind": "primitive",
+  "description": "A labeled group of choices. A person selects one choice. The value must be one of the choices.",
+  "ai_content": false,
+  "data": {
+    "name": {
+      "type": "text",
+      "label": "Name",
+      "required": false,
+      "max_length": 40
+    },
+    "label": {
+      "type": "text",
+      "label": "Label",
+      "required": true,
+      "min_length": 1,
+      "max_length": 80
+    },
+    "value": {
+      "type": "text",
+      "label": "Value",
+      "required": false,
+      "max_length": 80,
+      "editable": true
+    },
+    "choices": {
+      "type": "list",
+      "label": "Choices",
+      "required": true,
+      "max_items": 20,
+      "items": {
+        "type": "text",
+        "label": "Choice",
+        "required": true,
+        "min_length": 1,
+        "max_length": 80
+      }
+    },
+    "hint": {
+      "type": "text",
+      "label": "Hint",
+      "required": false,
+      "max_length": 200
+    },
+    "error": {
+      "type": "text",
+      "label": "Error",
+      "required": false,
+      "max_length": 200
+    },
+    "disabled": {
+      "type": "boolean",
+      "label": "Disabled",
+      "required": false
+    },
+    "typed": {
+      "type": "boolean",
+      "label": "Typed",
+      "required": false
+    }
+  },
+  "states": [
+    "default",
+    "disabled",
+    "error"
+  ],
+  "tokens": [
+    "color.surface",
+    "color.text",
+    "color.text-muted",
+    "color.border",
+    "color.focus",
+    "color.danger",
+    "space.1",
+    "space.2",
+    "radius.1",
+    "type.body",
+    "type.caption",
+    "motion.fast"
+  ],
+  "accessibility": {
+    "role": "group",
+    "name": {
+      "field": "label"
+    },
+    "keyboard": [
+      "Tab",
+      "Shift+Tab",
+      "ArrowUp",
+      "ArrowDown",
+      "ArrowLeft",
+      "ArrowRight",
+      "Space"
+    ],
+    "forced_colors": true,
+    "reduced_motion": true
+  }
+}

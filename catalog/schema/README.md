@@ -35,7 +35,7 @@ A contract is one JSON file in `catalog/`, for example `catalog/card.json`. The 
 | `date` | A calendar date as `YYYY-MM-DD`. | The date must exist. |
 | `enum` | One string from `values`. | |
 | `list` | An array of items. An item is a scalar field or a component field. | `max_items` is necessary. |
-| `component` | A fill of the named component. | The named component must be in the catalog. |
+| `component` | A fill of the named component. | `name` names one component. `names` names 2 to 12 components, and the fill can be of each of them. Each named component must be in the catalog. |
 
 A field with `editable: true` is a form input. A list field and a component field cannot be editable.
 

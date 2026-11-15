@@ -66,18 +66,24 @@ export class MuElement extends HTMLElement {
     const other = value !== null && typeof value === 'object' && !Array.isArray(value) && value.component !== name;
     const errors = other ? [`component: must be ${name}`] : fillErrors(value, CONTRACTS);
     if (errors.length === 0) errors.push(...authorErrors(value, this.#actor), ...this.check(value.data));
-    const root = this.shadowRoot;
     if (errors.length) {
-      this.#fill = null;
-      this.dataset.state = 'refused';
-      root.replaceChildren(el('span', { class: 'refused', role: 'status' }, `Refused ${name}: ${this.refusal(errors)}`));
-      this.dispatchEvent(new CustomEvent('mu-refused', { bubbles: true, composed: true, detail: { errors } }));
+      this.refuse(errors);
       return;
     }
     this.#fill = structuredClone(value);
     this.dataset.state = this.state(this.#fill.data);
     // A render can give null for an optional part. Such a part shows nothing.
-    root.replaceChildren(...this.render(this.#fill.data).filter((part) => part !== null && part !== undefined));
+    this.shadowRoot.replaceChildren(...this.render(this.#fill.data).filter((part) => part !== null && part !== undefined));
+  }
+
+  // The element keeps no data and shows the refusal as text. A subclass also calls it when its shown data stops
+  // agreeing with a rule, for example after a new binding.
+  refuse(errors) {
+    this.#fill = null;
+    this.dataset.state = 'refused';
+    this.shadowRoot.replaceChildren(el('span', { class: 'refused', role: 'status' },
+      `Refused ${this.constructor.component}: ${this.refusal(errors)}`));
+    this.dispatchEvent(new CustomEvent('mu-refused', { bubbles: true, composed: true, detail: { errors } }));
   }
 
   // The reason of a refusal, as text for a person. The mu-refused event always gives all errors of the validator.

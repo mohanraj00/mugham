@@ -120,6 +120,50 @@
     "forced_colors": true,
     "reduced_motion": true
    }
+  },
+  "loan-shelf": {
+   "format": 2,
+   "name": "loan-shelf",
+   "version": "0.1.0",
+   "kind": "component",
+   "description": "A shelf of loans and loan grids.",
+   "ai_content": false,
+   "data": {
+    "label": {
+     "type": "text",
+     "label": "Label",
+     "required": true,
+     "max_length": 40
+    },
+    "items": {
+     "type": "list",
+     "label": "Items",
+     "required": true,
+     "max_items": 3,
+     "items": {
+      "type": "component",
+      "label": "Item",
+      "required": true,
+      "names": [
+       "loan-card",
+       "loan-grid"
+      ]
+     }
+    }
+   },
+   "states": [
+    "default"
+   ],
+   "tokens": [],
+   "accessibility": {
+    "role": "list",
+    "name": {
+     "field": "label"
+    },
+    "keyboard": [],
+    "forced_colors": true,
+    "reduced_motion": true
+   }
   }
  },
  "cases": [
@@ -1607,6 +1651,87 @@
    },
    "errors": [
     "data.cards[0].slots: a nested fill takes the slots of its outer fill"
+   ]
+  },
+  {
+   "name": "a list of named components takes each named component",
+   "fill": {
+    "component": "loan-shelf",
+    "version": "0.1.0",
+    "data": {
+     "label": "Shelf 4",
+     "items": [
+      {
+       "component": "loan-card",
+       "version": "0.1.0",
+       "data": {
+        "title": "Field guide to moss",
+        "due": "2026-12-01",
+        "renewals": 1,
+        "facts": [
+         "Shelf 4"
+        ]
+       }
+      },
+      {
+       "component": "loan-grid",
+       "version": "0.1.0",
+       "data": {
+        "label": "Weekend loans",
+        "cards": [
+         {
+          "component": "loan-card",
+          "version": "0.1.0",
+          "data": {
+           "title": "Field guide to moss",
+           "due": "2026-12-01",
+           "renewals": 1,
+           "facts": [
+            "Shelf 4"
+           ]
+          }
+         }
+        ]
+       }
+      }
+     ]
+    }
+   },
+   "errors": []
+  },
+  {
+   "name": "a list of named components refuses a component that it does not name",
+   "fill": {
+    "component": "loan-shelf",
+    "version": "0.1.0",
+    "data": {
+     "label": "Shelf 4",
+     "items": [
+      {
+       "component": "loan-card",
+       "version": "0.1.0",
+       "data": {
+        "title": "Field guide to moss",
+        "due": "2026-12-01",
+        "renewals": 1,
+        "facts": [
+         "Shelf 4"
+        ]
+       }
+      },
+      {
+       "component": "loan-shelf",
+       "version": "0.1.0",
+       "data": {
+        "label": "Inner",
+        "items": []
+       }
+      }
+     ]
+    }
+   },
+   "errors": [
+    "data.items[1].component: must be loan-card or loan-grid"
    ]
   }
  ]

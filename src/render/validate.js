@@ -144,7 +144,10 @@ function fieldsOf(contract) {
     field.type === 'list' ? [['data.' + name, field], [`data.${name}.items`, field.items]] : [['data.' + name, field]]);
 }
 
-const references = (contract) => fieldsOf(contract).filter(([, field]) => field.type === 'component').map(([path, field]) => [path, field.name]);
+// The component names that a component field accepts: its name, or each item of its names.
+const targets = (field) => (own(field, 'names') ? field.names : [field.name]);
+const references = (contract) => fieldsOf(contract).filter(([, field]) => field.type === 'component')
+  .flatMap(([path, field]) => targets(field).map((target) => [path, target]));
 
 function reaches(catalog, start, goal) {
   const seen = new Set();
@@ -190,7 +193,7 @@ export function contractErrors(contract, catalog) {
   return errors;
 }
 
-function isDate(value) {
+export function isDate(value) {
   const match = typeof value === 'string' ? DATE.exec(value) : null;
   if (!match) return false;
   const [year, month, day] = match.slice(1).map(Number);
@@ -225,7 +228,7 @@ function valueErrors(value, field, path, catalog, depth) {
       return value.flatMap((item, index) => valueErrors(item, field.items, `${path}[${index}]`, catalog, depth));
     }
     case 'component':
-      if (isObject(value) && value.component !== field.name) return [`${path}.component: must be ${field.name}`];
+      if (isObject(value) && !targets(field).includes(value.component)) return [`${path}.component: must be ${targets(field).join(' or ')}`];
       return fillErrors(value, catalog, path, depth + 1);
     default:
       throw new Error('unknown field type ' + field.type);
