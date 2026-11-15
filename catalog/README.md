@@ -229,6 +229,7 @@ The binding is the binding of an editable form: `tool`, `label`, `title`, `argum
 - A field that is not read-only is not in `editable`, or its label is not the label in `editable`.
 - A read-only field has `typed`, because a person cannot edit it.
 - The typed flags do not agree with `typed` of the binding.
+- A read-only field has the name of a bound argument, and its value is not the bound value. The request sends the bound value, so the card shows only that value.
 
 These are the rules of the card:
 
@@ -241,4 +242,4 @@ These are the rules of the card:
 - While the request is pending or the confirm step shows, the card opens no editor.
 - The old value of a typed edit is the confirmed value of the field: the value of the fill, of a computed value or of a done receipt.
 
-The application computes the read-only fields. When the service gives new values, the application calls `card.computed({ name: value })`. The card checks each value against the contract of its field. It shows the values only if all of them are valid. It returns the errors, for example `fee: the field is not read-only`.
+The application computes the read-only fields. When the service gives new values, the application calls `card.computed({ name: value })`. The card checks each value against the contract of its field. It shows the values only if all of them are valid. It refuses a value for a bound argument that is not the bound value. It returns the errors, for example `fee: the field is not read-only`.

@@ -163,6 +163,12 @@ export class ActionState {
     return this.#binding ? this.#binding.description : null;
   }
 
+  // The bound arguments that each request sends. The application gives them in the binding. Without a binding,
+  // the value is null.
+  get arguments() {
+    return this.#binding ? this.#binding.arguments : null;
+  }
+
   // The names of the extra values that a request can carry, each with its label. The application gives
   // them in the binding. Without a binding, the value is null.
   get editable() {

@@ -963,6 +963,16 @@ const cardStatus = (node) => node.shadowRoot.querySelector('[part="status"]').te
     'data.sections: the field names must be unique');
   const readOnly = { ...CARD_FORM, submit_label: 'Send changes', sections: [section('Household', [CARD_FORM.sections[1].data.lines[2]])] };
   refused('a card with no field that a person can edit', readOnly, 'data.sections: the card needs at least one field that a person can edit');
+  // A read-only line with the name of a bound argument shows the value that the request sends, or the card refuses it.
+  const bound = (value) => ({ ...CARD_FORM, sections: [...CARD_FORM.sections,
+    section('Record', [line(field('form_id', 'Form', value), { read_only: true })])] });
+  refused('a read-only field that shows a value other than its bound argument', bound('F-9999'),
+    'data.sections: the read-only field form_id does not show the bound value');
+  const agreed = formCard(CARD_BINDING, bound('F-0001')).node;
+  check('form card: accepts a read-only field that shows its bound argument', agreed.dataset.state === 'default', refusedText(agreed));
+  const moved = agreed.computed({ form_id: 'F-9999' });
+  check('form card: refuses a computed value other than the bound argument', moved[0] === 'form_id: the value is not the bound value'
+    && lineOf(agreed, 'form_id').row?.textContent.includes('F-0001'), JSON.stringify(moved));
 }
 {
   // A long card: 2 sections of 30 editable fields. The binding of the application gives each of the 60 names.

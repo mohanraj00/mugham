@@ -502,6 +502,11 @@ export class MuFormCard extends ActionElement {
     if (!open.length) return ['data.sections: the card needs at least one field that a person can edit'];
     const computed = lines.find(({ line }) => line.read_only && line.field.data.typed);
     if (computed) return [`data.sections: the read-only field ${computed.line.field.data.name} cannot have an edit type`];
+    // The request sends the bound value, so a read-only line with the same name must show that value.
+    const bound = this.action.arguments ?? {};
+    const shown = lines.find(({ line }) => line.read_only && Object.hasOwn(bound, line.field.data.name)
+      && line.field.data.value !== bound[line.field.data.name]);
+    if (shown) return [`data.sections: the read-only field ${shown.line.field.data.name} does not show the bound value`];
     const editable = this.action.editable;
     if (!editable) return [];
     const other = open.find((line) => !Object.hasOwn(editable, line.field.data.name));
@@ -545,6 +550,11 @@ export class MuFormCard extends ActionElement {
       }
       if (!line.readOnly) {
         errors.push(`${name}: the field is not read-only`);
+        continue;
+      }
+      const bound = this.action.arguments ?? {};
+      if (Object.hasOwn(bound, name) && value !== bound[name]) {
+        errors.push(`${name}: the value is not the bound value`);
         continue;
       }
       const data = { ...line.field.data, value };
