@@ -125,6 +125,8 @@ Each rule protects a principle of the [constitution](../../CONSTITUTION.md#princ
 
 A page can style these parts for layout, for example a margin or a width, if it keeps each rule above: `actions`, `button`, `card`, `empty`, `excerpt`, `facts`, `form`, `input`, `label`, `layout`, `list`, `mark`, `passage`, `quote`, `span`, `table` and `text`. The diff adds the layout parts `diff`, `title`, `versions`, `counts`, `summary`, `changes`, `change` and `value`. `seed-tray` in [examples/register.js](../../examples/register.js) shows that an application element can add its own part, for example `tray`.
 
+The image parts are `image`, `box`, `caption` and `dialog`. Keep the box ratio and its loading and failed notices visible. Keep the caption and the full-size close button visible. The `open` part must keep its focus ring.
+
 ## Run the page
 
 ```sh

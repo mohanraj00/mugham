@@ -1,7 +1,7 @@
 // The only way the kit makes DOM nodes. Data goes into text nodes and into a short list of attributes.
 // No function here parses a string as markup. tests/test_sinks.py refuses markup sinks in src/.
 const ATTRIBUTES = new Set(['id', 'class', 'part', 'role', 'type', 'for', 'name', 'autocomplete', 'tabindex',
-  'aria-label', 'aria-describedby', 'aria-invalid', 'aria-live', 'aria-disabled', 'data-state', 'scope', 'aria-sort']);
+  'aria-label', 'aria-describedby', 'aria-invalid', 'aria-live', 'aria-disabled', 'data-state', 'scope', 'aria-sort', 'aria-hidden']);
 
 export function text(value) {
   return document.createTextNode(String(value));
