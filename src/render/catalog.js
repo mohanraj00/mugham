@@ -18,8 +18,11 @@ import status from '../../catalog/status.json' with { type: 'json' };
 import text from '../../catalog/text.json' with { type: 'json' };
 import table from '../../catalog/table.json' with { type: 'json' };
 import tableRow from '../../catalog/table-row.json' with { type: 'json' };
+import chart from '../../catalog/chart.json' with { type: 'json' };
+import chartSeries from '../../catalog/chart-series.json' with { type: 'json' };
 
 export const CATALOG = Object.freeze(Object.assign(Object.create(null), {
   'action-button': actionButton, button, card, 'card-grid': cardGrid, citation, diff, 'diff-change': diffChange, 'diff-part': diffPart,
   'editable-form': editableForm, excerpt, fact, field, grid, image, stack, status, text, table, 'table-row': tableRow,
+  chart, 'chart-series': chartSeries,
 }));
