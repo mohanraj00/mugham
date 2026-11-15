@@ -21,8 +21,9 @@ Each JSON file in this folder is the contract of one component. [schema/README.m
 | `excerpt.json` | `mu-excerpt` | component | A passage as text with a marked span, the source name, the locator as text and an open button. |
 | `table.json` | `mu-table` | component | Text headers and rows, keyboard sorting and optional row status text. See [Table](../docs/table.md). |
 | `table-row.json` | in `mu-table` | component | Text cells and optional status text. |
+| `status.json` | `mu-status` | component | One state with short text, a fixed label and a border style. |
 
-The contracts with `ai_content` set to `true` are `card`, `card-grid`, `citation`, `diff`, `editable-form`, `excerpt`, `fact`, `table` and `table-row`. Each of them requires the authorship slot. `card`, `card-grid` and `citation` also accept the citation slot. `excerpt` requires the citation slot, because the slot gives the locator of the passage.
+The contracts with `ai_content` set to `true` are `card`, `card-grid`, `citation`, `diff`, `editable-form`, `excerpt`, `fact`, `status`, `table` and `table-row`. Each of them requires the authorship slot. `card`, `card-grid` and `citation` also accept the citation slot. `excerpt` requires the citation slot, because the slot gives the locator of the passage.
 
 The span of an excerpt starts at `span_start` and stops before `span_end`. Both count code points of the passage, the same as each text limit of the kit. The element refuses a span that is empty or that goes past the end of the passage. [schema/README.md](schema/README.md#slots) gives the slots.
 
