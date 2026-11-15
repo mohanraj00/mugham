@@ -965,6 +965,15 @@ const cardStatus = (node) => node.shadowRoot.querySelector('[part="status"]').te
   refused('a card with no field that a person can edit', readOnly, 'data.sections: the card needs at least one field that a person can edit');
 }
 {
+  // A long card: 2 sections of 30 editable fields. The binding of the application gives each of the 60 names.
+  const names = Array.from({ length: 60 }, (_, index) => `item_${index}`);
+  const long = { ...CARD_FORM, sections: [0, 1].map((part) => section(`Part ${part + 1}`,
+    names.slice(part * 30, part * 30 + 30).map((name) => line(field(name, `Item ${name.slice(5)}`, 'Yes'))))) };
+  const { node } = formCard({ ...CARD_BINDING, editable: Object.fromEntries(names.map((name) => [name, `Item ${name.slice(5)}`])), typed: [] }, long);
+  check('form card: a card with more than 50 editable fields accepts the binding of each field', node.dataset.state === 'default'
+    && node.shadowRoot.querySelectorAll('[part="line"]').length === 60, refusedText(node));
+}
+{
   // Markup in the value of a field shows as text in the editor too, and makes no element.
   const marked = mount('form-card', { title: 'Membership form', submit_label: 'Send changes', sections: [section('Member', [
     line(fill('field', { name: 'note', label: MARKUP.slice(0, 80), value: MARKUP.slice(0, 200), hint: MARKUP })),

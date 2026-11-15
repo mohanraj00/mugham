@@ -109,7 +109,7 @@ A binding has these keys. Only `tool` is necessary.
 | `label` | The label of the action, 1 to 80 characters. |
 | `description` | The description of an action button, 1 to 200 characters. |
 | `title` | The title of an editable form, 1 to 120 characters. |
-| `editable` | The names that an editable form can send, each with its label. |
+| `editable` | The names that an editable form or a form card can send, each with its label. Up to 400 names, because a form card has up to 10 sections of 40 fields. |
 | `typed` | Optional. The editable names that need an edit type. See "Typed edits". |
 | `editor` | The person who edits a typed form: `{ type: 'human', id }`. `id` has 1 to 128 characters. It is necessary if `typed` has a name. |
 | `confirm` | Optional. The confirm step: `{ message, label }`. `message` has 1 to 200 characters. `label` has 1 to 40 characters. |

@@ -4,7 +4,8 @@
 const TOOL = /^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)*$/;
 const MAX_MESSAGE = 200;
 const FIELD_NAME = /^[a-z][a-z0-9]*(_[a-z0-9]+)*$/;
-const MAX_EDITABLE = 50;
+// A form card has up to 10 sections of 40 fields. The binding accepts an editable name for each of them.
+const MAX_EDITABLE = 400;
 const MAX_LABEL = 80;
 // The editable-form contract gives a title of 120 characters at most.
 const MAX_TITLE = 120;
