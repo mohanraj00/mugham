@@ -30,6 +30,7 @@ const PAGES = {
 };
 // Each example page, the number of kit elements, the number of refused elements and the roles and names.
 const EXAMPLES = {
+  'examples/narration.html': [2, 0, [['article', 'Tray A1'], ['heading', 'Matching narration'], ['heading', 'Different narration']]],
   'examples/primitives.html': [16, 1, [['button', 'Renew'], ['group', 'Loan details'], ['group', 'Reading list'], ['textbox', 'Shelf code']]],
   'examples/loans.html': [9, 0, [['article', 'Field guide to moss'], ['button', 'Renew'], ['list', 'Current loans'], ['form', 'Change a loan']]],
   'examples/citation.html': [3, 1, [['group', 'Citation'], ['button', 'Open source: Synthetic weather notes, page 3'], ['article', 'Message from agent-weather']]],
