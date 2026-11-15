@@ -51,6 +51,7 @@ VALID = {
     'table': {'label': 'Sample rows', 'columns': ['Name'], 'rows': [fill('table-row', {'cells': ['Plot A']})]},
     'table-row': {'cells': ['Plot A'], 'status': 'Ready'},
     'status': {'state': 'pending', 'text': 'Synthetic check A.'},
+    'image': {'url': '/examples/floor-plan.svg', 'alt': 'Two rooms with a door.', 'width': 480, 'height': 320},
 }
 
 
