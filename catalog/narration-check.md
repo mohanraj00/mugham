@@ -4,6 +4,12 @@
 
 Import `checkNarration` from `src/narration/check.js`. Call `checkNarration(fill, narration)` with a card fill and a string. The fill must pass the card contract, including its slots. The check needs no DOM, model or network. It does not change either input.
 
+## Limits
+
+- The module exports `MAX_NARRATION_LENGTH = 10000` and `MAX_ERRORS = 50`.
+- A narration can have at most 10,000 UTF-16 code units, as measured by JavaScript `string.length`. A longer narration fails at once with field `narration`, message `must have at most 10000 UTF-16 code units` and `checked: 0`. The check does not scan it.
+- At 50 errors, the check stops the scan. It returns the first 50 errors and one last error with field `narration` and message `check stopped at the error limit of 50`. Thus the result has at most 51 error entries. Claims after the stop do not add to `checked`. The same error limit applies to fill errors.
+
 ## Claims
 
 A claim has the form `[Field: value]`. For example: `The tray has [Count: 12] items, with [Status: ready] on [Date: 2026-11-15].`

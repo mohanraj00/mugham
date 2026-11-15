@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import example from '../examples/narration.json' with { type: 'json' };
-import { checkNarration } from '../src/narration/check.js';
+import { checkNarration, MAX_NARRATION_LENGTH, MAX_ERRORS } from '../src/narration/check.js';
 
 const fill = example.fill;
 const difference = (field) => ({ field, message: 'does not match the card value' });
@@ -11,6 +11,34 @@ const unknown = (field) => ({ field, message: 'no card field has this label' });
 const syntax = { field: 'narration', message: 'must use [Field: value]' };
 const pass = (checked) => ({ ok: true, checked, errors: [] });
 const fail = (checked, ...errors) => ({ ok: false, checked, errors });
+
+test('a narration over the length limit fails before any claim is checked', () => {
+  assert.equal(MAX_NARRATION_LENGTH, 10000);
+  const narration = '[Count: 13]'.padEnd(MAX_NARRATION_LENGTH + 1, ']');
+  assert.deepEqual(checkNarration(fill, narration), fail(0, {
+    field: 'narration', message: 'must have at most 10000 UTF-16 code units'
+  }));
+});
+
+test('a narration at the length limit checks its last claim', () => {
+  const narration = '[Count: 12]'.padStart(MAX_NARRATION_LENGTH, 'a');
+  assert.deepEqual(checkNarration(fill, narration), pass(1));
+});
+
+test('stray brackets stop the scan at the error limit', () => {
+  assert.equal(MAX_ERRORS, 50);
+  const narration = ']'.repeat(MAX_ERRORS + 1) + '[Count: 12] [Count: 13]';
+  assert.deepEqual(checkNarration(fill, narration), fail(0,
+    ...Array.from({ length: MAX_ERRORS }, () => syntax),
+    { field: 'narration', message: 'check stopped at the error limit of 50' }));
+});
+
+test('claim errors stop the scan at the error limit', () => {
+  const narration = '[Count: 13] [Total: 12]'.repeat(MAX_ERRORS / 2) + '[Count: 12]';
+  assert.deepEqual(checkNarration(fill, narration), fail(MAX_ERRORS,
+    ...Array.from({ length: MAX_ERRORS / 2 }, () => [difference('Count'), unknown('Total')]).flat(),
+    { field: 'narration', message: 'check stopped at the error limit of 50' }));
+});
 
 test('the example has a match and a different number', () => {
   assert.deepEqual(checkNarration(fill, example.cases[0].narration), pass(3));

@@ -3,12 +3,26 @@ import card from '../../catalog/card.json' with { type: 'json' };
 import fact from '../../catalog/fact.json' with { type: 'json' };
 import { fillErrors } from '../render/validate.js';
 
+export const MAX_NARRATION_LENGTH = 10000;
+export const MAX_ERRORS = 50;
+
 const CONTRACTS = { card, fact };
 const LABEL = /^[^:\[\]\r\n]+$/u;
 const CLAIM = /^([^:\[\]\r\n]+): ([^\[\]\r\n]+)$/u;
-const result = (checked, errors) => ({ ok: errors.length === 0, checked, errors });
+const result = (checked, errors) => ({
+  ok: errors.length === 0,
+  checked,
+  errors: errors.length < MAX_ERRORS ? errors : [
+    ...errors.slice(0, MAX_ERRORS),
+    { field: 'narration', message: `check stopped at the error limit of ${MAX_ERRORS}` }
+  ]
+});
 
 export function checkNarration(fill, narration) {
+  if (typeof narration === 'string' && narration.length > MAX_NARRATION_LENGTH) {
+    return result(0, [{ field: 'narration',
+      message: `must have at most ${MAX_NARRATION_LENGTH} UTF-16 code units` }]);
+  }
   if (fill?.component !== 'card') {
     return result(0, [{ field: 'component', message: 'must be a card' }]);
   }
@@ -40,7 +54,7 @@ export function checkNarration(fill, narration) {
   const brackets = /[\[\]]/g;
   let bracket;
   const malformed = () => errors.push({ field: 'narration', message: 'must use [Field: value]' });
-  while ((bracket = brackets.exec(narration)) !== null) {
+  while (errors.length < MAX_ERRORS && (bracket = brackets.exec(narration)) !== null) {
     if (bracket[0] === ']') {
       malformed();
       continue;
