@@ -13,6 +13,9 @@ import editableForm from '../../catalog/editable-form.json' with { type: 'json' 
 import excerpt from '../../catalog/excerpt.json' with { type: 'json' };
 import fact from '../../catalog/fact.json' with { type: 'json' };
 import field from '../../catalog/field.json' with { type: 'json' };
+import formCard from '../../catalog/form-card.json' with { type: 'json' };
+import formLine from '../../catalog/form-line.json' with { type: 'json' };
+import formSection from '../../catalog/form-section.json' with { type: 'json' };
 import grid from '../../catalog/grid.json' with { type: 'json' };
 import longTextField from '../../catalog/long-text-field.json' with { type: 'json' };
 import numberField from '../../catalog/number-field.json' with { type: 'json' };
@@ -27,7 +30,8 @@ import chartSeries from '../../catalog/chart-series.json' with { type: 'json' };
 
 export const CATALOG = Object.freeze(Object.assign(Object.create(null), {
   'action-button': actionButton, button, card, 'card-grid': cardGrid, 'choice-field': choiceField, citation, 'date-field': dateField,
-  diff, 'diff-change': diffChange, 'diff-part': diffPart, 'editable-form': editableForm, excerpt, fact, field, grid, image,
+  diff, 'diff-change': diffChange, 'diff-part': diffPart, 'editable-form': editableForm, excerpt, fact, field,
+  'form-card': formCard, 'form-line': formLine, 'form-section': formSection, grid, image,
   'long-text-field': longTextField, 'number-field': numberField, stack, status, text, table, 'table-row': tableRow,
   chart, 'chart-series': chartSeries,
 }));

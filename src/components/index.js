@@ -1,8 +1,10 @@
-// The catalog components: card, action button, editable form, card grid, citation and excerpt.
+// The catalog components: card, action button, editable form, form card, card grid, citation and excerpt.
 import { MuElement } from '../primitives/base.js';
 import { define as definePrimitives, FIELDS } from '../primitives/index.js';
 import { ActionState } from '../actions/action.js';
 import { el, sheet } from '../render/dom.js';
+import { fillErrors } from '../render/validate.js';
+import { CONTRACTS } from '../render/registry.js';
 import { MuTable } from './table.js';
 export { MuTable } from './table.js';
 import { MuStatus } from './status.js';
@@ -13,6 +15,7 @@ import { MuChart } from './chart.js';
 export { MuChart } from './chart.js';
 
 const FIELD_NAME = /^[a-z][a-z0-9]*(_[a-z0-9]+)*$/;
+const boundError = (name) => `data.sections: the read-only field ${name} does not show the bound value`;
 const CARD_CSS = sheet(`
   :host { display: block; }
   article, form {
@@ -142,6 +145,9 @@ class ActionElement extends MuElement {
     if (this.fill && this.check(this.fill.data).length) this.fill = this.fill;
   }
 
+  // A subclass can change its controls after each change of the state.
+  updated() {}
+
   // A subclass returns true if its data changed after the last request.
   stale() {
     return false;
@@ -228,6 +234,7 @@ class ActionElement extends MuElement {
     // The reference comes from the API of the application. It shows only as text.
     const reference = state === 'confirm' ? '' : this.#action.reference;
     this.#status.replaceChildren(words, reference ? el('span', { class: 'reference', part: 'reference' }, 'Reference: ' + reference) : '');
+    this.updated(state);
   }
 }
 
@@ -419,6 +426,338 @@ export class MuEditableForm extends ActionElement {
     // A new fill has new values. A receipt from before the fill does not confirm them, so the form can save again.
     this.reopen();
     return [form];
+  }
+}
+
+const NO_CHANGES = 'No changes to send.';
+const OPEN_EDITOR = 'Save or cancel this field first.';
+
+// A long form as labels and values (catalog/form-card.json). A person reads the form first. A click or Enter
+// on a value opens the editor of that field. Save keeps the new value, and Cancel or Escape restores the old value.
+// The card sends the changed fields as one action, and it shows done only after the receipt.
+export class MuFormCard extends ActionElement {
+  static component = 'form-card';
+  static labelField = 'submit_label';
+  static styles = [CARD_CSS, ACTION_CSS, sheet(`
+    :host { display: block; container-type: inline-size; }
+    form { gap: var(--mu-space-3); }
+    .section { display: flex; flex-direction: column; gap: var(--mu-space-2);
+      border-top: 1px solid var(--mu-color-border); padding-top: var(--mu-space-3); }
+    .section-title { margin: 0; font-weight: var(--mu-type-weight-strong); }
+    .lines { display: flex; flex-direction: column; gap: var(--mu-space-3); }
+    .line { display: grid; grid-template-columns: minmax(6rem, 1fr) 2fr; gap: var(--mu-space-1) var(--mu-space-3); align-items: start; }
+    .line dt { font: var(--mu-type-body); color: var(--mu-color-text); padding-top: var(--mu-space-2); }
+    .number { color: var(--mu-color-text-muted); margin-inline-end: var(--mu-space-1); }
+    .line dd { display: flex; flex-direction: column; align-items: flex-start; gap: var(--mu-space-1); min-width: 0; }
+    .line dd > span[part="value"] { padding-top: var(--mu-space-2); overflow-wrap: anywhere; white-space: pre-wrap; }
+    button[part="value"] {
+      background: transparent; color: var(--mu-color-text); border-color: var(--mu-color-border);
+      text-align: start; width: 100%; overflow-wrap: anywhere; white-space: pre-wrap;
+    }
+    button.secondary { background: transparent; color: var(--mu-color-accent); }
+    .changed { font: var(--mu-type-caption); font-weight: var(--mu-type-weight-strong); }
+    .hint { font: var(--mu-type-caption); color: var(--mu-color-text-muted); }
+    .error { font: var(--mu-type-caption); color: var(--mu-color-danger); }
+    .editor { display: flex; flex-direction: column; gap: var(--mu-space-2); width: 100%; }
+    .editor > * { width: 100%; }
+    .editor .actions > * { width: auto; }
+    @container (max-width: 28rem) { .line { grid-template-columns: 1fr; } .line dt { padding-top: 0; } }
+    @media (forced-colors: active) {
+      .section { border-color: CanvasText; } .line dt, .number, .hint, .error { color: CanvasText; }
+      button[part="value"], button.secondary { background: ButtonFace; color: ButtonText; border-color: ButtonText; }
+    }
+  `)];
+
+  // Each line by its field name: the field fill, the read-only flag, the row, the value area and the open editor.
+  #lines = new Map();
+  // The values that the application confirmed: the values of the fill, the computed values and the values of a done receipt.
+  #base = Object.create(null);
+  // The changes that a person saved and the card did not send yet, by field name: { value, type, time }.
+  #changes = new Map();
+  // The values of the pending request, and the changes when it started.
+  #pending = null;
+  #sent = null;
+  #note = null;
+
+  // A change after the request makes the data new. The card opens no editor while a request is pending.
+  stale() {
+    return this.#snapshot() !== this.#sent;
+  }
+
+  #snapshot() {
+    return JSON.stringify([...this.#changes]);
+  }
+
+  // The rules of a form, for all lines of all sections. The application gives the title, the editable names,
+  // their labels and the typed names. A read-only line shows a value that the application computes.
+  check(data) {
+    const errors = super.check(data);
+    if (errors.length) return errors;
+    const title = this.action.title;
+    if (title !== null && data.title !== title) return ['data.title: the title is not the title of the application'];
+    const lines = data.sections.flatMap((item, at) => item.data.lines.map((entry, place) => ({ line: entry.data,
+      path: `data.sections[${at}].data.lines[${place}].data.field.` })));
+    for (const { line, path } of lines) {
+      if (Object.hasOwn(line.field.data, 'disabled')) return [path + 'data.disabled: a form card uses read_only'];
+      const rules = FIELDS[line.field.component][1].rules(line.field.data);
+      if (rules.length) return [path + rules[0]];
+    }
+    const names = lines.map(({ line }) => line.field.data.name);
+    if (!names.every((name) => typeof name === 'string' && FIELD_NAME.test(name))) return ['data.sections: each field needs a name'];
+    if (new Set(names).size !== names.length) return ['data.sections: the field names must be unique'];
+    const open = lines.map(({ line }) => line).filter((line) => !line.read_only);
+    if (!open.length) return ['data.sections: the card needs at least one field that a person can edit'];
+    const computed = lines.find(({ line }) => line.read_only && line.field.data.typed);
+    if (computed) return [`data.sections: the read-only field ${computed.line.field.data.name} cannot have an edit type`];
+    // A render shows the values of the fill, so the bound rule checks them.
+    const conflict = this.#unbound(lines.filter(({ line }) => line.read_only)
+      .map(({ line }) => [line.field.data.name, line.field.data.value ?? '']));
+    if (conflict) return [boundError(conflict)];
+    const editable = this.action.editable;
+    if (!editable) return [];
+    const other = open.find((line) => !Object.hasOwn(editable, line.field.data.name));
+    if (other) return [`data.sections: the application does not accept the field ${other.field.data.name}`];
+    const relabeled = open.find((line) => line.field.data.label !== editable[line.field.data.name]);
+    if (relabeled) return [`data.sections: the label of the field ${relabeled.field.data.name} is not the label of the application`];
+    const typed = this.action.typed;
+    const retyped = open.find((line) => Boolean(line.field.data.typed) !== typed.includes(line.field.data.name));
+    if (retyped) return [`data.sections: the edit type of the field ${retyped.field.data.name} is not the rule of the application`];
+    return [];
+  }
+
+  // The rule of the bound values: the request sends the bound arguments, so a read-only line with the name of a
+  // bound argument shows that value. Each render, each computed value, each binding and each send uses this
+  // function. It gives the name of the first line that shows a different value, or null.
+  #unbound(shown) {
+    const bound = this.action.arguments ?? {};
+    const found = shown.find(([name, value]) => Object.hasOwn(bound, name) && value !== bound[name]);
+    return found ? found[0] : null;
+  }
+
+  // The values that the read-only lines show now: the value of the fill or the newest computed value.
+  #shown() {
+    return [...this.#lines].filter(([, line]) => line.readOnly).map(([name]) => [name, this.#base[name]]);
+  }
+
+  // A new binding can give a bound value that a shown value does not agree with. Then the card refuses its fill.
+  rebound() {
+    const conflict = this.fill ? this.#unbound(this.#shown()) : null;
+    if (conflict) this.refuse([boundError(conflict)]);
+    else super.rebound();
+  }
+
+  // A receipt of a done request makes the sent values the confirmed values. Their changed markers go.
+  receipt(value) {
+    const sent = this.#pending;
+    const accepted = super.receipt(value);
+    if (!accepted) return false;
+    this.#pending = null;
+    if (this.action.state === 'done' && sent) {
+      for (const [name, item] of Object.entries(sent)) {
+        this.#base[name] = item;
+        if (this.#changes.get(name)?.value === item) this.#changes.delete(name);
+      }
+    }
+    for (const [name, line] of this.#lines) if (!line.editor) this.#show(name);
+    return true;
+  }
+
+  // The application gives new computed values of read-only fields, as { name: value }. The card checks each
+  // value against the contract of its field and shows the values only if all of them are valid. Returns the errors.
+  computed(values) {
+    if (!this.fill) return ['the card has no fill'];
+    if (values === null || typeof values !== 'object' || Array.isArray(values)) return ['the values must be an object'];
+    const errors = [];
+    const next = [];
+    for (const [name, value] of Object.entries(values)) {
+      const line = this.#lines.get(name);
+      if (!line) {
+        errors.push(`${name}: the card has no field with this name`);
+        continue;
+      }
+      if (!line.readOnly) {
+        errors.push(`${name}: the field is not read-only`);
+        continue;
+      }
+      if (this.#unbound([[name, value]])) {
+        errors.push(`${name}: the value is not the bound value`);
+        continue;
+      }
+      const data = { ...line.field.data, value };
+      const problems = [...fillErrors({ ...line.field, data }, CONTRACTS), ...FIELDS[line.field.component][1].rules(data)];
+      if (problems.length) errors.push(`${name}: ${problems[0]}`);
+      else next.push([name, value]);
+    }
+    if (errors.length) return errors;
+    for (const [name, value] of next) {
+      this.#base[name] = value;
+      this.#show(name);
+    }
+    return [];
+  }
+
+  // The card opens no editor while a request is pending or while a person decides on the confirm step.
+  updated(state) {
+    for (const line of this.#lines.values()) {
+      if (!line.readOnly && line.value) line.value.setAttribute('aria-disabled', this.#busy(state) ? 'true' : 'false');
+    }
+  }
+
+  #busy(state = this.dataset.state) {
+    return state === 'pending' || state === 'confirm';
+  }
+
+  // The value of a line as text. An empty value shows an empty marker.
+  #text(value) {
+    return value === '' ? 'No value' : String(value);
+  }
+
+  // The read state of a line: the value, a changed marker as text, and the help text.
+  #show(name, focus = false) {
+    const line = this.#lines.get(name);
+    line.editor = null;
+    const change = this.#changes.get(name);
+    const current = change ? change.value : this.#base[name];
+    const text = this.#text(current);
+    const shown = current === '' ? 'muted' : '';
+    let value;
+    const parts = [];
+    if (line.readOnly) {
+      value = el('span', { part: 'value', class: shown }, text);
+      parts.push(value, el('span', { class: 'hint', part: 'read-only' }, 'Read-only'));
+    } else {
+      value = el('button', { type: 'button', part: 'value', class: shown,
+        'aria-label': `Edit ${line.field.data.label}: ${text}${change ? ', changed' : ''}` }, text);
+      value.setAttribute('aria-disabled', this.#busy() ? 'true' : 'false');
+      value.addEventListener('click', () => this.#open(name));
+      parts.push(value);
+      if (change) parts.push(el('span', { class: 'changed', part: 'changed' }, 'Changed'));
+    }
+    if (line.field.data.hint) parts.push(el('span', { class: 'hint' }, line.field.data.hint));
+    line.value = value;
+    line.slot.replaceChildren(...parts);
+    if (focus) value.focus();
+  }
+
+  // The editor of a line: the element of its field contract, with the current value, and Save and Cancel.
+  #open(name) {
+    const line = this.#lines.get(name);
+    if (this.dataset.state === 'refused' || this.#busy() || line.readOnly || line.editor) return;
+    const change = this.#changes.get(name);
+    const current = change ? change.value : this.#base[name];
+    const data = { ...line.field.data };
+    delete data.value;
+    const node = document.createElement(FIELDS[line.field.component][0]);
+    node.fill = { ...line.field, data: current === '' ? data : { ...data, value: current } };
+    const reason = el('span', { class: 'error', part: 'reason' });
+    const save = el('button', { type: 'button', part: 'save' }, 'Save');
+    const cancel = el('button', { type: 'button', part: 'cancel', class: 'secondary' }, 'Cancel');
+    const editor = el('div', { role: 'group', 'aria-label': `Edit ${line.field.data.label}`, part: 'editor', class: 'editor' },
+      node, el('div', { class: 'actions' }, save, cancel), reason);
+    save.addEventListener('click', () => this.#save(name));
+    cancel.addEventListener('click', () => this.#show(name, true));
+    editor.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        event.stopPropagation();
+        this.#show(name, true);
+        return;
+      }
+      if (event.key !== 'Enter' || event.isComposing || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+      if (event.target !== node || !node.constructor.submitOnEnter) return;
+      event.preventDefault();
+      this.#save(name);
+    });
+    line.editor = { node, reason };
+    line.slot.replaceChildren(editor);
+    node.focus();
+  }
+
+  // Save keeps a valid value. A typed field that changed needs an edit type first. The old value again is no change.
+  #save(name) {
+    const line = this.#lines.get(name);
+    const { node } = line.editor;
+    if (node.needValue()) return;
+    const value = node.value ?? '';
+    if (value === this.#base[name]) this.#changes.delete(name);
+    else if (node.changed) {
+      if (node.needType()) return;
+      this.#changes.set(name, { value, type: node.editType, time: node.editedAt });
+    }
+    this.#note.replaceChildren();
+    // An edit after a receipt makes the data new, so the card can send again.
+    this.reopen();
+    this.#show(name, true);
+  }
+
+  // The edits of the typed fields that changed, without the new value and the actor. The action path adds them.
+  #edits() {
+    return [...this.#changes].filter(([name]) => this.#lines.get(name).field.data.typed)
+      .map(([name, change]) => ({ field: name, type: change.type, old_value: this.#base[name], time: change.time }));
+  }
+
+  render(data) {
+    this.#lines = new Map();
+    this.#base = Object.create(null);
+    this.#changes = new Map();
+    this.#pending = null;
+    this.#sent = null;
+    const sections = data.sections.map((item) => el('div', { role: 'group', 'aria-label': item.data.title, part: 'section', class: 'section' },
+      el('p', { class: 'section-title' }, item.data.title),
+      el('dl', { class: 'lines', part: 'lines' }, ...item.data.lines.map((entry) => this.#line(entry.data)))));
+    const status = el('span', { class: 'status', role: 'status', 'aria-live': 'polite', part: 'status' });
+    this.#note = el('span', { class: 'hint', part: 'note', 'aria-live': 'polite' });
+    const submit = el('button', { type: 'submit', part: 'button' }, data.submit_label);
+    const area = this.attach(submit, status);
+    const form = el('form', { 'aria-label': data.title, part: 'form' },
+      el('p', { class: 'title' }, data.title), provenance(this.fill.slots), ...sections, el('div', {}, submit), this.#note, area, status);
+    form.addEventListener('submit', (event) => {
+      event.preventDefault();
+      if (this.dataset.state === 'refused' || !this.fill) return;
+      if (this.action.state !== 'default' && this.action.state !== 'error') return;
+      // A value in an open editor is not saved. The first open editor tells why and takes the focus.
+      const open = [...this.#lines.values()].find((line) => line.editor);
+      if (open) {
+        open.editor.reason.replaceChildren(OPEN_EDITOR);
+        open.editor.node.focus();
+        return;
+      }
+      if (!this.#changes.size) {
+        this.#note.replaceChildren(NO_CHANGES);
+        return;
+      }
+      // The card never sends while a read-only line shows a value that is not the bound value.
+      const conflict = this.#unbound(this.#shown());
+      if (conflict) {
+        this.refuse([boundError(conflict)]);
+        return;
+      }
+      const values = Object.fromEntries([...this.#changes].map(([name, change]) => [name, change.value]));
+      const snapshot = this.#snapshot();
+      const edits = this.action.typed?.length ? this.#edits() : undefined;
+      // Keep the values only for an accepted request. A refused submit does not change them.
+      this.send(values, () => {
+        this.#sent = snapshot;
+        this.#pending = values;
+      }, edits);
+    });
+    // A new fill has new values. A receipt from before the fill does not confirm them, so the card can send again.
+    this.reopen();
+    return [form];
+  }
+
+  #line(data) {
+    const name = data.field.data.name;
+    this.#base[name] = data.field.data.value ?? '';
+    const slot = el('dd', {});
+    const row = el('div', { class: 'line', part: 'line' },
+      el('dt', {}, data.line ? el('span', { class: 'number', part: 'line-number' }, data.line) : null,
+        el('span', { part: 'label' }, data.field.data.label)),
+      slot);
+    row.dataset.name = name;
+    this.#lines.set(name, { field: data.field, readOnly: Boolean(data.read_only), row, slot, value: null, editor: null });
+    this.#show(name);
+    return row;
   }
 }
 
@@ -645,7 +984,7 @@ export class MuDiff extends MuElement {
 export function define(registry = customElements) {
   definePrimitives(registry);
   for (const [name, element] of [['mu-action-button', MuActionButton], ['mu-card', MuCard],
-    ['mu-card-grid', MuCardGrid], ['mu-editable-form', MuEditableForm], ['mu-citation', MuCitation], ['mu-diff', MuDiff],
+    ['mu-card-grid', MuCardGrid], ['mu-editable-form', MuEditableForm], ['mu-form-card', MuFormCard], ['mu-citation', MuCitation], ['mu-diff', MuDiff],
     ['mu-excerpt', MuExcerpt], ['mu-table', MuTable], ['mu-status', MuStatus], ['mu-image', MuImage], ['mu-chart', MuChart]]) {
     if (!registry.get(name)) registry.define(name, element);
   }
