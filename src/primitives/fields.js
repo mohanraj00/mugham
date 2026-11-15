@@ -159,13 +159,15 @@ export class FieldElement extends MuElement {
   render(data) {
     fieldCount += 1;
     const id = 'mu-field-' + fieldCount;
-    this.#initial = data.value ?? '';
     this.#editedAt = null;
     this.#shown = false;
     this.#problem = el('span', { id: id + '-problem', class: 'error', part: 'problem' });
     this.#described = [data.hint ? id + '-hint' : '', data.error ? id + '-error' : ''].filter(Boolean);
     const { node, targets, labelled } = this.control(data, id);
     this.#targets = targets;
+    // The browser can change the value when the control shows it, for example CRLF to LF in a text area.
+    // The old value is the value that the control shows, so such a change is not an edit.
+    this.#initial = this.value ?? '';
     for (const target of targets) target.disabled = Boolean(data.disabled);
     // A change commits a value. Then a value that is not valid shows its reason.
     node.addEventListener('change', (event) => {

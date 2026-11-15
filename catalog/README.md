@@ -184,7 +184,7 @@ If the binding has a `typed` list, the request has an `edits` list with one edit
 |---|---|
 | `field` | The field name. |
 | `type` | `judgment`, `correction` or `override`. |
-| `old_value` | The value of the fill. |
+| `old_value` | The value of the fill, as the control shows it. For example, a text area changes a CRLF line break to LF. |
 | `new_value` | The value that the request sends in `arguments`. |
 | `actor` | The `editor` of the binding: `{ type: 'human', id }`. |
 | `time` | The time of the last change of the value or the type, as an ISO 8601 text in UTC, for example `2026-11-15T09:30:00.000Z`. |

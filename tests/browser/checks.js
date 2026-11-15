@@ -236,6 +236,15 @@ for (const [name, data, change, before, after] of [
     && node.initial === before && node.value === after && typeof node.editedAt === 'string', `${node.initial} ${node.value} ${node.editType}`);
 }
 
+// The browser changes a value when the control shows it: a text area changes CRLF to LF, and an input removes
+// line breaks. The value that the control shows is the old value, so such a change is not an edit of the person.
+for (const [name, value, shown] of [['long-text-field', 'First\r\nSecond', 'First\nSecond'], ['field', 'First\nSecond', 'FirstSecond']]) {
+  const node = mount(name, { ...VALID[name], value, typed: true });
+  const group = node.shadowRoot.querySelector('[part="edit-type"]');
+  check(`${name}: a value that the browser changes is not an edit`, node.changed === false && node.initial === shown
+    && node.editType === null && group.hidden && node.needType() === false, JSON.stringify([node.initial, node.value, node.changed]));
+}
+
 // A blank label gives no accessible name, so the contract refuses it.
 for (const name of ['button', ...INPUTS, 'stack', 'grid']) {
   const blank = mount(name, { ...VALID[name], label: '' });
