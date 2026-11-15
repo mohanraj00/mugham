@@ -15,11 +15,25 @@ Each JSON file in this folder is the contract of one component. [schema/README.m
 | `editable-form.json` | `mu-editable-form` | component | Up to 20 fields, submitted as one action. |
 | `card-grid.json` | `mu-card-grid` | component | A labeled list of cards. |
 | `citation.json` | `mu-citation` | component | A source name, a locator as text, an optional quote and an open button. |
+| `diff-change.json` | in `mu-diff` | component | One change: a label, the kind of the change, and the value before and after. |
+| `diff-part.json` | in `mu-diff` | component | A titled part of a diff with up to 200 changes. A person opens and closes it. |
+| `diff.json` | `mu-diff` | component | The difference between two versions of a text or a list of fields, in up to 20 parts. |
 | `excerpt.json` | `mu-excerpt` | component | A passage as text with a marked span, the source name, the locator as text and an open button. |
 
-The contracts with `ai_content` set to `true` are `card`, `card-grid`, `citation`, `editable-form`, `excerpt` and `fact`. Each of them requires the authorship slot. `card`, `card-grid` and `citation` also accept the citation slot. `excerpt` requires the citation slot, because the slot gives the locator of the passage.
+The contracts with `ai_content` set to `true` are `card`, `card-grid`, `citation`, `diff`, `editable-form`, `excerpt` and `fact`. Each of them requires the authorship slot. `card`, `card-grid` and `citation` also accept the citation slot. `excerpt` requires the citation slot, because the slot gives the locator of the passage.
 
 The span of an excerpt starts at `span_start` and stops before `span_end`. Both count code points of the passage, the same as each text limit of the kit. The element refuses a span that is empty or that goes past the end of the passage. [schema/README.md](schema/README.md#slots) gives the slots.
+
+A diff compares two versions as a list of changes. Each change has a `label`, for example a field name or `Line 3`, and a `change` kind. The element checks the values of each kind:
+
+| Kind | Shows as | `before` | `after` |
+|---|---|---|---|
+| `added` | `Added` | Not given. | Necessary. |
+| `removed` | `Removed` | Necessary. | Not given. |
+| `changed` | `Changed` | Necessary. | Necessary, and different from `before`. |
+| `unchanged` | `Unchanged` | Necessary. | Necessary, and the same as `before`. |
+
+The kind shows as text, so it does not depend on color. A removed value has a line through it, and an added value has an underline. `before_label` and `after_label` name the two versions, for example `Version 3`. They are `Before` and `After` if the fill does not give them. An empty value shows `No value`. Each part is a `details` element. Enter or Space on its summary opens and closes it, and the summary shows the counts of each kind. If the diff has 20 changes or fewer, each part with a difference starts open. Else each part starts closed. A diff with no change shows the `empty` state and `No changes.`
 
 An application can register its own contract and element. [Application contracts](#application-contracts) gives the call and its limits.
 

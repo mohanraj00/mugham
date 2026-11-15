@@ -23,7 +23,7 @@ const PAGES = {
   'tests/browser/primitives.html': [['button', 'Keyboard target'], ['textbox', 'Shelf code']],
   'tests/browser/components.html': [['button', 'Keyboard target'], ['article', 'Field guide to moss'], ['list', 'Loans'],
     ['form', 'Loan details'], ['textbox', 'Branch'], ['group', 'Citation'], ['button', 'Open source: Keyboard source'],
-    ['group', 'Source excerpt'], ['button', 'Open source: Keyboard excerpt source']],
+    ['group', 'Source excerpt'], ['button', 'Open source: Keyboard excerpt source'], ['group', 'Keyboard diff']],
   'tests/browser/thread.html': [['button', 'Keyboard target'], ['list', 'Thread'], ['article', 'Message from Robin, Person'],
     ['article', 'Message from Renewal agent, Agent']],
   'tests/browser/register.html': [['button', 'Keyboard target'], ['article', 'Plot 4'], ['article', 'Plot 7']],
@@ -33,6 +33,7 @@ const EXAMPLES = {
   'examples/primitives.html': [16, 1, [['button', 'Renew'], ['group', 'Loan details'], ['group', 'Reading list'], ['textbox', 'Shelf code']]],
   'examples/loans.html': [9, 0, [['article', 'Field guide to moss'], ['button', 'Renew'], ['list', 'Current loans'], ['form', 'Change a loan']]],
   'examples/citation.html': [3, 1, [['group', 'Citation'], ['button', 'Open source: Synthetic weather notes, page 3'], ['article', 'Message from agent-weather']]],
+  'examples/diff.html': [2, 0, [['group', 'Hall booking B-0042'], ['group', 'Weekly timetable'], ['article', 'Message from Bookings agent']]],
   'examples/excerpt.html': [2, 1, [['group', 'Source excerpt'], ['button', 'Open source: Synthetic harbor guide, section 2'], ['article', 'Message from agent-reader']]],
   'examples/provenance.html': [2, 1, [['article', 'Renewal rule for short loans'], ['button', 'Open source: Synthetic library rules, section 4']]],
   'examples/register.html': [4, 1, [['article', 'Tray A1'], ['list', 'Thread'], ['article', 'Message from Garden helper, Agent'], ['article', 'Tray B2']]],
@@ -352,6 +353,16 @@ async function main() {
           await key(session, sessionId, ' ', 'Space', 32, ' ');
           const opens = await evaluate(session, sessionId, 'window.muCitationOpens()');
           report.keyboard.push({ page, step: 'Enter and Space press the open button of a citation', ok: opens === 2, detail: opens });
+        }
+        // A part of a diff: Enter on its summary closes the open part, and Space opens it again.
+        if (await evaluate(session, sessionId, 'typeof window.muFocusDiff === "function"')) {
+          await evaluate(session, sessionId, 'window.muFocusDiff()');
+          await key(session, sessionId, 'Enter', 'Enter', 13, '\r');
+          const closed = await evaluate(session, sessionId, 'window.muDiffOpen()');
+          await key(session, sessionId, ' ', 'Space', 32, ' ');
+          const reopened = await evaluate(session, sessionId, 'window.muDiffOpen()');
+          report.keyboard.push({ page, step: 'Enter closes and Space opens a part of a diff', ok: closed === false && reopened === true,
+            detail: `${closed} ${reopened}` });
         }
         if (await evaluate(session, sessionId, 'typeof window.muFocusField === "function"')) {
           await evaluate(session, sessionId, 'window.muFocusField()');
