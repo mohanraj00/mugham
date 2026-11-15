@@ -51,7 +51,7 @@ The `Open image at full size` button includes the text alternative in its access
 It opens a native modal dialog named `Full-size image`.
 It moves the loaded image into the dialog, with no second request. The image uses its natural dimensions.
 The dialog scrolls if the image is larger than the viewport. Focus goes to `Close image`.
-Tab and Shift+Tab stay in the dialog. Escape or the close button closes it and returns focus to the image button.
+The native modal dialog makes the page behind it inert, so Tab and Shift+Tab do not move the focus to the page. Escape or the close button closes it and returns focus to the image button.
 The state stays `default` while the dialog is open.
 
 Page code can create `MuImage` directly or use `document.createElement('mu-image')` after `define()`.

@@ -8,14 +8,12 @@ export async function imageKeyboardChecks(session, sessionId, { evaluate, key, a
   check('Enter opens the native image dialog and focuses Close image', state.open && state.closeFocused, JSON.stringify(state));
   for (const item of await axErrors(session, sessionId, [['dialog', 'Full-size image'], ['button', 'Close image'],
     ['image', 'Two rooms with a door.']], page)) check('accessibility: ' + item.role + ' ' + item.name, item.ok);
-  await key(session, sessionId, 'Tab', 'Tab', 9);
-  state = await evaluate(session, sessionId, 'window.muImageState()');
-  check('Tab keeps focus in the image dialog', state.closeFocused);
-  for (const type of ['keyDown', 'keyUp']) await session.send('Input.dispatchKeyEvent',
-    { type, key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9, nativeVirtualKeyCode: 9, modifiers: 8 }, sessionId);
-  state = await evaluate(session, sessionId, 'window.muImageState()');
-  check('Shift+Tab keeps focus in the image dialog', state.closeFocused);
+  // A native modal dialog makes the page behind it inert. Tab at the end of the dialog moves the focus
+  // to the browser, outside the page. Thus the check does not press Tab here.
+  check('The image dialog is modal and the page behind it is inert', state.modal, JSON.stringify(state));
   await key(session, sessionId, 'Escape', 'Escape', 27);
+  // Headless Chrome marks the page hidden after an Escape key event. Show the page again before the next check.
+  await session.send('Page.bringToFront', {}, sessionId);
   state = await evaluate(session, sessionId, 'window.muImageState()');
   check('Escape closes the image dialog and returns focus', !state.open && state.imageFocused, JSON.stringify(state));
   await key(session, sessionId, ' ', 'Space', 32, ' ');
@@ -200,6 +198,7 @@ async function browserChecks() {
   window.muPresses = () => presses;
   window.muFocusImage = () => { button(keyboardImage).focus(); return true; };
   window.muImageState = async () => { await frame(); return { open: root(keyboardImage).querySelector('dialog').open,
+    modal: root(keyboardImage).querySelector('dialog').matches(':modal'),
     closeFocused: root(keyboardImage).activeElement === root(keyboardImage).querySelector('dialog > button'),
     imageFocused: root(keyboardImage).activeElement === button(keyboardImage) }; };
   window.muResetImageFocus = () => { start.focus(); return true; };
