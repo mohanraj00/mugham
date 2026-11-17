@@ -36,6 +36,7 @@ import richCode from '../../catalog/rich-code.json' with { type: 'json' };
 import richQuote from '../../catalog/rich-quote.json' with { type: 'json' };
 import richSpan from '../../catalog/rich-span.json' with { type: 'json' };
 import richLink from '../../catalog/rich-link.json' with { type: 'json' };
+import upload from '../../catalog/upload.json' with { type: 'json' };
 
 export const CATALOG = Object.freeze(Object.assign(Object.create(null), {
   'action-button': actionButton, button, card, 'card-grid': cardGrid, 'choice-field': choiceField, citation, 'date-field': dateField,
@@ -45,4 +46,5 @@ export const CATALOG = Object.freeze(Object.assign(Object.create(null), {
   chart, 'chart-series': chartSeries,
   'rich-text': richText, 'rich-paragraph': richParagraph, 'rich-heading': richHeading, 'rich-list': richList,
   'rich-code': richCode, 'rich-quote': richQuote, 'rich-span': richSpan, 'rich-link': richLink,
+  upload,
 }));

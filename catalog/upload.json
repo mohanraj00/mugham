@@ -1,0 +1,95 @@
+{
+  "format": 2,
+  "name": "upload",
+  "version": "0.1.0",
+  "kind": "component",
+  "description": "A control that takes files from a person, with a file picker or a drop. Page code binds the tool, the accepted types, the size limit and the file count. The control checks each file before a request. The application sends each file with its own transport. Done shows only after the receipt.",
+  "ai_content": true,
+  "slots": {
+    "authorship": {
+      "required": true
+    }
+  },
+  "data": {
+    "label": {
+      "type": "text",
+      "label": "Label",
+      "required": true,
+      "min_length": 1,
+      "max_length": 80
+    },
+    "help": {
+      "type": "text",
+      "label": "Help text",
+      "required": false,
+      "min_length": 1,
+      "max_length": 200
+    },
+    "accept": {
+      "type": "list",
+      "label": "Accepted types",
+      "required": false,
+      "max_items": 20,
+      "items": {
+        "type": "text",
+        "label": "Accepted type",
+        "required": true,
+        "min_length": 2,
+        "max_length": 80
+      }
+    },
+    "max_size": {
+      "type": "integer",
+      "label": "Size limit in bytes",
+      "required": false,
+      "minimum": 1,
+      "maximum": 1000000000
+    },
+    "max_files": {
+      "type": "integer",
+      "label": "File count",
+      "required": false,
+      "minimum": 1,
+      "maximum": 20
+    }
+  },
+  "states": [
+    "default",
+    "disabled",
+    "pending",
+    "done",
+    "error",
+    "refused"
+  ],
+  "tokens": [
+    "color.text",
+    "color.text-muted",
+    "color.surface",
+    "color.border",
+    "color.accent",
+    "color.on-accent",
+    "color.danger",
+    "space.1",
+    "space.2",
+    "space.3",
+    "radius.1",
+    "radius.2",
+    "type.body",
+    "type.caption",
+    "type.weight-strong"
+  ],
+  "accessibility": {
+    "role": "group",
+    "name": {
+      "field": "label"
+    },
+    "keyboard": [
+      "Tab",
+      "Shift+Tab",
+      "Enter",
+      "Space"
+    ],
+    "forced_colors": true,
+    "reduced_motion": true
+  }
+}

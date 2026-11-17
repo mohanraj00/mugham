@@ -76,6 +76,8 @@ VALID = {
     'rich-quote': {'paragraphs': [PARAGRAPH]},
     'rich-span': {'text': 'Keep the tray dry.', 'mark': 'strong'},
     'rich-link': {'text': 'Synthetic rules', 'url': 'https://example.org/rules'},
+    'upload': {'label': 'Attach receipts', 'help': 'Add the receipts of the ticket.', 'accept': ['application/pdf', '.pdf'],
+               'max_size': 2000000, 'max_files': 3},
 }
 
 

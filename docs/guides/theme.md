@@ -130,6 +130,8 @@ The image parts are `image`, `box`, `caption` and `dialog`. Keep the box ratio a
 
 The rich text parts are `rich-text`, `code`, `link` and `target`. Keep the underline and the focus ring of the `link` part. Do not hide the `target` part, because it shows the address that a link opens.
 
+The upload parts are `upload`, `help`, `limits`, `drop`, `choose`, `files`, `file`, `name`, `size`, `remove` and `send`. Do not hide the `limits` part, because it shows the accepted types and the limits of the application. Do not hide the `problems` part, the `state` part or the `reference` part. They show the reason of a refused file, the state of each file and the reference of its receipt.
+
 ## Run the page
 
 ```sh
