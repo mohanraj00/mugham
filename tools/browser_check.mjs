@@ -9,6 +9,7 @@ import { extname, join, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { guideChecks } from '../tests/browser/guides.mjs';
 import { imageKeyboardChecks } from '../tests/browser/image.js';
+import { richTextKeyboardChecks } from '../tests/browser/rich-text.js';
 
 export const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const SERVED = ['src', 'catalog', 'examples', join('tests', 'browser')];
@@ -25,6 +26,8 @@ const PAGES = {
   'tests/browser/table.html': [['button', 'Keyboard target'], ['group', 'Sample rows'], ['table', 'Sample rows'], ['columnheader', 'Name'], ['columnheader', 'Status'], ['cell', 'Ready']],
   'tests/browser/status.html': [['button', 'Keyboard target'], ['group', 'Synthetic check A.'], ['group', 'Synthetic check B.'], ['group', 'Synthetic check C.'], ['group', 'Synthetic check D.']],
   'tests/browser/image.html': [['button', 'Keyboard target'], ['group', 'Image'], ['button', 'Open image at full size: Two rooms with a door.']],
+  'tests/browser/rich-text.html': [['button', 'Keyboard target'], ['heading', 'Tray care'], ['heading', 'Details'], ['button', 'Synthetic rules'],
+    ['list', ''], ['listitem', ''], ['blockquote', ''], ['code', '']],
   'tests/browser/primitives.html': [['button', 'Keyboard target'], ['textbox', 'Shelf code']],
   'tests/browser/components.html': [['button', 'Keyboard target'], ['article', 'Field guide to moss'], ['list', 'Loans'],
     ['form', 'Loan details'], ['textbox', 'Branch'], ['group', 'Citation'], ['button', 'Open source: Keyboard source'],
@@ -40,6 +43,8 @@ const EXAMPLES = {
   'examples/table.html': [2, 0, [['table', 'Synthetic plots'], ['columnheader', 'Plot'], ['cell', 'Ready']]],
   'examples/status.html': [5, 1, [['group', 'Synthetic check A.'], ['group', 'Synthetic check B.'], ['group', 'Synthetic check C.'], ['group', 'Synthetic check D.']]],
   'examples/image.html': [4, 1, [['group', 'Image'], ['article', 'Synthetic floor plan'], ['article', 'Message from agent-plan']]],
+  'examples/rich-text.html': [6, 1, [['list', 'Thread'], ['article', 'Message from Garden helper, Agent'], ['heading', 'Plant out tray B2'],
+    ['button', 'synthetic planting guide'], ['article', 'Tray B2']]],
   'examples/primitives.html': [16, 1, [['button', 'Renew'], ['group', 'Loan details'], ['group', 'Reading list'], ['textbox', 'Shelf code']]],
   'examples/loans.html': [9, 0, [['article', 'Field guide to moss'], ['button', 'Renew'], ['list', 'Current loans'], ['form', 'Change a loan']]],
   'examples/citation.html': [3, 1, [['group', 'Citation'], ['button', 'Open source: Synthetic weather notes, page 3'], ['article', 'Message from agent-weather']]],
@@ -495,6 +500,7 @@ async function main() {
         await key(session, sessionId, ' ', 'Space', 32, ' ');
         const presses = await evaluate(session, sessionId, 'window.muPresses()');
         report.keyboard.push({ page, step: 'Enter and Space press the button', ok: presses === 2, detail: presses });
+        if (page === 'tests/browser/rich-text.html') report.keyboard.push(...await richTextKeyboardChecks(session, sessionId, { evaluate, key }, page));
         if (await evaluate(session, sessionId, 'typeof window.muChartKeys === "function"')) {
           for (const [name, code, expectedPoint] of [['Tab', 9, 0], ['ArrowRight', 39, 1], ['ArrowDown', 40, 2],
             ['ArrowLeft', 37, 1], ['ArrowUp', 38, 0], ['ArrowUp', 38, 5]]) {

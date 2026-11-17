@@ -23,6 +23,8 @@ SECTION = fill('form-section', {'title': 'Household', 'lines': [LINE, LINE_READ_
 CITE = {'source': 'Synthetic loan rules', 'locator': 'https://example.org/rules/loans'}
 CHANGE = fill('diff-change', {'label': 'Shelf', 'change': 'changed', 'before': 'B-14', 'after': 'C-02'})
 PART = fill('diff-part', {'title': 'Loan', 'changes': [CHANGE]})
+SPAN = fill('rich-span', {'text': 'Keep the tray dry.'})
+PARAGRAPH = fill('rich-paragraph', {'content': [SPAN]})
 
 
 def outer(name, data):
@@ -66,6 +68,14 @@ VALID = {
     'image': {'url': '/examples/floor-plan.svg', 'alt': 'Two rooms with a door.', 'width': 480, 'height': 320},
     'chart': {'title': 'Weekly tickets', 'type': 'bar', 'categories': ['Week 1'], 'series': [fill('chart-series', {'label': 'Received', 'values': [12]})], 'units': 'tickets', 'x_label': 'Week', 'y_label': 'Count'},
     'chart-series': {'label': 'Received', 'values': [12]},
+    'rich-text': {'blocks': [PARAGRAPH]},
+    'rich-paragraph': PARAGRAPH['data'],
+    'rich-heading': {'level': 1, 'content': [SPAN]},
+    'rich-list': {'ordered': True, 'items': [PARAGRAPH]},
+    'rich-code': {'text': 'make check'},
+    'rich-quote': {'paragraphs': [PARAGRAPH]},
+    'rich-span': {'text': 'Keep the tray dry.', 'mark': 'strong'},
+    'rich-link': {'text': 'Synthetic rules', 'url': 'https://example.org/rules'},
 }
 
 

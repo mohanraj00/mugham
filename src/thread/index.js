@@ -15,6 +15,7 @@ const TAGS = Object.freeze(Object.assign(Object.create(null), {
   status: 'mu-status',
   image: 'mu-image',
   chart: 'mu-chart',
+  'rich-text': 'mu-rich-text',
 }));
 // The components with an action. The application gives the binding of each one.
 const ACTIONS = new Set(['action-button', 'editable-form', 'form-card']);

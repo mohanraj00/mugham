@@ -144,6 +144,7 @@ python3 -m http.server 8000
    - `http://localhost:8000/examples/membership.html`: a form card with 3 sections and 25 fields in a thread, with read-only fields that the service computes.
    - `http://localhost:8000/examples/citation.html`: a citation in a message, a citation with no source and a refused citation.
    - `http://localhost:8000/examples/diff.html`: a diff of two versions of a synthetic hall booking, and a large diff that starts closed.
+   - `http://localhost:8000/examples/rich-text.html`: an agent message with rich text in a thread, markup that shows as text and a refused script address.
    - `http://localhost:8000/examples/excerpt.html`: an excerpt of a synthetic document in a message, and a refused excerpt.
    - `http://localhost:8000/examples/provenance.html`: a card with the authorship slot and the citation slot, and a refused card.
    - `http://localhost:8000/examples/offline.html`: an offline data source of a synthetic tool library in each state, offline and online.

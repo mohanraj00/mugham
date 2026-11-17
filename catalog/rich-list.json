@@ -1,0 +1,50 @@
+{
+  "format": 2,
+  "name": "rich-list",
+  "version": "0.1.0",
+  "kind": "component",
+  "description": "A list node of rich text, with bullets or with numbers. Each item is a paragraph node.",
+  "ai_content": true,
+  "slots": {
+    "authorship": {
+      "required": true
+    }
+  },
+  "data": {
+    "ordered": {
+      "type": "boolean",
+      "label": "Numbered list",
+      "required": false
+    },
+    "items": {
+      "type": "list",
+      "label": "Items",
+      "required": true,
+      "max_items": 50,
+      "items": {
+        "type": "component",
+        "label": "Item",
+        "required": true,
+        "name": "rich-paragraph"
+      }
+    }
+  },
+  "states": [
+    "default"
+  ],
+  "tokens": [
+    "color.text",
+    "color.text-muted",
+    "color.border",
+    "space.1",
+    "space.2",
+    "type.body",
+    "space.4"
+  ],
+  "accessibility": {
+    "role": "none",
+    "keyboard": [],
+    "forced_colors": true,
+    "reduced_motion": true
+  }
+}
