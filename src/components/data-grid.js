@@ -63,6 +63,8 @@ const MOVES = Object.freeze({ ArrowRight: [0, 1], ArrowLeft: [0, -1], ArrowDown:
 
 // The value of a typed text, or the reason that the grid refuses it. An empty text gives an empty cell.
 function parse(column, raw) {
+  // A choice is exact text. A choice can have a space at its start or its end, so the exact text comes first.
+  if (column.type === 'choice' && column.choices.includes(raw)) return { value: raw };
   const words = column.type === 'text' ? raw : raw.trim();
   if (words === '') return { value: '' };
   if (column.type === 'text') {
@@ -77,7 +79,10 @@ function parse(column, raw) {
   if (column.type === 'date') {
     return isDate(words) ? { value: words } : { reason: 'Give a date that exists, as YYYY-MM-DD, for example 2026-12-01.' };
   }
-  return column.choices.includes(words) ? { value: words } : { reason: `Give one of these choices: ${column.choices.join(', ')}.` };
+  if (column.choices.includes(words)) return { value: words };
+  // A typed text can differ from one choice only by the spaces at its start and its end.
+  const near = column.choices.filter((choice) => choice.trim() === words);
+  return near.length === 1 ? { value: near[0] } : { reason: `Give one of these choices: ${column.choices.join(', ')}.` };
 }
 
 export class MuDataGrid extends MuElement {

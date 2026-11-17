@@ -63,6 +63,8 @@ The grid refuses a typed value of the wrong type. The editor stays open, and the
 
 An empty text makes the cell empty. The request then has the value `''`.
 
+A choice is exact text. If a choice has a space at its start or its end, the request has that exact choice. The grid also accepts a typed text that differs from one choice only by the spaces at its start and its end.
+
 A cell is read-only if its column or the cell has `read_only`, if the binding does not have its row key and its column key, or if the grid has no binding. A read-only cell has `aria-readonly`. Enter on it opens no editor, and the status text is `This cell is read-only.`
 
 ## Action and receipt

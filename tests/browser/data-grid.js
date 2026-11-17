@@ -316,6 +316,28 @@ async function browserChecks() {
   press(grid, 'ArrowUp');
   check('choice: ArrowDown and ArrowUp give the next and the previous choice', down === 'Fixed' && editor(grid).value === 'Variable' && where(grid) === 'food kind');
   press(grid, 'Escape');
+  // A choice is exact text. A choice with a space at its start or its end stays as it is.
+  const SPACED = ['Fixed', ' Fixed ', ' Open'];
+  const spaced = mount(fill({ label: 'Synthetic budget', columns: [column('kind', 'Kind', 'choice', { choices: SPACED })],
+    rows: [row('rent', 'Rent', cell('choice', 'Fixed'))] }), { ...BINDING, columns: { kind: { label: 'Kind', type: 'choice', choices: SPACED } } });
+  edit(spaced, 'rent', 'kind', ' Fixed ');
+  check('choice: a choice with spaces is saved as the exact text', last(spaced).arguments.value === ' Fixed ', JSON.stringify(last(spaced)?.arguments));
+  answer(spaced);
+  edit(spaced, 'rent', 'kind', 'Fixed  ');
+  check('choice: a typed text with more spaces gives the choice that agrees without them', last(spaced).arguments.value === 'Fixed' && spaced.requests.length === 2);
+  answer(spaced);
+  at(spaced, 'rent', 'kind').focus();
+  press(spaced, 'Enter');
+  press(spaced, 'ArrowDown');
+  press(spaced, 'Enter');
+  check('choice: the arrow keys save the exact choice', last(spaced).arguments.value === ' Fixed ' && spaced.requests.length === 3);
+  answer(spaced);
+  edit(spaced, 'rent', 'kind', 'Open');
+  check('choice: a typed text that differs from one choice only by spaces gives that choice', last(spaced).arguments.value === ' Open' && spaced.requests.length === 4);
+  answer(spaced);
+  edit(spaced, 'rent', 'kind', 'Closed');
+  check('choice: a text that is not a choice is refused', status(spaced) === 'Give one of these choices: Fixed,  Fixed ,  Open.' && spaced.requests.length === 4, status(spaced));
+  press(spaced, 'Escape');
   // A read-only cell opens no editor.
   at(grid, 'total', 'jan').focus();
   press(grid, 'Enter');
