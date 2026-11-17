@@ -452,7 +452,8 @@ export class MuDataGrid extends MuElement {
       // The arrow keys give the next or the previous choice.
       event.preventDefault();
       const choices = cell.column.choices;
-      const index = choices.indexOf(input.value.trim());
+      // The text of the editor gives the same choice here as it gives at the save.
+      const index = choices.indexOf(parse(cell.column, input.value).value);
       const step = event.key === 'ArrowDown' ? 1 : -1;
       input.value = choices[index < 0 ? (step > 0 ? 0 : choices.length - 1) : (index + step + choices.length) % choices.length];
     }

@@ -332,6 +332,17 @@ async function browserChecks() {
   press(spaced, 'Enter');
   check('choice: the arrow keys save the exact choice', last(spaced).arguments.value === ' Fixed ' && spaced.requests.length === 3);
   answer(spaced);
+  at(spaced, 'rent', 'kind').focus();
+  press(spaced, 'Enter');
+  press(spaced, 'ArrowDown');
+  const third = editor(spaced).value;
+  press(spaced, 'ArrowDown');
+  const again = editor(spaced).value;
+  press(spaced, 'ArrowUp');
+  press(spaced, 'ArrowUp');
+  check('choice: the arrow keys go through choices that differ only by spaces', third === ' Open' && again === 'Fixed' && editor(spaced).value === ' Fixed ',
+    JSON.stringify([third, again, editor(spaced).value]));
+  press(spaced, 'Escape');
   edit(spaced, 'rent', 'kind', 'Open');
   check('choice: a typed text that differs from one choice only by spaces gives that choice', last(spaced).arguments.value === ' Open' && spaced.requests.length === 4);
   answer(spaced);
