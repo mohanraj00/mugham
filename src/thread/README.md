@@ -20,7 +20,7 @@ await thread.read(events);
 |---|---|
 | `push(event)` | Gives one AG-UI 1.0 event to the reader. |
 | `read(source)` | Reads each event of an async source, or of any iterable, in order. The promise resolves when the source ends. If the source fails, the thread shows a notice and the promise resolves. |
-| `bind` | Optional. A function `(fill, message)` that gives the action binding of an `action-button`, an `editable-form`, a `form-card` or a `data-grid` part. A `data-grid` binding has only `tool` and `arguments`. [The catalog README](../../catalog/README.md#actions) gives the binding. If it gives no binding, the element shows as disabled and sends no action. If the fill does not agree with the binding, the element refuses the fill. |
+| `bind` | Optional. A function `(fill, message)` that gives the action binding of an `action-button`, an `editable-form`, a `form-card` or a `data-grid` part. A `data-grid` binding has `tool`, `arguments`, `rows` and `columns`. [The catalog README](../../catalog/README.md#actions) gives the binding. If it gives no binding, the element shows as disabled and sends no action. If the fill does not agree with the binding, the element refuses the fill. |
 | `perform` | Optional. An async function `(request, message)` that sends the request to the API of the application and gives its receipt. If it is not set, the `mu-action` event goes up to the page, and the page calls `receipt()` of the element. |
 | `messages` | A copy of the envelopes, in the order of the thread. |
 | `state` | `idle`, `reading`, `ended` or `failed`. The element also sets `data-state` to this value. |

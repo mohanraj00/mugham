@@ -147,6 +147,8 @@ A binding has these keys. Only `tool` is necessary.
 | `editor` | The person who edits a typed form: `{ type: 'human', id }`. `id` has 1 to 128 characters. It is necessary if `typed` has a name. |
 | `confirm` | Optional. The confirm step: `{ message, label }`. `message` has 1 to 200 characters. `label` has 1 to 40 characters. |
 
+The binding of a `data-grid` has `tool`, `arguments`, `rows` and `columns`. The application gives the key, the label and the type of each row and column that a person can edit. [Data grid rules](../src/components/data-grid.md#action-and-receipt) gives the keys.
+
 The application gives the label of the action. The element refuses a fill with a different label: the `label` of an action button or the `submit_label` of an editable form. A binding with no label accepts no fill. Thus a fill cannot show "View details" on a button that sends a different action. The application also gives the `description` of an action button. The button refuses a fill with a different description, because a description can name the target of the bound arguments. A binding with no description accepts no fill with a description.
 
 The fill keeps the label and the description, and the element compares them with the binding. The fill stays necessary for these reasons:

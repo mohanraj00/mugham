@@ -7,7 +7,8 @@ import { define } from './src/components/index.js';
 define();
 const grid = document.createElement('mu-data-grid');
 grid.actor = { type: 'agent', id: 'agent-budget' };
-grid.action = { tool: 'budget.set_amount', arguments: { budget_id: 'B-2027' } };
+grid.action = { tool: 'budget.set_amount', arguments: { budget_id: 'B-2027' },
+  rows: { rent: 'Rent', food: 'Food' }, columns: { jan: { label: 'January', type: 'number' } } };
 grid.fill = fill;
 grid.addEventListener('mu-action', async (event) => grid.receipt(await postToTheApi(event.detail)));
 ```
@@ -62,11 +63,26 @@ The grid refuses a typed value of the wrong type. The editor stays open, and the
 
 An empty text makes the cell empty. The request then has the value `''`.
 
-A cell is read-only if its column or the cell has `read_only`, or if the grid has no binding. A read-only cell has `aria-readonly`. Enter on it opens no editor, and the status text is `This cell is read-only.`
+A cell is read-only if its column or the cell has `read_only`, if the binding does not have its row key and its column key, or if the grid has no binding. A read-only cell has `aria-readonly`. Enter on it opens no editor, and the status text is `This cell is read-only.`
 
 ## Action and receipt
 
-The application binds the tool and its fixed arguments with the `action` property. The binding has only `tool` and `arguments`. The grid has no label, no confirm step and no typed edit, so it refuses a binding with a different key. A bound argument cannot have the name `row`, `column` or `value`.
+The application binds the action with the `action` property. The binding has these keys:
+
+| Key | Content |
+|---|---|
+| `tool` | The tool name. |
+| `arguments` | Optional. The fixed arguments. A bound argument cannot have the name `row`, `column` or `value`. |
+| `rows` | Maps the key of each row that a person can edit to its label. 200 rows maximum. |
+| `columns` | Maps the key of each column that a person can edit to `{ label, type }`. A choice column also has `choices`. 30 columns maximum. |
+
+The grid has no label, no confirm step and no typed edit, so it refuses a binding with a different key.
+
+A request sends a row key and a column key, and the person reads only the labels. Thus the application gives the label and the type of each key that a request can send:
+
+- A person can edit a cell only if the binding has its row key and its column key. Each other row and column is read-only.
+- The grid refuses a fill that gives a bound row a different label, or a bound column a different label, type or list of choices. Thus a fill cannot show `Food` on the row that sends the key `rent`.
+- A fill can make a bound cell read-only. A fill cannot make a cell editable.
 
 Each saved change is one action. The grid sends a `mu-action` event with the request:
 
@@ -78,7 +94,7 @@ Each saved change is one action. The grid sends a `mu-action` event with the req
 - The changed cell shows the marker `Pending` until the receipt comes back. The state of the grid is `pending`.
 - One request is pending at a time. A change that a person saves during that time shows `Changed`. It goes in the next request, after the receipt.
 - The application calls `grid.receipt({ id, ok, message })`. With `ok` set to `true`, the marker goes away and the cell keeps the new value. With `ok` set to `false`, the cell shows `Not done`, and the status text gives the row, the column and the message. The state of the grid is `error`.
-- A person can save the same value again to send the change again. A save of the value from before the change removes the marker and sends no action.
+- A person can save the same value again to send the change again. A save of the value from before the change removes the marker and sends no action. While a request of the same cell is pending, such a change waits for the receipt, because the receipt can confirm a different value. The last saved value is the value that stays.
 - A new binding removes each change of the old binding.
 
 ## New values

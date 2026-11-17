@@ -40,8 +40,11 @@ function text(tag, words) {
 
 const grid = document.createElement('mu-data-grid');
 grid.actor = AGENT;
-// The application binds the tool. A fill cannot select a tool.
-grid.action = { tool: 'budget.set_amount', arguments: { budget_id: 'B-2027' } };
+// The application binds the tool, and the key, the label and the type of each row and column that a person
+// can edit. A fill cannot select a tool or give a different meaning to a key. The Total row is not bound.
+grid.action = { tool: 'budget.set_amount', arguments: { budget_id: 'B-2027' },
+  rows: Object.fromEntries(budget.map(([key, label]) => [key, label])),
+  columns: Object.fromEntries(MONTHS.map(([key, label]) => [key, { label, type: 'number' }])) };
 grid.fill = fill();
 
 // The application decides. An amount is a number from 0 to 100000. The receipt comes back after the decision.

@@ -89,7 +89,10 @@ async function browserChecks() {
   const mode = new URLSearchParams(location.search).get('mode') || 'light';
   const AUTHOR = { type: 'agent', id: 'agent-budget', name: 'Budget helper' };
   const MARKUP = '<img src=x onerror="window.muUnsafe=1"><script>window.muUnsafe=1</script>';
-  const BINDING = { tool: 'budget.set_cell', arguments: { budget_id: 'B-7' } };
+  // The application binds the tool, and the key, the label and the type of each row and column that a person can edit.
+  const BINDING = { tool: 'budget.set_cell', arguments: { budget_id: 'B-7' }, rows: { rent: 'Rent', food: 'Food' },
+    columns: { kind: { label: 'Kind', type: 'choice', choices: ['Fixed', 'Variable'] }, jan: { label: 'January', type: 'number' },
+      due: { label: 'Due date', type: 'date' }, note: { label: 'Note', type: 'text' } } };
   const node = (component, data) => ({ component, version: '0.1.0', data });
   const column = (key, label, type, more = {}) => node('data-grid-column', { key, label, type, ...more });
   const cell = (type, value, more = {}) => node(`${type}-cell`, value === undefined ? more : { value, ...more });
@@ -222,6 +225,31 @@ async function browserChecks() {
   check('a change back to the confirmed value removes the marker and sends no action', grid.requests.length === 3
     && at(grid, 'food', 'jan').textContent === '400' && grid.dataset.state === 'default');
 
+  // More than one change of one cell before the receipt: the last saved value is the value that stays.
+  const quick = mount(budget());
+  edit(quick, 'rent', 'jan', '1000');
+  edit(quick, 'rent', 'jan', '1100');
+  edit(quick, 'rent', 'jan', '900');
+  check('quick changes: a change back to the old value stays while a request of the cell is pending', quick.requests.length === 1
+    && at(quick, 'rent', 'jan').textContent === '900Changed' && quick.dataset.state === 'pending');
+  answer(quick);
+  check('quick changes: after the receipt the last saved value goes in the next request', quick.requests.length === 2
+    && last(quick).arguments.value === 900 && at(quick, 'rent', 'jan').textContent === '900Pending');
+  answer(quick);
+  check('quick changes: the cell shows the last saved value', at(quick, 'rent', 'jan').textContent === '900' && quick.dataset.state === 'default'
+    && quick.requests.length === 2);
+  edit(quick, 'rent', 'jan', '1000');
+  edit(quick, 'rent', 'jan', '900');
+  answer(quick, false, { message: 'The month is closed.' });
+  check('quick changes: after a refusal a change back to the confirmed value sends no request', quick.requests.length === 3
+    && at(quick, 'rent', 'jan').textContent === '900' && quick.dataset.state === 'default');
+  edit(quick, 'food', 'jan', '500');
+  edit(quick, 'food', 'jan', '600');
+  edit(quick, 'food', 'jan', '500');
+  answer(quick);
+  check('quick changes: a change to the value that the receipt confirmed sends no request', quick.requests.length === 4
+    && at(quick, 'food', 'jan').textContent === '500' && quick.dataset.state === 'default');
+
   // The grid refuses a value of the wrong type and shows the reason as text. The editor stays open.
   const REASONS = [['jan', 'twelve', 'Give a number, for example 12 or 12.5.'], ['due', '2026-02-30', 'Give a date that exists, as YYYY-MM-DD, for example 2026-12-01.'],
     ['due', '12/01/2026', 'Give a date that exists, as YYYY-MM-DD, for example 2026-12-01.'], ['kind', 'Other', 'Give one of these choices: Fixed, Variable.'],
@@ -305,7 +333,9 @@ async function browserChecks() {
 
   // Markup in each header and each cell shows as text and makes no element.
   const marked = mount(fill({ label: MARKUP.slice(0, 120), columns: [column('a', MARKUP.slice(0, 80), 'text'), column('b', MARKUP.slice(0, 80), 'choice', { choices: [MARKUP.slice(0, 80)] })],
-    rows: [row('r', MARKUP.slice(0, 80), cell('text', MARKUP), cell('choice', MARKUP.slice(0, 80)))] }));
+    rows: [row('r', MARKUP.slice(0, 80), cell('text', MARKUP), cell('choice', MARKUP.slice(0, 80)))] }),
+  { tool: 'budget.set_cell', rows: { r: MARKUP.slice(0, 80) }, columns: { a: { label: MARKUP.slice(0, 80), type: 'text' },
+    b: { label: MARKUP.slice(0, 80), type: 'choice', choices: [MARKUP.slice(0, 80)] } } });
   check('markup: each header and each cell shows as text', marked.dataset.state === 'default'
     && root(marked).querySelector('thead th').textContent === MARKUP.slice(0, 80) && root(marked).querySelector('tbody th').textContent === MARKUP.slice(0, 80)
     && at(marked, 'r', 'a').textContent === MARKUP && at(marked, 'r', 'b').textContent === MARKUP.slice(0, 80));
@@ -353,17 +383,60 @@ async function browserChecks() {
   check('binding: the keys move the focus in a read-only grid', where(unbound) === 'rent due');
   unbound.action = BINDING;
   check('binding: a binding makes the cells editable', unbound.dataset.state === 'default' && at(unbound, 'rent', 'jan').getAttribute('aria-readonly') === 'false');
-  for (const [name, binding, reason] of [['a label', { ...BINDING, label: 'Save' }, 'a data grid accepts only a tool and its arguments'],
-    ['a confirm step', { ...BINDING, confirm: { message: 'Save?', label: 'Yes' } }, 'a data grid accepts only a tool and its arguments'],
-    ['editable names', { ...BINDING, editable: { value: 'Value' } }, 'a data grid accepts only a tool and its arguments'],
-    ['a bound row', { tool: 'budget.set_cell', arguments: { row: 'rent' } }, 'a bound argument cannot be editable: row'],
-    ['no tool', { arguments: {} }, 'the tool name is not valid'], ['a text', 'budget.set_cell', 'the action must be an object']]) {
-    check(`binding: ${name} is refused`, thrown(() => { unbound.action = binding; }) === 'TypeError: action: ' + reason && unbound.action.state === 'default');
+  const KEYS = 'a data grid accepts only tool, arguments, rows and columns';
+  const ROWS = 'rows must map each editable row key to its label';
+  const COLUMN_RULE = 'columns must map each editable column key to its label and its type, with the choices of a choice column';
+  for (const [name, binding, reason] of [['a label', { ...BINDING, label: 'Save' }, KEYS],
+    ['a confirm step', { ...BINDING, confirm: { message: 'Save?', label: 'Yes' } }, KEYS], ['editable names', { ...BINDING, editable: { value: 'Value' } }, KEYS],
+    ['a bound row argument', { ...BINDING, arguments: { row: 'rent' } }, 'a bound argument cannot be editable: row'],
+    ['no tool', { ...BINDING, tool: undefined }, 'the tool name is not valid'], ['a text', 'budget.set_cell', 'the action must be an object'],
+    ['no rows', { tool: 'budget.set_cell', columns: BINDING.columns }, ROWS], ['a list of rows', { ...BINDING, rows: ['rent'] }, ROWS],
+    ['a row with no label', { ...BINDING, rows: { rent: '' } }, ROWS], ['a row label that is not text', { ...BINDING, rows: { rent: 7 } }, ROWS],
+    ['no columns', { tool: 'budget.set_cell', rows: BINDING.rows }, COLUMN_RULE], ['a column with only a label', { ...BINDING, columns: { jan: 'January' } }, COLUMN_RULE],
+    ['a column with a type that the grid does not have', { ...BINDING, columns: { jan: { label: 'January', type: 'formula' } } }, COLUMN_RULE],
+    ['a choice column with no choices', { ...BINDING, columns: { kind: { label: 'Kind', type: 'choice' } } }, COLUMN_RULE],
+    ['a number column with choices', { ...BINDING, columns: { jan: { label: 'January', type: 'number', choices: ['1'] } } }, COLUMN_RULE],
+    ['a column with a different key', { ...BINDING, columns: { jan: { label: 'January', type: 'number', read_only: false } } }, COLUMN_RULE]]) {
+    check(`binding: ${name} is refused`, thrown(() => { unbound.action = binding; }) === 'TypeError: action: ' + reason && unbound.action.state === 'default',
+      thrown(() => { unbound.action = binding; }));
   }
+  check('binding: a refused binding changes nothing', at(unbound, 'rent', 'jan').getAttribute('aria-readonly') === 'false' && unbound.dataset.state === 'default');
   edit(unbound, 'rent', 'jan', '901');
-  unbound.action = { tool: 'budget.set_cell', arguments: { budget_id: 'B-8' } };
+  unbound.action = { ...BINDING, arguments: { budget_id: 'B-8' } };
   check('binding: a new binding removes the changes of the old binding', at(unbound, 'rent', 'jan').textContent === '900' && unbound.dataset.state === 'default'
     && unbound.receipt({ id: last(unbound).id, ok: true }) === false);
+  // The application gives the meaning of each key that a request sends. A fill cannot give a different label or type.
+  const relabel = (change) => { const data = structuredClone(budget().data); change(data); return fill(data); };
+  for (const [name, value, reason] of [
+    ['a different label for a bound row', relabel((data) => { data.rows[0].data.label = 'Food'; }), 'data.rows[0].data.label: the label is not the label of the application'],
+    ['a different label for a bound column', relabel((data) => { data.columns[1].data.label = 'February'; }), 'data.columns[1].data.label: the label is not the label of the application'],
+    ['a different type for a bound column', relabel((data) => { data.columns[3].data.type = 'date'; for (const item of data.rows) item.data.cells[3] = cell('date'); }),
+      'data.columns[3].data.type: the type is not the type of the application'],
+    ['different choices for a bound column', relabel((data) => { data.columns[0].data.choices = ['Fixed', 'Variable', 'Other']; }),
+      'data.columns[0].data.choices: the choices are not the choices of the application'],
+    ['the choices of a bound column in a different order', relabel((data) => { data.columns[0].data.choices = ['Variable', 'Fixed']; }),
+      'data.columns[0].data.choices: the choices are not the choices of the application'],
+  ]) {
+    const bad = mount(value);
+    check(`policy: ${name} is refused`, refusal(bad) === 'Refused data-grid: ' + reason && !root(bad).querySelector('table'), root(bad).textContent);
+  }
+  const extra = mount(relabel((data) => {
+    data.columns.splice(4, 0, column('feb', 'January', 'number'));
+    for (const item of data.rows) item.data.cells.splice(4, 0, cell('number', 1));
+    data.rows.push(row('bonus', 'Rent', cell('choice', 'Fixed'), cell('number', 5), cell('date'), cell('text'), cell('number', 5), cell('number', 5)));
+  }));
+  check('policy: a row and a column that the application does not bind are read-only', extra.dataset.state === 'default'
+    && at(extra, 'bonus', 'jan').getAttribute('aria-readonly') === 'true' && at(extra, 'rent', 'feb').getAttribute('aria-readonly') === 'true'
+    && at(extra, 'rent', 'jan').getAttribute('aria-readonly') === 'false');
+  at(extra, 'bonus', 'jan').focus();
+  press(extra, 'Enter');
+  press(extra, '7');
+  at(extra, 'rent', 'feb').focus();
+  press(extra, 'Enter');
+  check('policy: a cell with a key that the application does not bind opens no editor and sends no action', !editor(extra)
+    && status(extra) === 'This cell is read-only.' && extra.requests.length === 0);
+  const proto = mount(relabel((data) => { data.rows.push(row('constructor', 'Rent', cell('choice'), cell('number', 5), cell('date'), cell('text'), cell('number', 5))); }));
+  check('policy: a key with the name of an object member is not a bound key', at(proto, 'constructor', 'jan').getAttribute('aria-readonly') === 'true');
   const empty = mount(fill({ label: 'Synthetic budget', columns: COLUMNS, rows: [] }));
   check('empty: a grid with no rows shows a text', empty.dataset.state === 'empty' && root(empty).querySelector('[part="empty"]')?.textContent === 'No rows.'
     && root(empty).querySelectorAll('thead th').length === 5);
@@ -381,7 +454,9 @@ async function browserChecks() {
   large.style.width = '320px';
   stage.append(large);
   const big = mount(fill({ label: 'Large synthetic budget', columns: MONTHS,
-    rows: Array.from({ length: 50 }, (_, index) => row(`r${index + 1}`, `Line ${index + 1}`, ...MONTHS.map((_, month) => cell('number', index * 12 + month)))) }), BINDING, large);
+    rows: Array.from({ length: 50 }, (_, index) => row(`r${index + 1}`, `Line ${index + 1}`, ...MONTHS.map((_, month) => cell('number', index * 12 + month)))) }),
+  { tool: 'budget.set_cell', rows: Object.fromEntries(Array.from({ length: 50 }, (_, index) => [`r${index + 1}`, `Line ${index + 1}`])),
+    columns: Object.fromEntries(MONTHS.map((item) => [item.data.key, { label: item.data.label, type: 'number' }])) }, large);
   const area = root(big).querySelector('[part="scroll"]');
   check('large: 50 rows and 12 columns show', root(big).querySelectorAll('tbody td').length === 600 && big.dataset.state === 'default');
   check('large: the grid scrolls inside its own area', area.scrollWidth > area.clientWidth && area.scrollHeight > area.clientHeight

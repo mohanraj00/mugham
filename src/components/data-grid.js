@@ -17,6 +17,42 @@ const MARKERS = Object.freeze({ changed: 'Changed', pending: 'Pending', error: '
 // The names of the values that a request sends for one change.
 const SENT = Object.freeze({ row: 'Row', column: 'Column', value: 'Value' });
 const READ_ONLY = 'This cell is read-only.';
+const TYPES = Object.freeze(['text', 'number', 'date', 'choice']);
+// The limits of the contracts: 200 rows, 30 columns, 20 choices, a key of 40 characters and a label of 80 characters.
+const MAX_ROWS = 200;
+const MAX_COLUMNS = 30;
+const MAX_CHOICES = 20;
+const MAX_KEY = 40;
+const MAX_LABEL = 80;
+
+const isObject = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
+const short = (value, max) => typeof value === 'string' && value.length > 0 && value.length <= max * 2 && [...value].length <= max;
+const sameList = (left, right) => left.length === right.length && left.every((item, index) => item === right[index]);
+
+// The errors of the rows and the columns of a binding. The application gives the key, the label and the type
+// of each row and each column that a person can edit. Thus a fill cannot give a different meaning to a key.
+function policyErrors(binding) {
+  const errors = [];
+  const rows = isObject(binding.rows) ? Object.entries(binding.rows) : null;
+  if (!rows || rows.length > MAX_ROWS || !rows.every(([key, label]) => short(key, MAX_KEY) && short(label, MAX_LABEL))) {
+    errors.push('rows must map each editable row key to its label');
+  }
+  const columns = isObject(binding.columns) ? Object.entries(binding.columns) : null;
+  const valid = ([key, column]) => short(key, MAX_KEY) && isObject(column)
+    && Object.keys(column).every((name) => name === 'label' || name === 'type' || name === 'choices')
+    && short(column.label, MAX_LABEL) && TYPES.includes(column.type)
+    && (column.type === 'choice'
+      ? Array.isArray(column.choices) && column.choices.length >= 1 && column.choices.length <= MAX_CHOICES
+        && column.choices.every((choice) => short(choice, MAX_LABEL)) && new Set(column.choices).size === column.choices.length
+      : column.choices === undefined);
+  if (!columns || columns.length > MAX_COLUMNS || !columns.every(valid)) {
+    errors.push('columns must map each editable column key to its label and its type, with the choices of a choice column');
+  }
+  return errors;
+}
+
+// A frozen copy with no prototype, so a key such as constructor is not in the map.
+const frozenMap = (entries) => Object.freeze(Object.assign(Object.create(null), Object.fromEntries(entries)));
 const MOVES = Object.freeze({ ArrowRight: [0, 1], ArrowLeft: [0, -1], ArrowDown: [1, 0], ArrowUp: [-1, 0] });
 
 // The value of a typed text, or the reason that the grid refuses it. An empty text gives an empty cell.
@@ -77,6 +113,8 @@ export class MuDataGrid extends MuElement {
   `)];
 
   #action = new ActionState();
+  // The rows and the columns that the application binds, or null.
+  #policy = null;
   #columns = [];
   #rows = [];
   // The changes that have no receipt with ok, by cell id. A change is changed, pending or error.
@@ -98,17 +136,26 @@ export class MuDataGrid extends MuElement {
     return this.#action;
   }
 
-  // The application binds the tool and its fixed arguments. Each request also sends row, column and value.
-  // The grid has no label, no confirm step and no typed edit, so the binding has no other key.
+  // The application binds the tool, its fixed arguments, and the rows and the columns that a person can edit.
+  // Each request also sends row, column and value. The grid has no label, no confirm step and no typed edit,
+  // so the binding has no other key.
   set action(binding) {
     let errors = ['the action must be an object'];
+    let policy = null;
     if (binding === null) errors = this.#action.bind(null);
-    else if (typeof binding === 'object' && !Array.isArray(binding)) {
-      errors = Object.keys(binding).every((key) => key === 'tool' || key === 'arguments')
-        ? this.#action.bind({ tool: binding.tool, arguments: binding.arguments, editable: SENT })
-        : ['a data grid accepts only a tool and its arguments'];
+    else if (isObject(binding)) {
+      errors = Object.keys(binding).every((key) => key === 'tool' || key === 'arguments' || key === 'rows' || key === 'columns')
+        ? policyErrors(binding) : ['a data grid accepts only tool, arguments, rows and columns'];
+      // The policy is valid before the action changes, so a refused binding changes nothing.
+      if (!errors.length) errors = this.#action.bind({ tool: binding.tool, arguments: binding.arguments, editable: SENT });
+      if (!errors.length) {
+        policy = Object.freeze({ rows: frozenMap(Object.entries(binding.rows)),
+          columns: frozenMap(Object.entries(binding.columns).map(([key, column]) => [key, Object.freeze({ label: column.label,
+            type: column.type, choices: Object.freeze([...(column.choices ?? [])]) })])) });
+      }
     }
     if (errors.length) throw new TypeError('action: ' + errors.join('; '));
+    this.#policy = policy;
     // A new binding is a new target, so no change of the old target stays.
     this.#changes.clear();
     this.#confirmed.clear();
@@ -135,6 +182,9 @@ export class MuDataGrid extends MuElement {
     } else if (latest) {
       change.state = 'error';
     }
+    // A newer change with the value that is now confirmed needs no request.
+    const newer = this.#changes.get(change.id);
+    if (cell && newer && newer !== change && newer.value === this.#base(cell)) this.#changes.delete(change.id);
     if (cell) this.#paint(cell);
     const name = cell ? `${cell.row.label}, ${cell.column.label}` : 'a cell';
     this.#say(ok ? '' : `Not done: ${name}.${message ? ' ' + message : ''}`, !ok);
@@ -143,9 +193,12 @@ export class MuDataGrid extends MuElement {
     return true;
   }
 
-  // The contract format cannot compare a cell with its column, or a key with a different key.
+  // The contract format cannot compare a cell with its column, or a key with a different key. The application
+  // gives the label and the type of each key that a person can edit. A fill with a different label or type for
+  // such a key is refused, so a fill cannot show a different meaning for a key that a request sends.
   check(data) {
     if (!data.columns.length) return ['data.columns: at least one column is necessary'];
+    const policy = this.#policy;
     const keys = new Set();
     for (const [index, { data: column }] of data.columns.entries()) {
       const at = `data.columns[${index}].data`;
@@ -155,12 +208,19 @@ export class MuDataGrid extends MuElement {
       if (column.type === 'choice' && !choices?.length) return [`${at}.choices: a choice column needs its choices`];
       if (column.type !== 'choice' && choices !== undefined) return [`${at}.choices: only a choice column has choices`];
       if (choices && new Set(choices).size !== choices.length) return [`${at}.choices: two choices are the same`];
+      const bound = policy && Object.hasOwn(policy.columns, column.key) ? policy.columns[column.key] : null;
+      if (bound && column.label !== bound.label) return [`${at}.label: the label is not the label of the application`];
+      if (bound && column.type !== bound.type) return [`${at}.type: the type is not the type of the application`];
+      if (bound && !sameList(choices ?? [], bound.choices)) return [`${at}.choices: the choices are not the choices of the application`];
     }
     const rows = new Set();
     for (const [index, { data: row }] of data.rows.entries()) {
       const at = `data.rows[${index}].data`;
       if (rows.has(row.key)) return [`${at}.key: two rows have the same key`];
       rows.add(row.key);
+      if (policy && Object.hasOwn(policy.rows, row.key) && row.label !== policy.rows[row.key]) {
+        return [`${at}.label: the label is not the label of the application`];
+      }
       if (row.cells.length !== data.columns.length) return [`${at}.cells: the cell count must equal the column count`];
       for (const [position, cell] of row.cells.entries()) {
         const column = data.columns[position].data;
@@ -189,16 +249,18 @@ export class MuDataGrid extends MuElement {
     const json = JSON.stringify(data);
     if (json !== this.#seen) this.#confirmed.clear();
     this.#seen = json;
-    const bound = this.#action.state !== 'disabled';
+    const policy = this.#policy;
+    const bound = policy !== null;
+    // A person can edit a cell only if the application binds its row key and its column key.
     this.#columns = data.columns.map(({ data: column }) => ({ key: column.key, label: column.label, type: column.type,
-      locked: column.read_only === true, choices: column.choices ?? [] }));
+      locked: column.read_only === true || !bound || !Object.hasOwn(policy.columns, column.key), choices: column.choices ?? [] }));
     const body = el('tbody');
     this.#rows = data.rows.map(({ data: item }) => {
       const row = { key: item.key, label: item.label, cells: [] };
       const line = el('tr', {}, el('th', { scope: 'row' }, item.label));
       for (const [index, column] of this.#columns.entries()) {
         const source = item.cells[index].data;
-        const editable = bound && !column.locked && source.read_only !== true;
+        const editable = bound && Object.hasOwn(policy.rows, row.key) && !column.locked && source.read_only !== true;
         const td = el('td', { class: column.type, part: 'cell', tabindex: '-1', 'aria-readonly': editable ? 'false' : 'true' });
         const cell = { id: JSON.stringify([row.key, column.key]), row, column, td, editable, value: source.value ?? '' };
         row.cells.push(cell);
@@ -419,11 +481,11 @@ export class MuDataGrid extends MuElement {
   #save(cell, value) {
     const change = this.#changes.get(cell.id);
     const base = this.#base(cell);
-    if (!change && value === base) return;
-    // The same value as a failed change sends the change again.
-    if (change && value === change.value && change.state !== 'error') return;
-    // A change back to the confirmed value needs no request, unless a request with a different value is pending.
-    if (value === base && change !== this.#sent) {
+    // The same value as the cell shows is no change. The same value as a failed change sends the change again.
+    if (value === (change ? change.value : base) && change?.state !== 'error') return;
+    // A change back to the confirmed value needs no request. But while a request of this cell is pending,
+    // its receipt can confirm a different value. Then the change stays until that receipt comes back.
+    if (value === base && this.#sent?.id !== cell.id) {
       this.#changes.delete(cell.id);
       return;
     }
