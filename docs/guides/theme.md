@@ -130,7 +130,7 @@ The image parts are `image`, `box`, `caption` and `dialog`. Keep the box ratio a
 
 The rich text parts are `rich-text`, `code`, `link` and `target`. Keep the underline and the focus ring of the `link` part. Do not hide the `target` part, because it shows the address that a link opens.
 
-The data grid parts are `data-grid`, `scroll` and `cell`. Do not hide the `changed` part of a cell or the `status` part below the grid. They show `Changed`, `Pending` and `Not done`, and the reason of a refused value. Keep the focus ring of a cell and of the `editor` part.
+The data grid parts are `data-grid`, `title`, `scroll` and `cell`. Do not hide the `title` part, because it shows the title that the application gives. Do not hide the `changed` part of a cell or the `status` part below the grid. They show `Changed`, `Pending` and `Not done`, and the reason of a refused value. Keep the focus ring of a cell and of the `editor` part.
 
 ## Run the page
 

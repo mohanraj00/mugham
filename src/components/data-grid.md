@@ -7,7 +7,7 @@ import { define } from './src/components/index.js';
 define();
 const grid = document.createElement('mu-data-grid');
 grid.actor = { type: 'agent', id: 'agent-budget' };
-grid.action = { tool: 'budget.set_amount', arguments: { budget_id: 'B-2027' },
+grid.action = { tool: 'budget.set_amount', arguments: { budget_id: 'B-2027' }, title: 'Synthetic budget 2027',
   rows: { rent: 'Rent', food: 'Food' }, columns: { jan: { label: 'January', type: 'number' } } };
 grid.fill = fill;
 grid.addEventListener('mu-action', async (event) => grid.receipt(await postToTheApi(event.detail)));
@@ -73,13 +73,15 @@ The application binds the action with the `action` property. The binding has the
 |---|---|
 | `tool` | The tool name. |
 | `arguments` | Optional. The fixed arguments. A bound argument cannot have the name `row`, `column` or `value`. |
+| `title` | The title of the grid, 1 to 120 code points. It names the target of the fixed arguments. |
 | `rows` | Maps the key of each row that a person can edit to its label. 200 rows maximum. |
 | `columns` | Maps the key of each column that a person can edit to `{ label, type }`. A choice column also has `choices`. 30 columns maximum. |
 
-The grid has no label, no confirm step and no typed edit, so it refuses a binding with a different key.
+The grid has no action label, no confirm step and no typed edit, so it refuses a binding with a different key.
 
-A request sends a row key and a column key, and the person reads only the labels. Thus the application gives the label and the type of each key that a request can send:
+A request sends the fixed arguments, a row key and a column key, and the person reads only the title and the labels. Thus the application gives the title of the grid, and the label and the type of each key that a request can send:
 
+- The title shows above the grid. The grid refuses a fill with a `label` that is not the title of the binding. Thus a fill cannot show the name of a different budget on a grid that sends the changes to `B-2027`.
 - A person can edit a cell only if the binding has its row key and its column key. Each other row and column is read-only.
 - The grid refuses a fill that gives a bound row a different label, or a bound column a different label, type or list of choices. Thus a fill cannot show `Food` on the row that sends the key `rent`.
 - A fill can make a bound cell read-only. A fill cannot make a cell editable.
@@ -100,6 +102,8 @@ Each saved change is one action. The grid sends a `mu-action` event with the req
 ## New values
 
 The application sends each new value in a new fill, for example a new total after a change. The grid shows the new data and keeps the focus on the same cell. An open editor keeps its text. A cell with a change that has no receipt keeps its value and its marker. The data of the application replaces a value that a receipt confirmed.
+
+A new fill can make a cell read-only while its request is pending. The cell keeps its value and `Pending` until the receipt comes back. If the receipt has `ok` set to `false`, the cell shows `Not done` until the application sends new data, because a person cannot edit the cell. A change with no request does not stay on a cell that is now read-only, and no request has it.
 
 In a thread, the application gives the binding with `bind` and the receipt with `perform`. While a request is pending, the thread keeps the grid. After the receipt, the same element shows the new snapshot.
 

@@ -18,21 +18,27 @@ const MARKERS = Object.freeze({ changed: 'Changed', pending: 'Pending', error: '
 const SENT = Object.freeze({ row: 'Row', column: 'Column', value: 'Value' });
 const READ_ONLY = 'This cell is read-only.';
 const TYPES = Object.freeze(['text', 'number', 'date', 'choice']);
+// The keys of a binding.
+const KEYS = Object.freeze(['tool', 'arguments', 'title', 'rows', 'columns']);
 // The limits of the contracts: 200 rows, 30 columns, 20 choices, a key of 40 characters and a label of 80 characters.
 const MAX_ROWS = 200;
 const MAX_COLUMNS = 30;
 const MAX_CHOICES = 20;
 const MAX_KEY = 40;
 const MAX_LABEL = 80;
+// The label of a grid has 120 characters at most. The application gives it as the title of the binding.
+const MAX_TITLE = 120;
 
 const isObject = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
 const short = (value, max) => typeof value === 'string' && value.length > 0 && value.length <= max * 2 && [...value].length <= max;
 const sameList = (left, right) => left.length === right.length && left.every((item, index) => item === right[index]);
 
-// The errors of the rows and the columns of a binding. The application gives the key, the label and the type
-// of each row and each column that a person can edit. Thus a fill cannot give a different meaning to a key.
+// The errors of the title, the rows and the columns of a binding. The application gives the title of the grid,
+// and the key, the label and the type of each row and each column that a person can edit. Thus a fill cannot
+// give a different meaning to a key, or a different name to the target of the bound arguments.
 function policyErrors(binding) {
   const errors = [];
+  if (!short(binding.title, MAX_TITLE)) errors.push('title must be the title of the grid, with 1 to 120 characters');
   const rows = isObject(binding.rows) ? Object.entries(binding.rows) : null;
   if (!rows || rows.length > MAX_ROWS || !rows.every(([key, label]) => short(key, MAX_KEY) && short(label, MAX_LABEL))) {
     errors.push('rows must map each editable row key to its label');
@@ -103,6 +109,7 @@ export class MuDataGrid extends MuElement {
       border: 1px solid var(--mu-color-border); border-radius: var(--mu-radius-1); padding: var(--mu-space-1);
     }
     p { margin: 0; overflow-wrap: anywhere; }
+    .title { font-weight: var(--mu-type-weight-strong); }
     .status { font: var(--mu-type-caption); min-height: 1.5em; }
     .muted { font: var(--mu-type-caption); color: var(--mu-color-text-muted); }
     @media (forced-colors: active) {
@@ -144,12 +151,12 @@ export class MuDataGrid extends MuElement {
     let policy = null;
     if (binding === null) errors = this.#action.bind(null);
     else if (isObject(binding)) {
-      errors = Object.keys(binding).every((key) => key === 'tool' || key === 'arguments' || key === 'rows' || key === 'columns')
-        ? policyErrors(binding) : ['a data grid accepts only tool, arguments, rows and columns'];
+      errors = Object.keys(binding).every((key) => KEYS.includes(key))
+        ? policyErrors(binding) : ['a data grid accepts only tool, arguments, title, rows and columns'];
       // The policy is valid before the action changes, so a refused binding changes nothing.
       if (!errors.length) errors = this.#action.bind({ tool: binding.tool, arguments: binding.arguments, editable: SENT });
       if (!errors.length) {
-        policy = Object.freeze({ rows: frozenMap(Object.entries(binding.rows)),
+        policy = Object.freeze({ title: binding.title, rows: frozenMap(Object.entries(binding.rows)),
           columns: frozenMap(Object.entries(binding.columns).map(([key, column]) => [key, Object.freeze({ label: column.label,
             type: column.type, choices: Object.freeze([...(column.choices ?? [])]) })])) });
       }
@@ -199,6 +206,8 @@ export class MuDataGrid extends MuElement {
   check(data) {
     if (!data.columns.length) return ['data.columns: at least one column is necessary'];
     const policy = this.#policy;
+    // The bound arguments select a target that a person cannot see. The application names it.
+    if (policy && data.label !== policy.title) return ['data.label: the label is not the title of the application'];
     const keys = new Set();
     for (const [index, { data: column }] of data.columns.entries()) {
       const at = `data.columns[${index}].data`;
@@ -247,7 +256,8 @@ export class MuDataGrid extends MuElement {
       ? { ...this.#current, draft: this.#editing ? this.#editing.input.value : undefined } : null;
     this.#editing = null;
     const json = JSON.stringify(data);
-    if (json !== this.#seen) this.#confirmed.clear();
+    const fresh = json !== this.#seen;
+    if (fresh) this.#confirmed.clear();
     this.#seen = json;
     const policy = this.#policy;
     const bound = policy !== null;
@@ -269,11 +279,16 @@ export class MuDataGrid extends MuElement {
       body.append(line);
       return row;
     });
-    // A change stays only if its cell is in the new data and a person can edit it.
+    // A change stays if its cell is in the new data and a person can edit it. A change that waits for its
+    // receipt also stays on a cell that is now read-only, so the receipt can show its result. A change that
+    // is not done on such a cell stays until the application sends new data.
     for (const [id, change] of this.#changes) {
       const cell = this.#find(change.row, change.column);
-      if (!cell || !cell.editable || cell.column.type !== change.type) this.#changes.delete(id);
+      const waits = change === this.#sent || (change.state === 'error' && !fresh);
+      if (!cell || !(waits || (cell.editable && cell.column.type === change.type))) this.#changes.delete(id);
     }
+    // The state of the grid agrees with the changes that stay.
+    this.dataset.state = this.state(data);
     for (const row of this.#rows) for (const cell of row.cells) this.#paint(cell);
     const start = (this.#current && this.#find(this.#current.row, this.#current.column)) ?? this.#rows[0]?.cells[0];
     if (start) {
@@ -305,7 +320,8 @@ export class MuDataGrid extends MuElement {
     if (keep) queueMicrotask(() => this.#restore(keep));
     const author = this.fill.slots.authorship;
     const name = author.name ? ` (${author.name})` : '';
-    return [el('div', { class: 'grid', role: 'group', 'aria-label': data.label, part: 'data-grid' }, this.#scroll,
+    return [el('div', { class: 'grid', role: 'group', 'aria-label': data.label, part: 'data-grid' },
+      el('p', { class: 'title', part: 'title' }, data.label), this.#scroll,
       data.rows.length ? null : el('p', { part: 'empty' }, 'No rows.'), this.#status,
       el('p', { class: 'muted', part: 'authorship' }, `Author: ${author.type} ${author.id}${name}`))];
   }

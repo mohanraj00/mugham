@@ -6,6 +6,8 @@ import { define } from '../src/components/index.js';
 define();
 
 const AGENT = { type: 'agent', id: 'agent-budget', name: 'Budget helper' };
+// The title of the budget that the bound arguments select. The application gives it.
+const TITLE = 'Synthetic budget 2027';
 const MONTHS = [['jan', 'January'], ['feb', 'February'], ['mar', 'March'], ['apr', 'April']];
 // The data of the application. A row has one amount for each month.
 const budget = [
@@ -23,7 +25,7 @@ const node = (component, data) => ({ component, version: '0.1.0', data });
 function fill() {
   const totals = MONTHS.map((_, month) => budget.reduce((sum, [, , amounts]) => sum + amounts[month], 0));
   return { component: 'data-grid', version: '0.1.0', slots: { authorship: AGENT }, data: {
-    label: 'Synthetic budget 2027',
+    label: TITLE,
     columns: MONTHS.map(([key, label]) => node('data-grid-column', { key, label, type: 'number' })),
     rows: [
       ...budget.map(([key, label, amounts]) => node('data-grid-row', { key, label, cells: amounts.map((value) => node('number-cell', { value })) })),
@@ -42,7 +44,7 @@ const grid = document.createElement('mu-data-grid');
 grid.actor = AGENT;
 // The application binds the tool, and the key, the label and the type of each row and column that a person
 // can edit. A fill cannot select a tool or give a different meaning to a key. The Total row is not bound.
-grid.action = { tool: 'budget.set_amount', arguments: { budget_id: 'B-2027' },
+grid.action = { tool: 'budget.set_amount', arguments: { budget_id: 'B-2027' }, title: TITLE,
   rows: Object.fromEntries(budget.map(([key, label]) => [key, label])),
   columns: Object.fromEntries(MONTHS.map(([key, label]) => [key, { label, type: 'number' }])) };
 grid.fill = fill();
