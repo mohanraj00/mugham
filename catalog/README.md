@@ -39,10 +39,14 @@ Each JSON file in this folder is the contract of one component. [schema/README.m
 | `rich-quote.json` | in `mu-rich-text` | component | A quote node with up to 20 paragraphs. |
 | `rich-span.json` | in `mu-rich-text` | component | An inline text node with one optional mark: emphasis, strong or code. |
 | `rich-link.json` | in `mu-rich-text` | component | An inline link node. A button shows the link text, and the target shows on hover and on focus. |
+| `data-grid.json` | `mu-data-grid` | component | An editable grid with column headers, row headers and typed cells. Each saved change is one action. [Data grid rules](../src/components/data-grid.md) gives the keys, the markers and the binding. |
+| `data-grid-column.json` | in `mu-data-grid` | component | A column: a key, a label, the cell type, a read-only flag and the choices of a choice column. |
+| `data-grid-row.json` | in `mu-data-grid` | component | A row: a key, a label and one cell for each column. |
+| `text-cell.json`, `number-cell.json`, `date-cell.json`, `choice-cell.json` | in `mu-data-grid` | component | A cell with an optional value of its type and a read-only flag. |
 | `chart.json` | `mu-chart` | component | SVG bar, line and stacked bar charts with a table view. See [Chart](../docs/chart.md). |
 | `chart-series.json` | in `mu-chart` | component | A text label and up to 50 numeric values. Requires the authorship slot when used as an outer fill. |
 
-The contracts with `ai_content` set to `true` are `card`, `card-grid`, `chart`, `chart-series`, `citation`, `diff`, `editable-form`, `excerpt`, `fact`, `form-card`, `image`, `status`, `table`, `table-row`, `rich-text` and its seven node contracts. Each of them requires the authorship slot. `card`, `card-grid` and `citation` also accept the citation slot. `excerpt` requires the citation slot, because the slot gives the locator of the passage.
+The contracts with `ai_content` set to `true` are `card`, `card-grid`, `chart`, `chart-series`, `citation`, `diff`, `editable-form`, `excerpt`, `fact`, `form-card`, `image`, `status`, `table`, `table-row`, `rich-text` and its seven node contracts, and `data-grid` with its column, row and cell contracts. Each of them requires the authorship slot. `card`, `card-grid` and `citation` also accept the citation slot. `excerpt` requires the citation slot, because the slot gives the locator of the passage.
 
 The span of an excerpt starts at `span_start` and stops before `span_end`. Both count code points of the passage, the same as each text limit of the kit. The element refuses a span that is empty or that goes past the end of the passage. [schema/README.md](schema/README.md#slots) gives the slots.
 

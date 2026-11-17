@@ -1,0 +1,62 @@
+{
+  "format": 2,
+  "name": "data-grid-row",
+  "version": "0.1.0",
+  "kind": "component",
+  "description": "One row of a data grid: a key, a header label and one cell for each column.",
+  "ai_content": true,
+  "slots": {
+    "authorship": {
+      "required": true
+    }
+  },
+  "data": {
+    "key": {
+      "type": "text",
+      "label": "Key",
+      "required": true,
+      "min_length": 1,
+      "max_length": 40
+    },
+    "label": {
+      "type": "text",
+      "label": "Label",
+      "required": true,
+      "min_length": 1,
+      "max_length": 80
+    },
+    "cells": {
+      "type": "list",
+      "label": "Cells",
+      "required": true,
+      "max_items": 30,
+      "items": {
+        "type": "component",
+        "label": "Cell",
+        "required": true,
+        "names": [
+          "text-cell",
+          "number-cell",
+          "date-cell",
+          "choice-cell"
+        ]
+      }
+    }
+  },
+  "states": [
+    "default"
+  ],
+  "tokens": [
+    "color.text",
+    "color.border",
+    "color.surface",
+    "type.body",
+    "type.weight-strong"
+  ],
+  "accessibility": {
+    "role": "none",
+    "keyboard": [],
+    "forced_colors": true,
+    "reduced_motion": true
+  }
+}

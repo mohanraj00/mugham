@@ -25,6 +25,8 @@ CHANGE = fill('diff-change', {'label': 'Shelf', 'change': 'changed', 'before': '
 PART = fill('diff-part', {'title': 'Loan', 'changes': [CHANGE]})
 SPAN = fill('rich-span', {'text': 'Keep the tray dry.'})
 PARAGRAPH = fill('rich-paragraph', {'content': [SPAN]})
+COLUMN = fill('data-grid-column', {'key': 'jan', 'label': 'January', 'type': 'number'})
+ROW = fill('data-grid-row', {'key': 'rent', 'label': 'Rent', 'cells': [fill('number-cell', {'value': 900})]})
 
 
 def outer(name, data):
@@ -76,6 +78,13 @@ VALID = {
     'rich-quote': {'paragraphs': [PARAGRAPH]},
     'rich-span': {'text': 'Keep the tray dry.', 'mark': 'strong'},
     'rich-link': {'text': 'Synthetic rules', 'url': 'https://example.org/rules'},
+    'data-grid': {'label': 'Synthetic budget', 'columns': [COLUMN], 'rows': [ROW]},
+    'data-grid-column': {'key': 'kind', 'label': 'Kind', 'type': 'choice', 'read_only': False, 'choices': ['Fixed', 'Variable']},
+    'data-grid-row': ROW['data'],
+    'text-cell': {'value': 'Paid by transfer', 'read_only': False},
+    'number-cell': {'value': 900, 'read_only': True},
+    'date-cell': {'value': '2026-12-01'},
+    'choice-cell': {'value': 'Fixed'},
 }
 
 

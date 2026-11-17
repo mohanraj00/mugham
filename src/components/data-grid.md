@@ -1,0 +1,105 @@
+# Data grid
+
+`mu-data-grid` shows an editable grid, like a small spreadsheet. Its contract is [catalog/data-grid.json](../../catalog/data-grid.json). The grid has column headers, row headers and typed cells. A person moves between the cells with the keyboard and edits one cell in place. The kit computes no formula. The application computes each total and sends it as a value.
+
+```js
+import { define } from './src/components/index.js';
+define();
+const grid = document.createElement('mu-data-grid');
+grid.actor = { type: 'agent', id: 'agent-budget' };
+grid.action = { tool: 'budget.set_amount', arguments: { budget_id: 'B-2027' } };
+grid.fill = fill;
+grid.addEventListener('mu-action', async (event) => grid.receipt(await postToTheApi(event.detail)));
+```
+
+## Data
+
+| Contract | Fields |
+|---|---|
+| `data-grid` | `label`, 1 to 120 code points. `columns`: 1 to 30 columns. `rows`: 0 to 200 rows. |
+| `data-grid-column` | `key` and `label`. `type`: `text`, `number`, `date` or `choice`. `read_only`: optional. `choices`: 1 to 20 texts, only for a choice column. |
+| `data-grid-row` | `key` and `label`. `cells`: one cell for each column. |
+| `text-cell`, `number-cell`, `date-cell`, `choice-cell` | `value`: optional, with the type of the cell. `read_only`: optional. A cell with no value is empty. |
+
+The element refuses a fill in these conditions, because the contract format cannot check them:
+
+- The grid has no column, or two columns or two rows have the same key.
+- A row does not have one cell for each column.
+- A cell does not have the type of its column, for example a `text-cell` in a number column.
+- A choice column has no choices, or two of its choices are the same. A different column has choices.
+- The value of a choice cell is not one of the choices of its column.
+
+Each header, each value and each marker shows as text. A fill has no tool, no formula and no style.
+
+## Keyboard
+
+The grid follows the ARIA grid pattern. The table has the role `grid`. Each column header and each row header is a header cell, so a screen reader reads the two headers of a cell. One cell has the Tab stop.
+
+| Key | Result |
+|---|---|
+| Tab, Shift+Tab | Moves the focus into the grid, to the cell that had the focus last, and out of the grid. |
+| Arrow keys | Move the focus one cell. The focus stops at the edge of the grid. |
+| Home, End | Move to the first or the last cell of the row. With Control, move to the first or the last cell of the grid. |
+| Enter | Opens the editor of the cell with its value. In the editor, Enter saves. |
+| A typed character | Opens the editor with that character in place of the value. |
+| Escape | In the editor, cancels. The cell shows its value from before the edit. |
+| ArrowDown, ArrowUp | In the editor of a choice cell, give the next or the previous choice. |
+
+With a pointer, the first click moves the focus to a cell. A click on the cell that has the focus opens its editor. If the focus leaves the editor, the grid saves a valid value and does not save a value that is not valid.
+
+The editor is a text input for each cell type. Its name is the row label and the column label, for example `Rent, January`. A choice editor tells the choices in the status text.
+
+## Values and reasons
+
+The grid refuses a typed value of the wrong type. The editor stays open, and the status text below the grid gives the reason:
+
+| Column type | A valid value | Reason |
+|---|---|---|
+| `text` | 500 code points maximum | `Give a text of 500 characters at most.` |
+| `number` | A number, for example `12` or `12.5` | `Give a number, for example 12 or 12.5.` |
+| `date` | A date that exists, as `YYYY-MM-DD` | `Give a date that exists, as YYYY-MM-DD, for example 2026-12-01.` |
+| `choice` | One of the choices of the column | `Give one of these choices: Fixed, Variable.` |
+
+An empty text makes the cell empty. The request then has the value `''`.
+
+A cell is read-only if its column or the cell has `read_only`, or if the grid has no binding. A read-only cell has `aria-readonly`. Enter on it opens no editor, and the status text is `This cell is read-only.`
+
+## Action and receipt
+
+The application binds the tool and its fixed arguments with the `action` property. The binding has only `tool` and `arguments`. The grid has no label, no confirm step and no typed edit, so it refuses a binding with a different key. A bound argument cannot have the name `row`, `column` or `value`.
+
+Each saved change is one action. The grid sends a `mu-action` event with the request:
+
+```json
+{ "id": "…", "tool": "budget.set_amount", "arguments": { "row": "rent", "column": "jan", "value": 1250, "budget_id": "B-2027" } }
+```
+
+- A save of the value that the cell shows sends no action.
+- The changed cell shows the marker `Pending` until the receipt comes back. The state of the grid is `pending`.
+- One request is pending at a time. A change that a person saves during that time shows `Changed`. It goes in the next request, after the receipt.
+- The application calls `grid.receipt({ id, ok, message })`. With `ok` set to `true`, the marker goes away and the cell keeps the new value. With `ok` set to `false`, the cell shows `Not done`, and the status text gives the row, the column and the message. The state of the grid is `error`.
+- A person can save the same value again to send the change again. A save of the value from before the change removes the marker and sends no action.
+- A new binding removes each change of the old binding.
+
+## New values
+
+The application sends each new value in a new fill, for example a new total after a change. The grid shows the new data and keeps the focus on the same cell. An open editor keeps its text. A cell with a change that has no receipt keeps its value and its marker. The data of the application replaces a value that a receipt confirmed.
+
+In a thread, the application gives the binding with `bind` and the receipt with `perform`. While a request is pending, the thread keeps the grid. After the receipt, the same element shows the new snapshot.
+
+## Size
+
+A grid of 50 rows and 12 columns has 600 cells. The grid scrolls inside its own area, which has a maximum height of 30rem. The column headers stay at the top of the area and the row headers stay at its start. After a key moves the focus, the grid scrolls so that a fixed header does not cover the focused cell.
+
+## States
+
+| State | Result |
+|---|---|
+| `default` | A person can edit each cell that is not read-only. |
+| `empty` | The grid has no rows. It shows the column headers and `No rows.` |
+| `disabled` | The grid has no binding. Each cell is read-only, and the keys still move the focus. |
+| `pending` | A request waits for its receipt. Its cell shows `Pending`. |
+| `error` | The last receipt of a cell has `ok` set to `false`. The cell shows `Not done`. |
+| `refused` | A status notice gives the reason as text. The element keeps no data. |
+
+[examples/budget.html](../../examples/budget.html) shows a synthetic budget with 6 rows, 4 month columns and a total row that the page computes. [tests/browser/data-grid.js](../../tests/browser/data-grid.js) checks each state, each key and each refusal in the four media modes.

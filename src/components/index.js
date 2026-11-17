@@ -15,6 +15,8 @@ import { MuChart } from './chart.js';
 export { MuChart } from './chart.js';
 import { MuRichText } from './rich-text.js';
 export { MuRichText } from './rich-text.js';
+import { MuDataGrid } from './data-grid.js';
+export { MuDataGrid } from './data-grid.js';
 
 const FIELD_NAME = /^[a-z][a-z0-9]*(_[a-z0-9]+)*$/;
 const boundError = (name) => `data.sections: the read-only field ${name} does not show the bound value`;
@@ -1030,7 +1032,7 @@ export function define(registry = customElements) {
   for (const [name, element] of [['mu-action-button', MuActionButton], ['mu-card', MuCard],
     ['mu-card-grid', MuCardGrid], ['mu-editable-form', MuEditableForm], ['mu-form-card', MuFormCard], ['mu-citation', MuCitation], ['mu-diff', MuDiff],
     ['mu-excerpt', MuExcerpt], ['mu-table', MuTable], ['mu-status', MuStatus], ['mu-source-status', MuSourceStatus], ['mu-image', MuImage], ['mu-chart', MuChart],
-    ['mu-rich-text', MuRichText]]) {
+    ['mu-rich-text', MuRichText], ['mu-data-grid', MuDataGrid]]) {
     if (!registry.get(name)) registry.define(name, element);
   }
 }

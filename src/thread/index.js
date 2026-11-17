@@ -16,9 +16,10 @@ const TAGS = Object.freeze(Object.assign(Object.create(null), {
   image: 'mu-image',
   chart: 'mu-chart',
   'rich-text': 'mu-rich-text',
+  'data-grid': 'mu-data-grid',
 }));
 // The components with an action. The application gives the binding of each one.
-const ACTIONS = new Set(['action-button', 'editable-form', 'form-card']);
+const ACTIONS = new Set(['action-button', 'editable-form', 'form-card', 'data-grid']);
 const TYPES = Object.freeze({ human: 'Person', agent: 'Agent', system: 'System' });
 // The envelope reader accepts only a message with a valid actor, so the element accepts this actor.
 const actorOf = ({ actor }) => ({ type: actor.type, id: actor.id, ...(actor.name === undefined ? {} : { name: actor.name }) });
