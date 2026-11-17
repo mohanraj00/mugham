@@ -1,0 +1,58 @@
+{
+  "format": 2,
+  "name": "rich-link",
+  "version": "0.1.0",
+  "kind": "component",
+  "description": "An inline link node of rich text. The kit shows a button with the link text, and shows the target on hover and on focus. Page code sets the schemes that can open. The target opens only after a person presses the button.",
+  "ai_content": true,
+  "slots": {
+    "authorship": {
+      "required": true
+    }
+  },
+  "data": {
+    "text": {
+      "type": "text",
+      "label": "Link text",
+      "required": true,
+      "min_length": 1,
+      "max_length": 200
+    },
+    "url": {
+      "type": "text",
+      "label": "Target",
+      "required": true,
+      "min_length": 1,
+      "max_length": 2000
+    }
+  },
+  "states": [
+    "default"
+  ],
+  "tokens": [
+    "color.text",
+    "color.accent",
+    "color.surface",
+    "color.border",
+    "space.1",
+    "space.2",
+    "radius.1",
+    "type.body",
+    "type.caption"
+  ],
+  "accessibility": {
+    "role": "button",
+    "name": {
+      "field": "text"
+    },
+    "keyboard": [
+      "Tab",
+      "Shift+Tab",
+      "Enter",
+      "Space",
+      "Escape"
+    ],
+    "forced_colors": true,
+    "reduced_motion": true
+  }
+}

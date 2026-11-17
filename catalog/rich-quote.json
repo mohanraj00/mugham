@@ -1,0 +1,45 @@
+{
+  "format": 2,
+  "name": "rich-quote",
+  "version": "0.1.0",
+  "kind": "component",
+  "description": "A quote node of rich text: a list of paragraph nodes.",
+  "ai_content": true,
+  "slots": {
+    "authorship": {
+      "required": true
+    }
+  },
+  "data": {
+    "paragraphs": {
+      "type": "list",
+      "label": "Paragraphs",
+      "required": true,
+      "max_items": 20,
+      "items": {
+        "type": "component",
+        "label": "Paragraph",
+        "required": true,
+        "name": "rich-paragraph"
+      }
+    }
+  },
+  "states": [
+    "default"
+  ],
+  "tokens": [
+    "color.text",
+    "color.text-muted",
+    "color.border",
+    "space.1",
+    "space.2",
+    "type.body",
+    "space.3"
+  ],
+  "accessibility": {
+    "role": "none",
+    "keyboard": [],
+    "forced_colors": true,
+    "reduced_motion": true
+  }
+}

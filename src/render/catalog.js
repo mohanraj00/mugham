@@ -28,6 +28,14 @@ import table from '../../catalog/table.json' with { type: 'json' };
 import tableRow from '../../catalog/table-row.json' with { type: 'json' };
 import chart from '../../catalog/chart.json' with { type: 'json' };
 import chartSeries from '../../catalog/chart-series.json' with { type: 'json' };
+import richText from '../../catalog/rich-text.json' with { type: 'json' };
+import richParagraph from '../../catalog/rich-paragraph.json' with { type: 'json' };
+import richHeading from '../../catalog/rich-heading.json' with { type: 'json' };
+import richList from '../../catalog/rich-list.json' with { type: 'json' };
+import richCode from '../../catalog/rich-code.json' with { type: 'json' };
+import richQuote from '../../catalog/rich-quote.json' with { type: 'json' };
+import richSpan from '../../catalog/rich-span.json' with { type: 'json' };
+import richLink from '../../catalog/rich-link.json' with { type: 'json' };
 
 export const CATALOG = Object.freeze(Object.assign(Object.create(null), {
   'action-button': actionButton, button, card, 'card-grid': cardGrid, 'choice-field': choiceField, citation, 'date-field': dateField,
@@ -35,4 +43,6 @@ export const CATALOG = Object.freeze(Object.assign(Object.create(null), {
   'form-card': formCard, 'form-line': formLine, 'form-section': formSection, grid, image,
   'long-text-field': longTextField, 'number-field': numberField, 'source-status': sourceStatus, stack, status, text, table, 'table-row': tableRow,
   chart, 'chart-series': chartSeries,
+  'rich-text': richText, 'rich-paragraph': richParagraph, 'rich-heading': richHeading, 'rich-list': richList,
+  'rich-code': richCode, 'rich-quote': richQuote, 'rich-span': richSpan, 'rich-link': richLink,
 }));

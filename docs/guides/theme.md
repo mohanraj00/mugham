@@ -128,6 +128,8 @@ A page can style these parts for layout, for example a margin or a width, if it 
 
 The image parts are `image`, `box`, `caption` and `dialog`. Keep the box ratio and its loading and failed notices visible. Keep the caption and the full-size close button visible. The `open` part must keep its focus ring.
 
+The rich text parts are `rich-text`, `code`, `link` and `target`. Keep the underline and the focus ring of the `link` part. Do not hide the `target` part, because it shows the address that a link opens.
+
 ## Run the page
 
 ```sh
