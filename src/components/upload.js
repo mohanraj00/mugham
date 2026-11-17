@@ -170,7 +170,8 @@ export class MuUpload extends MuElement {
     if (!binding) return [];
     if (data.label !== binding.label) return ['data.label: the label is not the label of the application'];
     const accept = data.accept;
-    if (accept !== undefined && (accept.length !== binding.accept.length || !accept.every((item) => binding.accept.includes(item)))) {
+    if (accept !== undefined && (accept.length !== binding.accept.length || !accept.every((item) => binding.accept.includes(item))
+      || !binding.accept.every((item) => accept.includes(item)))) {
       return ['data.accept: the accepted types are not the types that the page binds'];
     }
     if (data.max_size !== undefined && data.max_size !== binding.max_size) return ['data.max_size: the size limit is not the limit that the page binds'];

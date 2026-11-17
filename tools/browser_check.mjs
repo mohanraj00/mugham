@@ -2,7 +2,7 @@
 // The accessibility and rendering check of the kit in headless Chrome, through the Chrome DevTools Protocol.
 // It uses only Node.js and Chrome. See docs/decisions/0001-build-tools.md, Option A.
 import { spawn } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync, existsSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, existsSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import { extname, join, resolve, sep } from 'node:path';
@@ -10,11 +10,18 @@ import { fileURLToPath } from 'node:url';
 import { guideChecks } from '../tests/browser/guides.mjs';
 import { imageKeyboardChecks } from '../tests/browser/image.js';
 import { richTextKeyboardChecks } from '../tests/browser/rich-text.js';
-import { uploadExampleChecks, uploadKeyboardChecks } from '../tests/browser/upload.js';
+import { UPLOAD_FILES, uploadExampleChecks, uploadKeyboardChecks } from '../tests/browser/upload.js';
 
 export const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
-// The synthetic files that the upload checks give to a file input.
-const FIXTURES = join(ROOT, 'tests', 'browser', 'fixtures');
+// The upload checks give synthetic files to a file input. The files are in a temporary folder, not in the checkout.
+let uploadFolder = null;
+function uploadFile(name) {
+  if (!uploadFolder) {
+    uploadFolder = mkdtempSync(join(tmpdir(), 'mugham-upload-'));
+    for (const [file, text] of Object.entries(UPLOAD_FILES)) writeFileSync(join(uploadFolder, file), text);
+  }
+  return join(uploadFolder, name);
+}
 const SERVED = ['src', 'catalog', 'examples', join('tests', 'browser')];
 const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.json': 'application/json', '.css': 'text/css', '.svg': 'image/svg+xml' };
 const MODES = {
@@ -410,7 +417,7 @@ async function uploadExample(session, sessionId, report) {
   const page = 'examples/upload.html';
   const { server, url } = await pythonServer('upload_server.py', ['--port', '0']);
   try {
-    const files = ['receipt-a.pdf', 'receipt-b.pdf', 'receipt-a.txt', 'note.pdf'].map((name) => join(FIXTURES, name));
+    const files = ['receipt-a.pdf', 'receipt-b.pdf', 'receipt-a.txt', 'note.pdf'].map(uploadFile);
     const steps = await uploadExampleChecks(session, sessionId, url.slice(0, url.indexOf('/examples/')), { evaluate, open, sleep }, files);
     report.accessibility.push(...await axErrors(session, sessionId, [['heading', 'Ticket T-2041'], ['group', 'Attach receipts to ticket T-2041'],
       ['button', 'Choose files'], ['list', 'Files'], ['button', 'Remove note.pdf'], ['button', 'Upload']], page));
@@ -522,7 +529,7 @@ async function main() {
         report.keyboard.push({ page, step: 'Enter and Space press the button', ok: presses === 2, detail: presses });
         if (page === 'tests/browser/rich-text.html') report.keyboard.push(...await richTextKeyboardChecks(session, sessionId, { evaluate, key }, page));
         if (page === 'tests/browser/upload.html') {
-          report.keyboard.push(...await uploadKeyboardChecks(session, sessionId, { evaluate, key }, page, join(FIXTURES, 'receipt-a.txt')));
+          report.keyboard.push(...await uploadKeyboardChecks(session, sessionId, { evaluate, key }, page, uploadFile('receipt-a.txt')));
         }
         if (await evaluate(session, sessionId, 'typeof window.muChartKeys === "function"')) {
           for (const [name, code, expectedPoint] of [['Tab', 9, 0], ['ArrowRight', 39, 1], ['ArrowDown', 40, 2],
@@ -715,6 +722,7 @@ async function main() {
     server.close();
     await sleep(200);
     rmSync(profile, { recursive: true, force: true, maxRetries: 5 });
+    if (uploadFolder) rmSync(uploadFolder, { recursive: true, force: true });
   }
   report.passed = report.errors.length === 0;
   // Exit only after the report is written. A pipe can take less than the full report at one time.

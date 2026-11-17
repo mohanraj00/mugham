@@ -1,5 +1,14 @@
 // Expected texts, limits and states come from catalog/upload.json and src/components/upload.md.
 // tools/browser_check.mjs imports the keyboard checks in Node and loads this page in each media mode.
+// The synthetic files that the checks give to a file input. tools/browser_check.mjs writes them to a temporary
+// folder, so the repository has no file of them. The API of the example reads only the first bytes of a file.
+export const UPLOAD_FILES = Object.freeze({
+  'receipt-a.pdf': '%PDF-1.4\n% Synthetic receipt A. Amount: 12 units.\n',
+  'receipt-b.pdf': '%PDF-1.4\n% Synthetic receipt B. Amount: 30 units.\n',
+  'receipt-a.txt': 'Synthetic receipt A. Amount: 12 units.\n',
+  'note.pdf': 'Synthetic text. This file has the name of a PDF document, and it is not one.\n',
+});
+
 export async function uploadKeyboardChecks(session, sessionId, { evaluate, key }, page, fixture) {
   const results = [];
   const check = (name, ok, detail) => results.push({ page, step: name, ok: Boolean(ok), detail: JSON.stringify(detail) });
@@ -81,12 +90,12 @@ export async function uploadExampleChecks(session, sessionId, base, { evaluate, 
   await pick([first, second, text]);
   found = await read();
   check('two PDF receipts show Pending, and the control refuses the text file before a request',
-    found.rows.join('|') === 'receipt-a.pdf 613 bytes Pending|receipt-b.pdf 613 bytes Pending' && found.api.length === 0
+    found.rows.join('|') === 'receipt-a.pdf 50 bytes Pending|receipt-b.pdf 50 bytes Pending' && found.api.length === 0
     && found.problems.join('|') === 'receipt-a.txt: This file type is not accepted. Accepted types: application/pdf, .pdf.', found);
   await send();
   found = await settled(2);
   // The API gives the references in the sequence of the requests that it gets.
-  const done = /^receipt-a\.pdf 613 bytes Done: The file is on ticket T-2041\. Reference: F-000[12]\|receipt-b\.pdf 613 bytes Done: The file is on ticket T-2041\. Reference: F-000[12]$/;
+  const done = /^receipt-a\.pdf 50 bytes Done: The file is on ticket T-2041\. Reference: F-000[12]\|receipt-b\.pdf 50 bytes Done: The file is on ticket T-2041\. Reference: F-000[12]$/;
   check('each receipt shows Done with the reference of the API, and the API keeps the two files', done.test(found.rows.join('|'))
     && found.state === 'done' && found.api.length === 2 && found.api.map((item) => item.slice(0, 6)).join('|') === 'F-0001|F-0002'
     && found.list.length === 2 && found.list.every((item, index) => item === found.api[index].replace(' ', ': ').replace(/ (\d+)$/, ', $1 bytes')), found);
@@ -292,6 +301,7 @@ async function browserChecks() {
     [{ accept: ['image/png'] }, 'data.accept: the accepted types are not the types that the page binds'],
     [{ accept: ['application/pdf'] }, 'data.accept: the accepted types are not the types that the page binds'],
     [{ accept: ['application/pdf', '.pdf', '.exe'] }, 'data.accept: the accepted types are not the types that the page binds'],
+    [{ accept: ['.pdf', '.pdf'] }, 'data.accept: the accepted types are not the types that the page binds'],
     [{ max_size: 1000000000 }, 'data.max_size: the size limit is not the limit that the page binds'],
     [{ max_files: 20 }, 'data.max_files: the file count is not the count that the page binds'],
     [{ target: 'https://example.org/upload' }, 'data.target: the contract does not declare this field'],
