@@ -39,10 +39,11 @@ Each JSON file in this folder is the contract of one component. [schema/README.m
 | `rich-quote.json` | in `mu-rich-text` | component | A quote node with up to 20 paragraphs. |
 | `rich-span.json` | in `mu-rich-text` | component | An inline text node with one optional mark: emphasis, strong or code. |
 | `rich-link.json` | in `mu-rich-text` | component | An inline link node. A button shows the link text, and the target shows on hover and on focus. |
+| `upload.json` | `mu-upload` | component | An upload control. Page code binds the tool, the accepted types, the size limit and the file count. Each file shows `Done` only after its receipt. [Upload rules](../src/components/upload.md) gives the checks and the binding. |
 | `chart.json` | `mu-chart` | component | SVG bar, line and stacked bar charts with a table view. See [Chart](../docs/chart.md). |
 | `chart-series.json` | in `mu-chart` | component | A text label and up to 50 numeric values. Requires the authorship slot when used as an outer fill. |
 
-The contracts with `ai_content` set to `true` are `card`, `card-grid`, `chart`, `chart-series`, `citation`, `diff`, `editable-form`, `excerpt`, `fact`, `form-card`, `image`, `status`, `table`, `table-row`, `rich-text` and its seven node contracts. Each of them requires the authorship slot. `card`, `card-grid` and `citation` also accept the citation slot. `excerpt` requires the citation slot, because the slot gives the locator of the passage.
+The contracts with `ai_content` set to `true` are `card`, `card-grid`, `chart`, `chart-series`, `citation`, `diff`, `editable-form`, `excerpt`, `fact`, `form-card`, `image`, `status`, `table`, `table-row`, `rich-text` and its seven node contracts, and `upload`. Each of them requires the authorship slot. `card`, `card-grid` and `citation` also accept the citation slot. `excerpt` requires the citation slot, because the slot gives the locator of the passage.
 
 The span of an excerpt starts at `span_start` and stops before `span_end`. Both count code points of the passage, the same as each text limit of the kit. The element refuses a span that is empty or that goes past the end of the passage. [schema/README.md](schema/README.md#slots) gives the slots.
 
@@ -142,6 +143,8 @@ A binding has these keys. Only `tool` is necessary.
 | `typed` | Optional. The editable names that need an edit type. See "Typed edits". |
 | `editor` | The person who edits a typed form: `{ type: 'human', id }`. `id` has 1 to 128 characters. It is necessary if `typed` has a name. |
 | `confirm` | Optional. The confirm step: `{ message, label }`. `message` has 1 to 200 characters. `label` has 1 to 40 characters. |
+
+The binding of an `upload` has `tool`, `arguments`, `label`, `accept`, `max_size` and `max_files`. The application gives the label, the accepted types, the size limit and the file count. A fill cannot set the limits, and a fill with a different label is refused. The control sends a `mu-upload` event for each file, and the application sends the file. [Upload rules](../src/components/upload.md#binding) gives the keys.
 
 The application gives the label of the action. The element refuses a fill with a different label: the `label` of an action button or the `submit_label` of an editable form. A binding with no label accepts no fill. Thus a fill cannot show "View details" on a button that sends a different action. The application also gives the `description` of an action button. The button refuses a fill with a different description, because a description can name the target of the bound arguments. A binding with no description accepts no fill with a description.
 

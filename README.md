@@ -168,6 +168,14 @@ python3 tools/apps_server.py
    - `http://127.0.0.1:8770/examples/apps/changes/`: a change review. An agent proposes a timetable change with a citation and source excerpts. A reviewer approves it with a confirm step and gets a receipt reference.
    - `http://127.0.0.1:8770/examples/apps/inspection/`: a field inspection for a phone. A registered checklist component, a findings form and a close action with a confirm step.
 
+7. For the upload example, start its fixture API. It prints the URL of the example. The default port is 8767. The API keeps each file in memory only, and it decides each file again.
+
+```sh
+python3 tools/upload_server.py
+```
+
+   A person attaches synthetic PDF receipts to a ticket. The control refuses a file of a wrong type before a request, and each file shows `Done` only after the receipt of the API.
+
 To use the kit in your own page, serve `src/` and `catalog/` from one origin, load `src/tokens/tokens.css`, then import `define` from `src/components/index.js` and call it. [src/README.md](src/README.md) gives the steps.
 
 Each release has the archive `mugham.tar` and its `mugham.tar.sha256` file as release assets. Two builds of the same source give the same bytes. The release publishes no package ([decision 0004](docs/decisions/0004-package.md)).
