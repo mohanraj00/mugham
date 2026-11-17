@@ -17,9 +17,10 @@ const TAGS = Object.freeze(Object.assign(Object.create(null), {
   chart: 'mu-chart',
   'rich-text': 'mu-rich-text',
   'data-grid': 'mu-data-grid',
+  upload: 'mu-upload',
 }));
 // The components with an action. The application gives the binding of each one.
-const ACTIONS = new Set(['action-button', 'editable-form', 'form-card', 'data-grid']);
+const ACTIONS = new Set(['action-button', 'editable-form', 'form-card', 'data-grid', 'upload']);
 const TYPES = Object.freeze({ human: 'Person', agent: 'Agent', system: 'System' });
 // The envelope reader accepts only a message with a valid actor, so the element accepts this actor.
 const actorOf = ({ actor }) => ({ type: actor.type, id: actor.id, ...(actor.name === undefined ? {} : { name: actor.name }) });
@@ -116,6 +117,8 @@ export class MuThread extends HTMLElement {
     this.#source.hidden = true;
     root.append(this.#list, this.#stream, this.#source, this.#live);
     root.addEventListener('mu-action', (event) => this.#act(event));
+    // An upload sends one request for each file. The request has the file, and perform sends it.
+    root.addEventListener('mu-upload', (event) => this.#act(event));
   }
 
   // A custom element cannot set an attribute in its constructor, so the state attribute starts here.

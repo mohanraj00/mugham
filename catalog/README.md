@@ -43,10 +43,11 @@ Each JSON file in this folder is the contract of one component. [schema/README.m
 | `data-grid-column.json` | in `mu-data-grid` | component | A column: a key, a label, the cell type, a read-only flag and the choices of a choice column. |
 | `data-grid-row.json` | in `mu-data-grid` | component | A row: a key, a label and one cell for each column. |
 | `text-cell.json`, `number-cell.json`, `date-cell.json`, `choice-cell.json` | in `mu-data-grid` | component | A cell with an optional value of its type and a read-only flag. |
+| `upload.json` | `mu-upload` | component | An upload control. Page code binds the tool, the accepted types, the size limit and the file count. Each file shows `Done` only after its receipt. [Upload rules](../src/components/upload.md) gives the checks and the binding. |
 | `chart.json` | `mu-chart` | component | SVG bar, line and stacked bar charts with a table view. See [Chart](../docs/chart.md). |
 | `chart-series.json` | in `mu-chart` | component | A text label and up to 50 numeric values. Requires the authorship slot when used as an outer fill. |
 
-The contracts with `ai_content` set to `true` are `card`, `card-grid`, `chart`, `chart-series`, `citation`, `diff`, `editable-form`, `excerpt`, `fact`, `form-card`, `image`, `status`, `table`, `table-row`, `rich-text` and its seven node contracts, and `data-grid` with its column, row and cell contracts. Each of them requires the authorship slot. `card`, `card-grid` and `citation` also accept the citation slot. `excerpt` requires the citation slot, because the slot gives the locator of the passage.
+The contracts with `ai_content` set to `true` are `card`, `card-grid`, `chart`, `chart-series`, `citation`, `diff`, `editable-form`, `excerpt`, `fact`, `form-card`, `image`, `status`, `table`, `table-row`, `rich-text` and its seven node contracts, `data-grid` with its column, row and cell contracts, and `upload`. Each of them requires the authorship slot. `card`, `card-grid` and `citation` also accept the citation slot. `excerpt` requires the citation slot, because the slot gives the locator of the passage.
 
 The span of an excerpt starts at `span_start` and stops before `span_end`. Both count code points of the passage, the same as each text limit of the kit. The element refuses a span that is empty or that goes past the end of the passage. [schema/README.md](schema/README.md#slots) gives the slots.
 
@@ -148,6 +149,8 @@ A binding has these keys. Only `tool` is necessary.
 | `confirm` | Optional. The confirm step: `{ message, label }`. `message` has 1 to 200 characters. `label` has 1 to 40 characters. |
 
 The binding of a `data-grid` has `tool`, `arguments`, `title`, `rows` and `columns`. The application gives the title of the grid, and the key, the label and the type of each row and column that a person can edit. [Data grid rules](../src/components/data-grid.md#action-and-receipt) gives the keys.
+
+The binding of an `upload` has `tool`, `arguments`, `label`, `accept`, `max_size` and `max_files`. The application gives the label, the accepted types, the size limit and the file count. A fill cannot set the limits, and a fill with a different label is refused. The control sends a `mu-upload` event for each file, and the application sends the file. [Upload rules](../src/components/upload.md#binding) gives the keys.
 
 The application gives the label of the action. The element refuses a fill with a different label: the `label` of an action button or the `submit_label` of an editable form. A binding with no label accepts no fill. Thus a fill cannot show "View details" on a button that sends a different action. The application also gives the `description` of an action button. The button refuses a fill with a different description, because a description can name the target of the bound arguments. A binding with no description accepts no fill with a description.
 

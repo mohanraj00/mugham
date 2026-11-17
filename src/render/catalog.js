@@ -43,6 +43,7 @@ import textCell from '../../catalog/text-cell.json' with { type: 'json' };
 import numberCell from '../../catalog/number-cell.json' with { type: 'json' };
 import dateCell from '../../catalog/date-cell.json' with { type: 'json' };
 import choiceCell from '../../catalog/choice-cell.json' with { type: 'json' };
+import upload from '../../catalog/upload.json' with { type: 'json' };
 
 export const CATALOG = Object.freeze(Object.assign(Object.create(null), {
   'action-button': actionButton, button, card, 'card-grid': cardGrid, 'choice-field': choiceField, citation, 'date-field': dateField,
@@ -54,4 +55,5 @@ export const CATALOG = Object.freeze(Object.assign(Object.create(null), {
   'rich-code': richCode, 'rich-quote': richQuote, 'rich-span': richSpan, 'rich-link': richLink,
   'data-grid': dataGrid, 'data-grid-column': dataGridColumn, 'data-grid-row': dataGridRow,
   'text-cell': textCell, 'number-cell': numberCell, 'date-cell': dateCell, 'choice-cell': choiceCell,
+  upload,
 }));

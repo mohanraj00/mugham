@@ -85,6 +85,8 @@ VALID = {
     'number-cell': {'value': 900, 'read_only': True},
     'date-cell': {'value': '2026-12-01'},
     'choice-cell': {'value': 'Fixed'},
+    'upload': {'label': 'Attach receipts', 'help': 'Add the receipts of the ticket.', 'accept': ['application/pdf', '.pdf'],
+               'max_size': 2000000, 'max_files': 3},
 }
 
 

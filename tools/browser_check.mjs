@@ -2,7 +2,7 @@
 // The accessibility and rendering check of the kit in headless Chrome, through the Chrome DevTools Protocol.
 // It uses only Node.js and Chrome. See docs/decisions/0001-build-tools.md, Option A.
 import { spawn } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync, existsSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, existsSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import { extname, join, resolve, sep } from 'node:path';
@@ -11,8 +11,18 @@ import { guideChecks } from '../tests/browser/guides.mjs';
 import { imageKeyboardChecks } from '../tests/browser/image.js';
 import { richTextKeyboardChecks } from '../tests/browser/rich-text.js';
 import { budgetExampleChecks, dataGridKeyboardChecks } from '../tests/browser/data-grid.js';
+import { UPLOAD_FILES, uploadExampleChecks, uploadKeyboardChecks } from '../tests/browser/upload.js';
 
 export const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
+// The upload checks give synthetic files to a file input. The files are in a temporary folder, not in the checkout.
+let uploadFolder = null;
+function uploadFile(name) {
+  if (!uploadFolder) {
+    uploadFolder = mkdtempSync(join(tmpdir(), 'mugham-upload-'));
+    for (const [file, text] of Object.entries(UPLOAD_FILES)) writeFileSync(join(uploadFolder, file), text);
+  }
+  return join(uploadFolder, name);
+}
 const SERVED = ['src', 'catalog', 'examples', join('tests', 'browser')];
 const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.json': 'application/json', '.css': 'text/css', '.svg': 'image/svg+xml' };
 const MODES = {
@@ -31,6 +41,8 @@ const PAGES = {
     ['list', ''], ['listitem', ''], ['blockquote', ''], ['code', '']],
   'tests/browser/data-grid.html': [['button', 'Keyboard target'], ['group', 'Synthetic budget'], ['grid', 'Synthetic budget'], ['columnheader', 'January'],
     ['rowheader', 'Rent'], ['gridcell', 'Paid by transfer'], ['gridcell', 'Late Changed']],
+  'tests/browser/upload.html': [['button', 'Keyboard target'], ['group', 'Attach a note'], ['group', 'Attach receipts'], ['button', 'Choose files'],
+    ['list', 'Files'], ['button', 'Remove pending.pdf'], ['button', 'Upload']],
   'tests/browser/primitives.html': [['button', 'Keyboard target'], ['textbox', 'Shelf code']],
   'tests/browser/components.html': [['button', 'Keyboard target'], ['article', 'Field guide to moss'], ['list', 'Loans'],
     ['form', 'Loan details'], ['textbox', 'Branch'], ['group', 'Citation'], ['button', 'Open source: Keyboard source'],
@@ -405,6 +417,21 @@ async function membershipFlow(session, sessionId, base) {
   return steps;
 }
 
+// The upload example against its fixture API, tools/upload_server.py. The API keeps the files in memory only.
+async function uploadExample(session, sessionId, report) {
+  const page = 'examples/upload.html';
+  const { server, url } = await pythonServer('upload_server.py', ['--port', '0']);
+  try {
+    const files = ['receipt-a.pdf', 'receipt-b.pdf', 'receipt-a.txt', 'note.pdf'].map(uploadFile);
+    const steps = await uploadExampleChecks(session, sessionId, url.slice(0, url.indexOf('/examples/')), { evaluate, open, sleep }, files);
+    report.accessibility.push(...await axErrors(session, sessionId, [['heading', 'Ticket T-2041'], ['group', 'Attach receipts to ticket T-2041'],
+      ['button', 'Choose files'], ['list', 'Files'], ['button', 'Remove note.pdf'], ['button', 'Upload']], page));
+    return [...steps, ...await pageRules(session, sessionId, page)];
+  } finally {
+    server.kill();
+  }
+}
+
 // The example apps in each theme and at the phone width: the page loads with no error, shows its kit elements with no
 // refusal, has the roles and names, has no horizontal scroll, and its body text has a contrast of 4.5 or more.
 async function appPages(session, sessionId, report) {
@@ -507,6 +534,9 @@ async function main() {
         report.keyboard.push({ page, step: 'Enter and Space press the button', ok: presses === 2, detail: presses });
         if (page === 'tests/browser/rich-text.html') report.keyboard.push(...await richTextKeyboardChecks(session, sessionId, { evaluate, key }, page));
         if (page === 'tests/browser/data-grid.html') report.keyboard.push(...await dataGridKeyboardChecks(session, sessionId, { evaluate, key }, page));
+        if (page === 'tests/browser/upload.html') {
+          report.keyboard.push(...await uploadKeyboardChecks(session, sessionId, { evaluate, key }, page, uploadFile('receipt-a.txt')));
+        }
         if (await evaluate(session, sessionId, 'typeof window.muChartKeys === "function"')) {
           for (const [name, code, expectedPoint] of [['Tab', 9, 0], ['ArrowRight', 39, 1], ['ArrowDown', 40, 2],
             ['ArrowLeft', 37, 1], ['ArrowUp', 38, 0], ['ArrowUp', 38, 5]]) {
@@ -687,6 +717,7 @@ async function main() {
     report.examples.push(...await offlineExample(session, sessionId, base));
     report.examples.push(...await membershipFlow(session, sessionId, base));
     report.examples.push(...await budgetExampleChecks(session, sessionId, base, { evaluate, open, sleep, key }));
+    report.examples.push(...await uploadExample(session, sessionId, report));
     report.examples.push(...await appPages(session, sessionId, report));
     for (const item of report.accessibility) if (!item.ok) report.errors.push(`accessibility: ${item.where}: no ${item.role} named ${item.name}`);
     for (const step of [...report.keyboard, ...report.examples]) if (!step.ok) report.errors.push(`${step.page}: ${step.step}: ${step.detail}`);
@@ -698,6 +729,7 @@ async function main() {
     server.close();
     await sleep(200);
     rmSync(profile, { recursive: true, force: true, maxRetries: 5 });
+    if (uploadFolder) rmSync(uploadFolder, { recursive: true, force: true });
   }
   report.passed = report.errors.length === 0;
   // Exit only after the report is written. A pipe can take less than the full report at one time.
