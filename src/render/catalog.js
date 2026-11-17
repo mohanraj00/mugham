@@ -36,6 +36,13 @@ import richCode from '../../catalog/rich-code.json' with { type: 'json' };
 import richQuote from '../../catalog/rich-quote.json' with { type: 'json' };
 import richSpan from '../../catalog/rich-span.json' with { type: 'json' };
 import richLink from '../../catalog/rich-link.json' with { type: 'json' };
+import dataGrid from '../../catalog/data-grid.json' with { type: 'json' };
+import dataGridColumn from '../../catalog/data-grid-column.json' with { type: 'json' };
+import dataGridRow from '../../catalog/data-grid-row.json' with { type: 'json' };
+import textCell from '../../catalog/text-cell.json' with { type: 'json' };
+import numberCell from '../../catalog/number-cell.json' with { type: 'json' };
+import dateCell from '../../catalog/date-cell.json' with { type: 'json' };
+import choiceCell from '../../catalog/choice-cell.json' with { type: 'json' };
 import upload from '../../catalog/upload.json' with { type: 'json' };
 
 export const CATALOG = Object.freeze(Object.assign(Object.create(null), {
@@ -46,5 +53,7 @@ export const CATALOG = Object.freeze(Object.assign(Object.create(null), {
   chart, 'chart-series': chartSeries,
   'rich-text': richText, 'rich-paragraph': richParagraph, 'rich-heading': richHeading, 'rich-list': richList,
   'rich-code': richCode, 'rich-quote': richQuote, 'rich-span': richSpan, 'rich-link': richLink,
+  'data-grid': dataGrid, 'data-grid-column': dataGridColumn, 'data-grid-row': dataGridRow,
+  'text-cell': textCell, 'number-cell': numberCell, 'date-cell': dateCell, 'choice-cell': choiceCell,
   upload,
 }));

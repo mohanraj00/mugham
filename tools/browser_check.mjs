@@ -10,6 +10,7 @@ import { fileURLToPath } from 'node:url';
 import { guideChecks } from '../tests/browser/guides.mjs';
 import { imageKeyboardChecks } from '../tests/browser/image.js';
 import { richTextKeyboardChecks } from '../tests/browser/rich-text.js';
+import { budgetExampleChecks, dataGridKeyboardChecks } from '../tests/browser/data-grid.js';
 import { UPLOAD_FILES, uploadExampleChecks, uploadKeyboardChecks } from '../tests/browser/upload.js';
 
 export const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
@@ -38,6 +39,8 @@ const PAGES = {
   'tests/browser/image.html': [['button', 'Keyboard target'], ['group', 'Image'], ['button', 'Open image at full size: Two rooms with a door.']],
   'tests/browser/rich-text.html': [['button', 'Keyboard target'], ['heading', 'Tray care'], ['heading', 'Details'], ['button', 'Synthetic rules'],
     ['list', ''], ['listitem', ''], ['blockquote', ''], ['code', '']],
+  'tests/browser/data-grid.html': [['button', 'Keyboard target'], ['group', 'Synthetic budget'], ['grid', 'Synthetic budget'], ['columnheader', 'January'],
+    ['rowheader', 'Rent'], ['gridcell', 'Paid by transfer'], ['gridcell', 'Late Changed']],
   'tests/browser/upload.html': [['button', 'Keyboard target'], ['group', 'Attach a note'], ['group', 'Attach receipts'], ['button', 'Choose files'],
     ['list', 'Files'], ['button', 'Remove pending.pdf'], ['button', 'Upload']],
   'tests/browser/primitives.html': [['button', 'Keyboard target'], ['textbox', 'Shelf code']],
@@ -57,6 +60,8 @@ const EXAMPLES = {
   'examples/image.html': [4, 1, [['group', 'Image'], ['article', 'Synthetic floor plan'], ['article', 'Message from agent-plan']]],
   'examples/rich-text.html': [6, 1, [['list', 'Thread'], ['article', 'Message from Garden helper, Agent'], ['heading', 'Plant out tray B2'],
     ['button', 'synthetic planting guide'], ['article', 'Tray B2']]],
+  'examples/budget.html': [1, 0, [['group', 'Synthetic budget 2027'], ['grid', 'Synthetic budget 2027'], ['columnheader', 'January'], ['rowheader', 'Total'],
+    ['gridcell', '1575']]],
   'examples/primitives.html': [16, 1, [['button', 'Renew'], ['group', 'Loan details'], ['group', 'Reading list'], ['textbox', 'Shelf code']]],
   'examples/loans.html': [9, 0, [['article', 'Field guide to moss'], ['button', 'Renew'], ['list', 'Current loans'], ['form', 'Change a loan']]],
   'examples/citation.html': [3, 1, [['group', 'Citation'], ['button', 'Open source: Synthetic weather notes, page 3'], ['article', 'Message from agent-weather']]],
@@ -214,7 +219,7 @@ export async function pageRules(session, sessionId, where) {
   const unnamed = nodes.filter((node) => !node.ignored && CONTROLS.has(node.role?.value) && !node.name?.value?.trim())
     .map((node) => node.role.value);
   const markup = await evaluate(session, sessionId, `(() => {
-    const ROLES = new Set(['alert', 'article', 'button', 'checkbox', 'dialog', 'form', 'group', 'heading', 'img', 'link', 'list',
+    const ROLES = new Set(['alert', 'article', 'button', 'checkbox', 'dialog', 'form', 'grid', 'group', 'heading', 'img', 'link', 'list',
       'listitem', 'log', 'main', 'navigation', 'none', 'presentation', 'radio', 'radiogroup', 'region', 'status', 'textbox']);
     const VALUES = { 'aria-invalid': ['true', 'false'], 'aria-live': ['off', 'polite', 'assertive'], 'aria-disabled': ['true', 'false'], tabindex: ['-1', '0'] };
     const problems = [];
@@ -528,6 +533,7 @@ async function main() {
         const presses = await evaluate(session, sessionId, 'window.muPresses()');
         report.keyboard.push({ page, step: 'Enter and Space press the button', ok: presses === 2, detail: presses });
         if (page === 'tests/browser/rich-text.html') report.keyboard.push(...await richTextKeyboardChecks(session, sessionId, { evaluate, key }, page));
+        if (page === 'tests/browser/data-grid.html') report.keyboard.push(...await dataGridKeyboardChecks(session, sessionId, { evaluate, key }, page));
         if (page === 'tests/browser/upload.html') {
           report.keyboard.push(...await uploadKeyboardChecks(session, sessionId, { evaluate, key }, page, uploadFile('receipt-a.txt')));
         }
@@ -710,6 +716,7 @@ async function main() {
     report.examples.push(...await threadExample(session, sessionId, report));
     report.examples.push(...await offlineExample(session, sessionId, base));
     report.examples.push(...await membershipFlow(session, sessionId, base));
+    report.examples.push(...await budgetExampleChecks(session, sessionId, base, { evaluate, open, sleep, key }));
     report.examples.push(...await uploadExample(session, sessionId, report));
     report.examples.push(...await appPages(session, sessionId, report));
     for (const item of report.accessibility) if (!item.ok) report.errors.push(`accessibility: ${item.where}: no ${item.role} named ${item.name}`);

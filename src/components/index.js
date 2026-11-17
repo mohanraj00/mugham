@@ -15,6 +15,8 @@ import { MuChart } from './chart.js';
 export { MuChart } from './chart.js';
 import { MuRichText } from './rich-text.js';
 export { MuRichText } from './rich-text.js';
+import { MuDataGrid } from './data-grid.js';
+export { MuDataGrid } from './data-grid.js';
 import { MuUpload } from './upload.js';
 export { MuUpload } from './upload.js';
 
@@ -1032,7 +1034,7 @@ export function define(registry = customElements) {
   for (const [name, element] of [['mu-action-button', MuActionButton], ['mu-card', MuCard],
     ['mu-card-grid', MuCardGrid], ['mu-editable-form', MuEditableForm], ['mu-form-card', MuFormCard], ['mu-citation', MuCitation], ['mu-diff', MuDiff],
     ['mu-excerpt', MuExcerpt], ['mu-table', MuTable], ['mu-status', MuStatus], ['mu-source-status', MuSourceStatus], ['mu-image', MuImage], ['mu-chart', MuChart],
-    ['mu-rich-text', MuRichText], ['mu-upload', MuUpload]]) {
+    ['mu-rich-text', MuRichText], ['mu-data-grid', MuDataGrid], ['mu-upload', MuUpload]]) {
     if (!registry.get(name)) registry.define(name, element);
   }
 }
