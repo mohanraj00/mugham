@@ -1,6 +1,8 @@
 // The frame of each example page: a header with a link back to the index, the group, the name, and the
-// previous and next example. The list in examples.json is the one source of the order and the names.
+// previous and next example. The page also gets the docs panel of examples/docs.js next to the live example.
+// The list in examples.json is the one source of the order, the names and the components of each page.
 import LIST from './examples.json' with { type: 'json' };
+import { panel } from './docs.js';
 
 const ROOT = new URL('.', import.meta.url);
 
@@ -39,4 +41,20 @@ export function frame(url = location.href) {
   return header;
 }
 
-if (typeof document !== 'undefined') document.body.prepend(frame());
+if (typeof document !== 'undefined') {
+  // The style of the docs panel loads first, so the panel never shows with no style.
+  const style = document.createElement('link');
+  style.rel = 'stylesheet';
+  style.href = new URL('frame.css', ROOT).href;
+  await new Promise((done) => {
+    style.addEventListener('load', done);
+    style.addEventListener('error', done);
+    document.head.append(style);
+  });
+  document.body.prepend(frame());
+  const example = EXAMPLES.find((item) => item.path === pathOf(location.href));
+  if (example) {
+    document.body.classList.add('has-docs');
+    (document.querySelector('body > main') ?? document.body.lastElementChild).after(panel(example));
+  }
+}

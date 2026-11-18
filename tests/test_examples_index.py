@@ -26,7 +26,7 @@ class ExamplesIndexTest(unittest.TestCase):
     def test_each_entry_has_a_name_one_sentence_and_a_link(self):
         for group, example in ENTRIES:
             with self.subTest(example=example['name']):
-                self.assertLessEqual(set(example), {'name', 'path', 'text', 'needs'})
+                self.assertLessEqual(set(example), {'name', 'path', 'text', 'needs', 'components'})
                 self.assertRegex(example['name'], r'^[A-Z][A-Za-z ]{2,30}$')
                 self.assertRegex(example['text'], r'^[A-Z].{20,140}\.$')
                 self.assertTrue(file_of(example['path']).is_file(), example['path'])
