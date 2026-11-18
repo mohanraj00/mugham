@@ -12,7 +12,7 @@
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { evaluate, open, pythonServer, sleep, startChrome } from '../../tools/browser_check.mjs';
+import { coverSteps, evaluate, open, pythonServer, sleep, startChrome } from '../../tools/browser_check.mjs';
 
 // Helpers in the page: find kit elements in shadow roots, read the state of an action element, edit a field.
 const HELPERS = `window.mu = {
@@ -173,6 +173,7 @@ async function main() {
       && /^Done: The inspection I-0417 is closed\.Reference: INS-\d{4}$/.test(closed.status), closed);
     thread = await until(`(() => { const t = mu.thread(); return t.text.includes('I-0417 is closed.') ? t : null; })()`);
     step(page, 'the thread shows the closed inspection', thread?.actors.includes('Dispatch System') && thread.refusals.length === 0, thread?.actors);
+    steps.push(...await coverSteps(session, sessionId));
   } catch (error) {
     step('examples/apps/', 'the check runs', false, String(error.message || error));
   } finally {

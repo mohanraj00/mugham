@@ -1,0 +1,29 @@
+/* The docs panel of an example page. examples/frame.js loads this file, so each example page has it,
+   also a page with its own style sheet. The colors and the spaces come from the tokens. */
+.example-docs {
+  padding: var(--mu-space-4) max(var(--mu-space-4), calc(50% - var(--mu-size-page) / 2));
+  background: var(--mu-color-surface); border-block-start: 1px solid var(--mu-color-border-subtle);
+}
+.example-docs > * + * { margin-block-start: var(--mu-space-3); }
+.example-docs h2 { font: var(--mu-type-heading-3); }
+.example-docs details { border: 1px solid var(--mu-color-border-subtle); border-radius: var(--mu-radius-2); padding: 0 var(--mu-space-3); }
+.example-docs details > * + * { margin-block-start: var(--mu-space-2); }
+.example-docs details[open] { padding-block-end: var(--mu-space-3); }
+.example-docs summary { min-height: 2.75rem; display: flex; align-items: center; gap: var(--mu-space-2); cursor: pointer; font-weight: var(--mu-type-weight-strong); }
+.example-docs dt { font-weight: 400; margin-block-start: var(--mu-space-2); }
+.example-docs dd { color: var(--mu-color-text-muted); font: var(--mu-type-caption); overflow-wrap: anywhere; }
+.example-docs pre { max-height: 16rem; overflow: auto; }
+.example-docs ol { padding-inline-start: var(--mu-space-4); display: grid; gap: var(--mu-space-2); }
+@media (min-width: 72rem) {
+  body.has-docs { display: grid; grid-template-columns: minmax(0, 1fr) 24rem; align-content: start; }
+  body.has-docs > header { grid-column: 1 / -1; }
+  body.has-docs > main { grid-column: 1; }
+  body.has-docs > .example-docs {
+    grid-column: 2; padding: var(--mu-space-4); border-block-start: 0; border-inline-start: 1px solid var(--mu-color-border-subtle);
+    position: sticky; inset-block-start: 0; max-height: 100vh; overflow-y: auto;
+  }
+}
+@media (forced-colors: active) {
+  .example-docs, .example-docs details { background: Canvas; border-color: CanvasText; }
+  .example-docs dd { color: CanvasText; }
+}
