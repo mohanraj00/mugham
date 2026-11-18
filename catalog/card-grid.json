@@ -1,72 +1,21 @@
 {
-  "format": 2,
   "name": "card-grid",
-  "version": "0.1.0",
-  "kind": "component",
   "description": "A labeled list of cards with optional Expand all and Collapse all controls.",
-  "ai_content": true,
-  "slots": {
-    "authorship": {
-      "required": true
-    },
-    "citation": {
-      "required": false
-    }
-  },
+  "slots": {"citation": {"required": false}},
   "data": {
-    "label": {
-      "type": "text",
-      "label": "Label",
-      "required": true,
-      "min_length": 1,
-      "max_length": 80
-    },
+    "label": {"type": "text", "required": true, "min_length": 1, "size": "line"},
     "cards": {
       "type": "list",
-      "label": "Cards",
       "required": true,
       "max_items": 100,
-      "items": {
-        "type": "component",
-        "label": "Card",
-        "required": true,
-        "name": "card"
-      }
+      "items": {"type": "component", "label": "Card", "name": "card"}
     },
-    "collapse_controls": {
-      "type": "boolean",
-      "label": "Collapse controls",
-      "required": false
-    }
+    "collapse_controls": {"type": "boolean"}
   },
-  "states": [
-    "default",
-    "empty"
-  ],
+  "states": ["+empty"],
   "tokens": [
-    "space.2",
-    "space.3",
-    "space.4",
-    "size.column-medium",
-    "color.text-muted",
-    "type.caption",
-    "color.text",
-    "color.border",
-    "radius.2",
-    "type.body",
-    "color.focus"
+    "space.2", "space.3", "space.4", "size.column-medium", "color.text-muted", "type.caption", "color.text",
+    "color.border", "radius.2", "type.body", "color.focus"
   ],
-  "accessibility": {
-    "role": "list",
-    "name": {
-      "field": "label"
-    },
-    "keyboard": [
-      "Tab",
-      "Enter",
-      "Space"
-    ],
-    "forced_colors": true,
-    "reduced_motion": true
-  }
+  "accessibility": {"role": "list", "name": {"field": "label"}, "keyboard": ["Tab", "Enter", "Space"]}
 }

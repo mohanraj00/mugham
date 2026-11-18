@@ -1,55 +1,20 @@
 {
-  "format": 2,
   "name": "diff-part",
-  "version": "0.1.0",
-  "kind": "component",
   "description": "One part of a diff: a title and its changes. A person can open and close the part.",
   "ai_content": false,
   "data": {
-    "title": {
-      "type": "text",
-      "label": "Title",
-      "required": true,
-      "min_length": 1,
-      "max_length": 80
-    },
+    "title": {"type": "text", "required": true, "min_length": 1, "size": "line"},
     "changes": {
       "type": "list",
-      "label": "Changes",
       "required": true,
       "max_items": 200,
-      "items": {
-        "type": "component",
-        "label": "Change",
-        "required": true,
-        "name": "diff-change"
-      }
+      "items": {"type": "component", "label": "Change", "name": "diff-change"}
     }
   },
-  "states": [
-    "default",
-    "empty"
-  ],
+  "states": ["+empty"],
   "tokens": [
-    "color.text",
-    "color.text-muted",
-    "color.border",
-    "space.1",
-    "space.2",
-    "type.body",
-    "type.caption",
+    "color.text", "color.text-muted", "color.border", "space.1", "space.2", "type.body", "type.caption",
     "type.weight-strong"
   ],
-  "accessibility": {
-    "role": "group",
-    "name": {
-      "field": "title"
-    },
-    "keyboard": [
-      "Enter",
-      "Space"
-    ],
-    "forced_colors": true,
-    "reduced_motion": true
-  }
+  "accessibility": {"role": "group", "name": {"field": "title"}, "keyboard": ["Enter", "Space"]}
 }

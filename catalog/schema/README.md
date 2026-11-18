@@ -2,17 +2,21 @@
 
 This folder is a level 1 path. It holds the format of a component contract and the format of a fill. The owner merges each change.
 
-- [contract.schema.json](contract.schema.json): the shape of a contract file.
+- [contract.schema.json](contract.schema.json): the shape of a contract in the full form, which is format 2.
+- [short.schema.json](short.schema.json): the shape of a contract in the short form, which is format 3, and the shape of the defaults file.
+- [defaults.json](defaults.json): the defaults of the catalog for the short form.
 - [fill.schema.json](fill.schema.json): the outer shape of a fill. A fill is the data that a model, a service or an application sends for one component.
 - `tools/catalog.py` validates each contract and each fill. The rules below that a JSON schema cannot give are in that tool.
 
+A contract file has the short form or the full form. The short form states only what is special about a component, and a resolver gives its full form. Each rule of the "Contract" section and of the "Fill" section applies to the full form. [Short form](#short-form-format-3) gives the defaults and the override rules.
+
 ## Contract
 
-A contract is one JSON file in `catalog/`, for example `catalog/card.json`. The file name is the component name and `.json`. A contract declares these items:
+A contract is one JSON file in `catalog/`, for example `catalog/card.json`. The file name is the component name and `.json`. The full form of a contract declares these items:
 
 | Key | Content |
 |---|---|
-| `format` | Always `2`. |
+| `format` | `2` in the full form. |
 | `name` | The component name, in lower case with hyphens. |
 | `version` | A version with three numbers, for example `0.1.0`. |
 | `kind` | `primitive` or `component`. |
@@ -74,6 +78,99 @@ A contract with `ai_content` set to `true` must declare the authorship slot with
 4. `min_length` is not more than `max_length`, and `minimum` is not more than `maximum`.
 5. Each component field names a contract in the catalog. A contract cannot contain itself, directly or through other contracts.
 6. If `ai_content` is `true`, the contract declares the authorship slot with `required` set to `true`.
+7. In the short form, each `size` names a size of the defaults file.
+8. In the short form, a list of `states` or `tokens` has the `+` mark on each item or on no item.
+
+## Short form (format 3)
+
+The short form is a second way to write a contract. It omits each value that is equal to a default. A resolver adds the defaults and gives the full form, which is format 2. The registry, the validator, the elements and the tests read only the full form. Thus the short form changes no rule for a fill and no behavior of the kit.
+
+A contract with no `format` key, or with `format` set to `3`, has the short form. A contract with `format` set to `2` has the full form, and it stays valid. Each contract in `catalog/` has the short form. `register` accepts the two forms for an application contract.
+
+The resolvers are `resolve` in `tools/catalog.py` and `resolveContract` in `src/render/resolve.js`. `tests/vectors/short.json` shows that the two give the same full form and the same errors. The full form has the key order of [contract.schema.json](contract.schema.json).
+
+### Defaults of the catalog
+
+[defaults.json](defaults.json) holds the defaults. A short contract needs only `name`, `description` and `data`. These three keys have no default.
+
+| Key | Default | Override |
+|---|---|---|
+| `version` | `0.1.0` | A stated value replaces the default. |
+| `kind` | `component` | A stated value replaces the default. |
+| `ai_content` | `true` | A stated value replaces the default. |
+| `slots` | The `authorship` slot with `required` set to `true`. | Only a contract with `ai_content` set to `true` gets the default slot. A stated slot adds to the default slot. A stated `authorship` slot replaces it. |
+| `states` | `["default"]` | A stated list replaces the default list. If each item has the `+` mark, the items extend the default list. |
+| `tokens` | `["color.text", "color.border", "type.body"]` | The same as `states`. |
+| `accessibility` | The role `none`, no keys, and `forced_colors` and `reduced_motion` set to `true`. | Each stated key replaces the default of that key. |
+
+`"states": ["+expanded", "+collapsed"]` gives `["default", "expanded", "collapsed"]`. `"states": ["default", "empty"]` replaces the default list. A list with the `+` mark on only some items is refused.
+
+### Defaults of a field
+
+- `required` is `false` if a field does not state it. In the `items` of a list, `required` is `true` if the item does not state it.
+- `label` comes from the key if a field does not state it. Each `_` becomes a space, and the first letter becomes a capital letter. The key `date_label` gives the label `Date label`. The `items` of a list use the key of the list.
+- A text field can state `size` in place of `max_length`. If a field states the two, `max_length` wins. An unknown size name is refused.
+
+| `size` | `max_length` |
+|---|---|
+| `short` | 40 |
+| `line` | 80 |
+| `title` | 120 |
+| `summary` | 200 |
+| `long` | 2000 |
+
+### Example
+
+This is a contract in the short form:
+
+```json
+{
+  "name": "seed-tray",
+  "description": "A tray of seedlings with its label and a note about its stage.",
+  "data": {
+    "label": {"type": "text", "required": true, "size": "line"},
+    "stage_note": {"type": "text", "size": "summary"}
+  },
+  "states": ["+empty"]
+}
+```
+
+This is its full form:
+
+```json
+{
+  "format": 2,
+  "name": "seed-tray",
+  "version": "0.1.0",
+  "kind": "component",
+  "description": "A tray of seedlings with its label and a note about its stage.",
+  "ai_content": true,
+  "slots": {"authorship": {"required": true}},
+  "data": {
+    "label": {"type": "text", "label": "Label", "required": true, "max_length": 80},
+    "stage_note": {"type": "text", "label": "Stage note", "required": false, "max_length": 200}
+  },
+  "states": ["default", "empty"],
+  "tokens": ["color.text", "color.border", "type.body"],
+  "accessibility": {"role": "none", "keyboard": [], "forced_colors": true, "reduced_motion": true}
+}
+```
+
+### Upgrade from the full form
+
+1. Remove the `format` key.
+2. Remove `version`, `kind`, `ai_content`, `states` and `tokens` if the value is equal to the default. Remove a slot and an `accessibility` key if it is equal to the default.
+3. If a list of `states` or `tokens` starts with the default list, keep only the other items and put the `+` mark on each of them.
+4. In each field, remove `required` and `label` if the value is equal to the default. Replace `max_length` with `size` if a size has that value.
+5. Run `make check`.
+
+`python3 -B tools/catalog.py --resolved` prints the full form of each catalog contract, one contract on each line. `tests/vectors/resolved.json` holds that output, and a test compares the two key for key. The file started as the exact content of the catalog before the short form. After a change to a contract, write the file again and read its diff:
+
+```sh
+python3 -B tools/catalog.py --resolved > tests/vectors/resolved.json
+```
+
+A test also refuses a catalog file that states a default.
 
 ## Fill
 

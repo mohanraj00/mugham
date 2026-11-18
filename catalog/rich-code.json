@@ -1,40 +1,8 @@
 {
-  "format": 2,
   "name": "rich-code",
-  "version": "0.1.0",
-  "kind": "component",
   "description": "A code block node of rich text. The kit shows the text as text in a fixed-width font and runs nothing.",
-  "ai_content": true,
-  "slots": {
-    "authorship": {
-      "required": true
-    }
-  },
   "data": {
-    "text": {
-      "type": "text",
-      "label": "Code",
-      "required": true,
-      "min_length": 1,
-      "max_length": 10000
-    }
+    "text": {"type": "text", "label": "Code", "required": true, "min_length": 1, "max_length": 10000}
   },
-  "states": [
-    "default"
-  ],
-  "tokens": [
-    "color.text",
-    "color.text-muted",
-    "color.border",
-    "space.1",
-    "space.2",
-    "type.body",
-    "radius.1"
-  ],
-  "accessibility": {
-    "role": "none",
-    "keyboard": [],
-    "forced_colors": true,
-    "reduced_motion": true
-  }
+  "tokens": ["color.text", "color.text-muted", "color.border", "space.1", "space.2", "type.body", "radius.1"]
 }

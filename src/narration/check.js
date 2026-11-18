@@ -1,12 +1,11 @@
 // Compare explicit narration claims with the fill that drives a card. See decision 0005.
-import card from '../../catalog/card.json' with { type: 'json' };
-import fact from '../../catalog/fact.json' with { type: 'json' };
+import { CATALOG } from '../render/catalog.js';
 import { fillErrors } from '../render/validate.js';
 
 export const MAX_NARRATION_LENGTH = 10000;
 export const MAX_ERRORS = 50;
 
-const CONTRACTS = { card, fact };
+const CONTRACTS = { card: CATALOG.card, fact: CATALOG.fact };
 const LABEL = /^[^:\[\]\r\n]+$/u;
 const CLAIM = /^([^:\[\]\r\n]+): ([^\[\]\r\n]+)$/u;
 const result = (checked, errors) => ({

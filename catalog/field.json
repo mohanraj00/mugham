@@ -1,88 +1,25 @@
 {
-  "format": 2,
   "name": "field",
-  "version": "0.1.0",
   "kind": "primitive",
   "description": "A labeled text input. A person edits the value. If the field is typed, the person also gives the type of each edit.",
   "ai_content": false,
   "data": {
-    "name": {
-      "type": "text",
-      "label": "Name",
-      "required": false,
-      "max_length": 40
-    },
-    "label": {
-      "type": "text",
-      "label": "Label",
-      "required": true,
-      "min_length": 1,
-      "max_length": 80
-    },
-    "value": {
-      "type": "text",
-      "label": "Value",
-      "required": false,
-      "max_length": 2000,
-      "editable": true
-    },
-    "hint": {
-      "type": "text",
-      "label": "Hint",
-      "required": false,
-      "max_length": 200
-    },
-    "error": {
-      "type": "text",
-      "label": "Error",
-      "required": false,
-      "max_length": 200
-    },
-    "disabled": {
-      "type": "boolean",
-      "label": "Disabled",
-      "required": false
-    },
-    "typed": {
-      "type": "boolean",
-      "label": "Typed",
-      "required": false
-    }
+    "name": {"type": "text", "size": "short"},
+    "label": {"type": "text", "required": true, "min_length": 1, "size": "line"},
+    "value": {"type": "text", "size": "long", "editable": true},
+    "hint": {"type": "text", "size": "summary"},
+    "error": {"type": "text", "size": "summary"},
+    "disabled": {"type": "boolean"},
+    "typed": {"type": "boolean"}
   },
-  "states": [
-    "default",
-    "disabled",
-    "error"
-  ],
+  "states": ["+disabled", "+error"],
   "tokens": [
-    "color.surface",
-    "color.text",
-    "color.text-muted",
-    "color.border",
-    "color.focus",
-    "color.danger",
-    "space.1",
-    "space.2",
-    "radius.1",
-    "type.body",
-    "type.caption",
-    "motion.fast"
+    "color.surface", "color.text", "color.text-muted", "color.border", "color.focus", "color.danger", "space.1",
+    "space.2", "radius.1", "type.body", "type.caption", "motion.fast"
   ],
   "accessibility": {
     "role": "textbox",
-    "name": {
-      "field": "label"
-    },
-    "keyboard": [
-      "Tab",
-      "Shift+Tab",
-      "ArrowUp",
-      "ArrowDown",
-      "ArrowLeft",
-      "ArrowRight",
-      "Space"
-    ],
-    "forced_colors": true,
-    "reduced_motion": true
+    "name": {"field": "label"},
+    "keyboard": ["Tab", "Shift+Tab", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Space"]
   }
 }

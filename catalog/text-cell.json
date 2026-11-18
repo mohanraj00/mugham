@@ -1,41 +1,8 @@
 {
-  "format": 2,
   "name": "text-cell",
-  "version": "0.1.0",
-  "kind": "component",
   "description": "A cell of a data grid with a text value. A cell with no value is empty.",
-  "ai_content": true,
-  "slots": {
-    "authorship": {
-      "required": true
-    }
-  },
   "data": {
-    "value": {
-      "type": "text",
-      "label": "Value",
-      "required": false,
-      "min_length": 0,
-      "max_length": 500
-    },
-    "read_only": {
-      "type": "boolean",
-      "label": "Read-only",
-      "required": false
-    }
-  },
-  "states": [
-    "default"
-  ],
-  "tokens": [
-    "color.text",
-    "color.border",
-    "type.body"
-  ],
-  "accessibility": {
-    "role": "none",
-    "keyboard": [],
-    "forced_colors": true,
-    "reduced_motion": true
+    "value": {"type": "text", "min_length": 0, "max_length": 500},
+    "read_only": {"type": "boolean", "label": "Read-only"}
   }
 }

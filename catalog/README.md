@@ -1,6 +1,6 @@
 # Component catalog
 
-Each JSON file in this folder is the contract of one component. [schema/README.md](schema/README.md) gives the format.
+Each JSON file in this folder is the contract of one component. Each file has the short form: it states only the values that are not a default of [schema/defaults.json](schema/defaults.json). [schema/README.md](schema/README.md) gives the format, the defaults and the full form.
 
 | Contract | Element | Kind | Content |
 |---|---|---|---|
@@ -89,7 +89,7 @@ register(SEED_TRAY, SeedTray); // Gives 'mu-app-seed-tray'.
 `register(contract, element, elements = customElements)` does these steps:
 
 1. It makes a copy of the contract. A later change to the object of the application has no effect.
-2. It checks the copy with `contractErrors` in `src/render/validate.js`. That validator uses `schema/contract.schema.json` and the rules of `tools/catalog.py`. `tests/vectors/contracts.json` shows that the two give the same errors.
+2. It gets the full form of the copy with `resolveContract` in `src/render/resolve.js`. A contract can have the short form or the full form. Then it checks the full form with `contractErrors` in `src/render/validate.js`. That validator uses `schema/contract.schema.json` and the rules of `tools/catalog.py`. `tests/vectors/contracts.json` shows that the two give the same errors.
 3. It defines the element as `mu-app-<name>`, and it keeps the frozen copy in the registry of `src/render/registry.js`.
 
 The call fails with a `TypeError` and changes nothing in these conditions:

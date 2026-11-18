@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Validate the component contracts and the fills of contract format 2. See catalog/schema/README.md."""
+"""Validate the component contracts and the fills. See catalog/schema/README.md.
+
+A contract file has the short form (format 3) or the full form (format 2). resolve gives the full form of a
+contract. Each other function reads only the full form.
+"""
+import copy
 import datetime
 import json
 import math
@@ -178,7 +183,90 @@ def schema_errors(value, schema, root=None, path='', label='(value)'):
 
 
 CONTRACT_SCHEMA = load_schema('contract.schema.json')
+SHORT_SCHEMA = load_schema('short.schema.json')
 FILL_SCHEMA = load_schema('fill.schema.json')
+DEFAULTS = load_schema('defaults.json')
+# A list item with this mark extends the default list. A list with no mark replaces the default list.
+MARK = '+'
+
+
+def label_of(key):
+    """Return the default label of a field: its key with spaces and a capital first letter."""
+    text = key.replace('_', ' ')
+    return text[:1].upper() + text[1:]
+
+
+def merged_list(stated, default, path, errors):
+    if stated is None:
+        return list(default)
+    marked = [item.startswith(MARK) for item in stated]
+    if stated and all(marked):
+        return list(default) + [item[len(MARK):] for item in stated]
+    if any(marked):
+        errors.append('%s: put the %s mark on each item or on no item' % (path, MARK))
+    return list(stated)
+
+
+def resolved_field(key, field, path, defaults, errors, tier='field'):
+    """Return the full form of a short field. The keys type, label and required come first."""
+    full = {'type': field['type'], 'label': field.get('label', label_of(key)),
+            'required': field.get('required', defaults[tier]['required'])}
+    for name, value in field.items():
+        if name in full:
+            continue
+        if name == 'size':
+            if value not in defaults['sizes']:
+                errors.append('%s.size: no size has the name %s' % (path, value))
+            elif 'max_length' not in field:
+                full['max_length'] = defaults['sizes'][value]
+        elif name == 'items':
+            full['items'] = resolved_field(key, value, path + '.items', defaults, errors, 'item')
+        else:
+            full[name] = value
+    return full
+
+
+def resolve(contract, defaults=None):
+    """Return the full form (format 2) of a contract, and the errors of the short form.
+
+    A contract with no format key, or with the format of the defaults file, has the short form. Each other
+    contract comes back with no change, and contract_errors validates it as the full form. The result of a
+    short contract has the key order of contract.schema.json. Validate the result with contract_errors.
+    """
+    defaults = DEFAULTS if defaults is None else defaults
+    if isinstance(contract, dict) and contract.get('format', defaults['format']) != defaults['format']:
+        return contract, []
+    errors = schema_errors(contract, SHORT_SCHEMA, label='(contract)')
+    if errors:
+        return None, errors
+    base = defaults['contract']
+    values = {**base, **contract, 'format': CONTRACT_SCHEMA['properties']['format']['const']}
+    values['slots'] = {**(base['slots'] if values['ai_content'] else {}), **contract.get('slots', {})}
+    values['data'] = {key: resolved_field(key, field, 'data.' + key, defaults, errors)
+                      for key, field in contract['data'].items()}
+    for key in ('states', 'tokens'):
+        values[key] = merged_list(contract.get(key), base[key], key, errors)
+    access = {**base['accessibility'], **contract.get('accessibility', {})}
+    order = CONTRACT_SCHEMA['properties']['accessibility']['properties']
+    values['accessibility'] = {key: access[key] for key in order if key in access}
+    if errors:
+        return None, errors
+    # The result is a copy, so a change to it does not change the defaults.
+    return copy.deepcopy({key: values[key] for key in CONTRACT_SCHEMA['properties'] if key != 'slots' or values['slots']}), []
+
+
+def defaults_errors(defaults=None):
+    """Return the errors of the defaults file. A contract with only the necessary keys must resolve to a valid contract."""
+    defaults = DEFAULTS if defaults is None else defaults
+    errors = schema_errors(defaults, {'$ref': '#/$defs/defaults'}, SHORT_SCHEMA, label='(defaults)')
+    if errors:
+        return errors
+    for change in ({}, {'ai_content': True}, {'ai_content': False}):
+        full, errors = resolve({'name': 'minimum', 'description': 'The minimum contract.', 'data': {}, **change}, defaults)
+        errors = errors or contract_errors(full)
+        if errors:
+            return errors
+    return []
 
 
 def fields_of(contract):
@@ -341,21 +429,26 @@ def slot_errors(fill, contract, prefix, depth):
 
 
 def load_catalog(folder):
-    """Read each contract file in folder. Return the contracts and the errors."""
+    """Read each contract file in folder. Return the full form of each valid contract, and the errors."""
     folder = Path(folder)
-    contracts, errors = {}, []
+    contracts, errors, named = {}, [], set()
     for path in sorted(folder.glob('*.json')):
         try:
-            contracts[path.name] = parse_json(path.read_text(encoding='utf-8'))
+            contract = parse_json(path.read_text(encoding='utf-8'))
         except (OSError, UnicodeDecodeError, ValueError) as error:
             errors.append('%s: not valid JSON (%s)' % (path.name, error))
+            continue
+        if isinstance(contract, dict) and isinstance(contract.get('name'), str):
+            named.add(contract['name'])
+        full, found = resolve(contract)
+        errors += ['%s: %s' % (path.name, error) for error in found]
+        if not found:
+            contracts[path.name] = full
     # Check the shape of each contract first. The reference check then reads only contracts with a valid shape.
     shaped = {}
     for filename, contract in contracts.items():
         if not contract_errors(contract, filename):
             shaped[contract['name']] = contract
-    named = {contract['name'] for contract in contracts.values()
-             if isinstance(contract, dict) and isinstance(contract.get('name'), str)}
     valid = {}
     for filename, contract in contracts.items():
         found = contract_errors(contract, filename, shaped, named - set(shaped))
@@ -367,8 +460,14 @@ def load_catalog(folder):
 
 def main():
     contracts, errors = load_catalog(ROOT / 'catalog')
+    errors = ['schema/defaults.json: ' + error for error in defaults_errors()] + errors
+    if sys.argv[1:] == ['--resolved']:
+        # The full form of each contract, one line for each. tests/vectors/resolved.json holds this output.
+        lines = ['  %s: %s' % (json.dumps(name), json.dumps(contracts[name])) for name in sorted(contracts)]
+        print('{\n%s\n}' % ',\n'.join(lines))
+        return 1 if errors else 0
     print(json.dumps({'passed': not errors, 'contracts': sorted(contracts), 'errors': errors,
-                      'scope': 'The contract files in catalog/ against contract format 2. No browser result.'},
+                      'scope': 'The contract files in catalog/ against contract formats 2 and 3. No browser result.'},
                      indent=2))
     return 1 if errors else 0
 
