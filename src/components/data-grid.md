@@ -124,4 +124,4 @@ A grid of 50 rows and 12 columns has 600 cells. The grid scrolls inside its own 
 | `error` | The last receipt of a cell has `ok` set to `false`. The cell shows `Not done`. |
 | `refused` | A status notice gives the reason as text. The element keeps no data. |
 
-[examples/budget.html](../../examples/budget.html) shows a synthetic budget with 6 rows, 4 month columns and a total row that the page computes. [tests/browser/data-grid.js](../../tests/browser/data-grid.js) checks each state, each key and each refusal in the four media modes.
+[examples/tables/budget.html](../../examples/tables/budget.html) shows a synthetic budget with 6 rows, 4 month columns and a total row that the page computes. [tests/browser/data-grid.js](../../tests/browser/data-grid.js) checks each state, each key and each refusal in the four media modes.

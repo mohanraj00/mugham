@@ -122,7 +122,7 @@ These are the limits of the call:
 - The element must make its nodes only with `el` and `text` from `src/render/dom.js`. Then a markup string in a text field shows as text. The kit cannot check the code of the element, so the application owns this rule.
 - `tools/catalog.py` checks only the contracts in this folder. The application keeps its own contract files and its own tests.
 
-[examples/register.html](../examples/register.html) registers the synthetic `seed-tray` contract and its element.
+[examples/cards/register.html](../examples/cards/register.html) registers the synthetic `seed-tray` contract and its element.
 
 ## Card collapse
 

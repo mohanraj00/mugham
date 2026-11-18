@@ -8,6 +8,7 @@ import { tmpdir } from 'node:os';
 import { extname, join, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { guideChecks } from '../tests/browser/guides.mjs';
+import { exampleIndexChecks } from '../tests/browser/examples-index.mjs';
 import { imageKeyboardChecks } from '../tests/browser/image.js';
 import { cardKeyboardChecks } from '../tests/browser/card.js';
 import { readMoreKeyboardChecks } from '../tests/browser/read-more.js';
@@ -62,29 +63,29 @@ const PAGES = {
 };
 // Each example page, the number of kit elements, the number of refused elements and the roles and names.
 const EXAMPLES = {
-  'examples/chart.html': [6, 0, [['group', 'Synthetic weekly tickets'], ['group', 'Synthetic weekly visits'], ['group', 'Synthetic weekly tasks'], ['button', 'Show data table']]],
-  'examples/narration.html': [2, 0, [['article', 'Tray A1'], ['heading', 'Matching narration'], ['heading', 'Different narration']]],
-  'examples/table.html': [2, 0, [['table', 'Synthetic plots'], ['columnheader', 'Plot'], ['cell', 'Ready']]],
-  'examples/status.html': [5, 1, [['group', 'Synthetic check A.'], ['group', 'Synthetic check B.'], ['group', 'Synthetic check C.'], ['group', 'Synthetic check D.']]],
-  'examples/image.html': [4, 1, [['group', 'Image'], ['article', 'Synthetic floor plan'], ['article', 'Message from agent-plan']]],
-  'examples/rich-text.html': [6, 1, [['list', 'Thread'], ['article', 'Message from Garden helper, Agent'], ['heading', 'Plant out tray B2'],
+  'examples/media/chart.html': [6, 0, [['group', 'Synthetic weekly tickets'], ['group', 'Synthetic weekly visits'], ['group', 'Synthetic weekly tasks'], ['button', 'Show data table']]],
+  'examples/evidence/narration.html': [2, 0, [['article', 'Tray A1'], ['heading', 'Matching narration'], ['heading', 'Different narration']]],
+  'examples/tables/table.html': [2, 0, [['table', 'Synthetic plots'], ['columnheader', 'Plot'], ['cell', 'Ready']]],
+  'examples/cards/status.html': [5, 1, [['group', 'Synthetic check A.'], ['group', 'Synthetic check B.'], ['group', 'Synthetic check C.'], ['group', 'Synthetic check D.']]],
+  'examples/media/image.html': [4, 1, [['group', 'Image'], ['article', 'Synthetic floor plan'], ['article', 'Message from agent-plan']]],
+  'examples/thread/rich-text.html': [6, 1, [['list', 'Thread'], ['article', 'Message from Garden helper, Agent'], ['heading', 'Plant out tray B2'],
     ['button', 'synthetic planting guide'], ['article', 'Tray B2']]],
-  'examples/budget.html': [1, 0, [['group', 'Synthetic budget 2027'], ['grid', 'Synthetic budget 2027'], ['columnheader', 'January'], ['rowheader', 'Total'],
+  'examples/tables/budget.html': [1, 0, [['group', 'Synthetic budget 2027'], ['grid', 'Synthetic budget 2027'], ['columnheader', 'January'], ['rowheader', 'Total'],
     ['gridcell', '1575']]],
-  'examples/review-queue.html': [1, 0, [['table', 'Open review tasks'], ['columnheader', 'Extracted value'], ['cell', 'R-101'], ['list', 'Tasks to review'], ['button', 'Review R-101']]],
-  'examples/snapshots.html': [1, 0, [['table', 'Collections'], ['columnheader', 'Snapshots'], ['cell', 'Ingredients'], ['list', 'Collections to open'], ['button', 'Open Ingredients']]],
-  'examples/primitives.html': [16, 1, [['button', 'Renew'], ['group', 'Loan details'], ['group', 'Reading list'], ['textbox', 'Shelf code']]],
-  'examples/loans.html': [9, 0, [['article', 'Field guide to moss'], ['button', 'Renew'], ['list', 'Current loans'], ['form', 'Change a loan']]],
-  'examples/citation.html': [3, 1, [['group', 'Citation'], ['button', 'Open source: Synthetic weather notes, page 3'], ['article', 'Message from agent-weather']]],
-  'examples/diff.html': [2, 0, [['group', 'Hall booking B-0042'], ['group', 'Weekly timetable'], ['article', 'Message from Bookings agent']]],
-  'examples/offline.html': [5, 0, [['status', 'Tool library'], ['list', 'Tools'], ['button', 'Go offline']]],
-  'examples/excerpt.html': [2, 1, [['group', 'Source excerpt'], ['button', 'Open source: Synthetic harbor guide, section 2'], ['article', 'Message from agent-reader']]],
-  'examples/provenance.html': [2, 1, [['article', 'Renewal rule for short loans'], ['button', 'Open source: Synthetic library rules, section 4']]],
-  'examples/inputs.html': [6, 0, [['form', 'Loan details'], ['textbox', 'Shelf code'], ['textbox', 'Note'], ['textbox', 'Copies'],
+  'examples/tables/review-queue.html': [1, 0, [['table', 'Open review tasks'], ['columnheader', 'Extracted value'], ['cell', 'R-101'], ['list', 'Tasks to review'], ['button', 'Review R-101']]],
+  'examples/tables/snapshots.html': [1, 0, [['table', 'Collections'], ['columnheader', 'Snapshots'], ['cell', 'Ingredients'], ['list', 'Collections to open'], ['button', 'Open Ingredients']]],
+  'examples/cards/primitives.html': [16, 1, [['button', 'Renew'], ['group', 'Loan details'], ['group', 'Reading list'], ['textbox', 'Shelf code']]],
+  'examples/cards/loans.html': [9, 0, [['article', 'Field guide to moss'], ['button', 'Renew'], ['list', 'Current loans'], ['form', 'Change a loan']]],
+  'examples/evidence/citation.html': [3, 1, [['group', 'Citation'], ['button', 'Open source: Synthetic weather notes, page 3'], ['article', 'Message from agent-weather']]],
+  'examples/evidence/diff.html': [2, 0, [['group', 'Hall booking B-0042'], ['group', 'Weekly timetable'], ['article', 'Message from Bookings agent']]],
+  'examples/cards/offline.html': [5, 0, [['status', 'Tool library'], ['list', 'Tools'], ['button', 'Go offline']]],
+  'examples/evidence/excerpt.html': [2, 1, [['group', 'Source excerpt'], ['button', 'Open source: Synthetic harbor guide, section 2'], ['article', 'Message from agent-reader']]],
+  'examples/evidence/provenance.html': [2, 1, [['article', 'Renewal rule for short loans'], ['button', 'Open source: Synthetic library rules, section 4']]],
+  'examples/forms/inputs.html': [6, 0, [['form', 'Loan details'], ['textbox', 'Shelf code'], ['textbox', 'Note'], ['textbox', 'Copies'],
     ['textbox', 'Due date'], ['group', 'Branch'], ['radio', 'Harbor']]],
-  'examples/membership.html': [2, 0, [['list', 'Thread'], ['article', 'Message from Forms agent, Agent'], ['form', 'Membership form'],
+  'examples/forms/membership.html': [2, 0, [['list', 'Thread'], ['article', 'Message from Forms agent, Agent'], ['form', 'Membership form'],
     ['group', 'Household'], ['button', 'Edit Children: 1'], ['button', 'Send changes']]],
-  'examples/register.html': [4, 1, [['article', 'Tray A1'], ['list', 'Thread'], ['article', 'Message from Garden helper, Agent'], ['article', 'Tray B2']]],
+  'examples/cards/register.html': [4, 1, [['article', 'Tray A1'], ['list', 'Thread'], ['article', 'Message from Garden helper, Agent'], ['article', 'Tray B2']]],
 };
 // Each example app, the kit elements of its first view, and the roles and names that its accessibility tree must have.
 // tools/apps_server.py serves the apps. tests/browser/apps.mjs checks the main flow of each app.
@@ -286,7 +287,7 @@ const threadServer = () => pythonServer('thread_server.py', ['--port', '0', '--n
 // The thread example through server-sent events: two people, two agents, one refused component and
 // one action. The action shows done only after the receipt of the API comes back.
 async function threadExample(session, sessionId, report) {
-  const page = 'examples/thread.html';
+  const page = 'examples/thread/thread.html';
   const steps = [];
   const step = (name, ok, detail) => steps.push({ page, step: name, ok: Boolean(ok), detail: JSON.stringify(detail) });
   const { server, url } = await threadServer();
@@ -340,7 +341,7 @@ async function threadExample(session, sessionId, report) {
 // The offline source example (docs/contracts/data-source.md). Each button changes the network or the source. The
 // status shows each state as text, and the page shows records only for ready or stale. A failed source shows no records.
 async function offlineExample(session, sessionId, base) {
-  const page = 'examples/offline.html';
+  const page = 'examples/cards/offline.html';
   const steps = [];
   await open(session, sessionId, `${base}/${page}`);
   const read = () => evaluate(session, sessionId, `(() => {
@@ -386,7 +387,7 @@ async function offlineExample(session, sessionId, base) {
 // The membership example: a person edits one value in the form card of the thread and sends it. The card shows
 // Pending, then Done only after the receipt, and it shows the new computed value of a read-only field.
 async function membershipFlow(session, sessionId, base) {
-  const page = 'examples/membership.html';
+  const page = 'examples/forms/membership.html';
   const steps = [];
   const step = (name, ok, detail) => steps.push({ page, step: name, ok: Boolean(ok), detail: JSON.stringify(detail) });
   await open(session, sessionId, `${base}/${page}`);
@@ -430,7 +431,7 @@ async function membershipFlow(session, sessionId, base) {
 
 // The upload example against its fixture API, tools/upload_server.py. The API keeps the files in memory only.
 async function uploadExample(session, sessionId, report) {
-  const page = 'examples/upload.html';
+  const page = 'examples/forms/upload.html';
   const { server, url } = await pythonServer('upload_server.py', ['--port', '0']);
   try {
     const files = ['receipt-a.pdf', 'receipt-b.pdf', 'receipt-a.txt', 'note.pdf'].map(uploadFile);
@@ -726,6 +727,8 @@ async function main() {
     const guides = await guideChecks(session, sessionId, base, { evaluate, open, sleep });
     report.examples.push(...guides.steps);
     report.accessibility.push(...guides.accessibility);
+    // The index of the examples and the frame of each example page. tests/browser/examples-index.mjs gives the expected results.
+    report.examples.push(...await exampleIndexChecks(session, sessionId, base, { evaluate, open, sleep, pythonServer }));
     report.examples.push(...await threadExample(session, sessionId, report));
     report.examples.push(...await offlineExample(session, sessionId, base));
     report.examples.push(...await membershipFlow(session, sessionId, base));

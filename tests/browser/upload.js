@@ -51,10 +51,10 @@ export async function uploadKeyboardChecks(session, sessionId, { evaluate, key }
   return results;
 }
 
-// The flow of examples/upload.html against the fixture API tools/upload_server.py. base is the address of that
+// The flow of examples/forms/upload.html against the fixture API tools/upload_server.py. base is the address of that
 // server. files has the paths of receipt-a.pdf, receipt-b.pdf, receipt-a.txt and note.pdf.
 export async function uploadExampleChecks(session, sessionId, base, { evaluate, open, sleep }, files) {
-  const page = 'examples/upload.html';
+  const page = 'examples/forms/upload.html';
   const results = [];
   const check = (name, ok, detail) => results.push({ page, step: name, ok: Boolean(ok), detail: JSON.stringify(detail) });
   const [first, second, text, note] = files;

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Write the README image sequence of examples/thread.html to docs/screenshots/. It starts tools/thread_server.py
+// Write the README image sequence of examples/thread/thread.html to docs/screenshots/. It starts tools/thread_server.py
 // with no delay and renders the example in headless Chrome, with the helpers of tools/browser_check.mjs.
 // It uses only Node.js, Python 3 and Chrome. See decision 0001. All data is synthetic.
 // The images are documentation. tools/build.py does not put them in the package.

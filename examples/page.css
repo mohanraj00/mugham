@@ -7,3 +7,24 @@
 .snap-controls { display: flex; flex-wrap: wrap; align-items: end; gap: var(--mu-space-3); }
 .snap-controls label { display: grid; gap: var(--mu-space-1); }
 .snap-impact { display: grid; gap: var(--mu-space-2); }
+/* The index of the examples and the frame of each example page. */
+.filter { display: grid; gap: var(--mu-space-1); max-inline-size: 24rem; }
+.filter input {
+  min-height: 2.75rem; padding: 0 var(--mu-space-3); background: var(--mu-color-surface);
+  border: 1px solid var(--mu-color-border); border-radius: var(--mu-radius-2);
+}
+.example-groups { display: grid; gap: var(--mu-space-5); }
+.example-list {
+  list-style: none; padding: 0; display: grid; gap: var(--mu-space-3);
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--mu-size-column-medium)), 1fr));
+}
+.example-list li {
+  display: flex; flex-direction: column; gap: var(--mu-space-1); padding: var(--mu-space-3) var(--mu-space-4);
+  background: var(--mu-color-surface); border: 1px solid var(--mu-color-border-subtle); border-radius: var(--mu-radius-2);
+}
+.example-list h3 { font: var(--mu-type-body); font-weight: var(--mu-type-weight-strong); }
+[hidden] { display: none !important; }
+@media (forced-colors: active) {
+  .filter input { background: Field; color: FieldText; border-color: FieldText; }
+  .example-list li { background: Canvas; border-color: CanvasText; }
+}

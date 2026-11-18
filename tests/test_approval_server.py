@@ -94,7 +94,7 @@ class ApprovalServerTest(unittest.TestCase):
         self.assertEqual(self.decisions()[0]['status'], 'open')
 
     def test_the_server_gives_the_example_files_only(self):
-        status, kind, _ = self.call('GET', '/examples/approval.html')
+        status, kind, _ = self.call('GET', '/examples/cards/approval.html')
         self.assertEqual(status, 200)
         self.assertTrue(kind.startswith('text/html'))
         self.assertEqual(self.call('GET', '/events')[0], 404)
