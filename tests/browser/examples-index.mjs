@@ -33,7 +33,8 @@ const FRAME = `(() => {
   if (!header) return null;
   const link = (rel) => { const node = header.querySelector('a[rel="' + rel + '"]'); return node ? { text: node.textContent, href: node.href } : null; };
   return { first: document.body.firstElementChild === header, back: header.querySelector('p a').href, where: header.querySelector('p').textContent,
-    prev: link('prev'), next: link('next'), status: performance.getEntriesByType('navigation')[0].responseStatus };
+    prev: link('prev'), next: link('next'), need: header.querySelector('p.examples-need')?.textContent ?? null,
+    status: performance.getEntriesByType('navigation')[0].responseStatus };
 })()`;
 
 // Open each part of the docs panel, then read it. The keys of each part must be the keys of the contract in the
@@ -108,6 +109,8 @@ export async function exampleIndexChecks(session, sessionId, base, { evaluate, o
     state = await evaluate(session, sessionId, INDEX);
     step(page, 'an empty filter shows each example again', shown(state).length === EXAMPLES.length && state.count === `${EXAMPLES.length} examples`, state.count);
 
+    let marked = 0;
+    let noted = 0;
     for (const [index, example] of EXAMPLES.entries()) {
       const name = serverOf(example);
       if (name && !servers[name]) servers[name] = await pythonServer(name, SERVERS[name]);
@@ -116,10 +119,17 @@ export async function exampleIndexChecks(session, sessionId, base, { evaluate, o
       await open(session, sessionId, `${origin}/${where}`);
       let frame = await evaluate(session, sessionId, FRAME);
       for (let i = 0; i < 100 && frame === null; i += 1) { await sleep(50); frame = await evaluate(session, sessionId, FRAME); }
-      const link = (other, word) => (other ? { text: `${word}: ${other.name}`, href: `${origin}/examples/${other.path}` } : null);
+      // A link to an example with a different fixture API tells the need. The page of such an example tells
+      // how to start its API, because a different server gives the page with no data.
+      const mark = (other) => (other.needs && other.needs !== example.needs ? ' (needs its fixture API)' : '');
+      const link = (other, word) => (other ? { text: `${word}: ${other.name}${mark(other)}`, href: `${origin}/examples/${other.path}` } : null);
+      const need = example.needs
+        ? `This example reads a fixture API. If the page shows no data, run ${example.needs}. Then open the address that the command gives.` : null;
       const expected = { first: true, back: `${origin}/examples/index.html`, where: `All examples / ${example.group} / ${example.name}`,
-        prev: link(EXAMPLES[index - 1], 'Previous'), next: link(EXAMPLES[index + 1], 'Next'), status: 200 };
+        prev: link(EXAMPLES[index - 1], 'Previous'), next: link(EXAMPLES[index + 1], 'Next'), need, status: 200 };
       step(where, 'the link of the index opens the page, and the page has the frame', JSON.stringify(frame) === JSON.stringify(expected), frame);
+      marked += [frame?.prev, frame?.next].filter((item) => item?.text.endsWith(' (needs its fixture API)')).length;
+      if (frame?.need) noted += 1;
 
       // The docs panel. A wide screen shows it next to the example, and a narrow screen shows it below.
       const wide = index === 0 || example.path === 'apps/support/';
@@ -148,6 +158,9 @@ export async function exampleIndexChecks(session, sessionId, base, { evaluate, o
         await session.send('Emulation.clearDeviceMetricsOverride', {}, sessionId);
       }
     }
+    const fixtures = EXAMPLES.filter((example) => example.needs).length;
+    step(page, 'each example with a fixture API tells how to start it, and each link across two servers tells the need',
+      fixtures >= 5 && noted === fixtures && marked >= fixtures, { fixtures, noted, marked });
   } finally {
     for (const { server } of Object.values(servers)) server.kill();
   }

@@ -23,6 +23,20 @@ function link(text, path, rel) {
   return node;
 }
 
+// An example with a fixture API shows its data only on the server of that API. A link to such an example from
+// a page with a different server tells this, and the page of the example tells how to start the API.
+export const NEEDS = ' (needs its fixture API)';
+const label = (word, example, here) => `${word}: ${example.name}${example.needs && example.needs !== here.needs ? NEEDS : ''}`;
+
+function need(example) {
+  const note = document.createElement('p');
+  note.className = 'examples-need';
+  const command = document.createElement('code');
+  command.textContent = example.needs;
+  note.append('This example reads a fixture API. If the page shows no data, run ', command, '. Then open the address that the command gives.');
+  return note;
+}
+
 export function frame(url = location.href) {
   const index = EXAMPLES.findIndex((example) => example.path === pathOf(url));
   const header = document.createElement('header');
@@ -34,9 +48,10 @@ export function frame(url = location.href) {
   if (index >= 0) {
     const nav = document.createElement('nav');
     nav.setAttribute('aria-label', 'Previous and next example');
-    if (index > 0) nav.append(link(`Previous: ${EXAMPLES[index - 1].name}`, EXAMPLES[index - 1].path, 'prev'));
-    if (index < EXAMPLES.length - 1) nav.append(link(`Next: ${EXAMPLES[index + 1].name}`, EXAMPLES[index + 1].path, 'next'));
+    if (index > 0) nav.append(link(label('Previous', EXAMPLES[index - 1], EXAMPLES[index]), EXAMPLES[index - 1].path, 'prev'));
+    if (index < EXAMPLES.length - 1) nav.append(link(label('Next', EXAMPLES[index + 1], EXAMPLES[index]), EXAMPLES[index + 1].path, 'next'));
     header.append(nav);
+    if (EXAMPLES[index].needs) header.append(need(EXAMPLES[index]));
   }
   return header;
 }
