@@ -16,7 +16,7 @@ Start with the [quickstart](#quickstart) or the [guides](docs/guides/README.md).
 
 Agents and LLMs: read [CONSTITUTION.md](CONSTITUTION.md) and [AGENTS.md](AGENTS.md) first.
 
-Status: release `v0.2.1` is the newest. It has the contract format 2, the design tokens, the primitives, the catalog components, the message envelope and the thread for people and agents. The offline data source interface is on the main branch, and it is not released yet. A reader of a local bundle, a cache or a database belongs to the application. The plan is in [docs/STATUS.md](docs/STATUS.md) and in the GitHub milestones.
+Status: release `v0.2.1` is the newest. It has the contract format 2, the design tokens, the primitives, the catalog components, the message envelope and the thread for people and agents. The main branch has more, and it is not released yet: the evidence components, typed form edits, the chat controls, the data grid, rich text, the upload control, the offline data source interface and two examples on a fixture API. A reader of a local bundle, a cache or a database belongs to the application. The plan is in [docs/STATUS.md](docs/STATUS.md) and in the GitHub milestones.
 
 ## Docs
 
@@ -113,6 +113,13 @@ Each component has a contract file in [catalog/](catalog/README.md). The contrac
 | `mu-citation` | The source of a claim: a source name, a locator as text and an open button. | [citation.json](catalog/citation.json) |
 | `mu-diff` | The difference between two versions of a text or a list of fields. Each change shows as added, removed, changed or unchanged in words. A person opens and closes each part. | [diff.json](catalog/diff.json) |
 | `mu-excerpt` | A passage of a source as text with a marked span, the source name, the locator as text and an open button. | [excerpt.json](catalog/excerpt.json) |
+| `mu-table` | A table of text with column headers, rows, optional row status text, keyboard sorting and an empty state. | [table.json](catalog/table.json) |
+| `mu-status` | One state as text: pending, passed, failed or unknown, with a border style for each state. The application or the service gives the state. | [status.json](catalog/status.json) |
+| `mu-image` | An image in a fixed box with a caption and a text alternative. Page code permits the origins. A native dialog shows the full-size view. | [image.json](catalog/image.json) |
+| `mu-chart` | An SVG bar, line or stacked bar chart with keyboard point controls and a table view. | [chart.json](catalog/chart.json) |
+| `mu-rich-text` | Rich text as a tree of typed nodes: paragraphs, headings, lists, code blocks and quotes. A fill is never markup. | [rich-text.json](catalog/rich-text.json) |
+| `mu-data-grid` | An editable grid with column headers, row headers and typed cells. Each saved change goes to the application as one action, and the cell shows a marker until the receipt comes back. | [data-grid.json](catalog/data-grid.json) |
+| `mu-upload` | A control that takes files with a file picker or a drop. Page code binds the tool, the accepted types, the size limit and the file count. Done shows only after the receipt. | [upload.json](catalog/upload.json) |
 | `mu-source-status` | The state of an offline data source as text: ready, stale, empty or error, with the time of the last confirmed read. The application fills it, not a model. | [source-status.json](catalog/source-status.json) |
 
 The first five components are primitives. The other components use them.
@@ -148,6 +155,11 @@ python3 -m http.server 8000
    - `http://localhost:8000/examples/budget.html`: an editable grid with a synthetic budget, a total row that the page computes and a refused amount.
    - `http://localhost:8000/examples/excerpt.html`: an excerpt of a synthetic document in a message, and a refused excerpt.
    - `http://localhost:8000/examples/provenance.html`: a card with the authorship slot and the citation slot, and a refused card.
+   - `http://localhost:8000/examples/table.html`: a table of synthetic plots with keyboard sorting and an empty table.
+   - `http://localhost:8000/examples/status.html`: each state of the status component, and a refused state.
+   - `http://localhost:8000/examples/chart.html`: a bar chart, a line chart and a stacked bar chart of synthetic counts, each with a table view.
+   - `http://localhost:8000/examples/image.html`: a synthetic floor plan in a message and in a card, and a refused image.
+   - `http://localhost:8000/examples/narration.html`: a check that compares the narration of an agent with the values of a card.
    - `http://localhost:8000/examples/offline.html`: an offline data source of a synthetic tool library in each state, offline and online.
    - `http://localhost:8000/examples/snapshots.html`: versioned records on a fixture API. The page lists collections and snapshots, compares two snapshots with a diff and lists the records that the change affects. It only reads.
    - `http://localhost:8000/examples/register.html`: an application contract and element for a synthetic seed tray, a refused fill, and the tray in a thread.
@@ -178,6 +190,14 @@ python3 tools/upload_server.py
 ```
 
    A person attaches synthetic PDF receipts to a ticket. The control refuses a file of a wrong type before a request, and each file shows `Done` only after the receipt of the API.
+
+8. For the approval example, start its fixture API. It prints the URL of the example. The default port is 8766.
+
+```sh
+python3 -B tools/approval_server.py
+```
+
+   A person approves or rejects synthetic decisions as cards with their evidence. The API decides, and each button shows `Done` only after the receipt.
 
 To use the kit in your own page, serve `src/` and `catalog/` from one origin, load `src/tokens/tokens.css`, then import `define` from `src/components/index.js` and call it. [src/README.md](src/README.md) gives the steps.
 
