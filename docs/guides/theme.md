@@ -6,7 +6,7 @@ This guide gives each design token that a page can set, the light and dark theme
 
 Each kit element reads its style from CSS custom properties. `src/tokens/tokens.css` sets them on `:root`. A custom property goes into each shadow root of the page, so an element uses the value of its nearest ancestor that sets it. Thus a page can theme the full page on `:root`, or only one part of the page on a container element.
 
-The kit has no other style input. The shadow root of each element keeps its own rules, and a page style cannot select the nodes in it, except through a `part` name.
+The kit has no other style input. The shadow root of each element keeps its own rules, and a page style cannot select the nodes in it, except through a `part` name. The optional [default page style](#the-default-page-style) styles the page around the elements, and it uses only the tokens.
 
 `tools/tokens.py --write` writes `tokens.css` from `src/tokens/tokens.json`. Do not edit `tokens.css`. To change the kit tokens, change `tokens.json`. A page theme sets the properties in its own style sheet.
 
@@ -17,9 +17,11 @@ Each token has a light value and a dark value. The table gives the CSS property,
 | CSS property | Light | Dark | Use |
 |---|---|---|---|
 | `--mu-color-surface` | `#ffffff` | `#171b21` | The ground of a card, a form, a message and a secondary button. |
+| `--mu-color-page` | `#f7f8fa` | `#0f1217` | The ground of a page in the default page style. |
 | `--mu-color-text` | `#141a23` | `#e6e9ee` | The text on the surface. |
 | `--mu-color-text-muted` | `#566170` | `#9ba5b1` | Captions, labels of facts, the actor type and the state text. |
-| `--mu-color-border` | `#7c8694` | `#6f7986` | The edge of a card, a field and a message. |
+| `--mu-color-border` | `#7c8694` | `#6f7986` | The edge of a control, for example a field or a button. The edge of a card, a form and a message is a lighter mix of this color. |
+| `--mu-color-border-subtle` | `#e0e4ea` | `#2a3038` | A rule of the default page style, for example the line below the page header. It is never the edge of a control. |
 | `--mu-color-accent` | `#1f5fbf` | `#8cb4f5` | The ground of a primary button, and the mark of an agent message. |
 | `--mu-color-on-accent` | `#ffffff` | `#0b1a33` | The text on the accent. |
 | `--mu-color-focus` | `#1f5fbf` | `#8cb4f5` | The focus ring. |
@@ -27,12 +29,16 @@ Each token has a light value and a dark value. The table gives the CSS property,
 | `--mu-type-body` | `400 0.9375rem/1.55` | same | The body text, as a `font` value with the font stack. |
 | `--mu-type-caption` | `400 0.75rem/1.5` | same | Captions and state text, as a `font` value with the font stack. |
 | `--mu-type-weight-strong` | `600` | same | A title and an actor name. |
+| `--mu-type-heading-1`, `--mu-type-heading-2`, `--mu-type-heading-3` | `600 2rem/1.15`, `600 1.5rem/1.25`, `600 1.125rem/1.35` | same | The headings of the default page style, as `font` values with the font stack. |
+| `--mu-type-code` | `400 0.84375rem/1.6` | same | Code in the default page style, as a `font` value with the code font stack. |
 | `--mu-space-1`, `--mu-space-2`, `--mu-space-3`, `--mu-space-4` | `0.25rem`, `0.5rem`, `0.75rem`, `1rem` | same | The gaps and the padding. |
+| `--mu-space-5`, `--mu-space-6` | `1.5rem`, `2rem` | same | The larger spaces of the default page style. |
 | `--mu-radius-1`, `--mu-radius-2` | `0.375rem`, `0.625rem` | same | The corners. |
 | `--mu-motion-fast` | `120ms` | same | The time of a transition. It is `0ms` in reduced motion. |
 | `--mu-size-column-narrow`, `--mu-size-column-medium`, `--mu-size-column-wide` | `12rem`, `16rem`, `22rem` | same | The minimum column width of a grid. |
+| `--mu-size-page` | `64rem` | same | The maximum width of the content in the default page style. |
 
-The font stack of the two type tokens is `Instrument Sans, system-ui, -apple-system, Segoe UI, sans-serif`. The kit loads no font. If the page does not supply Instrument Sans, the browser uses the next font of the stack. [docs/brand/](../brand/README.md) gives the source of each value.
+The font stack of the body, caption and heading tokens is `Instrument Sans, system-ui, -apple-system, Segoe UI, sans-serif`. The font stack of the code token is `Geist Mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace`. The kit loads no font. If the page does not supply the first font of a stack, the browser uses the next font of the stack. [docs/brand/](../brand/README.md) gives the source of each value.
 
 Each contract lists the tokens of its component in its `tokens` key. `tests/test_tokens.py` checks that each of them exists.
 
@@ -50,6 +56,44 @@ Each element uses only the tokens, so the two themes need no other change.
 In forced colors, each element uses system colors: `ButtonText` and `ButtonFace` for a button, `CanvasText` for an edge and the state text, and `Highlight` for the focus ring. The tokens have no effect on these colors. A theme thus cannot make an element unreadable in forced colors.
 
 In reduced motion, `tokens.css` sets `--mu-motion-fast` to `0ms`. Each shadow root also removes each transition and each animation with an `!important` rule. Thus a theme cannot turn motion on again in reduced motion.
+
+## The default page style
+
+`src/styles/page.css` is the default style of a page. It styles only the page around the kit elements: the ground, the width, the page header, the headings, the text, the links, the code, and the plain tables and controls of the page. Each color, each type size and each space comes from a token, so a theme of the tokens also changes the page. The style loads no font and makes no request.
+
+To use the default style, link it after the tokens:
+
+<!-- source: examples/guides/theme.html -->
+```html
+  <link rel="stylesheet" href="../../src/tokens/tokens.css">
+  <link rel="stylesheet" href="../../src/styles/page.css">
+```
+
+The style gives these rules:
+
+| Part of the page | Rule |
+|---|---|
+| `body` | The ground `--mu-color-page`, the text color `--mu-color-text` and the type `--mu-type-body`. |
+| `body > header` | The page header: a bar on the surface color with a line below. Its `h1` is the page name, its `p` is a short muted text, and its `nav` holds links at the end of the bar. |
+| `body > main`, `body > footer` | The content and the footer. They have the same side space as the header, and `--mu-size-page` is their maximum width. |
+| Blocks in `main`, `section`, `article` and `aside` | A block has no margin of its own. It gets `--mu-space-4` from the block before it. A `h2` or a `h3` gets `--mu-space-6` before it. The block after a `h1` gets `--mu-space-3`, and the block after each other heading gets `--mu-space-2`. |
+| `h1` to `h4` | The heading tokens. A `h4` has the body size and the strong weight. |
+| `a` | The accent color, always with an underline. |
+| `code`, `kbd`, `pre` | The code token on the surface color, with a subtle edge. |
+| `table`, `button`, `select` | A plain table has a line below each row. A plain button and a plain select have the control edge `--mu-color-border`, a minimum size of 44 by 44 CSS pixels, and a hover state. |
+| Focus | A ring of 2px in `--mu-color-focus` on each focused control of the page. |
+
+In forced colors, the page uses `Canvas`, `CanvasText`, `LinkText`, `ButtonFace` and `ButtonText`. In reduced motion, the page has no transition. The table gives the ground of the page in each mode, and `tools/browser_check.mjs` checks it on the theme page:
+
+| Mode | Ground of the page |
+|---|---|
+| Light | `#f7f8fa` |
+| Dark | `#0f1217` |
+| Forced colors | `Canvas` |
+
+To use your own page style instead, do not link `page.css`. Link `tokens.css` and your own style sheet. Each kit element needs only the tokens, so it looks the same on your page.
+
+To change only some rules, link your style sheet after `page.css`. The block spacing rules have a specificity of zero, so each rule of your style sheet wins. A container that sets its own `gap` removes the block space of its children with `margin-block-start: 0`, as `examples/apps/app.css` does. Each example page uses the default style, and `examples/page.css` holds only the layout classes of the examples.
 
 ## A second theme
 
@@ -104,6 +148,19 @@ A theme must keep these contrast ratios (WCAG 2.2, 1.4.3 and 1.4.11) in the ligh
 | `--mu-color-danger` | `--mu-color-surface` | 4.5:1 |
 | `--mu-color-border` | `--mu-color-surface` | 3:1 |
 | `--mu-color-focus` | `--mu-color-surface` | 3:1 |
+
+A page with the default page style also has text, links and controls on the page ground. Then a theme must also keep these ratios:
+
+| Front | Back | Minimum |
+|---|---|---|
+| `--mu-color-text` | `--mu-color-page` | 4.5:1 |
+| `--mu-color-text-muted` | `--mu-color-page` | 4.5:1 |
+| `--mu-color-accent` | `--mu-color-page` | 4.5:1 |
+| `--mu-color-danger` | `--mu-color-page` | 4.5:1 |
+| `--mu-color-border` | `--mu-color-page` | 3:1 |
+| `--mu-color-focus` | `--mu-color-page` | 3:1 |
+
+The edge of a card, a form and a message is a mix of `--mu-color-border` at 45% and no color. This edge is not a control, so it has no minimum ratio. The edge of each control uses the full `--mu-color-border`.
 
 Use `#rrggbb` values. Then `tools/tokens.py` can compute each ratio with its `contrast` function. If the ground of the page is not `--mu-color-surface`, check the danger color against that ground too. Each message of the thread sits on the surface, but the thread element has no ground of its own. Its notices of a stream error and of a failed source sit on the ground of the page.
 

@@ -3,7 +3,7 @@
 // and each component part only through the element of its catalog contract.
 import { createReader } from '../envelope/envelope.js';
 import { define as defineComponents } from '../components/index.js';
-import { BASE, el, sheet } from '../render/dom.js';
+import { BASE, EDGE, LIFT, el, sheet } from '../render/dom.js';
 import { registeredTag } from '../render/registry.js';
 import { ReadMore, READ_MORE_CSS, READ_MORE_LABELS, clampErrors } from '../primitives/read-more.js';
 
@@ -40,8 +40,8 @@ const CSS = sheet(`
   :host { display: block; font: var(--mu-type-body); color: var(--mu-color-text); }
   ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--mu-space-3); }
   article {
-    background: var(--mu-color-surface); border: 1px solid var(--mu-color-border); border-radius: var(--mu-radius-2);
-    padding: var(--mu-space-3); display: flex; flex-direction: column; gap: var(--mu-space-2);
+    background: var(--mu-color-surface); border: 1px solid ${EDGE}; border-radius: var(--mu-radius-2);
+    box-shadow: ${LIFT}; padding: var(--mu-space-3); display: flex; flex-direction: column; gap: var(--mu-space-2);
     transition: border-color var(--mu-motion-fast);
   }
   .agent article { border-inline-start: 4px solid var(--mu-color-accent); }

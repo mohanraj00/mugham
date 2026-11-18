@@ -48,7 +48,9 @@ const THEME = `(() => {
   const probe = document.createElement('span');
   document.body.append(probe);
   const system = (value) => { probe.style.color = value; return getComputedStyle(probe).color; };
-  const result = { kit: read('kit'), forest: read('forest'), buttonText: system('ButtonText'), canvasText: system('CanvasText') };
+  const body = getComputedStyle(document.body);
+  const result = { kit: read('kit'), forest: read('forest'), buttonText: system('ButtonText'), canvasText: system('CanvasText'),
+    canvas: system('Canvas'), page: body.backgroundColor, pageText: body.color };
   probe.remove();
   return result;
 })()`;
@@ -58,13 +60,15 @@ const zero = (value) => value.split(',').every((item) => parseFloat(item) === 0)
 const THEME_MODES = {
   light: { features: [{ name: 'prefers-color-scheme', value: 'light' }],
     test: (v) => v.kit.accent === 'rgb(31, 95, 191)' && v.forest.accent === 'rgb(43, 106, 60)'
-      && v.forest.surface === 'rgb(245, 248, 243)' && v.forest.radius === '4px' && v.kit.radius === '10px' && v.forest.focus === '#2b6a3c' },
+      && v.forest.surface === 'rgb(245, 248, 243)' && v.forest.radius === '4px' && v.kit.radius === '10px' && v.forest.focus === '#2b6a3c'
+      && v.page === 'rgb(247, 248, 250)' && v.pageText === 'rgb(20, 26, 35)' },
   dark: { features: [{ name: 'prefers-color-scheme', value: 'dark' }],
     test: (v) => v.kit.accent === 'rgb(140, 180, 245)' && v.forest.accent === 'rgb(140, 207, 157)'
-      && v.forest.surface === 'rgb(17, 26, 20)' && v.forest.focus === '#8ccf9d' },
+      && v.forest.surface === 'rgb(17, 26, 20)' && v.forest.focus === '#8ccf9d'
+      && v.page === 'rgb(15, 18, 23)' && v.pageText === 'rgb(230, 233, 238)' },
   'forced-colors': { features: [{ name: 'forced-colors', value: 'active' }],
     test: (v) => ['kit', 'forest'].every((id) => v[id].color === v.buttonText && v[id].buttonBorder === v.buttonText
-      && v[id].border === v.canvasText && v[id].inputBorder === 'solid') },
+      && v[id].border === v.canvasText && v[id].inputBorder === 'solid') && v.page === v.canvas && v.pageText === v.canvasText },
   'reduced-motion': { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }],
     test: (v) => zero(v.kit.transition) && zero(v.forest.transition) },
 };

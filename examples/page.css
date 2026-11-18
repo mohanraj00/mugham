@@ -1,15 +1,9 @@
-body { margin: 0; padding: var(--mu-space-4); background: var(--mu-color-surface); color: var(--mu-color-text); font: var(--mu-type-body); }
-@media (forced-colors: active) { body { background: Canvas; color: CanvasText; } }
-.decisions { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--mu-space-4); }
-.queue-detail { display: grid; gap: var(--mu-space-4); grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); align-items: start; margin-block: var(--mu-space-4); }
+/* The layout classes of the example pages. src/styles/page.css gives the page style. */
+.decisions, .queue-picks { list-style: none; padding: 0; }
+.decisions { display: grid; gap: var(--mu-space-4); }
+.queue-detail { display: grid; gap: var(--mu-space-4); grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); align-items: start; }
 .queue-actions { display: flex; flex-wrap: wrap; gap: var(--mu-space-3); }
-.queue-picks { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--mu-space-2); }
-.queue-picks button { font: inherit; min-height: 2.75rem; min-width: 2.75rem; padding: 0 var(--mu-space-3); cursor: pointer; background: transparent; color: var(--mu-color-text); border: 1px solid var(--mu-color-border); border-radius: var(--mu-radius-2); }
-.queue-picks button[aria-pressed="true"] { border-color: var(--mu-color-accent); border-width: 2px; }
-@media (forced-colors: active) { .queue-picks button { color: ButtonText; border-color: ButtonText; } }
-.snap-controls { display: flex; flex-wrap: wrap; align-items: end; gap: var(--mu-space-3); margin-block: var(--mu-space-3); }
-.snap-controls label { display: grid; gap: var(--mu-space-1); font: var(--mu-type-caption); }
-.snap-controls select, .snap-controls button { font: var(--mu-type-body); min-height: 2.75rem; padding: 0 var(--mu-space-3); background: transparent; color: var(--mu-color-text); border: 1px solid var(--mu-color-border); border-radius: var(--mu-radius-2); }
-.snap-controls button { cursor: pointer; }
-.snap-impact { margin: 0; padding-inline-start: var(--mu-space-4); display: grid; gap: var(--mu-space-2); }
-@media (forced-colors: active) { .snap-controls select, .snap-controls button { color: ButtonText; border-color: ButtonText; } }
+.queue-picks { display: flex; flex-wrap: wrap; gap: var(--mu-space-2); }
+.snap-controls { display: flex; flex-wrap: wrap; align-items: end; gap: var(--mu-space-3); }
+.snap-controls label { display: grid; gap: var(--mu-space-1); }
+.snap-impact { display: grid; gap: var(--mu-space-2); }

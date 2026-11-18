@@ -13,17 +13,25 @@ BRAND = Path(__file__).resolve().parents[1] / 'docs' / 'brand' / 'tokens.json'
 # Thus it takes border-strong, not the decorative border. The kit danger color is the brand error color.
 COLORS = {'color.surface': 'surface', 'color.text': 'ink', 'color.text-muted': 'ink-muted',
           'color.border': 'border-strong', 'color.accent': 'accent', 'color.on-accent': 'on-accent',
-          'color.focus': 'focus', 'color.danger': 'error'}
+          'color.focus': 'focus', 'color.danger': 'error',
+          # The default page style uses these two. The decorative border is only for a rule, never for a control.
+          'color.page': 'bg', 'color.border-subtle': 'border'}
 LENGTHS = {'space.1': ('spacing', 'space-1'), 'space.2': ('spacing', 'space-2'), 'space.3': ('spacing', 'space-3'),
-           'space.4': ('spacing', 'space-4'), 'radius.1': ('radius', 'radius-sm'), 'radius.2': ('radius', 'radius-md')}
+           'space.4': ('spacing', 'space-4'), 'space.5': ('spacing', 'space-5'), 'space.6': ('spacing', 'space-6'),
+           'radius.1': ('radius', 'radius-sm'), 'radius.2': ('radius', 'radius-md')}
 # A kit type token is "weight size/line-height family". The kit size is in rem, with 16px for each rem.
-TYPES = {'type.body': 'text-body', 'type.caption': 'text-meta'}
+TYPES = {'type.body': 'text-body', 'type.caption': 'text-meta', 'type.heading-1': 'heading-1',
+         'type.heading-2': 'heading-2', 'type.heading-3': 'heading-3', 'type.code': 'code'}
 
 # Text pairs need 4.5:1. Borders and the focus ring need 3:1 (WCAG 2.2, 1.4.3 and 1.4.11).
 PAIRS = [('color.text', 'color.surface', 4.5), ('color.text-muted', 'color.surface', 4.5),
          ('color.on-accent', 'color.accent', 4.5), ('color.accent', 'color.surface', 4.5),
          ('color.danger', 'color.surface', 4.5), ('color.border', 'color.surface', 3.0),
          ('color.focus', 'color.surface', 3.0)]
+# The default page style (src/styles/page.css) puts text, links and controls on the page ground.
+PAGE_PAIRS = [('color.text', 'color.page', 4.5), ('color.text-muted', 'color.page', 4.5),
+              ('color.accent', 'color.page', 4.5), ('color.danger', 'color.page', 4.5),
+              ('color.border', 'color.page', 3.0), ('color.focus', 'color.page', 3.0)]
 
 
 class TokensTest(unittest.TestCase):
@@ -39,8 +47,8 @@ class TokensTest(unittest.TestCase):
 
     def test_contrast(self):
         for theme in ('light', 'dark'):
-            for front, back, minimum in PAIRS:
-                with self.subTest(theme=theme, front=front):
+            for front, back, minimum in PAIRS + PAGE_PAIRS:
+                with self.subTest(theme=theme, front=front, back=back):
                     ratio = tokens.contrast(self.data['tokens'][front][theme], self.data['tokens'][back][theme])
                     self.assertGreaterEqual(ratio, minimum)
 

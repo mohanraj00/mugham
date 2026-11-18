@@ -199,7 +199,7 @@ python3 -B tools/approval_server.py
 
    A person approves or rejects synthetic decisions as cards with their evidence. The API decides, and each button shows `Done` only after the receipt.
 
-To use the kit in your own page, serve `src/` and `catalog/` from one origin, load `src/tokens/tokens.css`, then import `define` from `src/components/index.js` and call it. [src/README.md](src/README.md) gives the steps.
+To use the kit in your own page, serve `src/` and `catalog/` from one origin, load `src/tokens/tokens.css`, then import `define` from `src/components/index.js` and call it. [src/README.md](src/README.md) gives the steps. For a page style with no CSS of your own, also load `src/styles/page.css`. [Theme the kit](docs/guides/theme.md#the-default-page-style) gives its rules.
 
 Each release has the archive `mugham.tar` and its `mugham.tar.sha256` file as release assets. Two builds of the same source give the same bytes. The release publishes no package ([decision 0004](docs/decisions/0004-package.md)).
 

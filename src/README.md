@@ -3,6 +3,7 @@
 - `tokens/tokens.json`: the design tokens. Each token has a light value and a dark value. `tools/tokens.py --write` writes `tokens/tokens.css` from it.
 - `render/validate.js`: the browser validator of a fill and of a contract. It gives the same errors as `tools/catalog.py` for each case in `tests/vectors/fills.json` and `tests/vectors/contracts.json`.
 - `render/dom.js`: the only way the kit makes DOM nodes. Data goes only into text nodes and into a short list of attributes.
+- `styles/page.css`: the default page style. It uses only the tokens. [docs/guides/theme.md](../docs/guides/theme.md#the-default-page-style) gives its rules.
 - `render/catalog.js`: the contracts that the kit knows, in the full form.
 - `render/resolve.js`: the resolver of the short form of a contract. It gives the same full form as `tools/catalog.py` for each case in `tests/vectors/short.json`.
 - `render/registry.js`: the registration call for an application contract and its element. [catalog/README.md](../catalog/README.md#application-contracts) gives the rules.

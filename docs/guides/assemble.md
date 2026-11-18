@@ -20,13 +20,14 @@ The kit imports JSON files as ES modules, and a browser blocks module imports fr
 
 ## Step 1: load the tokens
 
-The page loads `src/tokens/tokens.css` before the kit code. The tokens give the colors, the type, the spaces and the motion of each element. The page has a strict content security policy. The kit needs no inline script and no inline style.
+The page loads `src/tokens/tokens.css` before the kit code, then the default page style `src/styles/page.css`. The tokens give the colors, the type, the spaces and the motion of each element. The page has a strict content security policy. The kit needs no inline script and no inline style.
 
 <!-- source: examples/guides/assemble.html -->
 ```html
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; object-src 'none'; base-uri 'none'">
   <title>Mugham guide: assemble a page</title>
   <link rel="stylesheet" href="../../src/tokens/tokens.css">
+  <link rel="stylesheet" href="../../src/styles/page.css">
   <link rel="stylesheet" href="../page.css">
   <script type="module" src="assemble.js"></script>
 ```

@@ -60,18 +60,22 @@ The kit tokens in `src/tokens/tokens.json` take their values from [tokens.json](
 | Kit token | Brand token |
 | --- | --- |
 | `color.surface` | `surface` |
+| `color.page` | `bg` |
 | `color.text` | `ink` |
 | `color.text-muted` | `ink-muted` |
 | `color.border` | `border-strong`, because a kit border is the edge of a control and needs 3:1 |
+| `color.border-subtle` | `border`, only for a rule of the default page style |
 | `color.accent` | `accent` |
 | `color.on-accent` | `on-accent` |
 | `color.focus` | `focus` |
 | `color.danger` | `error` |
-| `space.1` to `space.4` | `space-1` to `space-4` |
+| `space.1` to `space.6` | `space-1` to `space-6` |
 | `radius.1` | `radius-sm` |
 | `radius.2` | `radius-md` |
 | `type.body` | `text-body` |
 | `type.caption` | `text-meta` |
+| `type.heading-1` to `type.heading-3` | `heading-1` to `heading-3` |
+| `type.code` | `code` |
 
 The kit sizes are in rem, with 16px for each rem. A kit token value cannot have quotes, so the font names in a kit type token have no quotes. A font name with a space is also valid CSS with no quotes. The other brand tokens have no kit token yet. A component that needs one adds it to the kit tokens.
 

@@ -1,6 +1,6 @@
 // A table of text. The application or the service gives each row status.
 import { MuElement } from '../primitives/base.js';
-import { el, sheet } from '../render/dom.js';
+import { EDGE, el, sheet } from '../render/dom.js';
 
 export class MuTable extends MuElement {
   static component = 'table';
@@ -10,7 +10,7 @@ export class MuTable extends MuElement {
     table { border-collapse: collapse; width: 100%; min-width: 24rem; table-layout: fixed; }
     caption { text-align: start; font-weight: var(--mu-type-weight-strong); padding: var(--mu-space-2) var(--mu-space-3); }
     th, td { text-align: start; vertical-align: top; overflow-wrap: anywhere;
-      padding: var(--mu-space-2) var(--mu-space-3); border-bottom: 1px solid var(--mu-color-border); }
+      padding: var(--mu-space-2) var(--mu-space-3); border-bottom: 1px solid ${EDGE}; }
     th { font-weight: var(--mu-type-weight-strong); }
     button { font: inherit; color: inherit; background: transparent; border: 1px solid var(--mu-color-border);
       min-height: 2.75rem; min-width: 2.75rem; padding: var(--mu-space-2); cursor: pointer; overflow-wrap: anywhere; max-width: 100%; }
