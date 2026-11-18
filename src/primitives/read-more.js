@@ -19,6 +19,7 @@ export const READ_MORE_CSS = sheet(`
     text-decoration: underline; text-underline-offset: 0.2em; overflow-wrap: anywhere; cursor: pointer;
   }
   .read-more-toggle[hidden] { display: none; }
+  .read-more-toggle:focus-visible { outline: 2px solid var(--mu-color-focus); outline-offset: 2px; }
   @media (forced-colors: active) {
     .read-more-toggle { color: ButtonText; border: 1px solid ButtonText; background: ButtonFace; }
   }
