@@ -21,7 +21,7 @@ This guide is for a coding agent that builds a UI with the kit. Obey each rule. 
 | Fill a component | The contract in [catalog/](../../catalog/README.md), then [contracts.md](contracts.md) |
 | Know the contract format | [catalog/schema/README.md](../../catalog/schema/README.md) |
 | Bind an action, a confirm step or a form | [catalog/README.md#actions](../../catalog/README.md#actions) |
-| Add a domain component | [catalog/README.md#application-contracts](../../catalog/README.md#application-contracts), then [examples/register.js](../../examples/register.js) |
+| Add a domain component | [catalog/README.md#application-contracts](../../catalog/README.md#application-contracts), then [examples/cards/register.js](../../examples/cards/register.js) |
 | Show a thread or read agent events | [src/thread/README.md](../../src/thread/README.md), then [docs/contracts/envelope.md](../contracts/envelope.md) |
 | Theme the page | [theme.md](theme.md) |
 | Change the kit itself | [AGENTS.md](../../AGENTS.md) and [.agents/skills/component-workflow/SKILL.md](../../.agents/skills/component-workflow/SKILL.md) |

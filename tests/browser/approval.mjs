@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// The browser check of examples/approval.html against the fixture API tools/approval_server.py.
+// The browser check of examples/cards/approval.html against the fixture API tools/approval_server.py.
 // Expected results, from issue #8: the page lists the two open decisions with their evidence. An approve
 // shows pending, then done only after the receipt. A second action on the same decision shows the refusal
 // of the API as an error. The status on the card comes from the API.
@@ -106,7 +106,7 @@ async function main() {
     rmSync(profile, { recursive: true, force: true, maxRetries: 5 });
   }
   for (const problem of problems) step('no page error', false, problem);
-  const report = { passed: steps.every((item) => item.ok), page: 'examples/approval.html', steps };
+  const report = { passed: steps.every((item) => item.ok), page: 'examples/cards/approval.html', steps };
   process.stdout.write(JSON.stringify(report, null, 2) + '\n', () => process.exit(report.passed ? 0 : 1));
 }
 

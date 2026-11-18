@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""A local server for examples/thread.html, with the Python standard library only.
+"""A local server for examples/thread/thread.html, with the Python standard library only.
 
-GET /events streams the synthetic events of examples/thread-events.json as server-sent events.
+GET /events streams the synthetic events of examples/thread/thread-events.json as server-sent events.
 POST /actions is a synthetic API: it decides each request and gives its receipt.
 Other GET paths give the files of src/, catalog/ and examples/ only.
 The server listens on 127.0.0.1 only. All data is synthetic.
@@ -17,7 +17,7 @@ import time
 ROOT = Path(__file__).resolve().parents[1]
 SERVED = ('src', 'catalog', 'examples')
 TYPES = {'.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json', '.css': 'text/css', '.svg': 'image/svg+xml'}
-EVENTS = ROOT / 'examples' / 'thread-events.json'
+EVENTS = ROOT / 'examples' / 'thread' / 'thread-events.json'
 MAX_BODY = 4096
 DEFAULT_PORT = 8765
 # The synthetic API knows one tool and one loan.
@@ -141,7 +141,7 @@ def main(argv=None):
             print('The server cannot use port %d: %s. Choose a different port with the --port option.' % (args.port, error.strerror or error), file=sys.stderr)
             return 1
         server = make_server(0, delay)
-    print('http://127.0.0.1:%d/examples/thread.html' % server.server_address[1], flush=True)
+    print('http://127.0.0.1:%d/examples/thread/thread.html' % server.server_address[1], flush=True)
     try:
         server.serve_forever()
     except KeyboardInterrupt:

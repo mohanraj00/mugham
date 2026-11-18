@@ -117,7 +117,7 @@ class UploadServerTest(unittest.TestCase):
             self.assertNotIn(word, source, word)
 
     def test_the_server_gives_the_example_page_and_no_other_file(self):
-        self.assertEqual(self.call('GET', '/examples/upload.html')[0], 200)
+        self.assertEqual(self.call('GET', '/examples/forms/upload.html')[0], 200)
         self.assertEqual(self.call('GET', '/tools/upload_server.py')[0], 404)
         self.assertEqual(self.call('GET', '/events')[0], 404)
 

@@ -18,4 +18,4 @@ The toggle uses the parts `toggle` and `title`. Its controlled area uses `body`,
 
 The optional grid data key `collapse_controls: true` adds `Expand all` and `Collapse all` buttons above a nonempty list. The controls affect only collapsible cards. They keep focus on the pressed grid button. `Collapse all` skips a card while an action in it needs a receipt or shows a confirm step or a failed receipt. Each card that changes sends its own event. An empty grid keeps its empty text and has no controls.
 
-[examples/loans.html](../../examples/loans.html) shows a collapsible card and a grid with both controls.
+[examples/cards/loans.html](../../examples/cards/loans.html) shows a collapsible card and a grid with both controls.

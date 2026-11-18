@@ -29,7 +29,7 @@ The [guides](docs/guides/README.md) show how to build a page with the kit. A che
 
 ## The thread
 
-These four frames come from [examples/thread.html](examples/thread.html), in order. Two people and two agents talk about a synthetic library loan. If your viewer uses the dark theme, the images show the dark theme.
+These four frames come from [examples/thread/thread.html](examples/thread/thread.html), in order. Two people and two agents talk about a synthetic library loan. If your viewer uses the dark theme, the images show the dark theme.
 
 1. **People and agents.** Robin and Sam are people. The catalog agent answers and fills a declared card. Each message shows the name and the type of its actor, and each agent message has a mark at its left edge. The card shows `Author:` with the agent that filled it.
 
@@ -144,26 +144,26 @@ python3 -m http.server 8000
 
    If port 8000 is in use, the command fails with an error. Choose a different port, for example `python3 -m http.server 8001`, and use that port in the next step.
 
-4. Open an example in the browser. The examples use synthetic data. The URLs below use port 8000.
-   - `http://localhost:8000/examples/primitives.html`: each primitive.
-   - `http://localhost:8000/examples/loans.html`: a card, an action button, a card grid and a form.
-   - `http://localhost:8000/examples/inputs.html`: a form with each input type, and a typed edit of a number and a date.
-   - `http://localhost:8000/examples/membership.html`: a form card with 3 sections and 25 fields in a thread, with read-only fields that the service computes.
-   - `http://localhost:8000/examples/citation.html`: a citation in a message, a citation with no source and a refused citation.
-   - `http://localhost:8000/examples/diff.html`: a diff of two versions of a synthetic hall booking, and a large diff that starts closed.
-   - `http://localhost:8000/examples/rich-text.html`: an agent message with rich text in a thread, markup that shows as text and a refused script address.
-   - `http://localhost:8000/examples/budget.html`: an editable grid with a synthetic budget, a total row that the page computes and a refused amount.
-   - `http://localhost:8000/examples/excerpt.html`: an excerpt of a synthetic document in a message, and a refused excerpt.
-   - `http://localhost:8000/examples/provenance.html`: a card with the authorship slot and the citation slot, and a refused card.
-   - `http://localhost:8000/examples/table.html`: a table of synthetic plots with keyboard sorting and an empty table.
-   - `http://localhost:8000/examples/status.html`: each state of the status component, and a refused state.
-   - `http://localhost:8000/examples/chart.html`: a bar chart, a line chart and a stacked bar chart of synthetic counts, each with a table view.
-   - `http://localhost:8000/examples/image.html`: a synthetic floor plan in a message and in a card, and a refused image.
-   - `http://localhost:8000/examples/narration.html`: a check that compares the narration of an agent with the values of a card.
-   - `http://localhost:8000/examples/offline.html`: an offline data source of a synthetic tool library in each state, offline and online.
-   - `http://localhost:8000/examples/snapshots.html`: versioned records on a fixture API. The page lists collections and snapshots, compares two snapshots with a diff and lists the records that the change affects. It only reads.
-   - `http://localhost:8000/examples/register.html`: an application contract and element for a synthetic seed tray, a refused fill, and the tray in a thread.
-   - `http://localhost:8000/examples/review-queue.html`: a review queue on a fixture API. A reviewer accepts, corrects or rejects an extracted value next to its source excerpt, and the page shows Done only after the receipt.
+4. Open the index page of the examples in the browser: `http://localhost:8000/examples/`. The index lists each example in groups: cards and actions, inputs and forms, tables and grids, evidence, chat thread, media, apps and guides. Type a word to filter the list. Each example page has a link back to the index, and links to the previous example and the next example. Some examples read a fixture API, and this server does not have it. The index and the page of such an example give the command that starts its API. The examples use synthetic data. The URLs below use port 8000. The index links each of these pages:
+   - `http://localhost:8000/examples/cards/primitives.html`: each primitive.
+   - `http://localhost:8000/examples/cards/loans.html`: a card, an action button, a card grid and a form.
+   - `http://localhost:8000/examples/forms/inputs.html`: a form with each input type, and a typed edit of a number and a date.
+   - `http://localhost:8000/examples/forms/membership.html`: a form card with 3 sections and 25 fields in a thread, with read-only fields that the service computes.
+   - `http://localhost:8000/examples/evidence/citation.html`: a citation in a message, a citation with no source and a refused citation.
+   - `http://localhost:8000/examples/evidence/diff.html`: a diff of two versions of a synthetic hall booking, and a large diff that starts closed.
+   - `http://localhost:8000/examples/thread/rich-text.html`: an agent message with rich text in a thread, markup that shows as text and a refused script address.
+   - `http://localhost:8000/examples/tables/budget.html`: an editable grid with a synthetic budget, a total row that the page computes and a refused amount.
+   - `http://localhost:8000/examples/evidence/excerpt.html`: an excerpt of a synthetic document in a message, and a refused excerpt.
+   - `http://localhost:8000/examples/evidence/provenance.html`: a card with the authorship slot and the citation slot, and a refused card.
+   - `http://localhost:8000/examples/tables/table.html`: a table of synthetic plots with keyboard sorting and an empty table.
+   - `http://localhost:8000/examples/cards/status.html`: each state of the status component, and a refused state.
+   - `http://localhost:8000/examples/media/chart.html`: a bar chart, a line chart and a stacked bar chart of synthetic counts, each with a table view.
+   - `http://localhost:8000/examples/media/image.html`: a synthetic floor plan in a message and in a card, and a refused image.
+   - `http://localhost:8000/examples/evidence/narration.html`: a check that compares the narration of an agent with the values of a card.
+   - `http://localhost:8000/examples/cards/offline.html`: an offline data source of a synthetic tool library in each state, offline and online.
+   - `http://localhost:8000/examples/tables/snapshots.html`: versioned records on a fixture API. The page lists collections and snapshots, compares two snapshots with a diff and lists the records that the change affects. It only reads.
+   - `http://localhost:8000/examples/cards/register.html`: an application contract and element for a synthetic seed tray, a refused fill, and the tray in a thread.
+   - `http://localhost:8000/examples/tables/review-queue.html`: a review queue on a fixture API. A reviewer accepts, corrects or rejects an extracted value next to its source excerpt, and the page shows Done only after the receipt.
 
 5. For the thread example, stop the static server and start the example server. It streams synthetic agent events as server-sent events and gives the receipt of each action:
 

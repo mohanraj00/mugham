@@ -2,7 +2,7 @@
 // These assertions were written before the implementation ran.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import example from '../examples/narration.json' with { type: 'json' };
+import example from '../examples/evidence/narration.json' with { type: 'json' };
 import { checkNarration, MAX_NARRATION_LENGTH, MAX_ERRORS } from '../src/narration/check.js';
 
 const fill = example.fill;

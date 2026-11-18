@@ -12,4 +12,4 @@ Tab moves to one point in the chart. ArrowRight and ArrowDown move to the next p
 
 All labels and author names stay text. An SVG node uses `document.createElementNS`. Its attributes have fixed names. Coordinates must be finite numbers. No fill can send markup, styles or code. The chart uses theme tokens and supports light, dark, forced colors and reduced motion.
 
-[The example](../examples/chart.html) shows each type with synthetic data.
+[The example](../examples/media/chart.html) shows each type with synthetic data.

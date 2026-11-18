@@ -2,7 +2,7 @@
 
 An application can show data that it holds on the device. An application module, the source, gives the data. This contract is the interface between the source and the kit. The kit has no reader and no storage engine. The reader of a local bundle, a cache or a database belongs to the application.
 
-The kit side is `src/offline/source.js`. The tests are `tests/source.test.mjs` and the browser checks of `examples/offline.html`.
+The kit side is `src/offline/source.js`. The tests are `tests/source.test.mjs` and the browser checks of `examples/cards/offline.html`.
 
 ## The source
 

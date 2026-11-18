@@ -20,4 +20,4 @@ text.fill = { component: 'text', version: '0.1.0', data: { text: passage, clamp:
 
 For plain text parts of `mu-thread`, page code sets `thread.clamp` to an integer from 1 to 20. `null` is the default and shows full text. An invalid value throws `TypeError`. This policy applies to current and future plain text parts, with no change to the envelope or events. Set the same two label attributes on the thread. A text delta updates the same text and button, so the open choice and focus stay. A component part uses its own fill and label attributes.
 
-[The excerpt example](../../examples/excerpt.html) has a long synthetic passage with this control.
+[The excerpt example](../../examples/evidence/excerpt.html) has a long synthetic passage with this control.

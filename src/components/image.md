@@ -57,7 +57,7 @@ The state stays `default` while the dialog is open.
 Page code can create `MuImage` directly or use `document.createElement('mu-image')` after `define()`.
 The thread accepts an image part and binds its envelope actor. To place an image in the current card,
 page code uses the card's page-owned `actions` slot. The fill does not create that child.
-[examples/image.html](../../examples/image.html) shows a message and a card with a small SVG written by hand.
+[examples/media/image.html](../../examples/media/image.html) shows a message and a card with a small SVG written by hand.
 
 The image adds only `aria-hidden` to the attribute list of `src/render/dom.js`. The canvas needs it.
 The other image attributes use DOM properties. [tests/browser/image.js](../../tests/browser/image.js) checks
