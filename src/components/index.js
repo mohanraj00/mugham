@@ -1,5 +1,6 @@
 // The catalog components: card, action button, editable form, form card, card grid, citation and excerpt.
 import { MuElement } from '../primitives/base.js';
+import { ReadMoreElement, READ_MORE_CSS } from '../primitives/read-more.js';
 import { define as definePrimitives, FIELDS } from '../primitives/index.js';
 import { ActionState } from '../actions/action.js';
 import { el, sheet } from '../render/dom.js';
@@ -949,9 +950,9 @@ export class MuCitation extends MuElement {
 // A passage of a source document with a marked span (catalog/excerpt.json). The passage is document text, so it
 // shows only as text nodes. The span starts at span_start and stops before span_end. Both count code points, the
 // same as each text limit of the kit. The source and the locator come from the required citation slot.
-export class MuExcerpt extends MuElement {
+export class MuExcerpt extends ReadMoreElement {
   static component = 'excerpt';
-  static styles = [sheet(`
+  static styles = [READ_MORE_CSS, sheet(`
     :host { display: block; }
     figure {
       margin: 0; color: var(--mu-color-text); font: var(--mu-type-body); padding: var(--mu-space-2) var(--mu-space-3);
@@ -1002,7 +1003,8 @@ export class MuExcerpt extends MuElement {
       el('mark', { part: 'mark' }, span), points.slice(data.span_end).join(''));
     // The span shows again as text, so that the mark does not depend on its style only.
     const marked = el('p', { class: 'span muted', part: 'span' }, `Marked text: ${span}`);
-    return [el('figure', { role: 'group', 'aria-label': 'Source excerpt', part: 'excerpt' }, passage, marked, provenance(this.fill.slots))];
+    return [el('figure', { role: 'group', 'aria-label': 'Source excerpt', part: 'excerpt' },
+      ...this.readMore(passage, data.clamp), marked, provenance(this.fill.slots))];
   }
 }
 

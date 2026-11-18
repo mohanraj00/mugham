@@ -21,6 +21,13 @@
         "strong",
         "caption"
       ]
+    },
+    "clamp": {
+      "type": "integer",
+      "label": "Initial lines",
+      "required": false,
+      "minimum": 1,
+      "maximum": 20
     }
   },
   "states": [
@@ -32,11 +39,19 @@
     "color.text-muted",
     "type.body",
     "type.caption",
-    "type.weight-strong"
+    "type.weight-strong",
+    "color.accent",
+    "color.focus",
+    "space.1"
   ],
   "accessibility": {
     "role": "none",
-    "keyboard": [],
+    "keyboard": [
+      "Tab",
+      "Shift+Tab",
+      "Enter",
+      "Space"
+    ],
     "forced_colors": true,
     "reduced_motion": true
   }

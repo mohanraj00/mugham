@@ -1,5 +1,6 @@
 // The primitives: text, button, the fields of src/primitives/fields.js, stack and grid. Each one has a contract in catalog/.
 import { MuElement } from './base.js';
+import { ReadMoreElement, READ_MORE_CSS } from './read-more.js';
 import { el, sheet } from '../render/dom.js';
 import { FIELDS } from './fields.js';
 
@@ -8,9 +9,9 @@ export { FieldElement, FIELDS, MuChoiceField, MuDateField, MuField, MuLongTextFi
 const GAPS = { small: 'var(--mu-space-1)', medium: 'var(--mu-space-2)', large: 'var(--mu-space-4)' };
 const COLUMNS = { narrow: 'var(--mu-size-column-narrow)', medium: 'var(--mu-size-column-medium)', wide: 'var(--mu-size-column-wide)' };
 
-export class MuText extends MuElement {
+export class MuText extends ReadMoreElement {
   static component = 'text';
-  static styles = [sheet(`
+  static styles = [READ_MORE_CSS, sheet(`
     :host { display: inline; color: var(--mu-color-text); font: var(--mu-type-body); }
     .strong { font-weight: var(--mu-type-weight-strong); }
     .caption { font: var(--mu-type-caption); color: var(--mu-color-text-muted); }
@@ -22,7 +23,7 @@ export class MuText extends MuElement {
   }
 
   render(data) {
-    return [el('span', { part: 'text', class: data.variant ?? 'body' }, data.text)];
+    return this.readMore(el('span', { part: 'text', class: data.variant ?? 'body' }, data.text), data.clamp);
   }
 }
 

@@ -24,6 +24,9 @@ await thread.read(events);
 | `perform` | Optional. An async function `(request, message)` that sends the request to the API of the application and gives its receipt. The request of an upload also has `file`, and `perform` sends that file. If it is not set, the `mu-action` event or the `mu-upload` event goes up to the page, and the page calls `receipt()` of the element. |
 | `messages` | A copy of the envelopes, in the order of the thread. |
 | `state` | `idle`, `reading`, `ended` or `failed`. The element also sets `data-state` to this value. |
+| `clamp` | Optional page policy for plain text parts. `null` shows full text. An integer from 1 to 20 adds a visual line limit and a Read more button. |
+
+[Read more](../components/read-more.md) gives the labels, the keyboard rules and the resize rules. The page can set `read-more-label` and `read-less-label` attributes on the thread. A fill cannot set these labels. A text delta keeps the same button, focus and open state.
 
 The transport is the application's. The thread defines no transport and parses no text.
 

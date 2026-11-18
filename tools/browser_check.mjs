@@ -10,6 +10,7 @@ import { fileURLToPath } from 'node:url';
 import { guideChecks } from '../tests/browser/guides.mjs';
 import { imageKeyboardChecks } from '../tests/browser/image.js';
 import { cardKeyboardChecks } from '../tests/browser/card.js';
+import { readMoreKeyboardChecks } from '../tests/browser/read-more.js';
 import { richTextKeyboardChecks } from '../tests/browser/rich-text.js';
 import { budgetExampleChecks, dataGridKeyboardChecks } from '../tests/browser/data-grid.js';
 import { reviewQueueChecks } from '../tests/browser/review-queue.js';
@@ -36,6 +37,9 @@ const MODES = {
 };
 // Each check page, and the roles and names that its accessibility tree must have in light mode.
 const PAGES = {
+  'tests/browser/read-more.html': [['button', 'Keyboard target'], ['button', 'Read more'],
+    ['StaticText', 'Synthetic notes describe the east path and the small gate. '.repeat(16)
+      + 'Last searchable sentence. Search target rich-text.']],
   'tests/browser/card.html': [['button', 'Keyboard target'], ['article', 'Keyboard card'], ['button', 'Collapse Keyboard card'],
     ['button', 'Expand all'], ['button', 'Collapse all']],
   'tests/browser/chart.html': [['button', 'Keyboard target'], ['group', 'Weekly tickets'], ['image', 'Received, Week 1: 12 tickets'], ['table', 'Weekly tickets'], ['columnheader', 'Received'], ['cell', '12 tickets']],
@@ -528,6 +532,7 @@ async function main() {
         for (const item of report.pages[page][mode]) if (!item.ok) report.errors.push(`${page} ${mode}: ${item.name}: ${item.detail}`);
         if (page === 'tests/browser/image.html' && checks) report.keyboard.push(...await imageKeyboardChecks(session, sessionId, { evaluate, key, axErrors }, page));
         if (page === 'tests/browser/card.html' && checks) report.keyboard.push(...await cardKeyboardChecks(session, sessionId, { evaluate, key }, page));
+        if (page === 'tests/browser/read-more.html' && checks) report.keyboard.push(...await readMoreKeyboardChecks(session, sessionId, { evaluate, key }, page));
         if (mode !== 'light' || !checks) continue;
         report.accessibility.push(...await axErrors(session, sessionId, expected, page));
         report.examples.push(...await pageRules(session, sessionId, page));

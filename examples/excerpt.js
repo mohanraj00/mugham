@@ -7,6 +7,9 @@ define();
 const AGENT = { type: 'agent', id: 'agent-reader' };
 const SOURCE = { source: 'Synthetic harbor guide, section 2', locator: 'https://example.org/guides/harbor#section-2' };
 const PASSAGE = 'Small boats can moor at the east pier from April to October. The pier closes at dusk.';
+const LONG_PASSAGE = PASSAGE + ' The east path leads to a small gate. Keep the gate clear. Check the tide before each trip.'
+  + ' The north steps lead to a dry store. A notice beside the door gives the depth at the pier.'
+  + ' The west path leads to a wide gate. The guide has a map of both paths and each safe exit.';
 
 function text(tag, words) {
   const node = document.createElement(tag);
@@ -30,7 +33,7 @@ function message(words, ...parts) {
 }
 
 document.getElementById('main').append(
-  message('Mooring season: April to October.', excerpt({ passage: PASSAGE, span_start: 43, span_end: 59 })),
+  message('Mooring season: April to October.', excerpt({ passage: LONG_PASSAGE, span_start: 43, span_end: 59, clamp: 2 })),
   text('p', 'An excerpt with a span that goes past the end of the passage (the kit refuses it):'),
   excerpt({ passage: PASSAGE, span_start: 61, span_end: 120 }),
 );

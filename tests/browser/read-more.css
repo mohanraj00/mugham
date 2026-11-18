@@ -1,0 +1,3 @@
+/* The resize target uses the viewport width minus the two 8px body margins. */
+body { margin: 8px; }
+main, #stage { width: 100%; min-width: 0; }

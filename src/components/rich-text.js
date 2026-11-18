@@ -1,7 +1,7 @@
 // Rich text as a tree of typed nodes (catalog/rich-text.json). A fill gives data only. The kit makes each
 // element from the fixed tables below, and each text goes into a text node. Page code owns the link
 // schemes and the first heading level. src/components/rich-text.md gives the rules.
-import { MuElement } from '../primitives/base.js';
+import { ReadMoreElement, READ_MORE_CSS } from '../primitives/read-more.js';
 import { el, sheet, text } from '../render/dom.js';
 
 // The schemes that page code can permit. No other scheme can open.
@@ -46,9 +46,9 @@ function* runs(blocks) {
   }
 }
 
-export class MuRichText extends MuElement {
+export class MuRichText extends ReadMoreElement {
   static component = 'rich-text';
-  static styles = [sheet(`
+  static styles = [READ_MORE_CSS, sheet(`
     :host { display: block; min-width: 0; }
     .rich {
       color: var(--mu-color-text); font: var(--mu-type-body); overflow-wrap: anywhere;
@@ -130,11 +130,13 @@ export class MuRichText extends MuElement {
   }
 
   connectedCallback() {
+    super.connectedCallback();
     connected.add(this);
     this.#refresh();
   }
 
   disconnectedCallback() {
+    super.disconnectedCallback();
     connected.delete(this);
   }
 
@@ -175,8 +177,14 @@ export class MuRichText extends MuElement {
     const name = author.name ? ` (${author.name})` : '';
     const blocks = data.blocks.length ? data.blocks.map((block) => this.#block(block))
       : [el('p', { class: 'muted', part: 'empty' }, 'No text.')];
-    return [el('div', { class: 'rich', part: 'rich-text' }, ...blocks,
-      el('p', { class: 'muted', part: 'authorship' }, `Author: ${author.type} ${author.id}${name}`))];
+    const authorText = el('p', { class: 'muted', part: 'authorship' }, `Author: ${author.type} ${author.id}${name}`);
+    const content = el('div', { class: 'rich', part: 'rich-text' }, ...blocks);
+    if (data.clamp === undefined) {
+      this.readMore(content);
+      content.append(authorText);
+      return [content];
+    }
+    return [el('div', { class: 'rich' }, ...this.readMore(content, data.clamp), authorText)];
   }
 
   // The validator accepts only the five block types and the two inline types. Each element name here is fixed.
