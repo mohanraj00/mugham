@@ -4,6 +4,10 @@ Each release has an entry. The newest entry is first.
 
 ## Unreleased
 
+## 0.3.0, 2026-11-18
+
+Upgrade from 0.2: an application that uses 0.2.1 needs no code change. The changes are new components and new optional keys, and the contract format stays `2`. A form with `typed` names in its binding asks for the edit type and sends an `edits` list. A form with no `typed` names works as before.
+
 - The README lists each catalog component and each example page of the main branch, and `docs/STATUS.md` records the v0.3 scope as complete and not released.
 - A snapshot compare example (#13) in `examples/snapshots.html`, on a fixture API, `examples/snapshots-api.js`, with synthetic versioned records. The page lists the collections and the snapshots in `mu-table`, shows the compare result of two snapshots with `mu-diff` and lists the records that the change affects. The example only reads, and the fixture API is the source of each result. The kit has no knowledge panel. A versioned store builds its own dashboard from the example. `tests/browser/snapshots.js` runs the flow in `make check` and proves that the page sends no action.
 - A review queue example (#10) in `examples/review-queue.html`, on a fixture API, `examples/review-queue-api.js`, with synthetic tasks. The page lists the open tasks in `mu-table` and shows the source excerpt next to the extracted value. A reviewer accepts, rejects or corrects the value. A correction uses the typed edits of the form, and `mu-diff` shows the old value and the new value. The fixture API decides and gives the receipt, and the page shows `Done` only after it. The kit has no review panel. A service builds its own dashboard from the example. `tests/browser/review-queue.js` runs the flow in `make check`.
