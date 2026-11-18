@@ -3,7 +3,7 @@ import { MuElement } from '../primitives/base.js';
 import { ReadMoreElement, READ_MORE_CSS } from '../primitives/read-more.js';
 import { define as definePrimitives, FIELDS } from '../primitives/index.js';
 import { ActionState } from '../actions/action.js';
-import { el, sheet } from '../render/dom.js';
+import { EDGE, LIFT, el, sheet } from '../render/dom.js';
 import { fillErrors } from '../render/validate.js';
 import { CONTRACTS } from '../render/registry.js';
 import { MuTable } from './table.js';
@@ -41,8 +41,8 @@ const CARD_CSS = sheet(`
   :host { display: block; }
   article, form {
     background: var(--mu-color-surface); color: var(--mu-color-text); font: var(--mu-type-body);
-    border: 1px solid var(--mu-color-border); border-radius: var(--mu-radius-2); padding: var(--mu-space-4);
-    display: flex; flex-direction: column; gap: var(--mu-space-2); height: 100%;
+    border: 1px solid ${EDGE}; border-radius: var(--mu-radius-2); padding: var(--mu-space-4);
+    box-shadow: ${LIFT}; display: flex; flex-direction: column; gap: var(--mu-space-2); height: 100%;
   }
   .title { font-weight: var(--mu-type-weight-strong); margin: 0; }
   .muted, dt { font: var(--mu-type-caption); color: var(--mu-color-text-muted); }
@@ -585,7 +585,7 @@ export class MuFormCard extends ActionElement {
     :host { display: block; container-type: inline-size; }
     form { gap: var(--mu-space-3); }
     .section { display: flex; flex-direction: column; gap: var(--mu-space-2);
-      border-top: 1px solid var(--mu-color-border); padding-top: var(--mu-space-3); }
+      border-top: 1px solid ${EDGE}; padding-top: var(--mu-space-3); }
     .section-title { margin: 0; font-weight: var(--mu-type-weight-strong); }
     .lines { display: flex; flex-direction: column; gap: var(--mu-space-3); }
     .line { display: grid; grid-template-columns: minmax(6rem, 1fr) 2fr; gap: var(--mu-space-1) var(--mu-space-3); align-items: start; }
@@ -1068,13 +1068,13 @@ export class MuDiff extends MuElement {
     :host { display: block; }
     .diff {
       color: var(--mu-color-text); font: var(--mu-type-body); padding: var(--mu-space-2) var(--mu-space-3);
-      border: 1px solid var(--mu-color-border); border-radius: var(--mu-radius-2);
+      border: 1px solid ${EDGE}; border-radius: var(--mu-radius-2);
       display: flex; flex-direction: column; gap: var(--mu-space-2);
     }
     p { margin: 0; overflow-wrap: anywhere; }
     .title { font-weight: var(--mu-type-weight-strong); }
     .muted { font: var(--mu-type-caption); color: var(--mu-color-text-muted); }
-    details { border-block-start: 1px solid var(--mu-color-border); padding-block-start: var(--mu-space-2); }
+    details { border-block-start: 1px solid ${EDGE}; padding-block-start: var(--mu-space-2); }
     summary { cursor: pointer; min-height: 2.75rem; display: flex; flex-wrap: wrap; align-items: center; gap: var(--mu-space-1) var(--mu-space-2); }
     summary .name { font-weight: var(--mu-type-weight-strong); }
     ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--mu-space-2); }

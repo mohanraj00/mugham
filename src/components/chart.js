@@ -1,6 +1,6 @@
 // SVG charts use fixed shapes and numeric coordinates. Each label stays text.
 import { MuElement } from '../primitives/base.js';
-import { el, sheet, text } from '../render/dom.js';
+import { EDGE, el, sheet, text } from '../render/dom.js';
 import { MuTable } from './table.js';
 
 const SERIES = ['series-1', 'series-2', 'series-3', 'series-4', 'series-5', 'series-6'];
@@ -46,7 +46,7 @@ export class MuChart extends MuElement {
   static styles = [sheet(`
     :host { display: block; min-width: 0; }
     figure { margin: 0; padding: var(--mu-space-3); color: var(--mu-color-text);
-      background: var(--mu-color-surface); font: var(--mu-type-body); border: 1px solid var(--mu-color-border); }
+      background: var(--mu-color-surface); font: var(--mu-type-body); border: 1px solid ${EDGE}; }
     h3 { margin: 0; font: inherit; font-weight: var(--mu-type-weight-strong); }
     p { margin: var(--mu-space-2) 0; }
     h3, p, li { overflow-wrap: anywhere; }

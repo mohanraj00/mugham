@@ -28,6 +28,12 @@ export function sheet(css) {
   return result;
 }
 
+// The edge and the small shadow of a container that is not a control: a card, a form or a message. They come
+// from the border token, so each theme and each contract that declares color.border has them. A control keeps
+// the full border color, because its edge needs a contrast of 3:1. Forced colors replaces the two.
+export const EDGE = 'color-mix(in srgb, var(--mu-color-border) 45%, transparent)';
+export const LIFT = '0 1px 2px color-mix(in srgb, var(--mu-color-border) 25%, transparent)';
+
 // Shared rules for each primitive: the focus ring, forced colors and reduced motion.
 export const BASE = sheet(`
   :host { box-sizing: border-box; }

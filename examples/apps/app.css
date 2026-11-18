@@ -1,11 +1,7 @@
-/* The layout of the example apps. The colors and the type come from the tokens of the kit. */
-*, *::before, *::after { box-sizing: border-box; }
-body { margin: 0; background: var(--mu-color-surface); color: var(--mu-color-text); font: var(--mu-type-body); }
-h1, h2, p { margin: 0; }
-h1 { font-size: 1.25rem; }
-h2 { font-size: 1.05rem; }
-a { color: var(--mu-color-accent); }
-:focus-visible { outline: 2px solid var(--mu-color-focus); outline-offset: 2px; }
+/* The layout of the example apps. src/styles/page.css gives the page style. */
+.pane h2, .apps h2 { font: var(--mu-type-heading-3); }
+/* These containers set their own gap, so they remove the block space of the page style. */
+.layout > *, .phone > *, .pane > * { margin-block-start: 0; }
 
 .bar {
   display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between;
@@ -44,7 +40,6 @@ a { color: var(--mu-color-accent); }
   display: flex; flex-direction: column; gap: var(--mu-space-2); }
 
 @media (forced-colors: active) {
-  body { background: Canvas; color: CanvasText; }
   .bar, .detail, .apps li { border-color: CanvasText; }
   .log li { border-left-color: CanvasText; }
   .muted, .alert { color: CanvasText; }
