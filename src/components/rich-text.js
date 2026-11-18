@@ -2,7 +2,7 @@
 // element from the fixed tables below, and each text goes into a text node. Page code owns the link
 // schemes and the first heading level. src/components/rich-text.md gives the rules.
 import { ReadMoreElement, READ_MORE_CSS } from '../primitives/read-more.js';
-import { el, sheet, text } from '../render/dom.js';
+import { copyControl, el, sheet, text } from '../render/dom.js';
 
 // The schemes that page code can permit. No other scheme can open.
 const SCHEMES = Object.freeze(['https:', 'http:', 'mailto:']);
@@ -63,8 +63,10 @@ export class MuRichText extends ReadMoreElement {
     li + li { margin-block-start: var(--mu-space-1); }
     pre {
       padding: var(--mu-space-2); border: 1px solid var(--mu-color-border); border-radius: var(--mu-radius-1);
-      white-space: pre-wrap;
+      white-space: pre-wrap; flex: 1; min-width: 0;
     }
+    .copy { border-radius: var(--mu-radius-1); }
+    .code { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--mu-space-1) var(--mu-space-2); }
     code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.9em; }
     :not(pre) > code { padding-inline: var(--mu-space-1); border: 1px solid var(--mu-color-border); border-radius: var(--mu-radius-1); }
     blockquote {
@@ -80,6 +82,7 @@ export class MuRichText extends ReadMoreElement {
       border-radius: var(--mu-radius-1); text-decoration: underline; text-align: start; white-space: inherit;
       overflow-wrap: anywhere; cursor: pointer;
     }
+    .link:hover { text-decoration-thickness: 2px; }
     .target {
       position: absolute; inset-block-start: 100%; inset-inline-start: 0; z-index: 1;
       width: max-content; max-width: min(20rem, 80vw); padding: var(--mu-space-1) var(--mu-space-2);
@@ -176,7 +179,7 @@ export class MuRichText extends ReadMoreElement {
     const author = this.fill.slots.authorship;
     const name = author.name ? ` (${author.name})` : '';
     const blocks = data.blocks.length ? data.blocks.map((block) => this.#block(block))
-      : [el('p', { class: 'muted', part: 'empty' }, 'No text.')];
+      : [el('p', { class: 'muted', part: 'empty' }, 'No text. Ask for the text again.')];
     const authorText = el('p', { class: 'muted', part: 'authorship' }, `Author: ${author.type} ${author.id}${name}`);
     const content = el('div', { class: 'rich', part: 'rich-text' }, ...blocks);
     if (data.clamp === undefined) {
@@ -197,7 +200,7 @@ export class MuRichText extends ReadMoreElement {
       case 'rich-list':
         return el(data.ordered ? 'ol' : 'ul', {}, ...data.items.map((item) => el('li', {}, ...this.#inline(item.data.content))));
       case 'rich-code':
-        return el('pre', { part: 'code' }, el('code', {}, data.text));
+        return el('div', { class: 'code' }, el('pre', { part: 'code' }, el('code', {}, data.text)), copyControl(data.text, 'code'));
       case 'rich-quote':
         return el('blockquote', {}, ...data.paragraphs.map((item) => el('p', {}, ...this.#inline(item.data.content))));
       default:

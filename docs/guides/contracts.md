@@ -123,7 +123,7 @@ no authorship slot: slots.authorship: a required slot is missing
 a title that is too long: data.title: more than 120 characters
 ```
 
-If an element gets a fill with an error, it shows `Refused <name>: <first error>` as text. It sets `data-state` to `refused`, keeps no data and sends a `mu-refused` event with all the errors.
+If an element gets a fill with an error, it shows `Refused <name>: <first error>` as text. After the reason, it tells the person to ask for the content again. It sets `data-state` to `refused`, keeps no data and sends a `mu-refused` event with all the errors.
 
 ## Text stays text
 

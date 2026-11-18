@@ -27,7 +27,10 @@ export class MuImage extends MuElement {
       font: var(--mu-type-body); color: var(--mu-color-text); background: var(--mu-color-surface);
       border: 1px solid var(--mu-color-border); border-radius: var(--mu-radius-2); cursor: pointer;
     }
-    button:disabled { cursor: default; }
+    button:disabled { cursor: default; opacity: 1; }
+    /* The image covers the layer of the base style, so the edge and the image show hover and pressed. */
+    .open:hover:not(:disabled) { border-color: currentColor; }
+    .open:active:not(:disabled) img { opacity: 0.85; }
     .open img { display: block; width: 100%; height: 100%; object-fit: contain; }
     .open img[hidden] { display: none; }
     .notice { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; padding: var(--mu-space-2); overflow: auto; }

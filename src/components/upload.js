@@ -94,7 +94,6 @@ export class MuUpload extends MuElement {
       background: transparent; color: var(--mu-color-accent);
     }
     button[part="send"] { background: var(--mu-color-accent); color: var(--mu-color-on-accent); align-self: flex-start; }
-    button[aria-disabled="true"] { cursor: not-allowed; opacity: 0.6; }
     button[hidden] { display: none; }
     .file {
       display: grid; grid-template-columns: 1fr auto; align-items: center; gap: var(--mu-space-1) var(--mu-space-2);
@@ -110,7 +109,6 @@ export class MuUpload extends MuElement {
       .drop.over { border-color: Highlight; }
       .muted, .problems, .file[data-state="error"] .state { color: CanvasText; }
       button, button[part="send"] { background: ButtonFace; color: ButtonText; border-color: ButtonText; forced-color-adjust: none; }
-      button[aria-disabled="true"] { color: GrayText; border-color: GrayText; opacity: 1; }
     }
   `)];
 

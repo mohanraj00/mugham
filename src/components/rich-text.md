@@ -21,7 +21,7 @@ Each node is a fill of one contract. The list of node types is fixed.
 | Paragraph | `rich-paragraph` | `content`: 0 to 50 inline nodes | `p` |
 | Heading | `rich-heading` | `level`: 1 to 3. `content`: 0 to 50 inline nodes | `h2` to `h6` |
 | List | `rich-list` | `ordered`: optional boolean. `items`: 0 to 50 paragraph nodes | `ol` or `ul`, with one `li` for each item |
-| Code block | `rich-code` | `text`: 1 to 10000 code points | `pre` with `code` |
+| Code block | `rich-code` | `text`: 1 to 10000 code points | `pre` with `code`, and a `Copy` button of the kit |
 | Quote | `rich-quote` | `paragraphs`: 0 to 20 paragraph nodes | `blockquote`, with one `p` for each paragraph |
 | Text | `rich-span` | `text`: 1 to 2000 code points. `mark`: optional, `emphasis`, `strong` or `code` | A text node, or `em`, `strong` or `code` |
 | Link | `rich-link` | `text`: 1 to 200 code points. `url`: 1 to 2000 code points | `button`, and a `span` for the target |
@@ -56,7 +56,7 @@ Thus the headings of a message continue the heading order of the page.
 | State | Result |
 |---|---|
 | `default` | The blocks show in order. The author shows as text below them. |
-| `empty` | A rich text with no block shows `No text.` |
+| `empty` | A rich text with no block shows `No text. Ask for the text again.` |
 | `refused` | A status notice gives the reason as text. The element keeps no data. |
 
 The authorship slot is required and must agree with the actor that the page or the thread binds. The thread accepts a rich text part and binds the actor of its envelope. To place rich text in a card, page code uses the page-owned `actions` slot of the card.

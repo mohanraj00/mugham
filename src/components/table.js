@@ -6,12 +6,14 @@ export class MuTable extends MuElement {
   static component = 'table';
   static styles = [sheet(`
     :host { display: block; min-width: 0; }
-    .table { overflow-x: auto; color: var(--mu-color-text); background: var(--mu-color-surface); font: var(--mu-type-body); }
-    table { border-collapse: collapse; width: 100%; min-width: 24rem; table-layout: fixed; }
+    /* A long table scrolls in this area, and the column headers stay in view. */
+    .table { overflow: auto; max-block-size: 30rem; color: var(--mu-color-text); background: var(--mu-color-surface); font: var(--mu-type-body); }
+    table { border-collapse: separate; border-spacing: 0; width: 100%; min-width: 24rem; table-layout: fixed; }
     caption { text-align: start; font-weight: var(--mu-type-weight-strong); padding: var(--mu-space-2) var(--mu-space-3); }
     th, td { text-align: start; vertical-align: top; overflow-wrap: anywhere;
       padding: var(--mu-space-2) var(--mu-space-3); border-bottom: 1px solid ${EDGE}; }
     th { font-weight: var(--mu-type-weight-strong); }
+    thead th { position: sticky; inset-block-start: 0; z-index: 1; background: var(--mu-color-surface); }
     button { font: inherit; color: inherit; background: transparent; border: 1px solid var(--mu-color-border);
       min-height: 2.75rem; min-width: 2.75rem; padding: var(--mu-space-2); cursor: pointer; overflow-wrap: anywhere; max-width: 100%; }
     p { margin: var(--mu-space-2) var(--mu-space-3); overflow-wrap: anywhere; }
@@ -19,6 +21,7 @@ export class MuTable extends MuElement {
     @media (forced-colors: active) {
       .table, .muted { color: CanvasText; background: Canvas; }
       th, td { border-color: CanvasText; }
+      thead th { background: Canvas; }
       button { color: ButtonText; border-color: ButtonText; background: ButtonFace; }
     }
   `)];
@@ -84,7 +87,7 @@ export class MuTable extends MuElement {
     return [el('div', { class: 'table', role: 'group', 'aria-label': data.label, tabindex: '0', part: 'table' },
       el('table', {}, el('caption', {}, data.label),
         el('thead', {}, el('tr', {}, ...headers, hasStatus ? el('th', { scope: 'col' }, 'Status') : null)), body),
-      data.rows.length ? null : el('p', { part: 'empty' }, 'No rows.'), announcement,
+      data.rows.length ? null : el('p', { part: 'empty' }, 'No rows. Change the request, or try again later.'), announcement,
       el('p', { class: 'muted', part: 'authorship' }, `Author: ${author.type} ${author.id}${name}`))];
   }
 }

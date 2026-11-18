@@ -11,6 +11,7 @@ import { guideChecks } from '../tests/browser/guides.mjs';
 import { exampleIndexChecks } from '../tests/browser/examples-index.mjs';
 import { imageKeyboardChecks } from '../tests/browser/image.js';
 import { cardKeyboardChecks } from '../tests/browser/card.js';
+import { stateChecks } from '../tests/browser/states.js';
 import { readMoreKeyboardChecks } from '../tests/browser/read-more.js';
 import { richTextKeyboardChecks } from '../tests/browser/rich-text.js';
 import { budgetExampleChecks, dataGridKeyboardChecks } from '../tests/browser/data-grid.js';
@@ -60,6 +61,8 @@ const PAGES = {
   'tests/browser/thread.html': [['button', 'Keyboard target'], ['list', 'Thread'], ['article', 'Message from Robin, Person'],
     ['article', 'Message from Renewal agent, Agent']],
   'tests/browser/register.html': [['button', 'Keyboard target'], ['article', 'Plot 4'], ['article', 'Plot 7']],
+  'tests/browser/states.html': [['button', 'Keyboard target'], ['button', 'Collapse Field guide to moss'], ['button', 'Expand Rivers and deltas'],
+    ['button', 'Expand all'], ['button', 'Copy code'], ['button', 'Copy reference'], ['radio', 'South'], ['columnheader', 'Plot']],
 };
 // Each example page, the number of kit elements, the number of refused elements and the roles and names.
 const EXAMPLES = {
@@ -257,9 +260,39 @@ export async function pageRules(session, sessionId, where) {
     check(document, 'document');
     return problems;
   })()`);
+  // Each touch target in a shadow root is 44 by 44 CSS pixels at the minimum (src/components/interaction.md).
+  // A radio or a checkbox and its label are one target. The cell of a data grid is the target of its editor.
+  // A link in a sentence of a rich text and a point of a chart are not in this rule.
+  const small = await evaluate(session, sessionId, `(() => {
+    const problems = [];
+    const join = (a, b) => ({ width: Math.max(a.right, b.right) - Math.min(a.left, b.left), height: Math.max(a.bottom, b.bottom) - Math.min(a.top, b.top) });
+    const check = (root, label) => {
+      for (const node of root.querySelectorAll('button, input, textarea, select, summary, td[part="cell"]')) {
+        if (!node.getClientRects().length || node.matches('[part="link"]') || (node.matches('input') && node.closest('td[part="cell"]'))) continue;
+        let box = node.getBoundingClientRect();
+        const text = node.matches('input[type="radio"], input[type="checkbox"]') && node.id ? root.querySelector('label[for="' + node.id + '"]') : null;
+        if (text) box = join(box, text.getBoundingClientRect());
+        if (box.width < 43.99 || box.height < 43.99) {
+          problems.push(label + ': ' + node.tagName.toLowerCase() + ' ' + (node.getAttribute('aria-label') || node.textContent.trim().slice(0, 30))
+            + ' is ' + Math.round(box.width) + ' by ' + Math.round(box.height));
+        }
+      }
+    };
+    const walk = (root) => {
+      for (const node of root.querySelectorAll('*')) {
+        if (!node.shadowRoot) continue;
+        check(node.shadowRoot, node.tagName.toLowerCase());
+        walk(node.shadowRoot);
+      }
+    };
+    walk(document);
+    return problems;
+  })()`);
   return [{ page: where, step: 'each control has a name', ok: unnamed.length === 0, detail: unnamed.join(' ') },
     { page: where, step: 'each id is unique, each id reference finds its target, and each role and ARIA value is valid',
-      ok: markup.length === 0, detail: markup.slice(0, 10).join('; ') }];
+      ok: markup.length === 0, detail: markup.slice(0, 10).join('; ') },
+    { page: where, step: 'each touch target in a shadow root is 44 by 44 CSS pixels at the minimum',
+      ok: small.length === 0, detail: small.slice(0, 10).join('; ') }];
 }
 
 // Starts a Python server of tools/ on a free port. The server gives its URL on its first line of output.
@@ -534,6 +567,9 @@ async function main() {
         if (page === 'tests/browser/image.html' && checks) report.keyboard.push(...await imageKeyboardChecks(session, sessionId, { evaluate, key, axErrors }, page));
         if (page === 'tests/browser/card.html' && checks) report.keyboard.push(...await cardKeyboardChecks(session, sessionId, { evaluate, key }, page));
         if (page === 'tests/browser/read-more.html' && checks) report.keyboard.push(...await readMoreKeyboardChecks(session, sessionId, { evaluate, key }, page));
+        if (page === 'tests/browser/states.html' && checks && mode !== 'light') {
+          report.keyboard.push(...await stateChecks(session, sessionId, { evaluate, key, sleep }, page, mode));
+        }
         if (mode !== 'light' || !checks) continue;
         report.accessibility.push(...await axErrors(session, sessionId, expected, page));
         report.examples.push(...await pageRules(session, sessionId, page));
@@ -547,6 +583,7 @@ async function main() {
         const presses = await evaluate(session, sessionId, 'window.muPresses()');
         report.keyboard.push({ page, step: 'Enter and Space press the button', ok: presses === 2, detail: presses });
         if (page === 'tests/browser/rich-text.html') report.keyboard.push(...await richTextKeyboardChecks(session, sessionId, { evaluate, key }, page));
+        if (page === 'tests/browser/states.html') report.keyboard.push(...await stateChecks(session, sessionId, { evaluate, key, sleep }, page, mode));
         if (page === 'tests/browser/data-grid.html') report.keyboard.push(...await dataGridKeyboardChecks(session, sessionId, { evaluate, key }, page));
         if (page === 'tests/browser/upload.html') {
           report.keyboard.push(...await uploadKeyboardChecks(session, sessionId, { evaluate, key }, page, uploadFile('receipt-a.txt')));
@@ -716,13 +753,14 @@ async function main() {
     // The fixture of decision 0006 has one defect of each kind. The generic rules must find each one.
     await open(session, sessionId, `${base}/tests/browser/rules.html`);
     for (let i = 0; i < 100 && !await evaluate(session, sessionId, 'window.muRulesReady === true'); i += 1) await sleep(50);
-    const [names, markup] = await pageRules(session, sessionId, 'tests/browser/rules.html');
+    const [names, markup, targets] = await pageRules(session, sessionId, 'tests/browser/rules.html');
     const found = markup.detail.split('; ');
     const wanted = ['document: the id twice shows 2 times', 'document: input refers to the missing id nowhere',
       'document: the role bogus is not known', 'document: aria-live="loud"', 'document: tabindex="3"', 'div: label refers to the missing id missing'];
     report.examples.push({ page: 'tests/browser/rules.html', step: 'the generic rules find each defect of the fixture',
-      ok: !names.ok && names.detail === 'button' && !markup.ok && found.length === wanted.length && wanted.every((item) => found.includes(item)),
-      detail: `${names.detail} | ${markup.detail}` });
+      ok: !names.ok && names.detail === 'button' && !markup.ok && found.length === wanted.length && wanted.every((item) => found.includes(item))
+        && !targets.ok && targets.detail === 'div: button Go is 20 by 20',
+      detail: `${names.detail} | ${markup.detail} | ${targets.detail}` });
     // The guide pages of docs/guides/. tests/browser/guides.mjs gives the expected results.
     const guides = await guideChecks(session, sessionId, base, { evaluate, open, sleep });
     report.examples.push(...guides.steps);

@@ -5,6 +5,8 @@ import { CATALOG } from '../../src/render/catalog.js';
 
 define();
 
+// What each refused state tells the person to do next (src/components/interaction.md).
+const NEXT = 'Ask for this content again. If the refusal shows again, tell the owner of the application.';
 const MARKUP = '<img src=x onerror="window.muUnsafe=1"><script>window.muUnsafe=1</script>';
 const results = [];
 const check = (name, ok, detail = '') => results.push({ name, ok: Boolean(ok), detail: String(detail) });
@@ -270,13 +272,13 @@ stage.append(noLocator);
 noLocator.actor = AUTHOR;
 noLocator.fill = { ...fill('citation', {}), slots: { authorship: AUTHOR, citation: { source: 'Synthetic loan rules' } } };
 check('citation: a missing locator shows a clear refusal', noLocator.dataset.state === 'refused' && noLocator.fill === null
-  && noLocator.shadowRoot.textContent === 'Refused citation: the locator is missing.'
+  && noLocator.shadowRoot.textContent === 'Refused citation: the locator is missing. ' + NEXT
   && noLocator.shadowRoot.querySelector('[role="status"]') !== null, noLocator.shadowRoot.textContent);
 check('citation: the refusal event keeps the error of the validator', refusals.includes('slots.citation: missing key locator'), refusals.join('; '));
 for (const locator of ['http://example.org/rules', 'javascript:alert(1)', 'https://person@example.org/rules', 'https://example.org/‮gnp.exe']) {
   const bad = citation({ authorship: AUTHOR, citation: { source: 'Synthetic loan rules', locator } });
   check(`citation: refuses the locator ${JSON.stringify(locator)} with a clear text`, bad.dataset.state === 'refused' && bad.fill === null
-    && bad.shadowRoot.textContent === 'Refused citation: the locator is not a safe https: address.', bad.shadowRoot.textContent);
+    && bad.shadowRoot.textContent === 'Refused citation: the locator is not a safe https: address. ' + NEXT, bad.shadowRoot.textContent);
 }
 const unauthored = citation({ citation: CITED.citation });
 check('citation: refuses a fill with no authorship slot', unauthored.dataset.state === 'refused'
@@ -349,15 +351,15 @@ for (const [data, error, words] of [
   node.fill = { ...fill('excerpt', data), slots: CITED };
   check(`excerpt: refuses the span ${data.span_start} to ${data.span_end} of ${JSON.stringify(data.passage.slice(0, 12))}`,
     node.dataset.state === 'refused' && node.fill === null && errors.includes(error)
-    && node.shadowRoot.textContent === `Refused excerpt: ${words}` && node.shadowRoot.querySelector('[role="status"]') !== null
+    && node.shadowRoot.textContent === `Refused excerpt: ${words} ${NEXT}` && node.shadowRoot.querySelector('[role="status"]') !== null
     && !node.shadowRoot.querySelector('mark'), `${errors.join('; ')} | ${node.shadowRoot.textContent}`);
 }
 const unlocated = excerpt({ passage: PASSAGE, span_start: 0, span_end: 7 }, { authorship: AUTHOR });
 check('excerpt: refuses a fill with no citation slot', unlocated.dataset.state === 'refused'
-  && unlocated.shadowRoot.textContent === 'Refused excerpt: the source and the locator are missing.', unlocated.shadowRoot.textContent);
+  && unlocated.shadowRoot.textContent === 'Refused excerpt: the source and the locator are missing. ' + NEXT, unlocated.shadowRoot.textContent);
 const badLocator = excerpt({ passage: PASSAGE, span_start: 0, span_end: 7 }, { authorship: AUTHOR, citation: { ...CITED.citation, locator: 'javascript:alert(1)' } });
 check('excerpt: refuses a locator that is not a safe https: address', badLocator.dataset.state === 'refused'
-  && badLocator.shadowRoot.textContent === 'Refused excerpt: the locator is not a safe https: address.', badLocator.shadowRoot.textContent);
+  && badLocator.shadowRoot.textContent === 'Refused excerpt: the locator is not a safe https: address. ' + NEXT, badLocator.shadowRoot.textContent);
 const unauthoredExcerpt = excerpt({ passage: PASSAGE, span_start: 0, span_end: 7 }, { citation: CITED.citation });
 check('excerpt: refuses a fill with no authorship slot', unauthoredExcerpt.dataset.state === 'refused'
   && unauthoredExcerpt.shadowRoot.textContent.includes('slots.authorship: a required slot is missing'), unauthoredExcerpt.shadowRoot.textContent);
@@ -389,7 +391,7 @@ if (matchMedia('(forced-colors: active)').matches) {
     [{ state: 'ready', checked: CHECKED }, 'default', 'Tool library|Ready|Checked: 2026-11-15T09:30:00.000Z'],
     [{ state: 'stale', checked: CHECKED, reason: 'The device is offline.' }, 'default',
       'Tool library|Stale|The device is offline.|Last checked: 2026-11-15T09:30:00.000Z'],
-    [{ state: 'empty' }, 'empty', 'Tool library|Empty|No records.'],
+    [{ state: 'empty' }, 'empty', 'Tool library|Empty|No records. Add a record, or try again later.'],
     [{ state: 'error', reason: 'The source failed.' }, 'error', 'Tool library|Error|The source failed.'],
   ];
   for (const [data, state, words] of cases) {
@@ -461,11 +463,11 @@ if (matchMedia('(forced-colors: active)').matches) {
     fill('diff-part', { title: 'Rules', changes: [] })] });
   check('diff: an empty value shows No value as text', text(blank.shadowRoot, 'before') === 'No value', blank.shadowRoot.textContent);
   const emptyPart = blank.shadowRoot.querySelectorAll('details')[1];
-  check('diff: a part with no changes says so', emptyPart.dataset.state === 'empty' && text(emptyPart, 'empty') === 'No changes.'
+  check('diff: a part with no changes says so', emptyPart.dataset.state === 'empty' && text(emptyPart, 'empty') === 'No changes. You do not need to review this part.'
     && emptyPart.querySelector('summary').textContent === 'Rulesno changes', emptyPart.textContent);
   for (const data of [{ ...DIFF, parts: [] }, { ...DIFF, parts: [fill('diff-part', { title: 'Loan', changes: [] })] }]) {
     const none = mount('diff', data);
-    check(`diff: empty state with ${data.parts.length} parts`, none.dataset.state === 'empty' && text(none.shadowRoot, 'empty') === 'No changes.'
+    check(`diff: empty state with ${data.parts.length} parts`, none.dataset.state === 'empty' && text(none.shadowRoot, 'empty') === 'No changes. You do not need to review these versions.'
       && !none.shadowRoot.querySelector('details'), none.shadowRoot.textContent);
   }
   for (const [item, error] of [

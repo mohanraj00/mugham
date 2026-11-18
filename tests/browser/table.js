@@ -53,7 +53,7 @@ for (const direction of ['ascending', 'descending']) {
 check('table: sort direction defaults to ascending', cells(mount({ ...DATA, sort_key: 0 }))[0][0] === 'Plot A');
 const empty = mount({ ...DATA, rows: [] });
 check('table: empty state retains the name, headers and author', empty.dataset.state === 'empty'
-  && empty.shadowRoot.querySelector('[part="empty"]').textContent === 'No rows.'
+  && empty.shadowRoot.querySelector('[part="empty"]').textContent === 'No rows. Change the request, or try again later.'
   && empty.shadowRoot.querySelector('caption').textContent === DATA.label
   && empty.shadowRoot.querySelectorAll('th[scope="col"]').length === 3
   && empty.shadowRoot.querySelector('tbody').children.length === 0

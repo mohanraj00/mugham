@@ -64,7 +64,7 @@ refused.addEventListener('mu-refused', (event) => errors.push(...event.detail.er
 refused.fill = fill('complete', 'Synthetic check E.');
 check('an undeclared state is refused and its reason shows', refused.dataset.state === 'refused' && refused.fill === null
   && errors.join('|') === 'data.state: must be one of pending, passed, failed, unknown'
-  && refused.shadowRoot.querySelector('[role="status"]')?.textContent === 'Refused status: data.state: must be one of pending, passed, failed, unknown'
+  && refused.shadowRoot.querySelector('[role="status"] [part="reason"]')?.textContent === 'Refused status: data.state: must be one of pending, passed, failed, unknown'
   && !refused.shadowRoot.querySelector('[part="label"]'), refused.shadowRoot.textContent);
 if (mode === 'forced-colors') {
   check('forced colors keeps the refusal visible', getComputedStyle(refused.shadowRoot.querySelector('[role="status"]')).color === resolved('CanvasText'));

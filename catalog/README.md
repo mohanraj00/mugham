@@ -179,7 +179,7 @@ A fill gives only data, so a model cannot select a tool. On a press, the element
 | `message` | Optional. A text of 200 characters maximum. |
 | `reference` | Optional. A reference from the API, for example a record id. A text of 80 characters maximum. |
 
-The element shows the message and the reference only as text, never as markup. If the message or the reference is too long, the element refuses the receipt, and the action stays pending.
+The element shows the message and the reference only as text, never as markup. A `Copy` button after the status copies the reference to the clipboard. If the message or the reference is too long, the element refuses the receipt, and the action stays pending.
 
 A script can read `element.action.state`, but it cannot write it. A receipt confirms only the values of its request. If a person edits a field while the request is pending, the form does not show `Done` after the receipt. It asks for a new save. An edit after `Done` also lets the form save again.
 

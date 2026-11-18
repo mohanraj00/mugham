@@ -24,7 +24,7 @@ const FIELD_CSS = sheet(`
   input, textarea {
     font: var(--mu-type-body); color: var(--mu-color-text); background: var(--mu-color-surface);
     border: 1px solid var(--mu-color-border); border-radius: var(--mu-radius-1); padding: var(--mu-space-2);
-    min-height: 2.75rem; transition: border-color var(--mu-motion-fast);
+    min-height: 2.75rem;
   }
   textarea { min-height: 6rem; resize: vertical; }
   [aria-invalid="true"] { border-color: var(--mu-color-danger); border-width: 2px; }
@@ -32,15 +32,22 @@ const FIELD_CSS = sheet(`
   .error { font: var(--mu-type-caption); color: var(--mu-color-danger); }
   fieldset {
     margin: 0; padding: var(--mu-space-2); border: 1px solid var(--mu-color-border); border-radius: var(--mu-radius-1);
-    display: flex; flex-direction: column; gap: var(--mu-space-1); transition: border-color var(--mu-motion-fast);
+    display: flex; flex-direction: column; gap: var(--mu-space-1);
   }
   fieldset[hidden] { display: none; }
   legend { font: var(--mu-type-caption); padding: 0 var(--mu-space-1); }
   legend.label { font: var(--mu-type-body); }
-  .option { display: flex; flex-wrap: wrap; align-items: center; gap: 0 var(--mu-space-2); min-height: 2.75rem; }
-  .option input { min-height: auto; margin: 0; }
+  /* The radio and its label are one target of 44 by 44 CSS pixels at the minimum. The row shows hover and pressed. */
+  .option { display: flex; flex-wrap: wrap; align-items: center; min-height: 2.75rem; border-radius: var(--mu-radius-1);
+    transition: box-shadow var(--mu-motion-fast); }
+  .option input { min-height: auto; margin: 0; inline-size: 1.25rem; block-size: 1.25rem; cursor: pointer; }
+  .option label { display: inline-flex; align-items: center; min-height: 2.75rem; min-width: 2.75rem;
+    padding-inline: var(--mu-space-2); cursor: pointer; }
+  .option:hover { box-shadow: inset 0 0 0 100vmax color-mix(in srgb, currentColor 8%, transparent); }
+  .option:active { box-shadow: inset 0 0 0 100vmax color-mix(in srgb, currentColor 14%, transparent); }
   @media (forced-colors: active) {
     input, textarea, fieldset { border-color: FieldText; }
+    .option:hover { outline: 1px solid Highlight; }
     .hint, .error { color: CanvasText; }
   }
 `);

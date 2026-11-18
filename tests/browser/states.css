@@ -1,0 +1,4 @@
+/* The check page has no space of its own between its parts. Thus each gap that a check measures comes from the kit. */
+body { margin: 0; padding: 0 16px; }
+#stage > * { margin: 0; }
+#stage > p { margin: 0; line-height: 20px; }

@@ -36,13 +36,11 @@ export class MuButton extends MuElement {
       font: var(--mu-type-body); min-height: 2.75rem; min-width: 2.75rem;
       padding: var(--mu-space-2) var(--mu-space-3); border-radius: var(--mu-radius-2);
       border: 1px solid var(--mu-color-accent); background: var(--mu-color-accent); color: var(--mu-color-on-accent);
-      cursor: pointer; transition: background-color var(--mu-motion-fast), color var(--mu-motion-fast);
+      cursor: pointer;
     }
     button.secondary { background: var(--mu-color-surface); color: var(--mu-color-accent); border-color: var(--mu-color-border); }
-    button:disabled { cursor: not-allowed; opacity: 0.6; }
     @media (forced-colors: active) {
       button, button.secondary { background: ButtonFace; color: ButtonText; border-color: ButtonText; forced-color-adjust: none; }
-      button:disabled { color: GrayText; border-color: GrayText; opacity: 1; }
     }
   `)];
 

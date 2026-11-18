@@ -3,7 +3,7 @@ import { MuElement } from '../primitives/base.js';
 import { ReadMoreElement, READ_MORE_CSS } from '../primitives/read-more.js';
 import { define as definePrimitives, FIELDS } from '../primitives/index.js';
 import { ActionState } from '../actions/action.js';
-import { EDGE, LIFT, el, sheet } from '../render/dom.js';
+import { EDGE, LIFT, copyControl, el, icon, sheet } from '../render/dom.js';
 import { fillErrors } from '../render/validate.js';
 import { CONTRACTS } from '../render/registry.js';
 import { MuTable } from './table.js';
@@ -23,14 +23,20 @@ export { MuUpload } from './upload.js';
 
 const FIELD_NAME = /^[a-z][a-z0-9]*(_[a-z0-9]+)*$/;
 const boundError = (name) => `data.sections: the read-only field ${name} does not show the bound value`;
+const DIFF_EMPTY_PART = 'No changes. You do not need to review this part.';
+const DIFF_EMPTY = 'No changes. You do not need to review these versions.';
 const COLLAPSE_CSS = sheet(`
-  .collapse-controls { display: flex; flex-wrap: wrap; gap: var(--mu-space-2); margin-bottom: var(--mu-space-2); }
+  .collapse-controls { display: flex; flex-wrap: wrap; gap: var(--mu-space-2); margin-block: var(--mu-space-2) var(--mu-space-3); }
   .collapse-toggle, .collapse-controls button {
-    font: var(--mu-type-body); min-height: 2.75rem; padding: var(--mu-space-2) var(--mu-space-3);
+    font: var(--mu-type-body); min-height: 2.75rem; min-width: 2.75rem; padding: var(--mu-space-2) var(--mu-space-3);
     border: 1px solid var(--mu-color-border); border-radius: var(--mu-radius-2);
     background: transparent; color: var(--mu-color-text); cursor: pointer;
   }
+  .collapse-toggle { display: inline-flex; align-items: center; gap: var(--mu-space-2); flex: none; }
+  /* The chevron points down on a collapsed card and up on an expanded card. */
+  .collapse-toggle[aria-expanded="true"] .icon { transform: rotate(180deg); }
   .card-header { display: flex; align-items: center; justify-content: space-between; gap: var(--mu-space-2); }
+  .card-header .title { min-width: 0; overflow-wrap: anywhere; }
   .card-body { display: flex; flex-direction: column; gap: var(--mu-space-2); }
   [hidden] { display: none !important; }
   @media (forced-colors: active) {
@@ -45,6 +51,7 @@ const CARD_CSS = sheet(`
     box-shadow: ${LIFT}; display: flex; flex-direction: column; gap: var(--mu-space-2); height: 100%;
   }
   .title { font-weight: var(--mu-type-weight-strong); margin: 0; }
+  article p { margin: 0; }
   .muted, dt { font: var(--mu-type-caption); color: var(--mu-color-text-muted); }
   dl { margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: var(--mu-space-2) var(--mu-space-3); }
   dd { margin: 0; }
@@ -65,18 +72,17 @@ const ACTION_CSS = sheet(`
     font: var(--mu-type-body); min-height: 2.75rem; min-width: 2.75rem; padding: var(--mu-space-2) var(--mu-space-3);
     border-radius: var(--mu-radius-2); border: 1px solid var(--mu-color-accent);
     background: var(--mu-color-accent); color: var(--mu-color-on-accent); cursor: pointer;
-    transition: background-color var(--mu-motion-fast);
   }
-  button[aria-disabled="true"] { cursor: not-allowed; opacity: 0.6; }
   .status { font: var(--mu-type-caption); color: var(--mu-color-text-muted); min-height: 1lh; }
   .status.error { color: var(--mu-color-danger); }
   .reference { display: block; }
+  .copy-area[hidden] { display: none; }
+  .copy { border-radius: var(--mu-radius-2); }
   .step { display: flex; flex-wrap: wrap; align-items: center; gap: var(--mu-space-2); }
   .step p { flex-basis: 100%; margin: 0; }
   .step button[part="cancel"] { background: transparent; color: var(--mu-color-accent); }
   @media (forced-colors: active) {
     button { background: ButtonFace; color: ButtonText; border-color: ButtonText; forced-color-adjust: none; }
-    button[aria-disabled="true"] { color: GrayText; border-color: GrayText; opacity: 1; }
     .status, .status.error { color: CanvasText; }
   }
 `);
@@ -127,6 +133,9 @@ class ActionElement extends MuElement {
   // The area of the confirm step, and the step while it shows.
   #area = null;
   #asking = null;
+  // The reference that the copy control copies, and the area of the control.
+  #reference = '';
+  #copy = null;
 
   // The state of the action can only be read. Only bind(), start() and receipt() change it.
   get action() {
@@ -190,9 +199,17 @@ class ActionElement extends MuElement {
     this.#control = control;
     this.#status = status;
     this.#asking = null;
+    this.#reference = '';
+    this.#copy = el('span', { class: 'copy-area' });
+    this.#copy.hidden = true;
     this.#area = el('div', { class: 'confirm-area' });
     this.#update();
     return this.#area;
+  }
+
+  // The status is in the shadow root now, so the copy control of a reference can go after it.
+  rendered() {
+    this.#update();
   }
 
   // The started function runs only for an accepted request, before the element sends the event.
@@ -250,11 +267,22 @@ class ActionElement extends MuElement {
     const state = this.#asking ? 'confirm' : this.#action.state;
     this.dataset.state = state;
     this.#control.setAttribute('aria-disabled', state === 'default' || state === 'error' ? 'false' : 'true');
+    // A pending action is busy until its receipt comes back. The control accepts no second press.
+    if (state === 'pending') this.#control.setAttribute('aria-busy', 'true');
+    else this.#control.removeAttribute('aria-busy');
     const words = [STATUS[state], state === 'confirm' ? '' : this.#action.message].filter(Boolean).join(': ');
     this.#status.className = 'status' + (state === 'error' ? ' error' : '');
     // The reference comes from the API of the application. It shows only as text.
     const reference = state === 'confirm' ? '' : this.#action.reference;
     this.#status.replaceChildren(words, reference ? el('span', { class: 'reference', part: 'reference' }, 'Reference: ' + reference) : '');
+    // The copy control of the reference comes after the status and not in it, because the status is a live
+    // region for text. The control stays the same node while the reference stays the same.
+    if (reference !== this.#reference) {
+      this.#reference = reference;
+      this.#copy.replaceChildren(...(reference ? [copyControl(reference, 'reference')] : []));
+      this.#copy.hidden = !reference;
+    }
+    if (this.#status.parentNode && this.#copy.previousSibling !== this.#status) this.#status.after(this.#copy);
     this.updated(state);
   }
 }
@@ -361,7 +389,7 @@ export class MuCard extends MuElement {
     if (!this.#toggle) return;
     this.#toggle.setAttribute('aria-expanded', String(!this.#collapsed));
     this.#toggle.setAttribute('aria-label', `${this.#collapsed ? 'Expand' : 'Collapse'} ${this.fill.data.title}`);
-    this.#toggle.textContent = this.#collapsed ? 'Expand' : 'Collapse';
+    this.#toggle.firstChild.textContent = this.#collapsed ? 'Expand' : 'Collapse';
     this.#body.hidden = this.#collapsed;
     if (this.#summary) this.#summary.hidden = !this.#collapsed;
   }
@@ -398,7 +426,8 @@ export class MuCard extends MuElement {
     if (data.collapsible) {
       this.#body = el('div', { class: 'card-body', part: 'body', id: 'card-body' }, ...content, actions);
       this.#summary = data.collapsed_summary ? el('p', { part: 'collapsed-summary' }, data.collapsed_summary) : null;
-      this.#toggle = el('button', { type: 'button', class: 'collapse-toggle', part: 'toggle', 'aria-controls': 'card-body' });
+      this.#toggle = el('button', { type: 'button', class: 'collapse-toggle', part: 'toggle', 'aria-controls': 'card-body' },
+        el('span', {}), icon('chevron'));
       this.#toggle.addEventListener('click', () => { this.collapsed = !this.#collapsed; });
       this.#sync();
       parts = [el('header', { class: 'card-header' }, title, this.#toggle), status, this.#summary, attribution, this.#body];
@@ -433,7 +462,7 @@ export class MuCardGrid extends MuElement {
 
   // An empty grid shows only the empty text, and no empty list.
   render(data) {
-    if (data.cards.length === 0) return [el('p', { class: 'empty', part: 'empty' }, 'No cards.')];
+    if (data.cards.length === 0) return [el('p', { class: 'empty', part: 'empty' }, 'No cards. Change the request, or try again later.')];
     const list = el('ul', { 'aria-label': data.label, part: 'list' });
     // A nested card takes the slots and the actor of the grid, so each card shows them.
     for (const item of data.cards) {
@@ -942,7 +971,7 @@ export class MuCitation extends MuElement {
   render(data) {
     const quote = data.quote ? el('blockquote', { part: 'quote' }, data.quote) : null;
     // The authorship slot is required, so the author always shows. With no citation slot, the text tells it.
-    const empty = this.fill.slots.citation ? null : el('p', { class: 'muted', part: 'empty' }, 'No source given.');
+    const empty = this.fill.slots.citation ? null : el('p', { class: 'muted', part: 'empty' }, 'No source given. Ask for the source before you use this text.');
     return [el('figure', { role: 'group', 'aria-label': 'Citation', part: 'citation' }, quote, empty, provenance(this.fill.slots))];
   }
 }
@@ -1042,7 +1071,7 @@ export class MuSourceStatus extends MuElement {
 
   render(data) {
     const time = data.checked ? el('p', { class: 'muted', part: 'checked' }, `${data.state === 'stale' ? 'Last checked' : 'Checked'}: ${data.checked}`) : null;
-    const empty = data.state === 'empty' ? el('p', { part: 'empty' }, 'No records.') : null;
+    const empty = data.state === 'empty' ? el('p', { part: 'empty' }, 'No records. Add a record, or try again later.') : null;
     const reason = data.reason ? el('p', { part: 'reason' }, data.reason) : null;
     return [el('div', { class: 'status', role: 'status', 'aria-label': data.label, part: 'source', 'data-state': data.state },
       el('p', { class: 'muted', part: 'label' }, data.label), el('p', { class: 'state', part: 'state' }, SOURCE_STATES[data.state]),
@@ -1121,7 +1150,7 @@ export class MuDiff extends MuElement {
     const head = [el('p', { class: 'title', part: 'title' }, data.title),
       el('p', { class: 'muted', part: 'versions' }, `${before} to ${after}`)];
     if (!all.length) {
-      head.push(el('p', { class: 'muted', part: 'empty' }, 'No changes.'));
+      head.push(el('p', { class: 'muted', part: 'empty' }, DIFF_EMPTY));
       return [el('div', { class: 'diff', role: 'group', 'aria-label': data.title, part: 'diff' }, ...head, provenance(this.fill.slots))];
     }
     head.push(el('p', { class: 'muted', part: 'counts' }, `In all: ${counts(all)}.`));
@@ -1137,7 +1166,7 @@ export class MuDiff extends MuElement {
     // A part with no difference starts closed.
     node.open = open && data.changes.some((item) => item.data.change !== 'unchanged');
     if (!data.changes.length) {
-      node.append(el('p', { class: 'muted', part: 'empty' }, 'No changes.'));
+      node.append(el('p', { class: 'muted', part: 'empty' }, DIFF_EMPTY_PART));
       return node;
     }
     const list = el('ul', { part: 'changes' });

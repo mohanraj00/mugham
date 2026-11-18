@@ -97,7 +97,7 @@ export class MuDataGrid extends MuElement {
     table { border-collapse: separate; border-spacing: 0; }
     th, td {
       text-align: start; vertical-align: top; padding: var(--mu-space-2) var(--mu-space-3);
-      min-width: 5rem; max-width: 16rem; overflow-wrap: break-word; background: var(--mu-color-surface);
+      min-width: 5rem; max-width: 16rem; block-size: 2.75rem; overflow-wrap: break-word; background: var(--mu-color-surface);
       border-block-end: 1px solid var(--mu-color-border); border-inline-end: 1px solid var(--mu-color-border);
     }
     th { font-weight: var(--mu-type-weight-strong); }
@@ -327,7 +327,7 @@ export class MuDataGrid extends MuElement {
     const name = author.name ? ` (${author.name})` : '';
     return [el('div', { class: 'grid', role: 'group', 'aria-label': data.label, part: 'data-grid' },
       el('p', { class: 'title', part: 'title' }, data.label), this.#scroll,
-      data.rows.length ? null : el('p', { part: 'empty' }, 'No rows.'), this.#status,
+      data.rows.length ? null : el('p', { part: 'empty' }, 'No rows. Change the request, or try again later.'), this.#status,
       el('p', { class: 'muted', part: 'authorship' }, `Author: ${author.type} ${author.id}${name}`))];
   }
 

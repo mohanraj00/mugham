@@ -1,7 +1,7 @@
 // The base class of each primitive. It validates a fill against the contract before it renders.
 import { actorErrors, authorErrors, fillErrors } from '../render/validate.js';
 import { BRAND, CONTRACTS } from '../render/registry.js';
-import { BASE, el } from '../render/dom.js';
+import { BASE, REFUSED_NEXT, el } from '../render/dom.js';
 
 export class MuElement extends HTMLElement {
   // register (src/render/registry.js) reads this key to accept only a subclass of MuElement.
@@ -82,8 +82,10 @@ export class MuElement extends HTMLElement {
   refuse(errors) {
     this.#fill = null;
     this.dataset.state = 'refused';
+    // The status gives the reason, then what the person does next.
     this.shadowRoot.replaceChildren(el('span', { class: 'refused', role: 'status' },
-      `Refused ${this.constructor.component}: ${this.refusal(errors)}`));
+      el('span', { part: 'reason' }, `Refused ${this.constructor.component}: ${this.refusal(errors)}`), ' ',
+      el('span', { part: 'next' }, REFUSED_NEXT)));
     this.dispatchEvent(new CustomEvent('mu-refused', { bubbles: true, composed: true, detail: { errors } }));
   }
 
