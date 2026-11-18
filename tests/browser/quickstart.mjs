@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 // The browser check of the README quickstart, from issue #111. It starts the file server that the
 // quickstart names, tools/serve.py, and opens each page of examples/ in headless Chrome.
-// Expected results: the README names the command. The server prints the URL of an example page. On each
-// page, each request for a file of src/, catalog/ or examples/ gets its file. A dropped connection or a
-// status other than 200 fails the check. A request to a fixture API is not a file request.
+// Expected results: the README names the command. The server prints the URL of the index page. On each
+// page, each request for a file of src/, catalog/ or examples/ gets its file. A dropped connection, a
+// status other than 200 or a request with no end fails the check. A request to a fixture API is not a file request.
 import { mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -66,7 +66,7 @@ async function main() {
     const origin = new URL(api.url).origin;
     const file = (url) => url.startsWith(origin + '/') && SERVED.some((folder) => new URL(url).pathname.startsWith(folder));
     const list = pages('examples');
-    step('tools/serve.py', 'the server prints the URL of an example page', list.includes(new URL(api.url).pathname.slice(1)), api.url);
+    step('tools/serve.py', 'the server prints the URL of the index page', new URL(api.url).pathname === '/examples/' && list.includes('examples/index.html'), api.url);
 
     const started = await startChrome(profile);
     chrome = started.chrome;
@@ -79,8 +79,9 @@ async function main() {
     let total = 0;
     for (const page of list) {
       const files = (await load(session, sessionId, `${origin}/${page}`)).filter((request) => file(request.url));
-      const failed = files.filter((request) => request.error || request.status !== 200)
-        .map((request) => `${new URL(request.url).pathname}: ${request.error || request.status || 'no answer'}`);
+      // A request that is open after the time limit did not get its file.
+      const failed = files.filter((request) => request.open || request.error || request.status !== 200)
+        .map((request) => `${new URL(request.url).pathname}: ${request.open ? 'no end' : request.error || request.status || 'no answer'}`);
       total += files.length;
       step(page, 'each file request gets its file', files.length > 0 && failed.length === 0, { requests: files.length, failed });
     }

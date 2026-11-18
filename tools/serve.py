@@ -10,11 +10,13 @@ opens a new connection for each module of a page. The queue becomes full and som
 import argparse
 import sys
 
-from thread_server import FileHandler, Server
+# The README command has no -B option. Do not write a __pycache__ folder to the checkout.
+sys.dont_write_bytecode = True
+from thread_server import FileHandler, Server  # noqa: E402
 
 DEFAULT_PORT = 8000
-# The first example of the README quickstart.
-START = '/examples/primitives.html'
+# The index page of the examples. The README quickstart starts there.
+START = '/examples/'
 
 
 def make_server(port=0):

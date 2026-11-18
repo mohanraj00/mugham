@@ -2,6 +2,7 @@
 issue #111: the server gives the files of src/, catalog/ and examples/ only, on 127.0.0.1 only, with no API.
 Its listen queue holds the connections of one example page."""
 import http.client
+import os
 from pathlib import Path
 import re
 import subprocess
@@ -47,6 +48,7 @@ class ServeTest(unittest.TestCase):
         self.assertEqual(self.call('GET', '/src/thread/index.js?mode=dark')[0], 200)
 
     def test_a_folder_path_gives_the_index_page_of_the_folder(self):
+        self.assertEqual(self.call('GET', '/examples/'), (200, 'text/html; charset=utf-8'))
         self.assertEqual(self.call('GET', '/examples/apps/'), (200, 'text/html; charset=utf-8'))
         self.assertEqual(self.call('GET', '/examples/apps')[0], 404)
         self.assertEqual(self.call('GET', '/src/')[0], 404)
@@ -83,7 +85,7 @@ class ServePortTest(unittest.TestCase):
         process = start()
         try:
             url = process.stdout.readline().strip()
-            self.assertRegex(url, r'^http://127\.0\.0\.1:\d+/examples/')
+            self.assertRegex(url, r'^http://127\.0\.0\.1:\d+/examples/$')
             port = int(url.split(':')[2].split('/')[0])
             self.assertNotEqual(port, serve.DEFAULT_PORT)
             connection = http.client.HTTPConnection('127.0.0.1', port, timeout=10)
@@ -95,6 +97,21 @@ class ServePortTest(unittest.TestCase):
             process.communicate()
             if held:
                 held.close()
+
+    def test_the_quickstart_command_writes_no_bytecode_to_the_checkout(self):
+        # The project check refuses a generated folder in the checkout. The README command has no -B option.
+        cache = ROOT / 'tools' / '__pycache__'
+        if cache.exists():
+            self.skipTest('tools/__pycache__ exists already')
+        env = {key: value for key, value in os.environ.items() if key not in ('PYTHONDONTWRITEBYTECODE', 'PYTHONPYCACHEPREFIX')}
+        process = subprocess.Popen([sys.executable, str(ROOT / 'tools' / 'serve.py'), '--port', '0'],
+                                   stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=env)
+        try:
+            self.assertRegex(process.stdout.readline(), r'^http://127\.0\.0\.1:\d+/examples/$')
+            self.assertFalse(cache.exists())
+        finally:
+            process.terminate()
+            process.communicate()
 
     def test_a_busy_chosen_port_gives_one_clear_line_and_a_non_zero_exit(self):
         held = hold(0)
