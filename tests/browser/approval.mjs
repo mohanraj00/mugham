@@ -7,7 +7,7 @@ import { spawn } from 'node:child_process';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { ROOT, evaluate, open, sleep, startChrome } from '../../tools/browser_check.mjs';
+import { ROOT, coverSteps, evaluate, open, sleep, startChrome } from '../../tools/browser_check.mjs';
 
 async function fixtureApi() {
   const server = spawn(process.env.PYTHON || 'python3', ['-B', join(ROOT, 'tools', 'approval_server.py'), '--port', '0'],
@@ -97,6 +97,7 @@ async function main() {
       ['button', 'Approve D-0001'], ['button', 'Reject D-0002']]) {
       step(`the accessibility tree has the ${role} ${name}`, named.some(([r, n]) => r === role && n === name), name);
     }
+    steps.push(...await coverSteps(session, sessionId));
   } catch (error) {
     step('the check runs', false, String(error.message || error));
   } finally {

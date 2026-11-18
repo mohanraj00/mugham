@@ -1,10 +1,11 @@
-// The browser check of the examples index (issue 99). tools/browser_check.mjs runs it.
+// The browser check of the examples index (issue 99) and of the docs panel (issue 100). tools/browser_check.mjs runs it.
 // It opens examples/index.html, filters the list, then follows the link of each example. Each page must load
 // with the status 200 and show the frame: the link back to the index, the group, and the previous and next
 // example. The main check fails for each console error of a page. The expected names come from
 // examples/examples.json, and the expected filter results come from its sentences.
 import { readFileSync } from 'node:fs';
 
+const DOCS = JSON.parse(readFileSync(new URL('../../examples/docs.json', import.meta.url), 'utf8'));
 const LIST = JSON.parse(readFileSync(new URL('../../examples/examples.json', import.meta.url), 'utf8'));
 const EXAMPLES = LIST.groups.flatMap((group) => group.examples.map((example) => ({ ...example, group: group.title })));
 // The arguments of each fixture API that an example needs. Each one also serves the example files.
@@ -35,6 +36,45 @@ const FRAME = `(() => {
     prev: link('prev'), next: link('next'), need: header.querySelector('p.examples-need')?.textContent ?? null,
     status: performance.getEntriesByType('navigation')[0].responseStatus };
 })()`;
+
+// Open each part of the docs panel, then read it. The keys of each part must be the keys of the contract in the
+// registry of the page. used has each component that an element of the page shows, in each shadow root.
+const PANEL = `(async () => {
+  const aside = document.querySelector('body > aside.example-docs');
+  if (!aside) return null;
+  const parts = [...aside.querySelectorAll(':scope > details')];
+  for (const part of parts) part.open = true;
+  await new Promise((done) => setTimeout(done, 100));
+  const { CONTRACTS } = await import('/src/render/registry.js');
+  const used = new Set();
+  const walk = (root) => { for (const node of root.querySelectorAll('*')) {
+    if (node.tagName === 'MU-THREAD') used.add('thread');
+    else if (node.tagName.startsWith('MU-')) used.add(node.constructor.component);
+    if (node.shadowRoot) walk(node.shadowRoot);
+  } };
+  walk(document);
+  const main = document.querySelector('body > main').getBoundingClientRect();
+  const box = aside.getBoundingClientRect();
+  return {
+    used: [...used], missing: [...aside.querySelectorAll('[data-missing]')].map((node) => node.dataset.missing),
+    beside: box.left >= main.right - 1 && box.top < main.bottom, below: box.top >= main.bottom - 1,
+    parts: parts.map((part) => {
+      const name = part.dataset.component;
+      const element = part.querySelector('summary code').textContent;
+      const sample = part.querySelector(':scope > pre');
+      return { name, element, defined: Boolean(customElements.get(element)),
+        keys: [...part.querySelectorAll(':scope > dl.docs-keys > dt')].map((node) => node.dataset.key),
+        contract: name === 'thread' ? [] : Object.keys(CONTRACTS[name]?.data ?? { missing: true }),
+        types: [...part.querySelectorAll(':scope > dl.docs-keys > dd')].every((node) => node.textContent.length > 3),
+        events: [...part.querySelectorAll(':scope > dl.docs-events > dt')].map((node) => node.textContent),
+        actions: part.querySelectorAll(':scope > h4').length >= 2,
+        sample: sample ? JSON.parse(sample.textContent).component : null,
+        howto: [...part.querySelectorAll(':scope > ol.docs-howto strong')].map((node) => node.textContent.trim()),
+        links: [...part.querySelectorAll(':scope > p.docs-links a')].map((node) => node.href) };
+    }),
+  };
+})()`;
+const docsOf = (name) => (name === 'thread' ? DOCS.thread : (DOCS.components[name] ?? DOCS.application));
 
 export async function exampleIndexChecks(session, sessionId, base, { evaluate, open, sleep, pythonServer }) {
   const page = 'examples/index.html';
@@ -90,6 +130,33 @@ export async function exampleIndexChecks(session, sessionId, base, { evaluate, o
       step(where, 'the link of the index opens the page, and the page has the frame', JSON.stringify(frame) === JSON.stringify(expected), frame);
       marked += [frame?.prev, frame?.next].filter((item) => item?.text.endsWith(' (needs its fixture API)')).length;
       if (frame?.need) noted += 1;
+
+      // The docs panel. A wide screen shows it next to the example, and a narrow screen shows it below.
+      const wide = index === 0 || example.path === 'apps/support/';
+      if (wide) await session.send('Emulation.setDeviceMetricsOverride', { width: 1280, height: 800, deviceScaleFactor: 1, mobile: false }, sessionId);
+      const panel = await evaluate(session, sessionId, PANEL);
+      step(where, 'the docs panel has one part for each component of the page, and no doc is missing',
+        panel !== null && JSON.stringify(panel.parts.map((part) => part.name)) === JSON.stringify(example.components)
+          && panel.missing.length === 0 && panel.used.every((name) => example.components.includes(name)),
+        panel && { parts: panel.parts.map((part) => part.name), missing: panel.missing, used: panel.used });
+      for (const part of panel?.parts ?? []) {
+        const docs = docsOf(part.name);
+        const links = [docs.doc.path, DOCS.guides[docs.guide].path].map((path) => DOCS.repository + path);
+        step(where, `the part of ${part.name} gives the element, the keys of the contract, the events, the actions, the sample and the links`,
+          part.defined && part.element === (docs.element ?? `mu-app-${part.name}`) && part.types && part.actions
+            && JSON.stringify(part.keys) === JSON.stringify(part.contract)
+            && JSON.stringify(part.events) === JSON.stringify(docs.events.map(([name]) => name))
+            && part.sample === (docs.sample ? part.name : null)
+            && JSON.stringify(part.howto) === JSON.stringify((docs.howto ?? []).map(([title]) => title + '.'))
+            && JSON.stringify(part.links) === JSON.stringify(links), part);
+      }
+      if (wide) {
+        step(where, 'a wide screen shows the docs panel next to the example', panel?.beside === true, { beside: panel?.beside });
+        await session.send('Emulation.setDeviceMetricsOverride', { width: 375, height: 812, deviceScaleFactor: 2, mobile: true }, sessionId);
+        const narrow = await evaluate(session, sessionId, PANEL);
+        step(where, 'a narrow screen shows the docs panel below the example', narrow?.below === true, { below: narrow?.below });
+        await session.send('Emulation.clearDeviceMetricsOverride', {}, sessionId);
+      }
     }
     const fixtures = EXAMPLES.filter((example) => example.needs).length;
     step(page, 'each example with a fixture API tells how to start it, and each link across two servers tells the need',

@@ -24,6 +24,7 @@
 }
 .example-list h3 { font: var(--mu-type-body); font-weight: var(--mu-type-weight-strong); }
 [hidden] { display: none !important; }
+
 @media (forced-colors: active) {
   .filter input { background: Field; color: FieldText; border-color: FieldText; }
   .example-list li { background: Canvas; border-color: CanvasText; }

@@ -1,80 +1,80 @@
 {
-  "note": "The list of the example pages, in groups. examples/index.js shows it, examples/frame.js makes the frame of each page from it, and the browser check follows each path. needs is the command of the fixture API that an example needs.",
+  "note": "The list of the example pages, in groups. examples/index.js shows it, examples/frame.js makes the frame of each page from it, and the browser check follows each path. needs is the command of the fixture API that an example needs. components gives each component of the page, and the docs panel shows the docs of each one.",
   "groups": [
     {
       "id": "cards",
       "title": "Cards and actions",
       "examples": [
-        {"name": "Loans", "path": "cards/loans.html", "text": "A card, an action button, a card grid with collapse controls and a form."},
-        {"name": "Primitives", "path": "cards/primitives.html", "text": "Each primitive: text, a button, the fields, a stack and a grid."},
-        {"name": "Approvals", "path": "cards/approval.html", "text": "Open decisions as cards with their evidence. A person approves or rejects each decision.", "needs": "python3 -B tools/approval_server.py"},
-        {"name": "Application contract", "path": "cards/register.html", "text": "An application registers its own contract and element for a seed tray, and an agent fills it."},
-        {"name": "Offline source", "path": "cards/offline.html", "text": "An offline data source of a tool library in each state, offline and online."},
-        {"name": "Status", "path": "cards/status.html", "text": "Each state of the status component, and a refused state."}
+        {"name": "Loans", "path": "cards/loans.html", "components": ["card", "action-button", "card-grid", "editable-form", "field"], "text": "A card, an action button, a card grid with collapse controls and a form."},
+        {"name": "Primitives", "path": "cards/primitives.html", "components": ["stack", "text", "field", "button", "grid"], "text": "Each primitive: text, a button, the fields, a stack and a grid."},
+        {"name": "Approvals", "path": "cards/approval.html", "components": ["card", "action-button"], "text": "Open decisions as cards with their evidence. A person approves or rejects each decision.", "needs": "python3 -B tools/approval_server.py"},
+        {"name": "Application contract", "path": "cards/register.html", "components": ["seed-tray", "thread"], "text": "An application registers its own contract and element for a seed tray, and an agent fills it."},
+        {"name": "Offline source", "path": "cards/offline.html", "components": ["source-status", "card-grid", "card"], "text": "An offline data source of a tool library in each state, offline and online."},
+        {"name": "Status", "path": "cards/status.html", "components": ["status"], "text": "Each state of the status component, and a refused state."}
       ]
     },
     {
       "id": "forms",
       "title": "Inputs and forms",
       "examples": [
-        {"name": "Input types", "path": "forms/inputs.html", "text": "A form with each input type, and a typed edit of a number and a date."},
-        {"name": "Membership form", "path": "forms/membership.html", "text": "A form card with 3 sections and 25 fields in a thread. A person edits one field in place."},
-        {"name": "Upload", "path": "forms/upload.html", "text": "An upload control with the limits of the page. Each file shows Done only after its receipt.", "needs": "python3 tools/upload_server.py"}
+        {"name": "Input types", "path": "forms/inputs.html", "components": ["editable-form", "field", "long-text-field", "number-field", "date-field", "choice-field"], "text": "A form with each input type, and a typed edit of a number and a date."},
+        {"name": "Membership form", "path": "forms/membership.html", "components": ["thread", "form-card"], "text": "A form card with 3 sections and 25 fields in a thread. A person edits one field in place."},
+        {"name": "Upload", "path": "forms/upload.html", "components": ["upload"], "text": "An upload control with the limits of the page. Each file shows Done only after its receipt.", "needs": "python3 tools/upload_server.py"}
       ]
     },
     {
       "id": "tables",
       "title": "Tables and grids",
       "examples": [
-        {"name": "Table", "path": "tables/table.html", "text": "A table of plots with keyboard sorting, row status text and an empty table."},
-        {"name": "Data grid", "path": "tables/budget.html", "text": "An editable grid with a budget, typed cells and a total row that the page computes."},
-        {"name": "Review queue", "path": "tables/review-queue.html", "text": "A reviewer accepts, corrects or rejects an extracted value next to its source excerpt, on a fixture API."},
-        {"name": "Snapshots", "path": "tables/snapshots.html", "text": "A comparison of two snapshots of versioned records with a diff, on a fixture API."}
+        {"name": "Table", "path": "tables/table.html", "components": ["table"], "text": "A table of plots with keyboard sorting, row status text and an empty table."},
+        {"name": "Data grid", "path": "tables/budget.html", "components": ["data-grid"], "text": "An editable grid with a budget, typed cells and a total row that the page computes."},
+        {"name": "Review queue", "path": "tables/review-queue.html", "components": ["table", "excerpt", "editable-form", "field", "number-field", "date-field", "action-button", "diff"], "text": "A reviewer accepts, corrects or rejects an extracted value next to its source excerpt, on a fixture API."},
+        {"name": "Snapshots", "path": "tables/snapshots.html", "components": ["table", "diff"], "text": "A comparison of two snapshots of versioned records with a diff, on a fixture API."}
       ]
     },
     {
       "id": "evidence",
       "title": "Evidence",
       "examples": [
-        {"name": "Citation", "path": "evidence/citation.html", "text": "A citation in a message, a citation with no source and a refused citation."},
-        {"name": "Excerpt", "path": "evidence/excerpt.html", "text": "An excerpt of a document with a marked span in a message, and a refused excerpt."},
-        {"name": "Provenance slots", "path": "evidence/provenance.html", "text": "A card with the authorship slot and the citation slot, and a refused card."},
-        {"name": "Diff", "path": "evidence/diff.html", "text": "A diff of two versions of a hall booking, and a large diff that starts closed."},
-        {"name": "Narration check", "path": "evidence/narration.html", "text": "A check that compares the narration of an agent with the values of a card."}
+        {"name": "Citation", "path": "evidence/citation.html", "components": ["citation"], "text": "A citation in a message, a citation with no source and a refused citation."},
+        {"name": "Excerpt", "path": "evidence/excerpt.html", "components": ["excerpt"], "text": "An excerpt of a document with a marked span in a message, and a refused excerpt."},
+        {"name": "Provenance slots", "path": "evidence/provenance.html", "components": ["card"], "text": "A card with the authorship slot and the citation slot, and a refused card."},
+        {"name": "Diff", "path": "evidence/diff.html", "components": ["diff"], "text": "A diff of two versions of a hall booking, and a large diff that starts closed."},
+        {"name": "Narration check", "path": "evidence/narration.html", "components": ["card"], "text": "A check that compares the narration of an agent with the values of a card."}
       ]
     },
     {
       "id": "thread",
       "title": "Chat thread",
       "examples": [
-        {"name": "Thread", "path": "thread/thread.html", "text": "Two people and two agents talk about a loan, with a refused component and an action with a receipt.", "needs": "python3 tools/thread_server.py"},
-        {"name": "Rich text", "path": "thread/rich-text.html", "text": "An agent message with a heading, a list of steps and a link, as typed nodes."}
+        {"name": "Thread", "path": "thread/thread.html", "components": ["thread", "card", "action-button"], "text": "Two people and two agents talk about a loan, with a refused component and an action with a receipt.", "needs": "python3 tools/thread_server.py"},
+        {"name": "Rich text", "path": "thread/rich-text.html", "components": ["thread", "rich-text", "card"], "text": "An agent message with a heading, a list of steps and a link, as typed nodes."}
       ]
     },
     {
       "id": "media",
       "title": "Media",
       "examples": [
-        {"name": "Image", "path": "media/image.html", "text": "A floor plan from a permitted origin in a message and in a card, and a refused image."},
-        {"name": "Charts", "path": "media/chart.html", "text": "A bar chart, a line chart and a stacked bar chart, each with a table view."}
+        {"name": "Image", "path": "media/image.html", "components": ["image", "card"], "text": "A floor plan from a permitted origin in a message and in a card, and a refused image."},
+        {"name": "Charts", "path": "media/chart.html", "components": ["chart", "table"], "text": "A bar chart, a line chart and a stacked bar chart, each with a table view."}
       ]
     },
     {
       "id": "apps",
       "title": "Apps",
       "examples": [
-        {"name": "Support desk", "path": "apps/support/", "text": "A ticket queue and a thread. A person corrects the reply that an agent drafts, and sends it.", "needs": "python3 tools/apps_server.py"},
-        {"name": "Change review", "path": "apps/changes/", "text": "An agent proposes a timetable change with a citation. A reviewer approves it with a confirm step.", "needs": "python3 tools/apps_server.py"},
-        {"name": "Field inspection", "path": "apps/inspection/", "text": "A registered checklist component, a findings form and a close action, for a phone.", "needs": "python3 tools/apps_server.py"}
+        {"name": "Support desk", "path": "apps/support/", "components": ["grid", "card", "button", "thread", "editable-form", "field"], "text": "A ticket queue and a thread. A person corrects the reply that an agent drafts, and sends it.", "needs": "python3 tools/apps_server.py"},
+        {"name": "Change review", "path": "apps/changes/", "components": ["card", "button", "thread", "action-button", "excerpt"], "text": "An agent proposes a timetable change with a citation. A reviewer approves it with a confirm step.", "needs": "python3 tools/apps_server.py"},
+        {"name": "Field inspection", "path": "apps/inspection/", "components": ["thread", "inspection-checklist", "editable-form", "field", "action-button"], "text": "A registered checklist component, a findings form and a close action, for a phone.", "needs": "python3 tools/apps_server.py"}
       ]
     },
     {
       "id": "guides",
       "title": "Guides",
       "examples": [
-        {"name": "Contracts guide", "path": "guides/contracts.html", "text": "The page of the contracts guide: a valid fill, refused fills and an application contract."},
-        {"name": "Assemble guide", "path": "guides/assemble.html", "text": "The page of the assembly guide: a thread with a card and an action."},
-        {"name": "Theme guide", "path": "guides/theme.html", "text": "The page of the theme guide: the kit theme and a second theme."}
+        {"name": "Contracts guide", "path": "guides/contracts.html", "components": ["card", "bird-count"], "text": "The page of the contracts guide: a valid fill, refused fills and an application contract."},
+        {"name": "Assemble guide", "path": "guides/assemble.html", "components": ["stack", "grid", "card", "action-button", "thread"], "text": "The page of the assembly guide: a thread with a card and an action."},
+        {"name": "Theme guide", "path": "guides/theme.html", "components": ["card", "action-button", "field"], "text": "The page of the theme guide: the kit theme and a second theme."}
       ]
     }
   ]
