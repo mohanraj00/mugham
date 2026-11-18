@@ -49,7 +49,15 @@ export async function snapshotChecks(session, sessionId, base, { evaluate, open,
   await compare('S-2', 'S-3');
   found = await until((value) => value.title === 'Ingredients: S-2 to S-3');
   check('a second compare replaces the first result and its impact', found.impact.join('|') === 'Shortbread (Recipes): Uses Sugar (removed), Butter (changed)', found);
-  await open_('Recipes');
+  // A comparison that is still pending when the person opens another collection must not show.
+  await act(`[...document.querySelectorAll('#snapshots button')].find((item) => item.textContent === 'Compare snapshots').click();
+    [...document.querySelectorAll('#collections button')].find((item) => item.textContent === 'Open Recipes').click();`);
+  found = await read();
+  check('a pending comparison does not show after another collection opens', found.diff === null && !found.snapshots.length, found);
+  await until((value) => value.snapshots.length === 2);
+  await sleep(400);
+  found = await read();
+  check('the old comparison does not come back', found.diff === null && !found.impact.length && found.snapshots.length === 2, found);
   found = await until((value) => value.snapshots.length === 2 && value.diff === null);
   check('another collection shows its snapshots and clears the result', found.snapshots.length === 2 && found.from === 'S-1' && found.to === 'S-2' && !found.impact.length, found);
   await compare('S-1', 'S-2');

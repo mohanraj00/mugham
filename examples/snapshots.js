@@ -58,11 +58,14 @@ async function showCollections() {
 }
 
 async function showSnapshots(collection) {
+  // A new collection ends each comparison that is still pending, and it clears the old controls and result.
   latest.collection += 1;
+  latest.compare += 1;
   const mine = latest.collection;
+  snapshots.replaceChildren();
+  comparison.replaceChildren();
   const items = await api.snapshots(collection.id);
   if (mine !== latest.collection) return;
-  comparison.replaceChildren();
   const select = (name, words, value) => {
     const label = document.createElement('label');
     const control = document.createElement('select');
