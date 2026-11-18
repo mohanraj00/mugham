@@ -20,7 +20,7 @@ BLOCK = re.compile(r'(?:^<!-- source: (?P<source>\S+) -->\n)?^```(?P<lang>\w*)\n
 # A source of a guide block is a file that a check runs or reads.
 SOURCES = ('examples/guides/', 'catalog/')
 # A shell block can only hold these commands. Each one runs in the README quickstart or in make check.
-COMMANDS = {'python3 -m http.server 8000', 'make check', 'node tools/browser_check.mjs', 'python3 -B -m unittest tests.test_guides'}
+COMMANDS = {'python3 tools/serve.py', 'make check', 'node tools/browser_check.mjs', 'python3 -B -m unittest tests.test_guides'}
 THEME_CSS = ROOT / 'examples' / 'guides' / 'theme.css'
 
 
