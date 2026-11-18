@@ -208,7 +208,54 @@ export async function evaluate(session, sessionId, expression) {
   return result.result.value;
 }
 
+// The docs panel of an example page must have a part for each component that the page shows, also for a
+// component that shows only after a person does a step (issue 100). On each example page, WATCH records each
+// kit element in each shadow root, 40 times in a second. COVER reads the record before the check leaves the page.
+const WATCH = `(() => {
+  if (window.muSeen) return true;
+  window.muSeen = new Set();
+  const walk = (root) => { for (const node of root.querySelectorAll('*')) {
+    if (node.tagName === 'MU-THREAD') window.muSeen.add('thread');
+    else if (node.tagName.startsWith('MU-') && node.constructor.component) window.muSeen.add(node.constructor.component);
+    if (node.shadowRoot) walk(node.shadowRoot);
+  } };
+  window.muLook = () => walk(document);
+  window.muLook();
+  setInterval(window.muLook, 25);
+  return true;
+})()`;
+const COVER = `(() => {
+  const aside = document.querySelector('body > aside.example-docs');
+  if (!window.muSeen || !aside) return null;
+  window.muLook();
+  const parts = [...aside.querySelectorAll(':scope > details')].map((part) => part.dataset.component);
+  return { page: location.pathname.slice(1), seen: [...window.muSeen], missing: [...window.muSeen].filter((name) => !parts.includes(name)) };
+})()`;
+const covered = new Map();
+
+async function cover(session, sessionId) {
+  let found = null;
+  try {
+    found = await evaluate(session, sessionId, COVER);
+  } catch {
+    return;
+  }
+  if (!found) return;
+  const entry = covered.get(found.page) ?? { seen: new Set(), missing: new Set() };
+  for (const name of found.seen) entry.seen.add(name);
+  for (const name of found.missing) entry.missing.add(name);
+  covered.set(found.page, entry);
+}
+
+// One step for each example page that the check opened. Call it after the last flow.
+export async function coverSteps(session, sessionId) {
+  await cover(session, sessionId);
+  return [...covered].map(([page, { seen, missing }]) => ({ page, step: 'the docs panel has a part for each component that the page showed',
+    ok: missing.size === 0, detail: JSON.stringify({ missing: [...missing], seen: [...seen] }) }));
+}
+
 export async function open(session, sessionId, url, problems) {
+  await cover(session, sessionId);
   const loaded = session.once('Page.loadEventFired', sessionId);
   await session.send('Page.navigate', { url }, sessionId);
   await loaded;
@@ -216,6 +263,7 @@ export async function open(session, sessionId, url, problems) {
     if (await evaluate(session, sessionId, 'document.readyState === "complete"')) break;
     await sleep(50);
   }
+  if (new URL(url).pathname.includes('/examples/')) await evaluate(session, sessionId, WATCH);
 }
 
 async function axErrors(session, sessionId, expected, where) {
@@ -775,6 +823,7 @@ async function main() {
     report.examples.push(...await snapshotChecks(session, sessionId, base, { evaluate, open, sleep }));
     report.examples.push(...await uploadExample(session, sessionId, report));
     report.examples.push(...await appPages(session, sessionId, report));
+    report.examples.push(...await coverSteps(session, sessionId));
     for (const item of report.accessibility) if (!item.ok) report.errors.push(`accessibility: ${item.where}: no ${item.role} named ${item.name}`);
     for (const step of [...report.keyboard, ...report.examples]) if (!step.ok) report.errors.push(`${step.page}: ${step.step}: ${step.detail}`);
     for (const problem of problems) report.errors.push('page error: ' + problem);

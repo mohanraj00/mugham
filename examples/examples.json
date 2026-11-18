@@ -28,8 +28,8 @@
       "examples": [
         {"name": "Table", "path": "tables/table.html", "components": ["table"], "text": "A table of plots with keyboard sorting, row status text and an empty table."},
         {"name": "Data grid", "path": "tables/budget.html", "components": ["data-grid"], "text": "An editable grid with a budget, typed cells and a total row that the page computes."},
-        {"name": "Review queue", "path": "tables/review-queue.html", "components": ["table"], "text": "A reviewer accepts, corrects or rejects an extracted value next to its source excerpt, on a fixture API."},
-        {"name": "Snapshots", "path": "tables/snapshots.html", "components": ["table"], "text": "A comparison of two snapshots of versioned records with a diff, on a fixture API."}
+        {"name": "Review queue", "path": "tables/review-queue.html", "components": ["table", "excerpt", "editable-form", "field", "number-field", "date-field", "action-button", "diff"], "text": "A reviewer accepts, corrects or rejects an extracted value next to its source excerpt, on a fixture API."},
+        {"name": "Snapshots", "path": "tables/snapshots.html", "components": ["table", "diff"], "text": "A comparison of two snapshots of versioned records with a diff, on a fixture API."}
       ]
     },
     {
@@ -63,9 +63,9 @@
       "id": "apps",
       "title": "Apps",
       "examples": [
-        {"name": "Support desk", "path": "apps/support/", "components": ["grid", "card", "button"], "text": "A ticket queue and a thread. A person corrects the reply that an agent drafts, and sends it.", "needs": "python3 tools/apps_server.py"},
-        {"name": "Change review", "path": "apps/changes/", "components": ["card", "button"], "text": "An agent proposes a timetable change with a citation. A reviewer approves it with a confirm step.", "needs": "python3 tools/apps_server.py"},
-        {"name": "Field inspection", "path": "apps/inspection/", "components": ["thread", "inspection-checklist", "editable-form", "field"], "text": "A registered checklist component, a findings form and a close action, for a phone.", "needs": "python3 tools/apps_server.py"}
+        {"name": "Support desk", "path": "apps/support/", "components": ["grid", "card", "button", "thread", "editable-form", "field"], "text": "A ticket queue and a thread. A person corrects the reply that an agent drafts, and sends it.", "needs": "python3 tools/apps_server.py"},
+        {"name": "Change review", "path": "apps/changes/", "components": ["card", "button", "thread", "action-button", "excerpt"], "text": "An agent proposes a timetable change with a citation. A reviewer approves it with a confirm step.", "needs": "python3 tools/apps_server.py"},
+        {"name": "Field inspection", "path": "apps/inspection/", "components": ["thread", "inspection-checklist", "editable-form", "field", "action-button"], "text": "A registered checklist component, a findings form and a close action, for a phone.", "needs": "python3 tools/apps_server.py"}
       ]
     },
     {
