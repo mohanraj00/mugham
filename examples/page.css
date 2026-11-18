@@ -1,3 +1,9 @@
 body { margin: 0; padding: var(--mu-space-4); background: var(--mu-color-surface); color: var(--mu-color-text); font: var(--mu-type-body); }
 @media (forced-colors: active) { body { background: Canvas; color: CanvasText; } }
 .decisions { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--mu-space-4); }
+.queue-detail { display: grid; gap: var(--mu-space-4); grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); align-items: start; margin-block: var(--mu-space-4); }
+.queue-actions { display: flex; flex-wrap: wrap; gap: var(--mu-space-3); }
+.queue-picks { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--mu-space-2); }
+.queue-picks button { font: inherit; min-height: 2.75rem; min-width: 2.75rem; padding: 0 var(--mu-space-3); cursor: pointer; background: transparent; color: var(--mu-color-text); border: 1px solid var(--mu-color-border); border-radius: var(--mu-radius-2); }
+.queue-picks button[aria-pressed="true"] { border-color: var(--mu-color-accent); border-width: 2px; }
+@media (forced-colors: active) { .queue-picks button { color: ButtonText; border-color: ButtonText; } }

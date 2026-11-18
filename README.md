@@ -150,6 +150,7 @@ python3 -m http.server 8000
    - `http://localhost:8000/examples/provenance.html`: a card with the authorship slot and the citation slot, and a refused card.
    - `http://localhost:8000/examples/offline.html`: an offline data source of a synthetic tool library in each state, offline and online.
    - `http://localhost:8000/examples/register.html`: an application contract and element for a synthetic seed tray, a refused fill, and the tray in a thread.
+   - `http://localhost:8000/examples/review-queue.html`: a review queue on a fixture API. A reviewer accepts, corrects or rejects an extracted value next to its source excerpt, and the page shows Done only after the receipt.
 
 5. For the thread example, stop the static server and start the example server. It streams synthetic agent events as server-sent events and gives the receipt of each action:
 
