@@ -12,6 +12,7 @@ import { imageKeyboardChecks } from '../tests/browser/image.js';
 import { richTextKeyboardChecks } from '../tests/browser/rich-text.js';
 import { budgetExampleChecks, dataGridKeyboardChecks } from '../tests/browser/data-grid.js';
 import { reviewQueueChecks } from '../tests/browser/review-queue.js';
+import { snapshotChecks } from '../tests/browser/snapshots.js';
 import { UPLOAD_FILES, uploadExampleChecks, uploadKeyboardChecks } from '../tests/browser/upload.js';
 
 export const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
@@ -64,6 +65,7 @@ const EXAMPLES = {
   'examples/budget.html': [1, 0, [['group', 'Synthetic budget 2027'], ['grid', 'Synthetic budget 2027'], ['columnheader', 'January'], ['rowheader', 'Total'],
     ['gridcell', '1575']]],
   'examples/review-queue.html': [1, 0, [['table', 'Open review tasks'], ['columnheader', 'Extracted value'], ['cell', 'R-101'], ['list', 'Tasks to review'], ['button', 'Review R-101']]],
+  'examples/snapshots.html': [1, 0, [['table', 'Collections'], ['columnheader', 'Snapshots'], ['cell', 'Ingredients'], ['list', 'Collections to open'], ['button', 'Open Ingredients']]],
   'examples/primitives.html': [16, 1, [['button', 'Renew'], ['group', 'Loan details'], ['group', 'Reading list'], ['textbox', 'Shelf code']]],
   'examples/loans.html': [9, 0, [['article', 'Field guide to moss'], ['button', 'Renew'], ['list', 'Current loans'], ['form', 'Change a loan']]],
   'examples/citation.html': [3, 1, [['group', 'Citation'], ['button', 'Open source: Synthetic weather notes, page 3'], ['article', 'Message from agent-weather']]],
@@ -720,6 +722,7 @@ async function main() {
     report.examples.push(...await membershipFlow(session, sessionId, base));
     report.examples.push(...await budgetExampleChecks(session, sessionId, base, { evaluate, open, sleep, key }));
     report.examples.push(...await reviewQueueChecks(session, sessionId, base, { evaluate, open, sleep }));
+    report.examples.push(...await snapshotChecks(session, sessionId, base, { evaluate, open, sleep }));
     report.examples.push(...await uploadExample(session, sessionId, report));
     report.examples.push(...await appPages(session, sessionId, report));
     for (const item of report.accessibility) if (!item.ok) report.errors.push(`accessibility: ${item.where}: no ${item.role} named ${item.name}`);
