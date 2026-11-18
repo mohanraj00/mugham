@@ -9,7 +9,8 @@ const fill = (component, data) => ({ component, version: '0.1.0', data });
 const AUTHOR = { authorship: { type: 'agent', id: 'agent-loans', name: 'Loan helper' } };
 const outer = (component, data) => ({ ...fill(component, data), slots: AUTHOR });
 const fact = (label, value) => fill('fact', { label, value });
-const loan = (title, date, shelf) => fill('card', { title, date, date_label: 'Due', facts: [fact('Shelf', shelf), fact('Renewals', '0 of 3')] });
+const loan = (title, date, shelf) => fill('card', { title, date, date_label: 'Due', collapsible: true, collapsed: true,
+  collapsed_summary: `Due: ${date}`, facts: [fact('Shelf', shelf), fact('Renewals', '0 of 3')] });
 
 function make(tag, value) {
   const node = document.createElement(tag);
@@ -30,6 +31,7 @@ function service(event) {
 
 const card = make('mu-card', outer('card', {
   title: 'Field guide to moss', summary: 'A short guide for walks in wet woods.', date: '2026-12-01', date_label: 'Due',
+  collapsible: true, status: 'On loan', collapsed_summary: 'Due on 2026-12-01. One renewal used.',
   facts: [fact('Shelf', 'B-14'), fact('Renewals', '1 of 3')],
 }));
 const renew = make('mu-action-button', fill('action-button', { label: 'Renew' }));
@@ -37,7 +39,7 @@ renew.slot = 'actions';
 renew.action = { tool: 'library.renew', label: 'Renew', arguments: { loan_id: 'L-0001' } };
 card.append(renew);
 
-const grid = make('mu-card-grid', outer('card-grid', { label: 'Current loans', cards: [
+const grid = make('mu-card-grid', outer('card-grid', { label: 'Current loans', collapse_controls: true, cards: [
   loan('Rivers and deltas', '2026-12-03', 'C-02'),
   loan('A short history of maps', '2026-12-09', 'A-31'),
   loan('Weather at sea', '2026-12-15', 'D-07'),

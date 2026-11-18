@@ -91,6 +91,25 @@ VALID = {
 
 
 class CatalogContractTest(unittest.TestCase):
+    def test_card_collapse_keys_are_optional_and_typed(self):
+        self.assertEqual(catalog.fill_errors(outer('card', CARD['data']), CATALOG), [])
+        for collapsed in [False, True]:
+            data = {**CARD['data'], 'collapsible': True, 'collapsed': collapsed,
+                    'status': 'Waiting', 'collapsed_summary': 'Two facts.'}
+            self.assertEqual(catalog.fill_errors(outer('card', data), CATALOG), [])
+        for key in ['collapsible', 'collapsed']:
+            self.assertEqual(catalog.fill_errors(outer('card', {**CARD['data'], key: 'true'}), CATALOG),
+                             ['data.%s: must be true or false' % key])
+        self.assertEqual(CATALOG['card']['states'], ['default', 'expanded', 'collapsed'])
+        self.assertEqual(CATALOG['card']['accessibility']['keyboard'], ['Tab', 'Enter', 'Space'])
+
+    def test_grid_collapse_controls_are_optional_and_typed(self):
+        data = {'label': 'Loans', 'cards': [{**CARD, 'data': {**CARD['data'], 'collapsible': True, 'collapsed': True}}]}
+        for controls in [False, True]:
+            self.assertEqual(catalog.fill_errors(outer('card-grid', {**data, 'collapse_controls': controls}), CATALOG), [])
+        self.assertEqual(catalog.fill_errors(outer('card-grid', {**data, 'collapse_controls': 1}), CATALOG),
+                         ['data.collapse_controls: must be true or false'])
+
     def test_a_form_accepts_each_input_type_and_no_other_component(self):
         inputs = ['field', 'long-text-field', 'number-field', 'date-field', 'choice-field']
         form = {'title': 'Loan details', 'submit_label': 'Save', 'fields': [fill(name, VALID[name]) for name in inputs]}
