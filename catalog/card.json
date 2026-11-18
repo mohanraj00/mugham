@@ -3,7 +3,7 @@
   "name": "card",
   "version": "0.1.0",
   "kind": "component",
-  "description": "A card with a title, an optional summary, an optional date and up to six facts.",
+  "description": "A card with a title, optional details and an optional collapse control.",
   "ai_content": true,
   "slots": {
     "authorship": {
@@ -49,10 +49,34 @@
         "required": true,
         "name": "fact"
       }
+    },
+    "collapsible": {
+      "type": "boolean",
+      "label": "Collapse control",
+      "required": false
+    },
+    "collapsed": {
+      "type": "boolean",
+      "label": "Start collapsed",
+      "required": false
+    },
+    "status": {
+      "type": "text",
+      "label": "Status",
+      "required": false,
+      "max_length": 120
+    },
+    "collapsed_summary": {
+      "type": "text",
+      "label": "Collapsed summary",
+      "required": false,
+      "max_length": 200
     }
   },
   "states": [
-    "default"
+    "default",
+    "expanded",
+    "collapsed"
   ],
   "tokens": [
     "color.surface",
@@ -65,14 +89,19 @@
     "radius.2",
     "type.body",
     "type.caption",
-    "type.weight-strong"
+    "type.weight-strong",
+    "color.focus"
   ],
   "accessibility": {
     "role": "article",
     "name": {
       "field": "title"
     },
-    "keyboard": [],
+    "keyboard": [
+      "Tab",
+      "Enter",
+      "Space"
+    ],
     "forced_colors": true,
     "reduced_motion": true
   }

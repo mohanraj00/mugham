@@ -22,6 +22,20 @@ export { MuUpload } from './upload.js';
 
 const FIELD_NAME = /^[a-z][a-z0-9]*(_[a-z0-9]+)*$/;
 const boundError = (name) => `data.sections: the read-only field ${name} does not show the bound value`;
+const COLLAPSE_CSS = sheet(`
+  .collapse-controls { display: flex; flex-wrap: wrap; gap: var(--mu-space-2); margin-bottom: var(--mu-space-2); }
+  .collapse-toggle, .collapse-controls button {
+    font: var(--mu-type-body); min-height: 2.75rem; padding: var(--mu-space-2) var(--mu-space-3);
+    border: 1px solid var(--mu-color-border); border-radius: var(--mu-radius-2);
+    background: transparent; color: var(--mu-color-text); cursor: pointer;
+  }
+  .card-header { display: flex; align-items: center; justify-content: space-between; gap: var(--mu-space-2); }
+  .card-body { display: flex; flex-direction: column; gap: var(--mu-space-2); }
+  [hidden] { display: none !important; }
+  @media (forced-colors: active) {
+    .collapse-toggle, .collapse-controls button { color: ButtonText; border-color: ButtonText; background: ButtonFace; }
+  }
+`);
 const CARD_CSS = sheet(`
   :host { display: block; }
   article, form {
@@ -272,9 +286,100 @@ export class MuActionButton extends ActionElement {
 
 export class MuCard extends MuElement {
   static component = 'card';
-  static styles = [CARD_CSS];
+  static styles = [CARD_CSS, COLLAPSE_CSS];
+
+  #collapsed = false;
+  #hasRendered = false;
+  #changed = false;
+  #toggle = null;
+  #body = null;
+  #summary = null;
+  #observer = new MutationObserver(() => this.#watchActions());
+
+  constructor() {
+    super();
+    // Expand before the action event reaches application code. The request still needs its receipt.
+    for (const name of ['mu-action', 'mu-upload']) this.addEventListener(name, () => this.#watchActions());
+  }
+
+  connectedCallback() {
+    this.#watchActions();
+  }
+
+  disconnectedCallback() {
+    this.#observer.disconnect();
+  }
+
+  get collapsed() {
+    return this.fill !== null && this.#collapsed;
+  }
+
+  set collapsed(value) {
+    if (typeof value !== 'boolean') throw new TypeError('collapsed: must be a boolean');
+    if (!this.fill?.data.collapsible) return;
+    this.#setCollapsed(value && !this.#hasPending());
+  }
+
+  // Inspect light DOM and open shadow roots, including nested forms and offline pending markers.
+  #actionRoots() {
+    const roots = [this];
+    for (let i = 0; i < roots.length; i += 1) {
+      for (const node of roots[i].querySelectorAll('*')) if (node.shadowRoot) roots.push(node.shadowRoot);
+    }
+    return roots;
+  }
+
+  #hasPending() {
+    return this.#actionRoots().some((root) => [...root.querySelectorAll('*')].some((node) =>
+      node.action?.state === 'pending' || ['pending', 'confirm'].includes(node.dataset?.state)));
+  }
+
+  #watchActions() {
+    this.#observer.disconnect();
+    if (!this.fill?.data.collapsible) return;
+    if (this.isConnected) {
+      for (const root of this.#actionRoots()) {
+        this.#observer.observe(root, { subtree: true, childList: true, attributes: true, attributeFilter: ['data-state'] });
+      }
+    }
+    if (this.#hasPending()) this.#setCollapsed(false);
+  }
+
+  #setCollapsed(value) {
+    if (this.#collapsed === value) return;
+    // Do not move focus when a grid button changes this card. Return only focus inside hidden content.
+    const focused = value && (this.#body?.contains(this.shadowRoot.activeElement) || this.contains(document.activeElement));
+    this.#collapsed = value;
+    this.dataset.state = value ? 'collapsed' : 'expanded';
+    this.#sync();
+    if (focused) this.#toggle?.focus();
+    this.#emit();
+  }
+
+  #sync() {
+    if (!this.#toggle) return;
+    this.#toggle.setAttribute('aria-expanded', String(!this.#collapsed));
+    this.#toggle.setAttribute('aria-label', `${this.#collapsed ? 'Expand' : 'Collapse'} ${this.fill.data.title}`);
+    this.#toggle.textContent = this.#collapsed ? 'Expand' : 'Collapse';
+    this.#body.hidden = this.#collapsed;
+    if (this.#summary) this.#summary.hidden = !this.#collapsed;
+  }
+
+  #emit() {
+    this.dispatchEvent(new CustomEvent('mu-collapse', { bubbles: true, composed: true, detail: { collapsed: this.#collapsed } }));
+  }
+
+  state(data) {
+    return data.collapsible ? (data.collapsed && !this.#hasPending() ? 'collapsed' : 'expanded') : 'default';
+  }
 
   render(data) {
+    this.#observer.disconnect();
+    const before = this.#collapsed;
+    this.#collapsed = Boolean(data.collapsible && data.collapsed && !this.#hasPending());
+    this.#toggle = null;
+    this.#body = null;
+    this.#summary = null;
     const date = data.date ? el('p', { class: 'muted' }, `${data.date_label ?? 'Date'}: ${data.date}`) : null;
     const facts = (data.facts ?? []).length ? el('dl', { part: 'facts' }, ...data.facts.flatMap((item) => [
       el('dt', {}, item.data.label), el('dd', {}, item.data.value)])) : null;
@@ -282,16 +387,37 @@ export class MuCard extends MuElement {
     const actions = el('div', { class: 'actions', part: 'actions' });
     const slot = document.createElement('slot');
     slot.name = 'actions';
+    slot.addEventListener('slotchange', () => this.#watchActions());
     actions.append(slot);
-    return [el('article', { 'aria-label': data.title, part: 'card' },
-      el('p', { class: 'title' }, data.title),
-      data.summary ? el('p', {}, data.summary) : null, date, facts, provenance(this.fill.slots), actions)];
+    const title = el('p', { class: 'title', part: 'title' }, data.title);
+    const status = data.status ? el('p', { class: 'muted', part: 'status', role: 'status' }, data.status) : null;
+    const content = [data.summary ? el('p', {}, data.summary) : null, date, facts, provenance(this.fill.slots), actions];
+    let parts = [title, status, ...content];
+    if (data.collapsible) {
+      this.#body = el('div', { class: 'card-body', part: 'body', id: 'card-body' }, ...content);
+      this.#summary = data.collapsed_summary ? el('p', { part: 'collapsed-summary' }, data.collapsed_summary) : null;
+      this.#toggle = el('button', { type: 'button', class: 'collapse-toggle', part: 'toggle', 'aria-controls': 'card-body' });
+      this.#toggle.addEventListener('click', () => { this.collapsed = !this.#collapsed; });
+      this.#sync();
+      parts = [el('header', { class: 'card-header' }, title, this.#toggle), status, this.#summary, this.#body];
+    }
+    const article = el('article', { 'aria-label': data.title, part: 'card' }, ...parts);
+    this.#changed = this.#hasRendered && before !== this.#collapsed;
+    this.#hasRendered = true;
+    return [article];
+  }
+
+  rendered() {
+    this.#watchActions();
+    const changed = this.#changed;
+    this.#changed = false;
+    if (changed) this.#emit();
   }
 }
 
 export class MuCardGrid extends MuElement {
   static component = 'card-grid';
-  static styles = [sheet(`
+  static styles = [COLLAPSE_CSS, sheet(`
     :host { display: block; }
     ul { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--mu-space-4);
       grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--mu-size-column-medium)), 1fr)); }
@@ -314,7 +440,16 @@ export class MuCardGrid extends MuElement {
       card.fill = this.fill.slots ? { ...item, slots: this.fill.slots } : item;
       list.append(el('li', {}, card));
     }
-    return [list];
+    if (!data.collapse_controls) return [list];
+    const controls = el('div', { class: 'collapse-controls', role: 'group', 'aria-label': `${data.label}: card controls` });
+    for (const [label, collapsed] of [['Expand all', false], ['Collapse all', true]]) {
+      const button = el('button', { type: 'button' }, label);
+      button.addEventListener('click', () => {
+        for (const card of list.querySelectorAll('mu-card')) card.collapsed = collapsed;
+      });
+      controls.append(button);
+    }
+    return [controls, list];
   }
 }
 

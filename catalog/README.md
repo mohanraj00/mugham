@@ -14,13 +14,13 @@ Each JSON file in this folder is the contract of one component. [schema/README.m
 | `stack.json` | `mu-stack` | primitive | A labeled group in one column or one row. |
 | `grid.json` | `mu-grid` | primitive | A labeled group in columns. |
 | `fact.json` | in `mu-card` | component | A label and a value. |
-| `card.json` | `mu-card` | component | A title, a summary, a date and up to six facts. |
+| `card.json` | `mu-card` | component | A title, a summary, a date and up to six facts, with optional collapse. See [Card rules](../src/components/card.md). |
 | `action-button.json` | `mu-action-button` | component | A button for one action. |
 | `editable-form.json` | `mu-editable-form` | component | Up to 20 fields of the five input types, submitted as one action. |
 | `form-line.json` | in `mu-form-card` | component | One field of a form card, with an optional line number and a read-only flag. |
 | `form-section.json` | in `mu-form-card` | component | A titled group of up to 40 form lines. |
 | `form-card.json` | `mu-form-card` | component | Up to 10 sections of form lines. A person reads the values and edits one field in place. The changes go as one action. |
-| `card-grid.json` | `mu-card-grid` | component | A labeled list of cards. |
+| `card-grid.json` | `mu-card-grid` | component | A labeled list of cards, with optional Expand all and Collapse all controls. |
 | `citation.json` | `mu-citation` | component | A source name, a locator as text, an optional quote and an open button. |
 | `diff-change.json` | in `mu-diff` | component | One change: a label, the kind of the change, and the value before and after. |
 | `diff-part.json` | in `mu-diff` | component | A titled part of a diff with up to 200 changes. A person opens and closes it. |
@@ -123,6 +123,14 @@ These are the limits of the call:
 - `tools/catalog.py` checks only the contracts in this folder. The application keeps its own contract files and its own tests.
 
 [examples/register.html](../examples/register.html) registers the synthetic `seed-tray` contract and its element.
+
+## Card collapse
+
+`card` accepts optional boolean keys `collapsible` and `collapsed`. Only `collapsible: true` adds a header toggle. `collapsed: true` sets the start state. Without `collapsible`, the card works as before. `status` is optional text of up to 120 characters. `collapsed_summary` is optional text of up to 200 characters.
+
+A collapsed card shows the title, the status and the short summary. It hides the body and the actions. A card with a pending action, an action that waits for a receipt or an open confirm step stays expanded. A new pending action expands a collapsed card. The card sends `mu-collapse` with `{ collapsed }` on each state change. The event bubbles and crosses the shadow root. The kit saves no collapse state outside the element. A new fill uses its start state again.
+
+`card-grid` accepts `collapse_controls: true` to show `Expand all` and `Collapse all`. Each button changes only cards with `collapsible: true`. The pending rule applies to each card. [Card rules](../src/components/card.md) gives the properties, focus rules and slots.
 
 ## Actions
 

@@ -74,6 +74,7 @@ export class MuElement extends HTMLElement {
     this.dataset.state = this.state(this.#fill.data);
     // A render can give null for an optional part. Such a part shows nothing.
     this.shadowRoot.replaceChildren(...this.render(this.#fill.data).filter((part) => part !== null && part !== undefined));
+    this.rendered();
   }
 
   // The element keeps no data and shows the refusal as text. A subclass also calls it when its shown data stops
@@ -103,4 +104,7 @@ export class MuElement extends HTMLElement {
   render() {
     return [];
   }
+
+  // A component can update its controls and send state events after its new nodes are in the DOM.
+  rendered() {}
 }

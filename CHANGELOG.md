@@ -4,6 +4,8 @@ Each release has an entry. The newest entry is first.
 
 ## Unreleased
 
+- Cards can collapse and expand (#96). The optional keys `collapsible` and `collapsed` add a keyboard toggle and set the start state. A collapsed card shows its title, status and optional short summary. Pending actions and actions that wait for a receipt stay visible. Each state change sends `mu-collapse`, and the kit saves no collapse state outside the element. Card grids have optional Expand all and Collapse all controls. The loans example shows both controls. Contract tests and browser checks cover the keys, the events, focus and the pending rule. [Card rules](src/components/card.md) gives the keys and the properties.
+
 ## 0.3.0, 2026-11-18
 
 Upgrade from 0.2: an application that uses 0.2.1 needs no code change. The changes are new components and new optional keys, and the contract format stays `2`. A form with `typed` names in its binding asks for the edit type and sends an `edits` list. A form with no `typed` names works as before.

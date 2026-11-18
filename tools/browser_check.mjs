@@ -9,6 +9,7 @@ import { extname, join, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { guideChecks } from '../tests/browser/guides.mjs';
 import { imageKeyboardChecks } from '../tests/browser/image.js';
+import { cardKeyboardChecks } from '../tests/browser/card.js';
 import { richTextKeyboardChecks } from '../tests/browser/rich-text.js';
 import { budgetExampleChecks, dataGridKeyboardChecks } from '../tests/browser/data-grid.js';
 import { reviewQueueChecks } from '../tests/browser/review-queue.js';
@@ -35,6 +36,8 @@ const MODES = {
 };
 // Each check page, and the roles and names that its accessibility tree must have in light mode.
 const PAGES = {
+  'tests/browser/card.html': [['button', 'Keyboard target'], ['article', 'Keyboard card'], ['button', 'Collapse Keyboard card'],
+    ['button', 'Expand all'], ['button', 'Collapse all']],
   'tests/browser/chart.html': [['button', 'Keyboard target'], ['group', 'Weekly tickets'], ['image', 'Received, Week 1: 12 tickets'], ['table', 'Weekly tickets'], ['columnheader', 'Received'], ['cell', '12 tickets']],
   'tests/browser/table.html': [['button', 'Keyboard target'], ['group', 'Sample rows'], ['table', 'Sample rows'], ['columnheader', 'Name'], ['columnheader', 'Status'], ['cell', 'Ready']],
   'tests/browser/status.html': [['button', 'Keyboard target'], ['group', 'Synthetic check A.'], ['group', 'Synthetic check B.'], ['group', 'Synthetic check C.'], ['group', 'Synthetic check D.']],
@@ -186,6 +189,7 @@ async function key(session, sessionId, name, code, keyCode, text) {
   const base = { key: name, code, windowsVirtualKeyCode: keyCode, nativeVirtualKeyCode: keyCode };
   await session.send('Input.dispatchKeyEvent', { type: 'keyDown', ...base, ...(text ? { text } : {}) }, sessionId);
   await session.send('Input.dispatchKeyEvent', { type: 'keyUp', ...base }, sessionId);
+  if (name === 'Escape') await session.send('Page.bringToFront', {}, sessionId);
 }
 
 export async function evaluate(session, sessionId, expression) {
@@ -524,6 +528,7 @@ async function main() {
         if (!checks) report.errors.push(`${page} ${mode}: the checks did not run`);
         for (const item of report.pages[page][mode]) if (!item.ok) report.errors.push(`${page} ${mode}: ${item.name}: ${item.detail}`);
         if (page === 'tests/browser/image.html' && checks) report.keyboard.push(...await imageKeyboardChecks(session, sessionId, { evaluate, key, axErrors }, page));
+        if (page === 'tests/browser/card.html' && checks) report.keyboard.push(...await cardKeyboardChecks(session, sessionId, { evaluate, key }, page));
         if (mode !== 'light' || !checks) continue;
         report.accessibility.push(...await axErrors(session, sessionId, expected, page));
         report.examples.push(...await pageRules(session, sessionId, page));

@@ -3,7 +3,7 @@
   "name": "card-grid",
   "version": "0.1.0",
   "kind": "component",
-  "description": "A labeled list of cards in columns of equal width.",
+  "description": "A labeled list of cards with optional Expand all and Collapse all controls.",
   "ai_content": true,
   "slots": {
     "authorship": {
@@ -32,6 +32,11 @@
         "required": true,
         "name": "card"
       }
+    },
+    "collapse_controls": {
+      "type": "boolean",
+      "label": "Collapse controls",
+      "required": false
     }
   },
   "states": [
@@ -40,17 +45,27 @@
   ],
   "tokens": [
     "space.2",
+    "space.3",
     "space.4",
     "size.column-medium",
     "color.text-muted",
-    "type.caption"
+    "type.caption",
+    "color.text",
+    "color.border",
+    "radius.2",
+    "type.body",
+    "color.focus"
   ],
   "accessibility": {
     "role": "list",
     "name": {
       "field": "label"
     },
-    "keyboard": [],
+    "keyboard": [
+      "Tab",
+      "Enter",
+      "Space"
+    ],
     "forced_colors": true,
     "reduced_motion": true
   }

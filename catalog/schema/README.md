@@ -20,7 +20,7 @@ A contract is one JSON file in `catalog/`, for example `catalog/card.json`. The 
 | `ai_content` | `true` if the component can show content from a model. Then the contract must declare a required authorship slot. |
 | `slots` | Optional. The provenance slots: `authorship`, `citation` or the two. Each slot has the `required` key. See "Slots". |
 | `data` | The data fields. Each field has a type, a label and the `required` key. |
-| `states` | The states of the component: `default`, `empty`, `loading`, `disabled`, `confirm`, `pending`, `done`, `error` or `refused`. A component shows `confirm` while a person decides on a confirm step. |
+| `states` | The states of the component: `default`, `empty`, `loading`, `disabled`, `confirm`, `pending`, `done`, `error`, `refused`, `expanded` or `collapsed`. A component shows `confirm` while a person decides on a confirm step. A collapsible card uses `expanded` and `collapsed`. |
 | `tokens` | The design tokens that the component uses. |
 | `accessibility` | The role, the accessible name (not for the role `none`), the keys, and support for forced colors and reduced motion. |
 
