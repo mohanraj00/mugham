@@ -136,13 +136,13 @@ git clone https://github.com/mohanraj00/mugham.git
 cd mugham
 ```
 
-3. Start a static file server at the repository root:
+3. Start the file server of the examples at the repository root:
 
 ```sh
-python3 -m http.server 8000
+python3 tools/serve.py
 ```
 
-   If port 8000 is in use, the command fails with an error. Choose a different port, for example `python3 -m http.server 8001`, and use that port in the next step.
+   The server prints the URL of the first example. It listens on `127.0.0.1` only and gives the files of `src/`, `catalog/` and `examples/` only. The default port is 8000. If that port is in use, the server takes a free port and prints its URL. Use that port in the next step. To choose the port, use `python3 tools/serve.py --port 8001`.
 
 4. Open an example in the browser. The examples use synthetic data. The URLs below use port 8000.
    - `http://localhost:8000/examples/primitives.html`: each primitive.

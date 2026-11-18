@@ -198,7 +198,7 @@ The upload parts are `upload`, `help`, `limits`, `drop`, `choose`, `files`, `fil
 ## Run the page
 
 ```sh
-python3 -m http.server 8000
+python3 tools/serve.py
 ```
 
 Open `http://localhost:8000/examples/guides/theme.html`. Change the browser theme to dark to see the dark values.

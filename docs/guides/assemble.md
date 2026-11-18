@@ -11,7 +11,7 @@ The page acts as the application. A synthetic function acts as the API. All data
 3. Start a static server at the root:
 
 ```sh
-python3 -m http.server 8000
+python3 tools/serve.py
 ```
 
 4. Open `http://localhost:8000/examples/guides/assemble.html`.

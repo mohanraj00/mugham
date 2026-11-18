@@ -36,11 +36,9 @@ def receipt(request, number):
     return 200, {'id': request['id'], 'ok': True, 'message': 'The loan is renewed to 2026-12-08.', 'reference': 'R-%04d' % number}
 
 
-class Handler(BaseHTTPRequestHandler):
-    server_version = 'mugham-thread-example'
-    delay = 1.0
-    counter = 0
-    lock = threading.Lock()
+class FileHandler(BaseHTTPRequestHandler):
+    """Gives the files of src/, catalog/ and examples/ only. It has no API. tools/serve.py uses it."""
+    server_version = 'mugham-examples'
 
     def log_message(self, format, *args):
         pass
@@ -63,15 +61,28 @@ class Handler(BaseHTTPRequestHandler):
         if not self.host_ok():
             return self.send(403, b'', 'text/plain')
         path = self.path.split('?', 1)[0]
-        if path == '/events':
-            return self.events()
         if path == '/favicon.ico':
             return self.send(204, b'', 'text/plain')
+        # A folder path gives the index page of the folder.
+        if path.endswith('/'):
+            path += 'index.html'
         file = (ROOT / ('.' + path)).resolve()
         allowed = any(file.is_relative_to(ROOT / folder) and file != ROOT / folder for folder in SERVED)
         if not allowed or file.suffix not in TYPES or not file.is_file():
             return self.send(404, b'', 'text/plain')
         self.send(200, file.read_bytes(), TYPES[file.suffix])
+
+
+class Handler(FileHandler):
+    server_version = 'mugham-thread-example'
+    delay = 1.0
+    counter = 0
+    lock = threading.Lock()
+
+    def do_GET(self):
+        if self.host_ok() and self.path.split('?', 1)[0] == '/events':
+            return self.events()
+        return super().do_GET()
 
     def events(self):
         self.send_response(200)
