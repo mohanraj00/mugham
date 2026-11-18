@@ -13,6 +13,7 @@ check:
 	$(NODE) tools/browser_check.mjs
 	$(NODE) tests/browser/approval.mjs
 	$(NODE) tests/browser/apps.mjs
+	$(NODE) tests/browser/quickstart.mjs
 
 # Write the README screenshots to docs/screenshots/ again.
 screenshots:

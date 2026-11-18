@@ -136,13 +136,13 @@ git clone https://github.com/mohanraj00/mugham.git
 cd mugham
 ```
 
-3. Start a static file server at the repository root:
+3. Start the file server of the examples at the repository root:
 
 ```sh
-python3 -m http.server 8000
+python3 tools/serve.py
 ```
 
-   If port 8000 is in use, the command fails with an error. Choose a different port, for example `python3 -m http.server 8001`, and use that port in the next step.
+   The server prints the URL of the index page of the examples. It listens on `127.0.0.1` only and gives the files of `src/`, `catalog/` and `examples/` only. The default port is 8000. If that port is in use, the server takes a free port and prints its URL. Use that port in the next step. To choose the port, use `python3 tools/serve.py --port 8001`.
 
 4. Open the index page of the examples in the browser: `http://localhost:8000/examples/`. The index lists each example in groups: cards and actions, inputs and forms, tables and grids, evidence, chat thread, media, apps and guides. Type a word to filter the list. Each example page has a link back to the index, and links to the previous example and the next example. Some examples read a fixture API, and this server does not have it. The index and the page of such an example give the command that starts its API. Each example page also has a docs panel next to the live example. The panel gives the element name, the keys of the contract with their types, the events, the actions and a sample fill of each component on the page. On a narrow screen, the panel is below the example. The examples use synthetic data. The URLs below use port 8000. The index links each of these pages:
    - `http://localhost:8000/examples/cards/primitives.html`: each primitive.

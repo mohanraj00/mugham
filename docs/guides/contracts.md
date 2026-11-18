@@ -218,7 +218,7 @@ Expected result:
 1. Start a static server at the root of the repository:
 
 ```sh
-python3 -m http.server 8000
+python3 tools/serve.py
 ```
 
 2. Open `http://localhost:8000/examples/guides/contracts.html`.
