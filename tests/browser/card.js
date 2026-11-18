@@ -89,6 +89,27 @@ async function browserChecks() {
   stage.append(initial);
   check('card: a collapsed start state sends no change event', initial.collapsed && body(initial).hidden && initialEvents === 0);
   check('card: a collapsed start state shows the agent author and source once', initial.collapsed && visibleProvenance(initial));
+  const failedStart = document.createElement('mu-card');
+  failedStart.actor = AUTHOR;
+  const failedAction = action(failedStart);
+  let failedRequest;
+  failedAction.addEventListener('mu-action', (event) => { failedRequest = event.detail; });
+  press(failedAction);
+  failedAction.receipt({ id: failedRequest.id, ok: false });
+  failedStart.fill = fill('card', { ...data, collapsed: true });
+  stage.append(failedStart);
+  check('card: a collapsed start with a failed receipt stays expanded', !failedStart.collapsed
+    && failedStart.dataset.state === 'expanded' && !body(failedStart).hidden && failedAction.dataset.state === 'error');
+  failedStart.collapsed = true;
+  button(failedStart).click();
+  check('card: the property and toggle cannot hide a failed receipt', !failedStart.collapsed && !body(failedStart).hidden);
+  failedStart.fill = fill('card', { ...data, status: 'Approved', collapsed_summary: 'Approved', collapsed: true });
+  check('card: a collapsed refill cannot hide a failed receipt', !failedStart.collapsed && !body(failedStart).hidden
+    && failedStart.querySelector('mu-action-button') === failedAction && failedAction.dataset.state === 'error');
+  press(failedAction);
+  failedAction.receipt({ id: failedRequest.id, ok: true });
+  failedStart.collapsed = true;
+  check('card: collapse works after a retry succeeds', failedStart.collapsed && failedAction.dataset.state === 'done');
   for (const values of [{ title: 'Plain card' }, { ...data, collapsible: false, collapsed: true },
     { title: 'Plain start state', collapsed: true }]) {
     const node = mount(values);
@@ -162,6 +183,37 @@ async function browserChecks() {
   nested.append(holder);
   await tick();
   check('card: an action in a nested shadow root cannot be hidden', !nested.collapsed);
+  const lateError = mount({ ...data, collapsed: true });
+  const receiptAction = action(mount());
+  let receiptRequest;
+  receiptAction.addEventListener('mu-action', (event) => { receiptRequest = event.detail; });
+  press(receiptAction);
+  lateError.append(receiptAction);
+  check('card: the failed receipt target starts collapsed', lateError.collapsed);
+  receiptAction.receipt({ id: receiptRequest.id, ok: false });
+  await tick();
+  check('card: a failed receipt in a collapsed card expands it', !lateError.collapsed
+    && !body(lateError).hidden && receiptAction.dataset.state === 'error');
+  const nestedError = mount({ ...data, collapsed: true });
+  const errorHolder = document.createElement('div');
+  errorHolder.slot = 'actions';
+  errorHolder.attachShadow({ mode: 'open' });
+  const errorMarker = document.createElement('div');
+  errorMarker.dataset.state = 'default';
+  errorHolder.shadowRoot.append(errorMarker);
+  nestedError.append(errorHolder);
+  await tick();
+  errorMarker.dataset.state = 'error';
+  errorMarker.textContent = 'Not done';
+  await tick();
+  check('card: an error marker in a nested shadow root expands the card', !nestedError.collapsed && !body(nestedError).hidden);
+  errorMarker.dataset.state = 'default';
+  errorMarker.action = { state: 'error' };
+  nestedError.collapsed = true;
+  check('card: an action model error also blocks collapse', !nestedError.collapsed);
+  errorMarker.action = { state: 'default' };
+  nestedError.collapsed = true;
+  check('card: collapse works after the page clears the error', nestedError.collapsed && body(nestedError).hidden);
   const offline = mount({ ...data, collapsed: true });
   const queued = document.createElement('div');
   queued.slot = 'actions';
@@ -205,6 +257,12 @@ async function browserChecks() {
   check('grid: Collapse all uses the pending rule and keeps focus', !cards[0].collapsed && cards[1].collapsed
     && !cards[2].collapsed && grid.shadowRoot.activeElement === gridButtons[1] && gridEvents.length === 0);
   gridPending.receipt({ id: gridRequest.id, ok: false });
+  gridButtons[1].click();
+  check('grid: Collapse all skips a failed receipt and keeps focus', !cards[0].collapsed && !body(cards[0]).hidden
+    && gridPending.dataset.state === 'error' && cards[1].collapsed && !cards[2].collapsed
+    && grid.shadowRoot.activeElement === gridButtons[1] && gridEvents.length === 0);
+  press(gridPending);
+  gridPending.receipt({ id: gridRequest.id, ok: true });
   gridButtons[1].click();
   check('grid: Collapse all emits only changes and leaves fixed cards alone', cards[0].collapsed
     && cards[1].collapsed && !cards[2].collapsed && gridEvents.length === 1 && gridEvents[0].collapsed);

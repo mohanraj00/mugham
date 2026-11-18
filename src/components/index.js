@@ -317,7 +317,7 @@ export class MuCard extends MuElement {
   set collapsed(value) {
     if (typeof value !== 'boolean') throw new TypeError('collapsed: must be a boolean');
     if (!this.fill?.data.collapsible) return;
-    this.#setCollapsed(value && !this.#hasPending());
+    this.#setCollapsed(value && !this.#mustStayOpen());
   }
 
   // Inspect light DOM and open shadow roots, including nested forms and offline pending markers.
@@ -329,9 +329,9 @@ export class MuCard extends MuElement {
     return roots;
   }
 
-  #hasPending() {
+  #mustStayOpen() {
     return this.#actionRoots().some((root) => [...root.querySelectorAll('*')].some((node) =>
-      node.action?.state === 'pending' || ['pending', 'confirm'].includes(node.dataset?.state)));
+      ['pending', 'error'].includes(node.action?.state) || ['pending', 'confirm', 'error'].includes(node.dataset?.state)));
   }
 
   #watchActions() {
@@ -342,7 +342,7 @@ export class MuCard extends MuElement {
         this.#observer.observe(root, { subtree: true, childList: true, attributes: true, attributeFilter: ['data-state'] });
       }
     }
-    if (this.#hasPending()) this.#setCollapsed(false);
+    if (this.#mustStayOpen()) this.#setCollapsed(false);
   }
 
   #setCollapsed(value) {
@@ -370,13 +370,13 @@ export class MuCard extends MuElement {
   }
 
   state(data) {
-    return data.collapsible ? (data.collapsed && !this.#hasPending() ? 'collapsed' : 'expanded') : 'default';
+    return data.collapsible ? (data.collapsed && !this.#mustStayOpen() ? 'collapsed' : 'expanded') : 'default';
   }
 
   render(data) {
     this.#observer.disconnect();
     const before = this.#collapsed;
-    this.#collapsed = Boolean(data.collapsible && data.collapsed && !this.#hasPending());
+    this.#collapsed = Boolean(data.collapsible && data.collapsed && !this.#mustStayOpen());
     this.#toggle = null;
     this.#body = null;
     this.#summary = null;

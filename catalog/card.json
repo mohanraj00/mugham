@@ -3,7 +3,7 @@
   "name": "card",
   "version": "0.1.0",
   "kind": "component",
-  "description": "A card with a title, optional details and an optional collapse control. Authorship and sources stay visible when collapsed.",
+  "description": "A card with a title, optional details and an optional collapse control. Authorship and sources stay visible when collapsed. The card stays expanded while an action needs a receipt or shows a confirm step or a failed receipt.",
   "ai_content": true,
   "slots": {
     "authorship": {
