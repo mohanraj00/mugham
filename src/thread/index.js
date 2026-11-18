@@ -62,7 +62,7 @@ const CSS = sheet(`
 `);
 
 // A refused part: the reason, then what the person does next.
-const refusalOf = (reason) => el('p', { class: 'refusal' }, REFUSED_PART + reason, ' ', el('span', { part: 'next' }, REFUSED_NEXT));
+const refusalOf = (reason) => el('p', { class: 'refusal' }, el('span', { part: 'reason' }, REFUSED_PART + reason), ' ', el('span', { part: 'next' }, REFUSED_NEXT));
 const nameOf = (actor) => actor.name ?? actor.id;
 const who = (actor) => `${nameOf(actor)}, ${TYPES[actor.type]}`;
 
@@ -311,7 +311,7 @@ export class MuThread extends HTMLElement {
   #refusedItem(message) {
     const node = el('li', { class: 'message refused', 'data-state': 'refused' },
       el('article', { 'aria-label': 'Refused message' }, el('p', { class: 'refused-title' }, 'Refused message'),
-        el('p', { class: 'refusal' }, message.errors[0], ' ', el('span', { part: 'next' }, REFUSED_NEXT))));
+        el('p', { class: 'refusal' }, el('span', { part: 'reason' }, message.errors[0]), ' ', el('span', { part: 'next' }, REFUSED_NEXT))));
     return { node, refused: true };
   }
 

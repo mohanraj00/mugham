@@ -43,11 +43,13 @@ const FIELD_CSS = sheet(`
   .option input { min-height: auto; margin: 0; inline-size: 1.25rem; block-size: 1.25rem; cursor: pointer; }
   .option label { display: inline-flex; align-items: center; min-height: 2.75rem; min-width: 2.75rem;
     padding-inline: var(--mu-space-2); cursor: pointer; }
-  .option:hover { box-shadow: inset 0 0 0 100vmax color-mix(in srgb, currentColor 8%, transparent); }
-  .option:active { box-shadow: inset 0 0 0 100vmax color-mix(in srgb, currentColor 14%, transparent); }
+  /* A disabled option shows no hover and no pressed state. */
+  .option:hover:not(:has(:disabled)) { box-shadow: inset 0 0 0 100vmax color-mix(in srgb, currentColor 8%, transparent); }
+  .option:active:not(:has(:disabled)) { box-shadow: inset 0 0 0 100vmax color-mix(in srgb, currentColor 14%, transparent); }
+  .option:has(:disabled) :is(input, label) { cursor: not-allowed; }
   @media (forced-colors: active) {
     input, textarea, fieldset { border-color: FieldText; }
-    .option:hover { outline: 1px solid Highlight; }
+    .option:hover:not(:has(:disabled)) { outline: 1px solid Highlight; }
     .hint, .error { color: CanvasText; }
   }
 `);

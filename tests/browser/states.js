@@ -44,7 +44,8 @@ export async function stateChecks(session, sessionId, { evaluate, key, sleep }, 
     if (at.disabled) {
       ok = hover.layer === rest.layer && pressed.layer === rest.layer && rest.opacity === (mode === 'forced-colors' ? '1' : '0.6')
         && ['not-allowed', 'progress'].includes(rest.cursor);
-    } else if (mode === 'forced-colors') ok = hover.edge !== rest.edge;
+    // Forced colors remove the layer. Hover shows a line, and a pressed button or summary shows a ground.
+    } else if (mode === 'forced-colors') ok = hover.edge !== rest.edge && (at.kind !== 'layer' || pressed.layer !== hover.layer);
     else if (at.kind === 'text') ok = hover.edge !== rest.edge && pressed.ring.startsWith('solid 2px');
     else ok = hover.layer !== rest.layer && pressed.layer !== hover.layer && pressed.layer !== rest.layer;
     if (!at.disabled && at.kind !== 'text') layered += 1;
@@ -175,6 +176,7 @@ async function browserChecks() {
   mount('mu-field', fill('field', { label: 'Shelf code', value: 'B-14' }));
   mount('mu-long-text-field', fill('long-text-field', { label: 'Note', value: 'Keep dry.' }));
   mount('mu-choice-field', fill('choice-field', { label: 'Branch', value: 'A', choices: ['A', 'South'] }));
+  mount('mu-choice-field', fill('choice-field', { label: 'Closed branch', value: 'A', choices: ['A', 'South'], disabled: true }));
   const row = (index) => node('table-row', { cells: [`Plot ${index}`, index % 2 ? 'North' : 'South'] });
   const long = mount('mu-table', fill('table', { label: 'Synthetic plots', columns: ['Plot', 'Area'],
     rows: Array.from({ length: 40 }, (_, index) => row(index + 1)) }, SLOTS));
@@ -292,6 +294,13 @@ async function browserChecks() {
   check('table: the column headers stay in view', Math.abs(header.top - area.getBoundingClientRect().top) <= 1
     && getComputedStyle(root(long).querySelector('thead th')).position === 'sticky' && first.bottom < header.top,
   `${header.top} ${area.getBoundingClientRect().top}`);
+  // The author of the table stays in view at the bottom of the area.
+  const author = root(long).querySelector('[part="authorship"]');
+  const areaBox = area.getBoundingClientRect();
+  const authorBox = author.getBoundingClientRect();
+  check('table: the author stays in view in a long table', getComputedStyle(author).position === 'sticky'
+    && authorBox.top >= areaBox.top && authorBox.bottom <= areaBox.bottom + 1 && authorBox.height > 0,
+  `${authorBox.top} ${authorBox.bottom} ${areaBox.top} ${areaBox.bottom}`);
   area.scrollTop = 0;
 
   // The copy control tells a failure, and it shows Copied only after the browser accepts the text.
@@ -344,7 +353,10 @@ async function browserChecks() {
     const item = controls[index];
     const style = getComputedStyle(item);
     const shown = getComputedStyle(face(item));
-    return { layer: `${shown.boxShadow} | ${shown.backgroundColor} | ${shown.outlineStyle}`, edge: `${shown.borderTopColor} | ${shown.outlineColor} ${shown.outlineStyle}`,
+    // A line that does not show has no color: a border or an outline with no style or no width.
+    // A link shows hover as a thick underline.
+    const line = (name) => (shown[`${name}Style`] !== 'none' && shown[`${name}Width`] !== '0px' ? shown[`${name}Color`] : 'none');
+    return { layer: `${shown.boxShadow} | ${shown.backgroundColor} | ${shown.outlineStyle}`, edge: `${line('borderTop')} | ${line('outline')} | ${shown.textDecorationLine === 'none' ? 'none' : shown.textDecorationThickness}`,
       ring: `${style.outlineStyle} ${style.outlineWidth}`, opacity: style.opacity, cursor: style.cursor };
   };
   window.muFocus = (index) => {

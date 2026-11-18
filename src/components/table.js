@@ -18,6 +18,9 @@ export class MuTable extends MuElement {
       min-height: 2.75rem; min-width: 2.75rem; padding: var(--mu-space-2); cursor: pointer; overflow-wrap: anywhere; max-width: 100%; }
     p { margin: var(--mu-space-2) var(--mu-space-3); overflow-wrap: anywhere; }
     .muted { font: var(--mu-type-caption); color: var(--mu-color-text-muted); }
+    /* The author stays in view at the bottom of the scroll area. */
+    [part="authorship"] { position: sticky; inset-block-end: 0; inset-inline-start: 0; margin: 0;
+      padding: var(--mu-space-2) var(--mu-space-3); background: var(--mu-color-surface); }
     @media (forced-colors: active) {
       .table, .muted { color: CanvasText; background: Canvas; }
       th, td { border-color: CanvasText; }

@@ -144,12 +144,18 @@ async function run() {
   check('refused: an undeclared component shows a refusal notice',
     refusal?.textContent.startsWith('Refused: the thread did not show this part.') && refusal.textContent.includes('component'),
     refusal?.textContent);
+  check('refused: the notice has the reason part and the next step part',
+    refusal?.querySelector('[part="reason"]')?.textContent.startsWith('Refused: the thread did not show this part.')
+    && refusal.querySelector('[part="reason"]').textContent.includes('component')
+    && refusal.textContent === `${refusal.querySelector('[part="reason"]').textContent} ${refusal.querySelector('[part="next"]')?.textContent}`,
+    refusal?.innerHTML);
   check('refused: the refused component makes no element', !refused.shadowRoot.querySelector('mu-banner'));
   check('refused: the refused part keeps the actor', header(item(refused, 0)) === 'Catalog agent Agent', header(item(refused, 0)));
   const noActor = item(refused, 1);
   check('refused: a message with no actor is refused and shows no actor', noActor.dataset.state === 'refused'
     && noActor.textContent.includes('Refused message') && !noActor.querySelector('.actor')
-    && noActor.textContent.includes('metadata.mugham.actor'), noActor.textContent);
+    && noActor.textContent.includes('metadata.mugham.actor')
+    && noActor.querySelector('[part="reason"]')?.textContent.includes('metadata.mugham.actor') && noActor.querySelector('[part="next"]'), noActor.textContent);
 
   // Untrusted content stays text.
   const unsafe = mount();

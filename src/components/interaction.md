@@ -14,7 +14,7 @@ The base style in `src/render/dom.js` gives each control the same states. A cont
 | Disabled | An opacity of 0.6 and the `not-allowed` cursor. A disabled control shows no hover and no pressed state. |
 | Busy | A pending action has `aria-busy="true"` and the `progress` cursor. It accepts no second press. |
 
-The layer uses the text color of the control, so each theme gives the states and the kit needs no new token. In forced colors, hover shows as a `Highlight` border, pressed shows as a `Highlight` ground, and a disabled control uses `GrayText`.
+The layer uses the text color of the control, so each theme gives the states and the kit needs no new token. In forced colors, hover shows as a `Highlight` border on a button and a text input, and as a `Highlight` outline on a summary and a radio option. Pressed shows as a `Highlight` ground on a button and a summary. A disabled control uses `GrayText`.
 
 The image button is one exception. The image covers the layer, so hover shows as a border in the text color, and pressed makes the image lighter.
 
@@ -51,7 +51,7 @@ The `text` primitive is one exception. An empty text shows nothing, because the 
 
 ## Tables
 
-A table of more than 30rem scrolls in its own area, and its column headers stay in view. The data grid has the same rule for its column headers and its row headers.
+A table of more than 30rem scrolls in its own area, and its column headers stay in view. The author of the table stays in view at the bottom of the area. The data grid has the same rule for its column headers and its row headers.
 
 ## Copy controls
 

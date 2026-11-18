@@ -120,8 +120,12 @@ export const BASE = sheet(`
   }
   @media (forced-colors: active) {
     :focus-visible { outline-color: Highlight; }
-    button:hover:not(:disabled, [aria-disabled="true"]), summary:hover { border-color: Highlight; }
-    button:active:not(:disabled, [aria-disabled="true"]) { background: Highlight; color: HighlightText; border-color: Highlight; forced-color-adjust: none; }
+    button:hover:not(:disabled, [aria-disabled="true"]) { border-color: Highlight; }
+    /* A summary has no border, so its hover shows as an outline. The focus ring has priority. */
+    summary:hover:not(:focus-visible) { outline: 1px solid Highlight; }
+    button:active:not(:disabled, [aria-disabled="true"]), summary:active {
+      background: Highlight; color: HighlightText; border-color: Highlight; forced-color-adjust: none;
+    }
     button:disabled, button[aria-disabled="true"], :is(input, textarea, select):disabled { color: GrayText; border-color: GrayText; opacity: 1; }
     :is(input, textarea, select):hover:not(:disabled, [aria-invalid="true"]) { border-color: Highlight; }
     .icon { stroke: currentColor; }
