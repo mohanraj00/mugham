@@ -271,7 +271,7 @@ async function browserChecks() {
     && gridEvents.length === 3 && gridEvents.slice(1).every((event) => event.collapsed === false));
   check('grid: controls are optional', !mount({ label: 'Plain grid', cards: items }, 'card-grid').shadowRoot.querySelector('button'));
   check('grid: an empty grid keeps its empty state', mount({ label: 'Empty grid', cards: [], collapse_controls: true }, 'card-grid')
-    .shadowRoot.querySelector('[part="empty"]').textContent === 'No cards.');
+    .shadowRoot.querySelector('[part="empty"]').textContent === 'No cards. Change the request, or try again later.');
   check('card: collapse saves no browser state', JSON.stringify([Object.entries(localStorage), Object.entries(sessionStorage)]) === storageBefore);
 
   const mode = new URLSearchParams(location.search).get('mode') || 'light';

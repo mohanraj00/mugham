@@ -14,8 +14,10 @@ Each change sends a bubbling, composed `mu-collapse` event with `detail: { colla
 
 The toggle uses the parts `toggle` and `title`. Its controlled area uses `body`, and the short summary uses `collapsed-summary`. The status uses `status`. The toggle has a visible border in forced colors. The card has no height animation, including under reduced motion.
 
+The toggle shows a chevron after its text. The chevron points down on a collapsed card and up on an expanded card. It is an inline SVG of the kit with `aria-hidden="true"`, and its part is `icon`. A collapsed card has 8px between its parts and no empty space below the last part. [Interaction details](interaction.md#card-collapse) gives the rules.
+
 ## Grid controls
 
-The optional grid data key `collapse_controls: true` adds `Expand all` and `Collapse all` buttons above a nonempty list. The controls affect only collapsible cards. They keep focus on the pressed grid button. `Collapse all` skips a card while an action in it needs a receipt or shows a confirm step or a failed receipt. Each card that changes sends its own event. An empty grid keeps its empty text and has no controls.
+The optional grid data key `collapse_controls: true` adds `Expand all` and `Collapse all` buttons above a nonempty list. The controls affect only collapsible cards. They keep focus on the pressed grid button. `Collapse all` skips a card while an action in it needs a receipt or shows a confirm step or a failed receipt. Each card that changes sends its own event. An empty grid keeps its empty text and has no controls. The controls have 8px above them and 12px below them, at each width from 375 CSS pixels up.
 
 [examples/cards/loans.html](../../examples/cards/loans.html) shows a collapsible card and a grid with both controls.

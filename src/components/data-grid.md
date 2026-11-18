@@ -118,7 +118,7 @@ A grid of 50 rows and 12 columns has 600 cells. The grid scrolls inside its own 
 | State | Result |
 |---|---|
 | `default` | A person can edit each cell that is not read-only. |
-| `empty` | The grid has no rows. It shows the column headers and `No rows.` |
+| `empty` | The grid has no rows. It shows the column headers and `No rows. Change the request, or try again later.` |
 | `disabled` | The grid has no binding. Each cell is read-only, and the keys still move the focus. |
 | `pending` | A request waits for its receipt. Its cell shows `Pending`. |
 | `error` | The last receipt of a cell has `ok` set to `false`. The cell shows `Not done`. |

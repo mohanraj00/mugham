@@ -50,7 +50,7 @@ async function browserChecks() {
   const stage = document.getElementById('stage');
   const root = (element) => element.shadowRoot;
   const tags = (element, selector) => [...root(element).querySelectorAll(selector)].map((item) => item.localName).join(' ');
-  const refusal = (element) => (element.dataset.state === 'refused' ? root(element).querySelector('[role="status"]')?.textContent : null);
+  const refusal = (element) => (element.dataset.state === 'refused' ? root(element).querySelector('[role="status"] [part="reason"]')?.textContent : null);
   function mount(value, parent = stage) {
     const element = new MuRichText();
     element.actor = AUTHOR;
@@ -74,7 +74,7 @@ async function browserChecks() {
   const answer = mount(ANSWER);
   const wrapper = root(answer).querySelector('[part="rich-text"]');
   check('each node type: the fill is valid', answer.dataset.state === 'default' && answer.fill !== null, root(answer).textContent);
-  check('each node type: the blocks show in order', tags(answer, '[part="rich-text"] > *') === 'h2 p ol ul h3 pre blockquote h4 p',
+  check('each node type: the blocks show in order', tags(answer, '[part="rich-text"] > *') === 'h2 p ol ul h3 div blockquote h4 p',
     tags(answer, '[part="rich-text"] > *'));
   check('heading: the text shows', root(answer).querySelector('h2')?.textContent === 'Tray care');
   check('paragraph: the marks are strong, em and code', tags(answer, '[part="rich-text"] > p:first-of-type > *') === 'strong em code'
@@ -90,7 +90,8 @@ async function browserChecks() {
   check('the author shows as text', root(answer).querySelector('[part="authorship"]')?.textContent === 'Author: agent agent-garden (Garden helper)');
   // The contract declares these elements and attributes. No fill can add a different one.
   const ELEMENTS = new Set(['div', 'p', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'pre', 'code', 'blockquote', 'em', 'strong', 'span', 'button']);
-  const ATTRIBUTES = new Set(['class', 'part', 'id', 'type', 'aria-describedby', 'hidden']);
+  // The copy control of a code block is a kit button with a fixed name, and its status is a kit live region.
+  const ATTRIBUTES = new Set(['class', 'part', 'id', 'type', 'aria-describedby', 'hidden', 'aria-label', 'role', 'aria-live']);
   const strange = (element) => [...root(element).querySelectorAll('*')].flatMap((item) => [
     ...(ELEMENTS.has(item.localName) ? [] : [item.localName]),
     ...item.getAttributeNames().filter((name) => !ATTRIBUTES.has(name)).map((name) => `${item.localName}[${name}]`)]);
@@ -214,7 +215,7 @@ async function browserChecks() {
 
   // States: empty, the size limit and the author.
   const empty = mount(fill());
-  check('empty: a rich text with no block shows a text', empty.dataset.state === 'empty' && root(empty).querySelector('[part="empty"]')?.textContent === 'No text.');
+  check('empty: a rich text with no block shows a text', empty.dataset.state === 'empty' && root(empty).querySelector('[part="empty"]')?.textContent === 'No text. Ask for the text again.');
   const row = Array.from({ length: 50 }, () => span('x'));
   check('size: 2000 inline nodes are valid', mount(fill(...Array.from({ length: 40 }, () => paragraph(...row)))).dataset.state === 'default');
   check('size: more than 2000 inline nodes are refused', refusal(mount(fill(...Array.from({ length: 40 }, () => paragraph(...row)), paragraph(span('x')))))

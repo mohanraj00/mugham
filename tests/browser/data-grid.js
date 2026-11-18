@@ -109,7 +109,7 @@ async function browserChecks() {
   const stage = document.getElementById('stage');
   const root = (element) => element.shadowRoot;
   const tick = () => new Promise((done) => setTimeout(done, 0));
-  const refusal = (element) => (element.dataset.state === 'refused' ? root(element).querySelector('[role="status"]')?.textContent : null);
+  const refusal = (element) => (element.dataset.state === 'refused' ? root(element).querySelector('[role="status"] [part="reason"]')?.textContent : null);
   const thrown = (act) => { try { act(); return ''; } catch (error) { return `${error.name}: ${error.message}`; } };
   function mount(value, binding = BINDING, parent = stage) {
     const element = new MuDataGrid();
@@ -513,7 +513,7 @@ async function browserChecks() {
   const proto = mount(relabel((data) => { data.rows.push(row('constructor', 'Rent', cell('choice'), cell('number', 5), cell('date'), cell('text'), cell('number', 5))); }));
   check('policy: a key with the name of an object member is not a bound key', at(proto, 'constructor', 'jan').getAttribute('aria-readonly') === 'true');
   const empty = mount(fill({ label: 'Synthetic budget', columns: COLUMNS, rows: [] }));
-  check('empty: a grid with no rows shows a text', empty.dataset.state === 'empty' && root(empty).querySelector('[part="empty"]')?.textContent === 'No rows.'
+  check('empty: a grid with no rows shows a text', empty.dataset.state === 'empty' && root(empty).querySelector('[part="empty"]')?.textContent === 'No rows. Change the request, or try again later.'
     && root(empty).querySelectorAll('thead th').length === 5);
   const noActor = document.createElement('mu-data-grid');
   stage.append(noActor);

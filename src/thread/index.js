@@ -3,7 +3,7 @@
 // and each component part only through the element of its catalog contract.
 import { createReader } from '../envelope/envelope.js';
 import { define as defineComponents } from '../components/index.js';
-import { BASE, EDGE, LIFT, el, sheet } from '../render/dom.js';
+import { BASE, EDGE, LIFT, REFUSED_NEXT, el, sheet } from '../render/dom.js';
 import { registeredTag } from '../render/registry.js';
 import { ReadMore, READ_MORE_CSS, READ_MORE_LABELS, clampErrors } from '../primitives/read-more.js';
 
@@ -53,6 +53,7 @@ const CSS = sheet(`
   .text { white-space: pre-wrap; overflow-wrap: anywhere; }
   .error, .refusal, .refused-title, .source, .stream { color: var(--mu-color-danger); overflow-wrap: anywhere; }
   .source, .stream { font: var(--mu-type-caption); margin-block-start: var(--mu-space-2); }
+  .refusal [part="next"] { display: block; }
   .live { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   @media (forced-colors: active) {
     article { border-color: CanvasText; }
@@ -60,6 +61,8 @@ const CSS = sheet(`
   }
 `);
 
+// A refused part: the reason, then what the person does next.
+const refusalOf = (reason) => el('p', { class: 'refusal' }, el('span', { part: 'reason' }, REFUSED_PART + reason), ' ', el('span', { part: 'next' }, REFUSED_NEXT));
 const nameOf = (actor) => actor.name ?? actor.id;
 const who = (actor) => `${nameOf(actor)}, ${TYPES[actor.type]}`;
 
@@ -308,7 +311,7 @@ export class MuThread extends HTMLElement {
   #refusedItem(message) {
     const node = el('li', { class: 'message refused', 'data-state': 'refused' },
       el('article', { 'aria-label': 'Refused message' }, el('p', { class: 'refused-title' }, 'Refused message'),
-        el('p', { class: 'refusal' }, message.errors[0])));
+        el('p', { class: 'refusal' }, el('span', { part: 'reason' }, message.errors[0]), ' ', el('span', { part: 'next' }, REFUSED_NEXT))));
     return { node, refused: true };
   }
 
@@ -399,7 +402,7 @@ export class MuThread extends HTMLElement {
     if (part.type === 'status') return el('p', { class: 'status error' }, 'Error: ' + part.text + (part.code ? ` (${part.code})` : ''));
     if (part.type === 'refusal') {
       const more = part.errors.length > 1 ? ` (${part.errors.length - 1} more)` : '';
-      return el('p', { class: 'refusal' }, REFUSED_PART + part.errors[0] + more);
+      return refusalOf(part.errors[0] + more);
     }
     if (part.type === 'component') return this.#component(part.fill, message);
     return el('p', { class: 'fallback' }, part.text);
@@ -420,14 +423,14 @@ export class MuThread extends HTMLElement {
   // The element of the component validates the fill again. The application gives the binding of an action.
   #component(fill, message) {
     const tag = TAGS[fill.component] ?? registeredTag(fill.component);
-    if (!tag) return el('p', { class: 'refusal' }, REFUSED_PART + `${fill.component}: the kit has no element for this component`);
+    if (!tag) return refusalOf(`${fill.component}: the kit has no element for this component`);
     const node = document.createElement(tag);
     const binding = this.#binding(fill, message);
     if (binding !== null) {
       try {
         node.action = binding;
       } catch (error) {
-        return el('p', { class: 'refusal' }, REFUSED_PART + String(error.message));
+        return refusalOf(String(error.message));
       }
     }
     this.#bindings.set(node, stable(binding));

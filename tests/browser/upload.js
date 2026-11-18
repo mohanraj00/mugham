@@ -130,7 +130,7 @@ async function browserChecks() {
   const stage = document.getElementById('stage');
   const root = (element) => element.shadowRoot;
   const part = (element, name) => root(element).querySelector(`[part="${name}"]`);
-  const refusal = (element) => (element.dataset.state === 'refused' ? root(element).querySelector('[role="status"]')?.textContent : null);
+  const refusal = (element) => (element.dataset.state === 'refused' ? root(element).querySelector('[role="status"] [part="reason"]')?.textContent : null);
   const thrown = (act) => { try { act(); return ''; } catch (error) { return `${error.name}: ${error.message}`; } };
   function mount(value = fill(), binding = BINDING, parent = stage) {
     const element = new MuUpload();
