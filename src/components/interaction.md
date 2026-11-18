@@ -11,7 +11,7 @@ The base style in `src/render/dom.js` gives each control the same states. A cont
 | Hover | A button and a summary get a layer of 8% of their own text color. A text input gets a border in its text color. A radio option gets the layer on its row. |
 | Pressed | The layer is 14%. A text input takes the focus and shows the focus ring. |
 | Focus | An outline of 2px in `color.focus`, with an offset of 2px. The ring is the same in each component. |
-| Disabled | An opacity of 0.6 and the `not-allowed` cursor. A disabled control shows no hover and no pressed state. |
+| Disabled | An opacity of 0.6 and the `not-allowed` cursor. A disabled control shows no hover and no pressed state. The label of a disabled radio option has the same style. |
 | Busy | A pending action has `aria-busy="true"` and the `progress` cursor. It accepts no second press. |
 
 The layer uses the text color of the control, so each theme gives the states and the kit needs no new token. In forced colors, hover shows as a `Highlight` border on a button and a text input, and as a `Highlight` outline on a summary and a radio option. Pressed shows as a `Highlight` ground on a button and a summary. A disabled control uses `GrayText`.
@@ -55,7 +55,7 @@ A table of more than 30rem scrolls in its own area, and its column headers stay 
 
 ## Copy controls
 
-A code block of a rich text and the reference of a receipt have a `Copy` button, with the names `Copy code` and `Copy reference`. A press writes the text to the clipboard. The button shows `Copied` for 2 seconds, only after the browser accepts the text. A status with `role="status"` gives `Copied` to a screen reader. If the browser refuses, the button shows `Not copied`, and the status tells the person to select the text and copy it.
+A code block of a rich text and the reference of a receipt have a `Copy` button, with the names `Copy code` and `Copy reference`. A press writes the text to the clipboard. The button shows `Copied` for 2 seconds, only after the browser accepts the text. The accessible name of the button does not change. A status with `role="status"` gives `Copied` to a screen reader. If the browser refuses, the button shows `Not copied`, and the status tells the person to select the text and copy it.
 
 The text goes only to the clipboard, and only after a person presses the button. The copy control of a reference comes after the status of the action and not in it, because the status is a live region for text. The parts are `copy` and `copy-status`.
 

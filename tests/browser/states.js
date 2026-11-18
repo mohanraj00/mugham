@@ -176,7 +176,7 @@ async function browserChecks() {
   mount('mu-field', fill('field', { label: 'Shelf code', value: 'B-14' }));
   mount('mu-long-text-field', fill('long-text-field', { label: 'Note', value: 'Keep dry.' }));
   mount('mu-choice-field', fill('choice-field', { label: 'Branch', value: 'A', choices: ['A', 'South'] }));
-  mount('mu-choice-field', fill('choice-field', { label: 'Closed branch', value: 'A', choices: ['A', 'South'], disabled: true }));
+  const branch = mount('mu-choice-field', fill('choice-field', { label: 'Closed branch', value: 'A', choices: ['A', 'South'], disabled: true }));
   const row = (index) => node('table-row', { cells: [`Plot ${index}`, index % 2 ? 'North' : 'South'] });
   const long = mount('mu-table', fill('table', { label: 'Synthetic plots', columns: ['Plot', 'Area'],
     rows: Array.from({ length: 40 }, (_, index) => row(index + 1)) }, SLOTS));
@@ -262,6 +262,15 @@ async function browserChecks() {
     && root(done.element).querySelector('[part="copy"]').getAttribute('aria-label') === 'Copy reference');
   check('disabled: a disabled button has the disabled style', getComputedStyle(root(closed).querySelector('button')).opacity === (media('(forced-colors: active)') ? '1' : '0.6')
     && getComputedStyle(root(closed).querySelector('button')).cursor === 'not-allowed');
+  // The radio and its label are one control, so the label has the disabled style too.
+  const gray = document.createElement('span');
+  gray.style.color = 'GrayText';
+  document.body.append(gray);
+  const dim = [...root(branch).querySelectorAll('.option label')].map((item) => getComputedStyle(item)).map((style) => ({
+    opacity: style.opacity, cursor: style.cursor, gray: style.color === getComputedStyle(gray).color }));
+  gray.remove();
+  check('disabled: the label of a disabled option has the disabled style', dim.length === 2 && dim.every((item) => item.cursor === 'not-allowed'
+    && (media('(forced-colors: active)') ? item.opacity === '1' && item.gray : item.opacity === '0.6')), dim);
 
   // Each empty state and each refused state tells the person what to do next.
   const EMPTY = {

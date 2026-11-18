@@ -47,9 +47,11 @@ const FIELD_CSS = sheet(`
   .option:hover:not(:has(:disabled)) { box-shadow: inset 0 0 0 100vmax color-mix(in srgb, currentColor 8%, transparent); }
   .option:active:not(:has(:disabled)) { box-shadow: inset 0 0 0 100vmax color-mix(in srgb, currentColor 14%, transparent); }
   .option:has(:disabled) :is(input, label) { cursor: not-allowed; }
+  .option:has(:disabled) label { opacity: 0.6; }
   @media (forced-colors: active) {
     input, textarea, fieldset { border-color: FieldText; }
     .option:hover:not(:has(:disabled)) { outline: 1px solid Highlight; }
+    .option:has(:disabled) label { color: GrayText; opacity: 1; }
     .hint, .error { color: CanvasText; }
   }
 `);
