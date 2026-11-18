@@ -149,6 +149,7 @@ python3 -m http.server 8000
    - `http://localhost:8000/examples/excerpt.html`: an excerpt of a synthetic document in a message, and a refused excerpt.
    - `http://localhost:8000/examples/provenance.html`: a card with the authorship slot and the citation slot, and a refused card.
    - `http://localhost:8000/examples/offline.html`: an offline data source of a synthetic tool library in each state, offline and online.
+   - `http://localhost:8000/examples/snapshots.html`: versioned records on a fixture API. The page lists collections and snapshots, compares two snapshots with a diff and lists the records that the change affects. It only reads.
    - `http://localhost:8000/examples/register.html`: an application contract and element for a synthetic seed tray, a refused fill, and the tray in a thread.
    - `http://localhost:8000/examples/review-queue.html`: a review queue on a fixture API. A reviewer accepts, corrects or rejects an extracted value next to its source excerpt, and the page shows Done only after the receipt.
 
