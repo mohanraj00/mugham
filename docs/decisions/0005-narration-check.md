@@ -61,4 +61,4 @@ Write these expected results before the implementation runs:
 | Narration with 10,000 UTF-16 code units and one matching claim at the end | Pass, one checked claim |
 | More than 50 stray closing brackets, then a claim | Fail, 50 syntax errors and one stop error, zero checked claims |
 
-`tests/narration.test.mjs` checks these results and the two synthetic example cases. `examples/narration.html` shows the same card data with a passing narration and a failing narration. The browser check expects two card articles, no refused elements and headings for both results.
+`tests/narration.test.mjs` checks these results and the two synthetic example cases. `examples/evidence/narration.html` shows the same card data with a passing narration and a failing narration. The browser check expects two card articles, no refused elements and headings for both results.

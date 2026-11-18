@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""A fixture API for examples/upload.html, with the Python standard library only.
+"""A fixture API for examples/forms/upload.html, with the Python standard library only.
 
 POST /api/tickets/T-2041/files takes one file as the request body and gives its receipt.
 GET /api/tickets/T-2041/files lists the name and the size of each file that the API keeps.
@@ -19,7 +19,7 @@ from thread_server import Handler as FileHandler, Server
 
 TICKET = 'T-2041'
 FILES_PATH = '/api/tickets/%s/files' % TICKET
-# The limits of the API. examples/upload.js binds the same limits for the control.
+# The limits of the API. examples/forms/upload.js binds the same limits for the control.
 MAX_SIZE = 2000000
 MAX_FILES = 3
 # The API discards a body up to this size. It does not read a larger body.
@@ -120,7 +120,7 @@ def main(argv=None):
     parser.add_argument('--port', type=int, default=8767, help='the port, or 0 for a free port')
     args = parser.parse_args(argv)
     server = make_server(args.port)
-    print('http://127.0.0.1:%d/examples/upload.html' % server.server_address[1], flush=True)
+    print('http://127.0.0.1:%d/examples/forms/upload.html' % server.server_address[1], flush=True)
     try:
         server.serve_forever()
     except KeyboardInterrupt:

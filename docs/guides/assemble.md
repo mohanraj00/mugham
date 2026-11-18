@@ -165,4 +165,4 @@ Expected result:
 node tools/browser_check.mjs
 ```
 
-The page uses a function as its API. A real application sends the request to its own API, as [examples/thread.js](../../examples/thread.js) and [examples/approval.js](../../examples/approval.js) show.
+The page uses a function as its API. A real application sends the request to its own API, as [examples/thread/thread.js](../../examples/thread/thread.js) and [examples/cards/approval.js](../../examples/cards/approval.js) show.

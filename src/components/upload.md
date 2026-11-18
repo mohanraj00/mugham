@@ -110,4 +110,4 @@ The name of a Remove button has the file name, for example `Remove receipt-a.pdf
 | `error` | One or more files are not done. |
 | `refused` | A status notice gives the reason as text. The element keeps no data. |
 
-[examples/upload.html](../../examples/upload.html) attaches synthetic PDF receipts to a ticket. Its fixture API, `tools/upload_server.py`, decides each file again and keeps the files in memory only. [tests/browser/upload.js](../../tests/browser/upload.js) checks each state, each key and each refusal in the four media modes.
+[examples/forms/upload.html](../../examples/forms/upload.html) attaches synthetic PDF receipts to a ticket. Its fixture API, `tools/upload_server.py`, decides each file again and keeps the files in memory only. [tests/browser/upload.js](../../tests/browser/upload.js) checks each state, each key and each refusal in the four media modes.

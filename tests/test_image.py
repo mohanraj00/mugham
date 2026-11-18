@@ -5,7 +5,7 @@ from test_catalog_contracts import CATALOG, outer
 import catalog
 
 
-DATA = {'url': '/examples/floor-plan.svg', 'alt': 'Two rooms with a door.', 'width': 480, 'height': 320}
+DATA = {'url': '/examples/media/floor-plan.svg', 'alt': 'Two rooms with a door.', 'width': 480, 'height': 320}
 
 
 class ImageContractTest(unittest.TestCase):

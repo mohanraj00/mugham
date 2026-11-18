@@ -1,4 +1,4 @@
-"""Tests of tools/thread_server.py and examples/thread-events.json. Each expected result comes from
+"""Tests of tools/thread_server.py and examples/thread/thread-events.json. Each expected result comes from
 src/thread/README.md and from issue #5: two people, two agents, a refused component and one action."""
 import http.client
 import json
@@ -44,12 +44,12 @@ class ThreadServerTest(unittest.TestCase):
         self.assertEqual(status, 200)
         self.assertTrue(kind.startswith('text/event-stream'))
         blocks = data.decode().strip().split('\n\n')
-        script = json.loads((ROOT / 'examples/thread-events.json').read_text(encoding='utf-8'))
+        script = json.loads((ROOT / 'examples/thread/thread-events.json').read_text(encoding='utf-8'))
         self.assertEqual([json.loads(block[len('data: '):]) for block in blocks[:-1]], [step['event'] for step in script])
         self.assertEqual(blocks[-1], 'event: end\ndata: {}')
 
     def test_the_script_has_two_people_two_agents_a_refused_component_and_one_action(self):
-        script = [step['event'] for step in json.loads((ROOT / 'examples/thread-events.json').read_text(encoding='utf-8'))]
+        script = [step['event'] for step in json.loads((ROOT / 'examples/thread/thread-events.json').read_text(encoding='utf-8'))]
         actors = {(event['metadata']['mugham']['actor']['type'], event['metadata']['mugham']['actor']['id'])
                   for event in script if 'metadata' in event}
         self.assertEqual(sorted(kind for kind, _ in actors), ['agent', 'agent', 'human', 'human'])
@@ -83,11 +83,11 @@ class ThreadServerTest(unittest.TestCase):
         self.assertEqual(self.call('POST', '/other', b'{}', {'Content-Type': 'application/json'})[0], 404)
 
     def test_a_different_host_name_is_refused(self):
-        self.assertEqual(self.call('GET', '/examples/thread.html', headers={'Host': 'example.test:%d' % self.port})[0], 403)
+        self.assertEqual(self.call('GET', '/examples/thread/thread.html', headers={'Host': 'example.test:%d' % self.port})[0], 403)
         self.assertEqual(self.post({'id': 'q'}, {'Host': 'example.test'})[0], 403)
 
     def test_only_the_served_folders_are_served(self):
-        self.assertEqual(self.call('GET', '/examples/thread.html')[0], 200)
+        self.assertEqual(self.call('GET', '/examples/thread/thread.html')[0], 200)
         self.assertEqual(self.call('GET', '/src/thread/index.js')[0], 200)
         for path in ['/tools/thread_server.py', '/src/../tools/build.py', '/README.md', '/.git/config', '/src', '/examples/missing.js']:
             self.assertEqual(self.call('GET', path)[0], 404, path)
@@ -116,11 +116,11 @@ class ThreadServerPortTest(unittest.TestCase):
         process = start()
         try:
             url = process.stdout.readline().strip()
-            self.assertRegex(url, r'^http://127\.0\.0\.1:\d+/examples/thread\.html$')
+            self.assertRegex(url, r'^http://127\.0\.0\.1:\d+/examples/thread/thread\.html$')
             port = int(url.split(':')[2].split('/')[0])
             self.assertNotEqual(port, 8765)
             connection = http.client.HTTPConnection('127.0.0.1', port, timeout=10)
-            connection.request('GET', '/examples/thread.html')
+            connection.request('GET', '/examples/thread/thread.html')
             self.assertEqual(connection.getresponse().status, 200)
             connection.close()
         finally:

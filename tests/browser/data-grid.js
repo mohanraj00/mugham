@@ -41,7 +41,7 @@ export async function dataGridKeyboardChecks(session, sessionId, { evaluate, key
 
 // The budget example: an edit goes to the application, and the application sends the new total.
 export async function budgetExampleChecks(session, sessionId, base, { evaluate, open, sleep, key }) {
-  const page = 'examples/budget.html';
+  const page = 'examples/tables/budget.html';
   const results = [];
   const check = (name, ok, detail) => results.push({ page, step: name, ok: Boolean(ok), detail: JSON.stringify(detail) });
   await open(session, sessionId, `${base}/${page}`);

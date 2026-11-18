@@ -76,4 +76,4 @@ Write these expected results before the implementation runs:
 | Level 1, 2 and 3 with the first page level 5 | `h5`, `h6` and `h6` |
 | More than 2000 inline nodes | Refused |
 
-`tests/test_rich_text.py` and `tests/rich-text.test.mjs` check the contracts with the two validators. `tests/browser/rich-text.js` checks the element in the four media modes. `examples/rich-text.html` shows an agent message with rich text in a thread.
+`tests/test_rich_text.py` and `tests/rich-text.test.mjs` check the contracts with the two validators. `tests/browser/rich-text.js` checks the element in the four media modes. `examples/thread/rich-text.html` shows an agent message with rich text in a thread.

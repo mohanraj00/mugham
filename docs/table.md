@@ -1,6 +1,6 @@
 # Table
 
-[table.json](../catalog/table.json) declares `mu-table`. [table-row.json](../catalog/table-row.json) declares each nested row. A row has no separate element, the same as a fact in a card. [examples/table.html](../examples/table.html) shows synthetic rows and an empty table.
+[table.json](../catalog/table.json) declares `mu-table`. [table-row.json](../catalog/table-row.json) declares each nested row. A row has no separate element, the same as a fact in a card. [examples/tables/table.html](../examples/tables/table.html) shows synthetic rows and an empty table.
 
 The table has a required `label`, one to 12 text headers in `columns`, and zero to 500 fills in `rows`. Each row has a `cells` list with one text value per column, in column order. A cell can be blank. A header cannot be blank. All values show as text.
 

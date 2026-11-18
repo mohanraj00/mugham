@@ -1,8 +1,8 @@
-// The flow of examples/snapshots.html against its fixture API, examples/snapshots-api.js. The API runs in the page,
+// The flow of examples/tables/snapshots.html against its fixture API, examples/tables/snapshots-api.js. The API runs in the page,
 // so the check needs no server. The example only reads, so the check also proves that it sends no action.
 // tools/browser_check.mjs imports this check in Node and runs it in headless Chrome.
 export async function snapshotChecks(session, sessionId, base, { evaluate, open, sleep }) {
-  const page = 'examples/snapshots.html';
+  const page = 'examples/tables/snapshots.html';
   const results = [];
   const check = (name, ok, detail) => results.push({ page, step: name, ok: Boolean(ok), detail: JSON.stringify(detail) });
   await open(session, sessionId, `${base}/${page}`);
@@ -65,7 +65,7 @@ export async function snapshotChecks(session, sessionId, base, { evaluate, open,
   check('a change that no record uses shows that no record depends on it', found.none === 'No record depends on the changed records.' && !found.impact.length
     && found.diff.some((item) => item.includes('Flatbread') && item.includes('Added')), found);
   const readOnly = await evaluate(session, sessionId, `(async () => {
-    const { SnapshotApi } = await import('/examples/snapshots-api.js');
+    const { SnapshotApi } = await import('/examples/tables/snapshots-api.js');
     return { methods: Object.getOwnPropertyNames(SnapshotApi.prototype).sort(),
       controls: document.querySelectorAll('mu-action-button, mu-editable-form, mu-form-card, mu-upload, form, textarea, input').length, actions: window.muActions };
   })()`);

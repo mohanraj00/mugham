@@ -1,8 +1,8 @@
-// The flow of examples/review-queue.html against its fixture API, examples/review-queue-api.js. The API runs in the
+// The flow of examples/tables/review-queue.html against its fixture API, examples/tables/review-queue-api.js. The API runs in the
 // page, so the check needs no server. The page acts as the application, and the fixture API decides each action.
 // tools/browser_check.mjs imports this check in Node and runs it in headless Chrome.
 export async function reviewQueueChecks(session, sessionId, base, { evaluate, open, sleep }) {
-  const page = 'examples/review-queue.html';
+  const page = 'examples/tables/review-queue.html';
   const results = [];
   const check = (name, ok, detail) => results.push({ page, step: name, ok: Boolean(ok), detail: JSON.stringify(detail) });
   await open(session, sessionId, `${base}/${page}`);

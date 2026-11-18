@@ -35,7 +35,7 @@ async function browserChecks() {
   const check = (name, ok, detail = '') => results.push({ name, ok: Boolean(ok), detail: String(detail) });
   const stage = document.getElementById('stage');
   const AUTHOR = { type: 'agent', id: 'agent-plan' };
-  const DATA = { url: '/examples/floor-plan.svg', alt: 'Two rooms with a door.', width: 480, height: 320 };
+  const DATA = { url: '/examples/media/floor-plan.svg', alt: 'Two rooms with a door.', width: 480, height: 320 };
   const fill = (data = DATA) => ({ component: 'image', version: '0.1.0', data, slots: { authorship: AUTHOR } });
   const mount = (data = DATA, author = AUTHOR) => {
     const node = document.createElement('mu-image');

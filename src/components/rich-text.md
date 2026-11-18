@@ -61,4 +61,4 @@ Thus the headings of a message continue the heading order of the page.
 
 The authorship slot is required and must agree with the actor that the page or the thread binds. The thread accepts a rich text part and binds the actor of its envelope. To place rich text in a card, page code uses the page-owned `actions` slot of the card.
 
-[examples/rich-text.html](../../examples/rich-text.html) shows an agent message with a heading, a list of three steps and one link. It also shows markup as text and a refused script address. [tests/browser/rich-text.js](../../tests/browser/rich-text.js) checks each node type, each refusal and the keyboard in the four media modes.
+[examples/thread/rich-text.html](../../examples/thread/rich-text.html) shows an agent message with a heading, a list of three steps and one link. It also shows markup as text and a refused script address. [tests/browser/rich-text.js](../../tests/browser/rich-text.js) checks each node type, each refusal and the keyboard in the four media modes.
