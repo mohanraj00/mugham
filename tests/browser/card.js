@@ -45,19 +45,31 @@ async function browserChecks() {
   const storageBefore = JSON.stringify([Object.entries(localStorage), Object.entries(sessionStorage)]);
   const check = (name, ok, detail = '') => results.push({ name, ok: Boolean(ok), detail: String(detail) });
   const AUTHOR = { type: 'agent', id: 'agent-cards' };
+  const CITATION = { source: 'Synthetic card record', locator: 'https://example.org/cards/1' };
   const data = { title: 'Synthetic card', summary: 'Body text.', status: 'Ready', collapsed_summary: 'Short text.',
     collapsible: true, facts: [{ component: 'fact', version: '0.1.0', data: { label: 'Shelf', value: 'A-1' } }] };
-  const fill = (component, data) => ({ component, version: '0.1.0', data, slots: { authorship: AUTHOR } });
+  const fill = (component, data, citation) => ({ component, version: '0.1.0', data,
+    slots: { authorship: AUTHOR, ...(citation ? { citation } : {}) } });
   const stage = document.getElementById('stage');
-  function mount(values = data, component = 'card') {
+  function mount(values = data, component = 'card', citation) {
     const node = document.createElement(`mu-${component}`);
     node.actor = AUTHOR;
     stage.append(node);
-    node.fill = fill(component, values);
+    node.fill = fill(component, values, citation);
     return node;
   }
   const button = (card) => card.shadowRoot.querySelector('[part="toggle"]');
   const body = (card) => card.shadowRoot.querySelector('[part="body"]');
+  function visibleProvenance(card) {
+    const root = card.shadowRoot;
+    const parts = ['authorship', 'citation', 'locator', 'open'].map((part) => root.querySelector(`[part="${part}"]`));
+    return root.querySelectorAll('[part="provenance"]').length === 1
+      && root.querySelectorAll('[part="authorship"]').length === 1
+      && root.querySelectorAll('[part="citation"]').length === 1
+      && parts.every((node) => node && node.getBoundingClientRect().height > 0)
+      && parts[0].textContent === 'Author: agent agent-cards'
+      && parts[1].textContent === `Source: ${CITATION.source}` && parts[2].textContent === CITATION.locator;
+  }
   function action(card, confirm = false) {
     const node = document.createElement('mu-action-button');
     node.slot = 'actions';
@@ -73,16 +85,17 @@ async function browserChecks() {
   initial.actor = AUTHOR;
   let initialEvents = 0;
   initial.addEventListener('mu-collapse', () => { initialEvents += 1; });
-  initial.fill = fill('card', { ...data, collapsed: true });
+  initial.fill = fill('card', { ...data, collapsed: true }, CITATION);
   stage.append(initial);
   check('card: a collapsed start state sends no change event', initial.collapsed && body(initial).hidden && initialEvents === 0);
+  check('card: a collapsed start state shows the agent author and source once', initial.collapsed && visibleProvenance(initial));
   for (const values of [{ title: 'Plain card' }, { ...data, collapsible: false, collapsed: true },
     { title: 'Plain start state', collapsed: true }]) {
     const node = mount(values);
     check('card: no collapse control keeps the original state and content', !button(node)
       && node.dataset.state === 'default' && !node.collapsed && node.shadowRoot.querySelector('article'));
   }
-  const card = mount();
+  const card = mount(data, 'card', CITATION);
   const control = button(card);
   const events = [];
   card.addEventListener('mu-collapse', (event) => events.push(event));
@@ -100,6 +113,7 @@ async function browserChecks() {
     && card.shadowRoot.querySelector('[part="title"]').textContent === data.title
     && card.shadowRoot.querySelector('[part="status"]').textContent === 'Ready'
     && !card.shadowRoot.querySelector('[part="collapsed-summary"]').hidden);
+  check('card: collapse keeps the agent author and source visible once', card.collapsed && visibleProvenance(card));
   check('card: collapse keeps focus, DOM identity and fill data', card.shadowRoot.activeElement === control
     && button(card) === control && card.querySelector('mu-action-button') === pending && JSON.stringify(card.fill) === original);
   check('card: the state event bubbles, crosses shadow roots and has boolean detail', events.length === 1
@@ -109,6 +123,7 @@ async function browserChecks() {
   card.collapsed = false;
   check('card: expansion hides only the short summary', !body(card).hidden
     && card.shadowRoot.querySelector('[part="collapsed-summary"]').hidden && events.length === 2);
+  check('card: expansion shows the agent author and source once', !card.collapsed && visibleProvenance(card));
   press(pending);
   card.collapsed = true;
   control.click();

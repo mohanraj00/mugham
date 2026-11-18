@@ -391,15 +391,16 @@ export class MuCard extends MuElement {
     actions.append(slot);
     const title = el('p', { class: 'title', part: 'title' }, data.title);
     const status = data.status ? el('p', { class: 'muted', part: 'status', role: 'status' }, data.status) : null;
-    const content = [data.summary ? el('p', {}, data.summary) : null, date, facts, provenance(this.fill.slots), actions];
-    let parts = [title, status, ...content];
+    const attribution = provenance(this.fill.slots);
+    const content = [data.summary ? el('p', {}, data.summary) : null, date, facts];
+    let parts = [title, status, ...content, attribution, actions];
     if (data.collapsible) {
-      this.#body = el('div', { class: 'card-body', part: 'body', id: 'card-body' }, ...content);
+      this.#body = el('div', { class: 'card-body', part: 'body', id: 'card-body' }, ...content, actions);
       this.#summary = data.collapsed_summary ? el('p', { part: 'collapsed-summary' }, data.collapsed_summary) : null;
       this.#toggle = el('button', { type: 'button', class: 'collapse-toggle', part: 'toggle', 'aria-controls': 'card-body' });
       this.#toggle.addEventListener('click', () => { this.collapsed = !this.#collapsed; });
       this.#sync();
-      parts = [el('header', { class: 'card-header' }, title, this.#toggle), status, this.#summary, this.#body];
+      parts = [el('header', { class: 'card-header' }, title, this.#toggle), status, this.#summary, attribution, this.#body];
     }
     const article = el('article', { 'aria-label': data.title, part: 'card' }, ...parts);
     this.#changed = this.#hasRendered && before !== this.#collapsed;

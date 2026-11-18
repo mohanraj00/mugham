@@ -189,7 +189,6 @@ async function key(session, sessionId, name, code, keyCode, text) {
   const base = { key: name, code, windowsVirtualKeyCode: keyCode, nativeVirtualKeyCode: keyCode };
   await session.send('Input.dispatchKeyEvent', { type: 'keyDown', ...base, ...(text ? { text } : {}) }, sessionId);
   await session.send('Input.dispatchKeyEvent', { type: 'keyUp', ...base }, sessionId);
-  if (name === 'Escape') await session.send('Page.bringToFront', {}, sessionId);
 }
 
 export async function evaluate(session, sessionId, expression) {
