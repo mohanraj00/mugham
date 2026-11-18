@@ -1,5 +1,7 @@
 # Rich text
 
+The optional `clamp` key adds a [Read more control](read-more.md). It limits only the text area. The author stays visible.
+
 `mu-rich-text` shows rich text in a message or in a card. Its contract is [catalog/rich-text.json](../../catalog/rich-text.json).
 A fill is a tree of typed nodes. It is never HTML and never Markdown. [Decision 0007](../../docs/decisions/0007-rich-text.md) gives the reasons.
 

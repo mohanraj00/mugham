@@ -5,6 +5,7 @@ import { createReader } from '../envelope/envelope.js';
 import { define as defineComponents } from '../components/index.js';
 import { BASE, el, sheet } from '../render/dom.js';
 import { registeredTag } from '../render/registry.js';
+import { ReadMore, READ_MORE_CSS, READ_MORE_LABELS, clampErrors } from '../primitives/read-more.js';
 
 // The element of each catalog contract that a part can show. A registered contract has its own element
 // (registeredTag). A contract with no element shows a refusal.
@@ -84,9 +85,13 @@ function header(name, type) {
 }
 
 export class MuThread extends HTMLElement {
+  static observedAttributes = READ_MORE_LABELS;
   // The application gives the binding of each action part, and the function that sends a request to its API.
   bind = null;
   perform = null;
+
+  #clamp = null;
+  #textParts = new Map();
 
   #reader = createReader();
   #items = new Map();
@@ -112,7 +117,7 @@ export class MuThread extends HTMLElement {
   constructor() {
     super();
     const root = this.attachShadow({ mode: 'open' });
-    root.adoptedStyleSheets = [BASE, CSS];
+    root.adoptedStyleSheets = [BASE, READ_MORE_CSS, CSS];
     this.#stream.hidden = true;
     this.#source.hidden = true;
     root.append(this.#list, this.#stream, this.#source, this.#live);
@@ -124,6 +129,41 @@ export class MuThread extends HTMLElement {
   // A custom element cannot set an attribute in its constructor, so the state attribute starts here.
   connectedCallback() {
     this.dataset.state = this.#state;
+    for (const { control } of this.#textParts.values()) control?.connect();
+  }
+
+  disconnectedCallback() {
+    for (const { control } of this.#textParts.values()) control?.disconnect();
+  }
+
+  attributeChangedCallback() {
+    for (const { control } of this.#textParts.values()) control?.labels();
+  }
+
+  get clamp() {
+    return this.#clamp;
+  }
+
+  set clamp(value) {
+    if (value !== null && clampErrors(value).length) throw new TypeError(clampErrors(value)[0]);
+    if (value === this.#clamp) return;
+    this.#clamp = value;
+    for (const entry of this.#items.values()) {
+      if (entry.refused) continue;
+      entry.nodes = entry.nodes.map((old) => {
+        const record = this.#textParts.get(old);
+        if (!record) return old;
+        const marker = el('span');
+        old.before(marker);
+        record.control?.disconnect();
+        this.#textParts.delete(old);
+        const node = this.#textPart(record.text);
+        if (old !== record.text) old.remove();
+        marker.replaceWith(node);
+        return node;
+      });
+    }
+    if (this.isConnected) for (const { control } of this.#textParts.values()) control?.connect();
   }
 
   get state() {
@@ -227,7 +267,10 @@ export class MuThread extends HTMLElement {
     if (!old || old.refused !== refused) {
       const entry = refused ? this.#refusedItem(message) : this.#messageItem(message);
       entry.json = json;
-      if (old) old.node.replaceWith(entry.node);
+      if (old) {
+        for (const node of old.nodes ?? []) this.#dropText(node);
+        old.node.replaceWith(entry.node);
+      }
       else this.#list.append(entry.node);
       this.#items.set(message.messageId, entry);
       if (refused) said.notices.push('Refused message.');
@@ -282,8 +325,12 @@ export class MuThread extends HTMLElement {
       const node = this.#refill(old, part, message) ?? this.#part(part, message);
       if (node === old) {
         // The same element shows the new fill.
-      } else if (old) old.replaceWith(node);
+      } else if (old) {
+        this.#dropText(old);
+        old.replaceWith(node);
+      }
       else entry.parts.append(node);
+      if (this.isConnected) this.#textParts.get(node)?.control?.connect();
       // A refusal is new for the person, so the live region tells it. An element can also refuse its fill.
       if (part.type === 'refusal' || node.dataset.state === 'refused' || node.classList.contains('refusal')) {
         said.notices.push(`The thread refused a part of the message from ${who(message.actor)}.`);
@@ -299,7 +346,9 @@ export class MuThread extends HTMLElement {
         this.#wait(entry, entry.nodes[index]);
         break;
       }
-      entry.nodes.pop().remove();
+      const node = entry.nodes.pop();
+      this.#dropText(node);
+      node.remove();
       entry.keys.pop();
     }
   }
@@ -311,6 +360,12 @@ export class MuThread extends HTMLElement {
   // A new fill of the same action with the same binding goes to the same element. Then the rules of the
   // element apply: a done action button stays done, and a form with new values can save again.
   #refill(old, part, message) {
+    const record = this.#textParts.get(old);
+    if (record && part.type === 'text') {
+      record.text.replaceChildren(part.text);
+      record.control?.update();
+      return old;
+    }
     if (!old || part.type !== 'component' || !ACTIONS.has(part.fill.component) || old.localName !== TAGS[part.fill.component]) return null;
     if (!this.#bindings.has(old) || this.#bindings.get(old) !== stable(this.#binding(part.fill, message))) return null;
     old.actor = actorOf(message);
@@ -340,7 +395,7 @@ export class MuThread extends HTMLElement {
   }
 
   #part(part, message) {
-    if (part.type === 'text') return el('p', { class: 'text' }, part.text);
+    if (part.type === 'text') return this.#textPart(el('p', { class: 'text' }, part.text));
     if (part.type === 'status') return el('p', { class: 'status error' }, 'Error: ' + part.text + (part.code ? ` (${part.code})` : ''));
     if (part.type === 'refusal') {
       const more = part.errors.length > 1 ? ` (${part.errors.length - 1} more)` : '';
@@ -348,6 +403,18 @@ export class MuThread extends HTMLElement {
     }
     if (part.type === 'component') return this.#component(part.fill, message);
     return el('p', { class: 'fallback' }, part.text);
+  }
+
+  #textPart(text) {
+    const control = this.#clamp === null ? null : new ReadMore(this, text, this.#clamp);
+    const node = control ? el('div', {}, control.content, control.button) : text;
+    this.#textParts.set(node, { text, control });
+    return node;
+  }
+
+  #dropText(node) {
+    this.#textParts.get(node)?.control?.disconnect();
+    this.#textParts.delete(node);
   }
 
   // The element of the component validates the fill again. The application gives the binding of an action.

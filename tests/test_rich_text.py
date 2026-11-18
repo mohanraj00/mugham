@@ -27,7 +27,7 @@ class RichTextContractTest(unittest.TestCase):
         self.assertEqual(CATALOG['rich-quote']['data']['paragraphs']['items']['name'], 'rich-paragraph')
 
     def test_each_node_declares_only_its_attributes(self):
-        declared = {'rich-text': ['blocks'], 'rich-paragraph': ['content'], 'rich-heading': ['level', 'content'],
+        declared = {'rich-text': ['blocks', 'clamp'], 'rich-paragraph': ['content'], 'rich-heading': ['level', 'content'],
                     'rich-list': ['ordered', 'items'], 'rich-code': ['text'], 'rich-quote': ['paragraphs'],
                     'rich-span': ['text', 'mark'], 'rich-link': ['text', 'url']}
         for name, keys in declared.items():

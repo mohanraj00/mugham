@@ -28,6 +28,13 @@
           "rich-quote"
         ]
       }
+    },
+    "clamp": {
+      "type": "integer",
+      "label": "Initial lines",
+      "required": false,
+      "minimum": 1,
+      "maximum": 20
     }
   },
   "states": [
@@ -41,6 +48,7 @@
     "color.surface",
     "color.border",
     "color.accent",
+    "color.focus",
     "space.1",
     "space.2",
     "space.3",
