@@ -1,47 +1,13 @@
 {
-  "format": 2,
   "name": "rich-paragraph",
-  "version": "0.1.0",
-  "kind": "component",
   "description": "A paragraph node of rich text: a list of inline nodes. It is also the content of a list item and of a quote.",
-  "ai_content": true,
-  "slots": {
-    "authorship": {
-      "required": true
-    }
-  },
   "data": {
     "content": {
       "type": "list",
-      "label": "Content",
       "required": true,
       "max_items": 50,
-      "items": {
-        "type": "component",
-        "label": "Inline node",
-        "required": true,
-        "names": [
-          "rich-span",
-          "rich-link"
-        ]
-      }
+      "items": {"type": "component", "label": "Inline node", "names": ["rich-span", "rich-link"]}
     }
   },
-  "states": [
-    "default"
-  ],
-  "tokens": [
-    "color.text",
-    "color.text-muted",
-    "color.border",
-    "space.1",
-    "space.2",
-    "type.body"
-  ],
-  "accessibility": {
-    "role": "none",
-    "keyboard": [],
-    "forced_colors": true,
-    "reduced_motion": true
-  }
+  "tokens": ["color.text", "color.text-muted", "color.border", "space.1", "space.2", "type.body"]
 }

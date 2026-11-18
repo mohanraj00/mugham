@@ -1,39 +1,8 @@
 {
-  "format": 2,
   "name": "number-cell",
-  "version": "0.1.0",
-  "kind": "component",
   "description": "A cell of a data grid with a number value. A cell with no value is empty.",
-  "ai_content": true,
-  "slots": {
-    "authorship": {
-      "required": true
-    }
-  },
   "data": {
-    "value": {
-      "type": "number",
-      "label": "Value",
-      "required": false
-    },
-    "read_only": {
-      "type": "boolean",
-      "label": "Read-only",
-      "required": false
-    }
-  },
-  "states": [
-    "default"
-  ],
-  "tokens": [
-    "color.text",
-    "color.border",
-    "type.body"
-  ],
-  "accessibility": {
-    "role": "none",
-    "keyboard": [],
-    "forced_colors": true,
-    "reduced_motion": true
+    "value": {"type": "number"},
+    "read_only": {"type": "boolean", "label": "Read-only"}
   }
 }

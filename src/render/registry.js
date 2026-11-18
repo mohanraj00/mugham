@@ -3,6 +3,7 @@
 // contracts, and a script cannot write it. The elements and the envelope reader validate each fill against
 // CONTRACTS. catalog/README.md#application-contracts gives the rules and the limits.
 import { CATALOG } from './catalog.js';
+import { resolveContract } from './resolve.js';
 import { contractErrors } from './validate.js';
 
 // The prefix of the element name of each registered component. No kit element has this prefix.
@@ -80,19 +81,22 @@ function elementError(element, name) {
   return '';
 }
 
-// Register an application contract and its element. The contract gets the same validator and schema as the
-// catalog. The element gets the name mu-app-<name>. The call fails with a TypeError and changes nothing if the
-// contract is missing or not valid, if its name is a catalog name or a registered name, or if the element is
-// not valid. A registered contract stays until the page closes.
+// Register an application contract and its element. The contract has the short form or the full form, and it
+// gets the same resolver, validator and schema as the catalog. The element gets the name mu-app-<name>. The
+// call fails with a TypeError and changes nothing if the contract is missing or not valid, if its name is a
+// catalog name or a registered name, or if the element is not valid. A registered contract stays until the
+// page closes.
 export function register(contract, element, elements = globalThis.customElements) {
   if (contract === undefined || contract === null) throw new TypeError('register: a contract is necessary');
-  const value = copy(contract);
-  const name = typeof value?.name === 'string' ? value.name : '(no name)';
-  if (typeof value?.name === 'string' && own(CATALOG, value.name)) {
-    throw new TypeError(`register: ${value.name} is the name of a catalog contract`);
+  const stated = copy(contract);
+  const name = typeof stated?.name === 'string' ? stated.name : '(no name)';
+  if (typeof stated?.name === 'string' && own(CATALOG, stated.name)) {
+    throw new TypeError(`register: ${stated.name} is the name of a catalog contract`);
   }
   if (registered.has(name)) throw new TypeError(`register: ${name} is already registered`);
-  const errors = contractErrors(value, CONTRACTS);
+  // The registry keeps the full form. A contract in the short form gets the defaults of the catalog first.
+  const { contract: value, errors: short } = resolveContract(stated);
+  const errors = short.length ? short : contractErrors(value, CONTRACTS);
   if (errors.length) throw new TypeError(`register: the contract ${name} is not valid: ${errors.join('; ')}`);
   const error = elementError(element, name);
   if (error) throw new TypeError(error);

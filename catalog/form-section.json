@@ -1,54 +1,15 @@
 {
-  "format": 2,
   "name": "form-section",
-  "version": "0.1.0",
-  "kind": "component",
   "description": "A titled section of a form card with up to 40 lines.",
-  "ai_content": true,
-  "slots": {
-    "authorship": {
-      "required": true
-    }
-  },
   "data": {
-    "title": {
-      "type": "text",
-      "label": "Title",
-      "required": true,
-      "min_length": 1,
-      "max_length": 80
-    },
+    "title": {"type": "text", "required": true, "min_length": 1, "size": "line"},
     "lines": {
       "type": "list",
-      "label": "Lines",
       "required": true,
       "max_items": 40,
-      "items": {
-        "type": "component",
-        "label": "Line",
-        "required": true,
-        "name": "form-line"
-      }
+      "items": {"type": "component", "label": "Line", "name": "form-line"}
     }
   },
-  "states": [
-    "default"
-  ],
-  "tokens": [
-    "color.text",
-    "color.border",
-    "space.2",
-    "space.3",
-    "type.body",
-    "type.weight-strong"
-  ],
-  "accessibility": {
-    "role": "group",
-    "name": {
-      "field": "title"
-    },
-    "keyboard": [],
-    "forced_colors": true,
-    "reduced_motion": true
-  }
+  "tokens": ["color.text", "color.border", "space.2", "space.3", "type.body", "type.weight-strong"],
+  "accessibility": {"role": "group", "name": {"field": "title"}}
 }

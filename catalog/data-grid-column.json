@@ -1,74 +1,16 @@
 {
-  "format": 2,
   "name": "data-grid-column",
-  "version": "0.1.0",
-  "kind": "component",
   "description": "One column of a data grid: a key, a header label, the type of its cells and an optional read-only flag. A choice column gives its choices.",
-  "ai_content": true,
-  "slots": {
-    "authorship": {
-      "required": true
-    }
-  },
   "data": {
-    "key": {
-      "type": "text",
-      "label": "Key",
-      "required": true,
-      "min_length": 1,
-      "max_length": 40
-    },
-    "label": {
-      "type": "text",
-      "label": "Label",
-      "required": true,
-      "min_length": 1,
-      "max_length": 80
-    },
-    "type": {
-      "type": "enum",
-      "label": "Cell type",
-      "required": true,
-      "values": [
-        "text",
-        "number",
-        "date",
-        "choice"
-      ]
-    },
-    "read_only": {
-      "type": "boolean",
-      "label": "Read-only",
-      "required": false
-    },
+    "key": {"type": "text", "required": true, "min_length": 1, "size": "short"},
+    "label": {"type": "text", "required": true, "min_length": 1, "size": "line"},
+    "type": {"type": "enum", "label": "Cell type", "required": true, "values": ["text", "number", "date", "choice"]},
+    "read_only": {"type": "boolean", "label": "Read-only"},
     "choices": {
       "type": "list",
-      "label": "Choices",
-      "required": false,
       "max_items": 20,
-      "items": {
-        "type": "text",
-        "label": "Choice",
-        "required": true,
-        "min_length": 1,
-        "max_length": 80
-      }
+      "items": {"type": "text", "label": "Choice", "min_length": 1, "size": "line"}
     }
   },
-  "states": [
-    "default"
-  ],
-  "tokens": [
-    "color.text",
-    "color.border",
-    "color.surface",
-    "type.body",
-    "type.weight-strong"
-  ],
-  "accessibility": {
-    "role": "none",
-    "keyboard": [],
-    "forced_colors": true,
-    "reduced_motion": true
-  }
+  "tokens": ["color.text", "color.border", "color.surface", "type.body", "type.weight-strong"]
 }

@@ -1,55 +1,14 @@
 {
-  "format": 2,
   "name": "rich-heading",
-  "version": "0.1.0",
-  "kind": "component",
   "description": "A heading node of rich text. The level is relative to the first heading level that page code sets. A heading cannot skip a level.",
-  "ai_content": true,
-  "slots": {
-    "authorship": {
-      "required": true
-    }
-  },
   "data": {
-    "level": {
-      "type": "integer",
-      "label": "Level",
-      "required": true,
-      "minimum": 1,
-      "maximum": 3
-    },
+    "level": {"type": "integer", "required": true, "minimum": 1, "maximum": 3},
     "content": {
       "type": "list",
-      "label": "Content",
       "required": true,
       "max_items": 50,
-      "items": {
-        "type": "component",
-        "label": "Inline node",
-        "required": true,
-        "names": [
-          "rich-span",
-          "rich-link"
-        ]
-      }
+      "items": {"type": "component", "label": "Inline node", "names": ["rich-span", "rich-link"]}
     }
   },
-  "states": [
-    "default"
-  ],
-  "tokens": [
-    "color.text",
-    "color.text-muted",
-    "color.border",
-    "space.1",
-    "space.2",
-    "type.body",
-    "type.weight-strong"
-  ],
-  "accessibility": {
-    "role": "none",
-    "keyboard": [],
-    "forced_colors": true,
-    "reduced_motion": true
-  }
+  "tokens": ["color.text", "color.text-muted", "color.border", "space.1", "space.2", "type.body", "type.weight-strong"]
 }

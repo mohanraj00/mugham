@@ -1,108 +1,22 @@
 {
-  "format": 2,
   "name": "card",
-  "version": "0.1.0",
-  "kind": "component",
   "description": "A card with a title, optional details and an optional collapse control.",
-  "ai_content": true,
-  "slots": {
-    "authorship": {
-      "required": true
-    },
-    "citation": {
-      "required": false
-    }
-  },
+  "slots": {"citation": {"required": false}},
   "data": {
-    "title": {
-      "type": "text",
-      "label": "Title",
-      "required": true,
-      "min_length": 1,
-      "max_length": 120
-    },
-    "summary": {
-      "type": "text",
-      "label": "Summary",
-      "required": false,
-      "max_length": 1000
-    },
-    "date": {
-      "type": "date",
-      "label": "Date",
-      "required": false
-    },
-    "date_label": {
-      "type": "text",
-      "label": "Date label",
-      "required": false,
-      "max_length": 40
-    },
-    "facts": {
-      "type": "list",
-      "label": "Facts",
-      "required": false,
-      "max_items": 6,
-      "items": {
-        "type": "component",
-        "label": "Fact",
-        "required": true,
-        "name": "fact"
-      }
-    },
-    "collapsible": {
-      "type": "boolean",
-      "label": "Collapse control",
-      "required": false
-    },
-    "collapsed": {
-      "type": "boolean",
-      "label": "Start collapsed",
-      "required": false
-    },
-    "status": {
-      "type": "text",
-      "label": "Status",
-      "required": false,
-      "max_length": 120
-    },
-    "collapsed_summary": {
-      "type": "text",
-      "label": "Collapsed summary",
-      "required": false,
-      "max_length": 200
-    }
+    "title": {"type": "text", "required": true, "min_length": 1, "size": "title"},
+    "summary": {"type": "text", "max_length": 1000},
+    "date": {"type": "date"},
+    "date_label": {"type": "text", "size": "short"},
+    "facts": {"type": "list", "max_items": 6, "items": {"type": "component", "label": "Fact", "name": "fact"}},
+    "collapsible": {"type": "boolean", "label": "Collapse control"},
+    "collapsed": {"type": "boolean", "label": "Start collapsed"},
+    "status": {"type": "text", "size": "title"},
+    "collapsed_summary": {"type": "text", "size": "summary"}
   },
-  "states": [
-    "default",
-    "expanded",
-    "collapsed"
-  ],
+  "states": ["+expanded", "+collapsed"],
   "tokens": [
-    "color.surface",
-    "color.text",
-    "color.text-muted",
-    "color.border",
-    "space.2",
-    "space.3",
-    "space.4",
-    "radius.2",
-    "type.body",
-    "type.caption",
-    "type.weight-strong",
-    "color.focus"
+    "color.surface", "color.text", "color.text-muted", "color.border", "space.2", "space.3", "space.4", "radius.2",
+    "type.body", "type.caption", "type.weight-strong", "color.focus"
   ],
-  "accessibility": {
-    "role": "article",
-    "name": {
-      "field": "title"
-    },
-    "keyboard": [
-      "Tab",
-      "Enter",
-      "Space"
-    ],
-    "forced_colors": true,
-    "reduced_motion": true
-  }
+  "accessibility": {"role": "article", "name": {"field": "title"}, "keyboard": ["Tab", "Enter", "Space"]}
 }

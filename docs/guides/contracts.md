@@ -17,6 +17,8 @@ A contract is one JSON file. It declares the data of one component, and nothing 
 | `tokens` | The design tokens that the component uses. [Theme the kit](theme.md) lists them. |
 | `accessibility` | The role, the field that gives the accessible name, the keys, forced colors and reduced motion. |
 
+The table shows the full form of a contract, which is format 2. A contract can also have the short form. The short form omits each value that is equal to a default, for example the version, the authorship slot, and the label of a field that is equal to its key. `register` accepts the two forms. [The short form](../../catalog/schema/README.md#short-form-format-3) gives the defaults.
+
 This is a contract of an application. It declares a count of birds at one site:
 
 <!-- source: examples/guides/bird-count.json -->

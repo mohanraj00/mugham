@@ -1,9 +1,10 @@
 // Expected number rules come from catalog/chart-series.json.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import chart from '../catalog/chart.json' with { type: 'json' };
-import series from '../catalog/chart-series.json' with { type: 'json' };
+import { CATALOG } from '../src/render/catalog.js';
 import { fillErrors } from '../src/render/validate.js';
+
+const { chart, 'chart-series': series } = CATALOG;
 
 test('each chart type accepts numbers and refuses non-finite or non-number values', () => {
   for (const type of ['bar', 'line', 'stacked_bar']) {

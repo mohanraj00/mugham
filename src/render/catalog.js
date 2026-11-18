@@ -1,4 +1,6 @@
-// The contracts that the kit knows. CI validates each one with tools/catalog.py.
+// The contracts that the kit knows, in the full form. CI validates each one with tools/catalog.py.
+// A contract file has the short form. resolveContract gives its full form (catalog/schema/README.md).
+import { resolveContract } from './resolve.js';
 import actionButton from '../../catalog/action-button.json' with { type: 'json' };
 import button from '../../catalog/button.json' with { type: 'json' };
 import card from '../../catalog/card.json' with { type: 'json' };
@@ -45,7 +47,7 @@ import dateCell from '../../catalog/date-cell.json' with { type: 'json' };
 import choiceCell from '../../catalog/choice-cell.json' with { type: 'json' };
 import upload from '../../catalog/upload.json' with { type: 'json' };
 
-export const CATALOG = Object.freeze(Object.assign(Object.create(null), {
+const FILES = {
   'action-button': actionButton, button, card, 'card-grid': cardGrid, 'choice-field': choiceField, citation, 'date-field': dateField,
   diff, 'diff-change': diffChange, 'diff-part': diffPart, 'editable-form': editableForm, excerpt, fact, field,
   'form-card': formCard, 'form-line': formLine, 'form-section': formSection, grid, image,
@@ -56,4 +58,13 @@ export const CATALOG = Object.freeze(Object.assign(Object.create(null), {
   'data-grid': dataGrid, 'data-grid-column': dataGridColumn, 'data-grid-row': dataGridRow,
   'text-cell': textCell, 'number-cell': numberCell, 'date-cell': dateCell, 'choice-cell': choiceCell,
   upload,
-}));
+};
+
+function resolved(name, file) {
+  const { contract, errors } = resolveContract(file, { checked: false });
+  if (errors.length) throw new Error(`catalog: the contract ${name} is not valid: ${errors.join('; ')}`);
+  return contract;
+}
+
+export const CATALOG = Object.freeze(Object.assign(Object.create(null),
+  Object.fromEntries(Object.entries(FILES).map(([name, file]) => [name, resolved(name, file)]))));

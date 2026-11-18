@@ -1,59 +1,15 @@
 {
-  "format": 2,
   "name": "diff-change",
-  "version": "0.1.0",
-  "kind": "component",
   "description": "One change of a diff: a label, the kind of the change, and the value before and after.",
   "ai_content": false,
   "data": {
-    "label": {
-      "type": "text",
-      "label": "Label",
-      "required": true,
-      "min_length": 1,
-      "max_length": 120
-    },
-    "change": {
-      "type": "enum",
-      "label": "Change",
-      "required": true,
-      "values": [
-        "added",
-        "removed",
-        "changed",
-        "unchanged"
-      ]
-    },
-    "before": {
-      "type": "text",
-      "label": "Before",
-      "required": false,
-      "max_length": 2000
-    },
-    "after": {
-      "type": "text",
-      "label": "After",
-      "required": false,
-      "max_length": 2000
-    }
+    "label": {"type": "text", "required": true, "min_length": 1, "size": "title"},
+    "change": {"type": "enum", "required": true, "values": ["added", "removed", "changed", "unchanged"]},
+    "before": {"type": "text", "size": "long"},
+    "after": {"type": "text", "size": "long"}
   },
-  "states": [
-    "default"
-  ],
   "tokens": [
-    "color.text",
-    "color.text-muted",
-    "color.accent",
-    "color.danger",
-    "space.1",
-    "type.body",
-    "type.caption",
+    "color.text", "color.text-muted", "color.accent", "color.danger", "space.1", "type.body", "type.caption",
     "type.weight-strong"
-  ],
-  "accessibility": {
-    "role": "none",
-    "keyboard": [],
-    "forced_colors": true,
-    "reduced_motion": true
-  }
+  ]
 }
