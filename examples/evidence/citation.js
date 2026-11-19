@@ -1,6 +1,7 @@
 // An example page with a citation in a message. The page acts as the application. It knows the actor of the
 // message and gives it to each component. All data is synthetic and neutral.
 import { define } from '../../src/components/index.js';
+import { createKit } from '../../src/kit.js';
 
 define();
 
@@ -13,12 +14,8 @@ function text(tag, words) {
   return node;
 }
 
-function citation(slots, data = {}) {
-  const node = document.createElement('mu-citation');
-  node.actor = AGENT;
-  node.fill = { component: 'citation', version: '0.1.0', data, slots: { authorship: AGENT, ...slots } };
-  return node;
-}
+const { mount } = createKit({ actor: AGENT });
+const citation = (slots, data = {}) => mount('citation', data, { slots });
 
 // A message of the agent. The page shows the actor of the message, and the citation shows the source of the claim.
 function message(words, ...parts) {

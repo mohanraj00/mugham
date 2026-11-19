@@ -2,11 +2,13 @@
 // in-memory source holds synthetic records of a tool library. The buttons change the network and the source, so
 // the page shows each state: ready, stale, empty and error, offline and online. The kit only checks and shows.
 import { define } from '../../src/components/index.js';
+import { createKit, fill } from '../../src/kit.js';
 import { read, statusFill } from '../../src/offline/source.js';
 
 define();
 
 const SYSTEM = { type: 'system', id: 'tool-library', name: 'Tool library' };
+const kit = createKit({ actor: SYSTEM });
 const TOOLS = [
   { key: 'T-01', name: 'Ladder', shelf: 'A', loans: 3 },
   { key: 'T-02', name: 'Drill', shelf: 'B', loans: 0 },
@@ -74,13 +76,12 @@ async function refresh() {
   status.fill = statusFill('Tool library', result);
   records.replaceChildren();
   if (result.state !== 'ready' && result.state !== 'stale') return;
-  const grid = document.createElement('mu-card-grid');
-  grid.actor = SYSTEM;
-  grid.fill = { component: 'card-grid', version: '0.1.0', slots: { authorship: SYSTEM }, data: { label: 'Tools', cards: result.records.map((item) => ({
-    component: 'card', version: '0.1.0', data: { title: item.name, facts: [
-      { component: 'fact', version: '0.1.0', data: { label: 'Shelf', value: item.shelf } },
-      { component: 'fact', version: '0.1.0', data: { label: 'Loans', value: String(item.loans) } }] } })) } };
-  records.append(grid);
+  kit.mount('card-grid', { label: 'Tools', cards: result.records.map((item) => fill('card', {
+    title: item.name, facts: [
+      fill('fact', { label: 'Shelf', value: item.shelf }),
+      fill('fact', { label: 'Loans', value: String(item.loans) }),
+    ],
+  })) }, { parent: records });
 }
 
 const title = document.createElement('h1');

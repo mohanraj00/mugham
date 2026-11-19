@@ -1,5 +1,6 @@
 // The page is the application. It owns the source fill and the agent identity.
 import { define } from '../../src/components/index.js';
+import { mount } from '../../src/kit.js';
 import { checkNarration } from '../../src/narration/check.js';
 import example from './narration.json' with { type: 'json' };
 
@@ -13,9 +14,8 @@ const text = (tag, value) => {
 
 for (const item of example.cases) {
   const section = document.createElement('section');
-  const card = document.createElement('mu-card');
-  card.actor = example.fill.slots.authorship;
-  card.fill = example.fill;
+  const { component, data, version, slots } = example.fill;
+  const card = mount(component, data, { version, slots, actor: example.actor });
   const result = checkNarration(example.fill, item.narration);
   const detail = result.errors.map((error) => `${error.field}: ${error.message}`).join('; ');
   section.append(text('h2', item.title), card,

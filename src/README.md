@@ -1,5 +1,6 @@
 # Kit source
 
+- [Kit helpers](kit.md) in `kit.js` build fills, mount elements, send receipts and export JSON Schema.
 - `tokens/tokens.json`: the design tokens. Each token has a light value and a dark value. `tools/tokens.py --write` writes `tokens/tokens.css` from it.
 - `render/validate.js`: the browser validator of a fill and of a contract. It gives the same errors as `tools/catalog.py` for each case in `tests/vectors/fills.json` and `tests/vectors/contracts.json`.
 - `render/dom.js`: the only way the kit makes DOM nodes. Data goes only into text nodes and into a short list of attributes.
@@ -18,7 +19,7 @@
 
 1. Load `tokens/tokens.css` in the page.
 2. Import `define` from `components/index.js` and call it. It also defines the primitives.
-3. Set the `fill` property of an element to a fill, for example `{component: 'button', version: '0.1.0', data: {label: 'Renew'}}`.
+3. Use `mount` from [kit.js](kit.md), for example `mount('button', { label: 'Renew' }, { parent: document.body })`.
 
 If the fill has an error, the element shows a refusal as text and keeps no data. A button sends a `mu-press` event. A field sends a `mu-edit` event. Neither sends an action.
 

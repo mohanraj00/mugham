@@ -2,11 +2,11 @@
 // and its house rules. The second diff has more than 20 changes, so each part starts closed. The page acts as the
 // application: it knows the actor of the message and gives it to each component. All data are synthetic and neutral.
 import { define } from '../../src/components/index.js';
+import { createKit, fill } from '../../src/kit.js';
 
 define();
 
 const AGENT = { type: 'agent', id: 'agent-bookings', name: 'Bookings agent' };
-const fill = (component, data) => ({ component, version: '0.1.0', data });
 const change = (label, kind, before, after) => fill('diff-change', { label, change: kind,
   ...(before === undefined ? {} : { before }), ...(after === undefined ? {} : { after }) });
 
@@ -16,14 +16,9 @@ function text(tag, words) {
   return node;
 }
 
-function diff(data) {
-  const node = document.createElement('mu-diff');
-  node.actor = AGENT;
-  node.fill = { ...fill('diff', data), slots: { authorship: AGENT } };
-  return node;
-}
+const { mount } = createKit({ actor: AGENT });
 
-const BOOKING = diff({ title: 'Hall booking B-0042', before_label: 'Version 1', after_label: 'Version 2', parts: [
+const BOOKING = mount('diff', { title: 'Hall booking B-0042', before_label: 'Version 1', after_label: 'Version 2', parts: [
   fill('diff-part', { title: 'Booking', changes: [
     change('Room', 'unchanged', 'Main hall', 'Main hall'),
     change('Date', 'changed', '2026-12-05', '2026-12-12'),
@@ -41,7 +36,7 @@ const BOOKING = diff({ title: 'Hall booking B-0042', before_label: 'Version 1', 
   ] }),
 ] });
 
-const TIMETABLE = diff({ title: 'Weekly timetable', before_label: 'Autumn', after_label: 'Winter', parts: [
+const TIMETABLE = mount('diff', { title: 'Weekly timetable', before_label: 'Autumn', after_label: 'Winter', parts: [
   fill('diff-part', { title: 'Rooms', changes: Array.from({ length: 24 }, (_, index) =>
     change(`Slot ${index + 1}`, 'changed', `Room ${(index % 3) + 1}`, `Room ${((index + 1) % 3) + 1}`)) }),
 ] });

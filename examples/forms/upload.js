@@ -3,6 +3,7 @@
 // and the limits. The kit sends no data: the page sends each file, and the API decides and gives the receipt.
 // All data is synthetic and neutral.
 import { define } from '../../src/components/index.js';
+import { createKit } from '../../src/kit.js';
 
 define();
 
@@ -19,13 +20,11 @@ const node = (name, text) => {
   return element;
 };
 
-const upload = document.createElement('mu-upload');
-// The application binds the target and the limits in code. A fill cannot set them.
-upload.action = { tool: 'ticket.attach', arguments: { ticket_id: TICKET }, label: LABEL, accept: ['application/pdf', '.pdf'], max_size: 2000000, max_files: 3 };
-upload.actor = AGENT;
-// The agent asks for the upload. It gives the label of the application and a help text.
-upload.fill = { component: 'upload', version: '0.1.0', slots: { authorship: AGENT },
-  data: { label: LABEL, help: 'Add the PDF receipts of the ticket.' } };
+const { mount } = createKit({ actor: AGENT });
+// The application binds the target and the limits in code.
+const upload = mount('upload', { label: LABEL, help: 'Add the PDF receipts of the ticket.' }, {
+  action: { tool: 'ticket.attach', arguments: { ticket_id: TICKET }, label: LABEL, accept: ['application/pdf', '.pdf'], max_size: 2000000, max_files: 3 },
+});
 
 const list = document.createElement('ul');
 list.id = 'files';

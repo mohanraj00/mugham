@@ -8,8 +8,8 @@ This guide is for a coding agent that builds a UI with the kit. Obey each rule. 
 2. Give an element its content only through its `fill` property, with data that the contract accepts. Never write markup, style or script into a fill.
 3. Never put model output, tool output or document text into `innerHTML`, a style or a script. In an application element, make each node with `el` and `text` from `src/render/dom.js`.
 4. Bind each tool in code with the `action` property of the element, or with `bind` of `mu-thread`. A fill never names a tool. The label of the binding must be the label of the fill.
-5. Show an action as done only with `receipt()`, after the response of the API. Give a receipt with `ok` set to `false` if the request fails.
-6. Set `actor` before `fill`. Use the actor of the envelope or of your session, never the authorship claim of a fill.
+5. Return the receipt of the API to `onAction` or pass it to `receipt()`. Give a receipt with `ok` set to `false` if the request fails.
+6. Bind the actor of the envelope or of your session with `createKit`. Treat the authorship of a fill as a claim.
 7. Load `src/tokens/tokens.css` first. Theme the page only with the `--mu-` properties. Do not override the state text, the focus ring, the provenance or forced colors.
 8. Add no runtime dependency and no build step. Use only synthetic data in examples and tests.
 
@@ -19,6 +19,7 @@ This guide is for a coding agent that builds a UI with the kit. Obey each rule. 
 |---|---|
 | Build a page | [assemble.md](assemble.md), then [examples/guides/assemble.js](../../examples/guides/assemble.js) |
 | Fill a component | The contract in [catalog/](../../catalog/README.md), then [contracts.md](contracts.md) |
+| Build a tool schema or check a fill | [Kit helpers](../../src/kit.md) |
 | Know the contract format | [catalog/schema/README.md](../../catalog/schema/README.md) |
 | Bind an action, a confirm step or a form | [catalog/README.md#actions](../../catalog/README.md#actions) |
 | Add a domain component | [catalog/README.md#application-contracts](../../catalog/README.md#application-contracts), then [examples/cards/register.js](../../examples/cards/register.js) |
@@ -30,14 +31,12 @@ This guide is for a coding agent that builds a UI with the kit. Obey each rule. 
 
 <!-- source: examples/guides/assemble.js -->
 ```js
-renew.action = { tool: 'library.renew', label: 'Renew', arguments: { loan_id: 'L-0001' } };
+const renewAction = { tool: 'library.renew', label: 'Renew', arguments: { loan_id: 'L-0001' } };
 ```
 
 <!-- source: examples/guides/assemble.js -->
 ```js
-renew.addEventListener('mu-action', async (event) => {
-  renew.receipt(await api(event.detail));
-});
+onAction(renew, (tool, args, id, request) => api(request));
 ```
 
 ## Checklist

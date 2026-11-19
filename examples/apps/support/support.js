@@ -2,15 +2,16 @@
 // team and two agents. The reply agent drafts a reply in an editable form. The person corrects it and sends it.
 // The form shows Done only after the receipt of the API comes back. All data is synthetic.
 import { define } from '../../../src/components/index.js';
+import { createKit, fill, mount } from '../../../src/kit.js';
 import { define as defineThread } from '../../../src/thread/index.js';
 import { Feed, alert, api, node, post } from '../app.js';
 
 define();
 defineThread();
 
-const VERSION = '0.1.0';
 // The help desk API gives the queue, so the queue cards name it as the author.
 const DESK = { type: 'system', id: 'desk-api', name: 'Help desk' };
+const kit = createKit({ actor: DESK });
 const STATUS = { open: 'Open', answered: 'Answered' };
 const main = document.getElementById('main');
 const queue = document.getElementById('queue');
@@ -18,34 +19,27 @@ const title = document.getElementById('ticket-title');
 const ticket = document.getElementById('ticket');
 const cards = new Map();
 
-function ticketFill(item) {
-  const fact = (label, value) => ({ component: 'fact', version: VERSION, data: { label, value } });
-  return { component: 'card', version: VERSION, slots: { authorship: DESK }, data: {
+function ticketData(item) {
+  const fact = (label, value) => fill('fact', { label, value });
+  return {
     title: `${item.id} ${item.title}`, summary: `From ${item.customer}`, date: item.opened, date_label: 'Opened',
     facts: [fact('Priority', item.priority), fact('Channel', item.channel), fact('Status', STATUS[item.status])],
-  } };
+  };
 }
 
 // The queue is a grid of cards. The application puts an open button in the actions slot of each card.
 async function showQueue() {
   const { tickets } = await api('/support/tickets');
   if (!cards.size) {
-    const grid = document.createElement('mu-grid');
-    grid.fill = { component: 'grid', version: VERSION, data: { label: 'Ticket queue', min_column: 'medium', gap: 'medium' } };
+    const grid = mount('grid', { label: 'Ticket queue', min_column: 'medium', gap: 'medium' });
     for (const item of tickets) {
-      const card = document.createElement('mu-card');
-      card.actor = DESK;
-      const open = document.createElement('mu-button');
-      open.slot = 'actions';
-      open.fill = { component: 'button', version: VERSION, data: { label: `Open ${item.id}` } };
+      const card = kit.mount('card', ticketData(item), { parent: grid });
+      const open = mount('button', { label: `Open ${item.id}` }, { parent: card, slot: 'actions' });
       open.addEventListener('mu-press', () => openTicket(item));
-      card.append(open);
       cards.set(item.id, card);
-      grid.append(card);
     }
     queue.replaceChildren(grid);
-  }
-  for (const item of tickets) cards.get(item.id).fill = ticketFill(item);
+  } else for (const item of tickets) cards.get(item.id).fill = kit.outer('card', ticketData(item));
 }
 
 // The application binds the tool. The fill of the agent gives only the draft, and the form refuses a different title.

@@ -2,6 +2,7 @@
 // the seed-tray contract (seed-tray.json) and its element, then shows fills of an agent, directly and in a
 // thread. The kit validates each fill against the registered contract. All data is synthetic and neutral.
 import { MuElement, define, provenance, register } from '../../src/components/index.js';
+import { createKit } from '../../src/kit.js';
 import { define as defineThread } from '../../src/thread/index.js';
 import { el, sheet } from '../../src/render/dom.js';
 import SEED_TRAY from './seed-tray.json' with { type: 'json' };
@@ -40,7 +41,7 @@ defineThread();
 register(SEED_TRAY, SeedTray);
 
 const AGENT = { type: 'agent', id: 'agent-garden', name: 'Garden helper' };
-const tray = (data) => ({ component: 'seed-tray', version: '0.1.0', data, slots: { authorship: AGENT } });
+const { mount, outer } = createKit({ actor: AGENT });
 
 function caption(words) {
   const node = document.createElement('p');
@@ -48,17 +49,10 @@ function caption(words) {
   return node;
 }
 
-function make(fill) {
-  const node = document.createElement('mu-app-seed-tray');
-  node.actor = AGENT;
-  node.fill = fill;
-  return node;
-}
-
 // A valid fill. The element shows it.
-const valid = make(tray({ label: 'Tray A1', sown: '2026-03-02', seedlings: 24, stage: 'sprouted' }));
+const valid = mount('seed-tray', { label: 'Tray A1', sown: '2026-03-02', seedlings: 24, stage: 'sprouted' });
 // The contract permits 200 seedlings at most, so the element refuses this fill.
-const invalid = make(tray({ label: 'Tray A2', sown: '2026-03-02', seedlings: 500, stage: 'sown' }));
+const invalid = mount('seed-tray', { label: 'Tray A2', sown: '2026-03-02', seedlings: 500, stage: 'sown' });
 
 // A thread with a message of the agent. The note has a markup string, and the element shows it as text.
 // The second snapshot names an undeclared component, so the thread shows a refusal.
@@ -76,7 +70,7 @@ thread.read([
   { type: 'TEXT_MESSAGE_CONTENT', messageId: 'm1', delta: 'Tray B2 is ready to plant out.' },
   { type: 'TEXT_MESSAGE_END', messageId: 'm1' },
   { type: 'ACTIVITY_SNAPSHOT', messageId: 'p1', activityType: 'mugham.fill', metadata,
-    content: { format: 2, fill: tray({ label: 'Tray B2', sown: '2026-02-20', seedlings: 18, stage: 'ready', note }) } },
+    content: { format: 2, fill: outer('seed-tray', { label: 'Tray B2', sown: '2026-02-20', seedlings: 18, stage: 'ready', note }) } },
   { type: 'ACTIVITY_SNAPSHOT', messageId: 'p2', activityType: 'mugham.fill', metadata,
     content: { format: 2, fill: { component: 'banner', version: '0.1.0', data: { text: 'Sale' } } } },
   { type: 'RUN_FINISHED', threadId: 'garden', runId: 'r1' },
