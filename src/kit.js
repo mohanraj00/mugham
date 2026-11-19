@@ -58,7 +58,7 @@ const FAILED = 'The request failed.';
 
 export function onAction(root, handler) {
   const listen = async (event) => {
-    const element = event.composedPath()[0];
+    const element = event.composedPath?.()?.[0] ?? event.target;
     const request = event.detail;
     if (typeof element?.receipt !== 'function' || typeof request?.id !== 'string'
       || typeof request.tool !== 'string' || handled.has(event)) return;

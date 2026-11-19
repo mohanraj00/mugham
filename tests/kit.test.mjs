@@ -150,6 +150,19 @@ test('onAction runs only one handler for a received event', async () => {
   assert.equal(extra, 0);
 });
 
+test('onAction uses the target when the event path is unavailable or empty', async () => {
+  let listen;
+  const root = { addEventListener: (_type, handler) => { listen = handler; } };
+  onAction(root, () => ({ ok: true }));
+
+  for (const composedPath of [undefined, () => undefined, () => []]) {
+    const target = new ActionState();
+    target.bind({ tool: 'loan.renew' });
+    await listen({ target, composedPath, detail: target.start() });
+    assert.equal(target.state, 'done');
+  }
+});
+
 test('onAction sends a failed receipt for a rejection and keeps a stated receipt id', async () => {
   for (const [handler, message] of [
     [() => { throw new Error('The service failed.'); }, 'The service failed.'],
