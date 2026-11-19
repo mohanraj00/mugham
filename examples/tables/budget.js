@@ -2,10 +2,12 @@
 // The page acts as the application. It binds the tool, decides each change and computes the totals.
 // The kit computes no formula. All data is synthetic and neutral.
 import { define } from '../../src/components/index.js';
+import { createKit, fill, onAction } from '../../src/kit.js';
 
 define();
 
 const AGENT = { type: 'agent', id: 'agent-budget', name: 'Budget helper' };
+const kit = createKit({ actor: AGENT });
 // The title of the budget that the bound arguments select. The application gives it.
 const TITLE = 'Synthetic budget 2027';
 const MONTHS = [['jan', 'January'], ['feb', 'February'], ['mar', 'March'], ['apr', 'April']];
@@ -19,19 +21,17 @@ const budget = [
   ['other', 'Other', [50, 0, 75, 40]],
 ];
 
-const node = (component, data) => ({ component, version: '0.1.0', data });
-
 // The application computes each total and sends it as a read-only cell.
-function fill() {
+function gridData() {
   const totals = MONTHS.map((_, month) => budget.reduce((sum, [, , amounts]) => sum + amounts[month], 0));
-  return { component: 'data-grid', version: '0.1.0', slots: { authorship: AGENT }, data: {
+  return {
     label: TITLE,
-    columns: MONTHS.map(([key, label]) => node('data-grid-column', { key, label, type: 'number' })),
+    columns: MONTHS.map(([key, label]) => fill('data-grid-column', { key, label, type: 'number' })),
     rows: [
-      ...budget.map(([key, label, amounts]) => node('data-grid-row', { key, label, cells: amounts.map((value) => node('number-cell', { value })) })),
-      node('data-grid-row', { key: 'total', label: 'Total', cells: totals.map((value) => node('number-cell', { value, read_only: true })) }),
+      ...budget.map(([key, label, amounts]) => fill('data-grid-row', { key, label, cells: amounts.map((value) => fill('number-cell', { value })) })),
+      fill('data-grid-row', { key: 'total', label: 'Total', cells: totals.map((value) => fill('number-cell', { value, read_only: true })) }),
     ],
-  } };
+  };
 }
 
 function text(tag, words) {
@@ -40,29 +40,24 @@ function text(tag, words) {
   return element;
 }
 
-const grid = document.createElement('mu-data-grid');
-grid.actor = AGENT;
 // The application binds the tool, and the key, the label and the type of each row and column that a person
 // can edit. A fill cannot select a tool or give a different meaning to a key. The Total row is not bound.
-grid.action = { tool: 'budget.set_amount', arguments: { budget_id: 'B-2027' }, title: TITLE,
+const action = { tool: 'budget.set_amount', arguments: { budget_id: 'B-2027' }, title: TITLE,
   rows: Object.fromEntries(budget.map(([key, label]) => [key, label])),
   columns: Object.fromEntries(MONTHS.map(([key, label]) => [key, { label, type: 'number' }])) };
-grid.fill = fill();
+const grid = kit.mount('data-grid', gridData(), { action });
 
 // The application decides. An amount is a number from 0 to 100000. The receipt comes back after the decision.
-grid.addEventListener('mu-action', (event) => {
-  const { id, arguments: { row, column, value } } = event.detail;
+onAction(grid, async (tool, { row, column, value }) => {
   const line = budget.find(([key]) => key === row);
   const month = MONTHS.findIndex(([key]) => key === column);
-  setTimeout(() => {
-    if (!line || month < 0 || typeof value !== 'number' || value < 0 || value > 100000) {
-      grid.receipt({ id, ok: false, message: 'Give an amount from 0 to 100000.' });
-      return;
-    }
-    line[2][month] = value;
-    grid.receipt({ id, ok: true });
-    grid.fill = fill();
-  }, 150);
+  await new Promise((done) => setTimeout(done, 150));
+  if (!line || month < 0 || typeof value !== 'number' || value < 0 || value > 100000) {
+    return { ok: false, message: 'Give an amount from 0 to 100000.' };
+  }
+  line[2][month] = value;
+  setTimeout(() => { grid.fill = kit.outer('data-grid', gridData()); }, 0);
+  return { ok: true };
 });
 
 document.getElementById('main').append(text('h1', 'Budget'),

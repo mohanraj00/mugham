@@ -1,4 +1,5 @@
 {
+  "actor": { "type": "system", "id": "fixture", "name": "Synthetic source" },
   "fill": {
     "component": "card",
     "version": "0.1.0",

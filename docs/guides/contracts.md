@@ -67,22 +67,12 @@ A fill has the keys `component`, `version`, `data` and the optional `slots`. It 
 <!-- source: examples/guides/contracts.js -->
 ```js
 const AGENT = { type: 'agent', id: 'agent-notes', name: 'Note helper' };
-const card = document.createElement('mu-card');
-card.actor = AGENT;
-card.fill = {
-  component: 'card',
-  version: '0.1.0',
-  data: {
-    title: 'Tide table for the north pier',
-    summary: 'High water at 06:10 and at 18:40.',
-    facts: [{ component: 'fact', version: '0.1.0', data: { label: 'Pier', value: 'North' } }],
-  },
-  slots: {
-    authorship: AGENT,
-    citation: { source: 'Synthetic tide notes, page 2', locator: 'https://example.org/tides#page-2' },
-  },
-};
-main.append(card);
+const { mount, outer } = createKit({ actor: AGENT });
+mount('card', {
+  title: 'Tide table for the north pier',
+  summary: 'High water at 06:10 and at 18:40.',
+  facts: [fill('fact', { label: 'Pier', value: 'North' })],
+}, { parent: main, slots: { citation: { source: 'Synthetic tide notes, page 2', locator: 'https://example.org/tides#page-2' } } });
 ```
 
 Expected result:
@@ -95,21 +85,20 @@ A nested fill, for example the fact, has no `slots` key. It takes the slots of i
 
 ## The check and the refusal
 
-Each element checks a fill with `fillErrors` of `src/render/validate.js` before it renders. The validator gives each error with a path. It does not change the fill. `tools/catalog.py` gives the same errors for each case in `tests/vectors/fills.json`.
+Use `validateFill` from `src/kit.js` to check a fill and get a list of errors with paths. Each element uses the same catalog checks before it renders. `tools/catalog.py` gives the same errors for each case in `tests/vectors/fills.json`.
 
 <!-- source: examples/guides/contracts.js -->
 ```js
-const tide = (data, slots = { authorship: AGENT }) => ({ component: 'card', version: '0.1.0', data, slots });
 const bad = {
   'an undeclared component': { component: 'banner', version: '0.1.0', data: {} },
-  'an undeclared field': tide({ title: 'Tide table', style: 'color: red' }),
-  'an actions key of format 1': { ...tide({ title: 'Tide table' }), actions: [] },
-  'no authorship slot': tide({ title: 'Tide table' }, {}),
-  'a title that is too long': tide({ title: 'x'.repeat(121) }),
+  'an undeclared field': outer('card', { title: 'Tide table', style: 'color: red' }),
+  'an actions key of format 1': { ...outer('card', { title: 'Tide table' }), actions: [] },
+  'no authorship slot': fill('card', { title: 'Tide table' }),
+  'a title that is too long': outer('card', { title: 'x'.repeat(121) }),
 };
 const list = document.getElementById('errors');
-for (const [name, fill] of Object.entries(bad)) {
-  list.append(el('li', {}, `${name}: ${fillErrors(fill, CONTRACTS)[0]}`));
+for (const [name, value] of Object.entries(bad)) {
+  list.append(el('li', {}, `${name}: ${validateFill(value)[0]}`));
 }
 ```
 
@@ -131,10 +120,7 @@ The kit shows each text value as text. Markup in a fill makes no element:
 
 <!-- source: examples/guides/contracts.js -->
 ```js
-const markup = document.createElement('mu-card');
-markup.actor = AGENT;
-markup.fill = tide({ title: '<b>Bold tide</b>' });
-main.append(markup);
+mount('card', { title: '<b>Bold tide</b>' }, { parent: main });
 ```
 
 Expected result: the card shows the title `<b>Bold tide</b>` as text. Its shadow root has no `b` element.
@@ -145,9 +131,8 @@ The authorship in a fill is a claim of its sender. The application or the thread
 
 <!-- source: examples/guides/contracts.js -->
 ```js
-const claim = document.createElement('mu-card');
-claim.actor = AGENT;
-claim.fill = tide({ title: 'Tide table' }, { authorship: { type: 'human', id: 'u-robin', name: 'Robin' } });
+const claim = mount('card', { title: 'Tide table' });
+claim.fill = fill('card', { title: 'Tide table' }, { slots: { authorship: { type: 'human', id: 'u-robin', name: 'Robin' } } });
 main.append(claim);
 ```
 
@@ -165,7 +150,7 @@ Format 2 removed the `actions` block of a contract and the `actions` list of a f
 
 <!-- source: examples/guides/assemble.js -->
 ```js
-renew.action = { tool: 'library.renew', label: 'Renew', arguments: { loan_id: 'L-0001' } };
+const renewAction = { tool: 'library.renew', label: 'Renew', arguments: { loan_id: 'L-0001' } };
 ```
 
 The label of the fill must be the label of the binding. [The catalog README](../../catalog/README.md#actions) gives each key of a binding, the confirm step and the receipt. [Assemble a page](assemble.md) shows the request and the receipt.
@@ -196,14 +181,9 @@ The element reads only the data that the contract accepts. `render` gets the dat
 
 <!-- source: examples/guides/contracts.js -->
 ```js
-const count = (value) => {
-  const node = document.createElement('mu-app-bird-count');
-  node.actor = AGENT;
-  node.fill = { component: 'bird-count', version: '0.1.0', data: { site: 'East marsh', date: '2026-11-02', count: value },
-    slots: { authorship: AGENT } };
-  return node;
-};
-main.append(count(42), count(500));
+for (const count of [42, 500]) {
+  mount('bird-count', { site: 'East marsh', date: '2026-11-02', count }, { parent: main });
+}
 ```
 
 Expected result:

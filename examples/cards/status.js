@@ -1,9 +1,11 @@
 // The application gives each state. All data is synthetic and neutral.
-import { define, MuStatus } from '../../src/components/index.js';
+import { define } from '../../src/components/index.js';
+import { createKit } from '../../src/kit.js';
 
 define();
 
 const ACTOR = { type: 'system', id: 'synthetic-checks' };
+const { mount } = createKit({ actor: ACTOR });
 const main = document.getElementById('main');
 function text(tag, value) {
   const node = document.createElement(tag);
@@ -20,8 +22,5 @@ for (const [state, words] of [
   ['complete', 'Synthetic check E.'],
 ]) {
   if (state === 'complete') main.append(text('p', 'The next value is not a declared state. The kit shows a refusal.'));
-  const node = new MuStatus();
-  node.actor = ACTOR;
-  node.fill = { component: 'status', version: '0.1.0', data: { state, text: words }, slots: { authorship: ACTOR } };
-  main.append(node);
+  mount('status', { state, text: words }, { parent: main });
 }

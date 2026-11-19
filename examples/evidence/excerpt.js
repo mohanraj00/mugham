@@ -1,6 +1,7 @@
 // An example page with a source excerpt in a message. The page acts as the application. It knows the actor of the
 // message and gives it to each component. The document and all other data are synthetic and neutral.
 import { define } from '../../src/components/index.js';
+import { createKit } from '../../src/kit.js';
 
 define();
 
@@ -17,12 +18,8 @@ function text(tag, words) {
   return node;
 }
 
-function excerpt(data, slots = { citation: SOURCE }) {
-  const node = document.createElement('mu-excerpt');
-  node.actor = AGENT;
-  node.fill = { component: 'excerpt', version: '0.1.0', data, slots: { authorship: AGENT, ...slots } };
-  return node;
-}
+const { mount } = createKit({ actor: AGENT });
+const excerpt = (data) => mount('excerpt', data, { slots: { citation: SOURCE } });
 
 // A message of the agent. The value of the agent shows next to the excerpt, so that a person can compare them.
 function message(words, ...parts) {

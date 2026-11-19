@@ -3,6 +3,7 @@
 // Expected results, from issue #8: the page lists the two open decisions with their evidence. An approve
 // shows pending, then done only after the receipt. A second action on the same decision shows the refusal
 // of the API as an error. The status on the card comes from the API.
+// A missing or invalid author causes a refusal for that decision. A valid decision still shows its actions.
 import { spawn } from 'node:child_process';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -29,6 +30,7 @@ async function fixtureApi() {
 
 // The state of the page: the text of each card, and the state and status of each button.
 const STATE = `(() => [...document.querySelectorAll('mu-card')].map((card) => ({
+  state: card.dataset.state,
   text: card.shadowRoot.textContent,
   buttons: Object.fromEntries([...card.querySelectorAll('mu-action-button')].map((button) => [button.fill.data.label,
     { state: button.dataset.state, status: button.shadowRoot.querySelector('.status').textContent }])),
@@ -98,6 +100,28 @@ async function main() {
       step(`the accessibility tree has the ${role} ${name}`, named.some(([r, n]) => r === role && n === name), name);
     }
     steps.push(...await coverSteps(session, sessionId));
+
+    await session.send('Page.addScriptToEvaluateOnNewDocument', { source: `
+      const fetchFromApi = window.fetch.bind(window);
+      window.fetch = async (path, options) => {
+        const response = await fetchFromApi(path, options);
+        if (path !== '/api/decisions' || !response.ok) return response;
+        const { decisions } = await response.json();
+        const { author, ...decision } = decisions[0];
+        return Response.json({ decisions: [
+          { ...decision, id: 'D-0003' },
+          { ...decision, id: 'D-0004', author: { ...author, type: 'unknown' } },
+          ...decisions,
+        ] });
+      };
+    ` }, sessionId);
+    await open(session, sessionId, api.url);
+    cards = await until((value) => value.length === 3);
+    step('a missing or invalid author causes a refusal for each decision', cards.length === 3
+      && cards.slice(0, 2).every((card) => card.state === 'refused' && card.text.includes('Refused card: slots.authorship')
+        && Object.keys(card.buttons).length === 0), cards);
+    step('the valid decision shows its actions after the refusals', cards.length === 3
+      && cards[2].text.includes('Open the north branch') && cards[2].buttons['Approve D-0002']?.state === 'default', cards[2]);
   } catch (error) {
     step('the check runs', false, String(error.message || error));
   } finally {

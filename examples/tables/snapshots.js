@@ -2,21 +2,16 @@
 // (snapshots-api.js) gives the collections, the snapshots, the compare result of two snapshots and the impact of the
 // change. The page only reads: it has no action and sends no request that changes a record. All data are synthetic.
 import { define } from '../../src/components/index.js';
+import { createKit, fill } from '../../src/kit.js';
 import { SnapshotApi } from './snapshots-api.js';
 
 define();
 
 const api = new SnapshotApi();
-const fill = (component, data) => ({ component, version: '0.1.0', data });
 // The page and the fixture API own the content, so the actor of each fill is the system.
 const SYSTEM = { type: 'system', id: 'snapshot-store', name: 'Snapshot store' };
 
-function make(tag, value) {
-  const node = document.createElement(tag);
-  node.actor = SYSTEM;
-  node.fill = { ...value, slots: { authorship: SYSTEM } };
-  return node;
-}
+const { mount } = createKit({ actor: SYSTEM });
 
 function text(tag, words, attributes = {}) {
   const node = document.createElement(tag);
@@ -25,7 +20,7 @@ function text(tag, words, attributes = {}) {
   return node;
 }
 
-const table = (label, columns, rows) => make('mu-table', fill('table', { label, columns, rows: rows.map((cells) => fill('table-row', { cells })) }));
+const table = (label, columns, rows) => mount('table', { label, columns, rows: rows.map((cells) => fill('table-row', { cells })) });
 
 const main = document.getElementById('main');
 const collections = document.createElement('section');
@@ -95,8 +90,8 @@ async function showComparison(collection, fromId, toId) {
   if (mine !== latest.compare) return;
   const change = ({ label, change: kind, before, after }) => fill('diff-change', { label, change: kind,
     ...(before === undefined ? {} : { before }), ...(after === undefined ? {} : { after }) });
-  const diff = make('mu-diff', fill('diff', { title: `${collection.name}: ${fromId} to ${toId}`, before_label: `${fromId}, ${result.from.taken}`,
-    after_label: `${toId}, ${result.to.taken}`, parts: [fill('diff-part', { title: 'Records', changes: result.changes.map(change) })] }));
+  const diff = mount('diff', { title: `${collection.name}: ${fromId} to ${toId}`, before_label: `${fromId}, ${result.from.taken}`,
+    after_label: `${toId}, ${result.to.taken}`, parts: [fill('diff-part', { title: 'Records', changes: result.changes.map(change) })] });
   const impact = document.createElement('ul');
   impact.className = 'snap-impact';
   impact.setAttribute('aria-label', 'Records that the change affects');

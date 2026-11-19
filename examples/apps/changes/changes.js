@@ -2,14 +2,15 @@
 // A reviewer approves or rejects it. Each decision has a confirm step, and the page shows the reference of the
 // receipt in the decision log. The API decides and keeps the log. All data is synthetic.
 import { define } from '../../../src/components/index.js';
+import { createKit, fill, mount, onAction } from '../../../src/kit.js';
 import { define as defineThread } from '../../../src/thread/index.js';
 import { Feed, alert, api, node, post } from '../app.js';
 
 define();
 defineThread();
 
-const VERSION = '0.1.0';
 const LOG = { type: 'system', id: 'change-api', name: 'Change log' };
+const kit = createKit({ actor: LOG });
 const STATUS = { open: 'Open', approved: 'Approved', rejected: 'Rejected' };
 const main = document.getElementById('main');
 const list = document.getElementById('changes');
@@ -20,28 +21,22 @@ const cards = new Map();
 // The change that is open, and the feed of its thread.
 let opened = null;
 
-function changeFill(item) {
-  const fact = (label, value) => ({ component: 'fact', version: VERSION, data: { label, value } });
-  return { component: 'card', version: VERSION, slots: { authorship: LOG }, data: {
-    title: `${item.id} ${item.title}`, date: item.start, date_label: 'Starts', facts: [fact('Status', STATUS[item.status])],
-  } };
+function changeData(item) {
+  return { title: `${item.id} ${item.title}`, date: item.start, date_label: 'Starts',
+    facts: [fill('fact', { label: 'Status', value: STATUS[item.status] })] };
 }
 
 async function showChanges() {
   const { changes } = await api('/changes');
   for (const item of changes) {
-    if (!cards.has(item.id)) {
-      const card = document.createElement('mu-card');
-      card.actor = LOG;
-      const open = document.createElement('mu-button');
-      open.slot = 'actions';
-      open.fill = { component: 'button', version: VERSION, data: { label: `Open ${item.id}` } };
+    const data = changeData(item);
+    if (cards.has(item.id)) cards.get(item.id).fill = kit.outer('card', data);
+    else {
+      const card = kit.mount('card', data, { parent: list });
+      const open = mount('button', { label: `Open ${item.id}` }, { parent: card, slot: 'actions' });
       open.addEventListener('mu-press', () => openChange(item.id));
-      card.append(open);
       cards.set(item.id, card);
-      list.append(card);
     }
-    cards.get(item.id).fill = changeFill(item);
   }
   return changes;
 }
@@ -56,10 +51,9 @@ async function showLog() {
 // The application binds each decision tool and its confirm step. The agent cannot select a tool.
 function decision(id, tool, word, message) {
   const label = `${word} ${id}`;
-  const button = document.createElement('mu-action-button');
-  button.action = { tool, label, arguments: { change_id: id }, confirm: { message, label: `Yes, ${word.toLowerCase()}` } };
-  button.fill = { component: 'action-button', version: VERSION, data: { label } };
-  return button;
+  return mount('action-button', { label }, { action: {
+    tool, label, arguments: { change_id: id }, confirm: { message, label: `Yes, ${word.toLowerCase()}` },
+  } });
 }
 
 async function openChange(id) {
@@ -87,22 +81,18 @@ async function openChange(id) {
 }
 
 // Each decision goes to the API. The button shows Pending until the receipt comes back.
-detail.addEventListener('mu-action', async (event) => {
-  const button = event.target;
-  const request = event.detail;
-  const { id, feed } = opened;
+onAction(detail, async (tool, args, id, request) => {
+  const view = opened;
+  let receipt;
   try {
-    button.receipt(await post(request));
+    receipt = await post(request);
   } catch (error) {
-    button.receipt({ id: request.id, ok: false, message: 'The API gave no receipt. ' + error.message });
-    return;
+    throw new Error('The API gave no receipt. ' + error.message);
   }
-  // The status, the log and the thread come from the API again, not from the page.
-  try {
-    await Promise.all([showChanges(), showLog(), opened.id === id ? feed.sync() : null]);
-  } catch (error) {
-    alert(log, error);
-  }
+  // Read the status, the log and the thread after the receipt.
+  setTimeout(() => Promise.all([showChanges(), showLog(), opened.id === view.id ? view.feed.sync() : null])
+    .catch((error) => alert(log, error)), 0);
+  return receipt;
 });
 
 async function load() {

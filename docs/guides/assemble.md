@@ -39,6 +39,7 @@ Expected result: the page uses the light tokens or the dark tokens, as the brows
 <!-- source: examples/guides/assemble.js -->
 ```js
 import { define } from '../../src/components/index.js';
+import { createKit, fill, mount, onAction } from '../../src/kit.js';
 import { define as defineThread } from '../../src/thread/index.js';
 import EVENTS from './assemble-events.json' with { type: 'json' };
 
@@ -51,28 +52,20 @@ Expected result: the custom elements `mu-text`, `mu-button`, `mu-field`, `mu-sta
 
 ## Step 3: put cards in a stack and a grid
 
-Each element gets its content only through its `fill` property. Set `actor` before `fill` for a component with an authorship slot.
+Use `mount` to create and fill an element. For cards, `createKit` binds the actor and adds its authorship to each outer fill.
 
 <!-- source: examples/guides/assemble.js -->
 ```js
 const AGENT = { type: 'agent', id: 'agent-loans', name: 'Loan helper' };
-const fill = (component, data, slots) => ({ component, version: '0.1.0', data, ...(slots ? { slots } : {}) });
-const make = (tag, value, actor = null) => {
-  const node = document.createElement(tag);
-  node.actor = actor;
-  node.fill = value;
-  return node;
-};
+const kit = createKit({ actor: AGENT });
 
-const stack = make('mu-stack', fill('stack', { label: 'Loans of Robin', gap: 'large' }));
-const grid = make('mu-grid', fill('grid', { label: 'Current loans', min_column: 'medium' }));
-const card = (title, date, shelf) => make('mu-card', fill('card', {
+const stack = mount('stack', { label: 'Loans of Robin', gap: 'large' });
+const grid = mount('grid', { label: 'Current loans', min_column: 'medium' }, { parent: stack });
+const card = (title, date, shelf) => kit.mount('card', {
   title, date, date_label: 'Due', facts: [fill('fact', { label: 'Shelf', value: shelf })],
-}, { authorship: AGENT }), AGENT);
+}, { parent: grid });
 const moss = card('Field guide to moss', '2026-12-01', 'B-14');
-const maps = card('A short history of maps', '2026-12-09', 'A-31');
-grid.append(moss, maps);
-stack.append(grid);
+card('A short history of maps', '2026-12-09', 'A-31');
 ```
 
 Expected result: a group with the name `Loans of Robin` holds a group with the name `Current loans`. That group holds two articles in columns. `mu-stack` and `mu-grid` put their child elements in a slot, so the page appends children in the usual way.
@@ -83,17 +76,15 @@ A fill gives only the label of the button. The application binds the tool and th
 
 <!-- source: examples/guides/assemble.js -->
 ```js
-const renew = make('mu-action-button', fill('action-button', { label: 'Renew' }));
-renew.action = { tool: 'library.renew', label: 'Renew', arguments: { loan_id: 'L-0001' } };
-renew.slot = 'actions';
-moss.append(renew);
+const renewAction = { tool: 'library.renew', label: 'Renew', arguments: { loan_id: 'L-0001' } };
+const renew = mount('action-button', { label: 'Renew' }, { parent: moss, slot: 'actions', action: renewAction });
 ```
 
 Expected result: the moss card shows the `Renew` button in its `actions` slot. The button is in the state `default` and shows no status text.
 
 ## Step 5: send the request and give the receipt
 
-A press sends a `mu-action` event. Its `detail` is the request: `id`, `tool` and `arguments`. The button shows `Pending`. The application sends the request to its API. The response of the API is the receipt. Give it to the element with `receipt()`.
+A press sends a `mu-action` event. Its `detail` is the request: `id`, `tool` and `arguments`. The button shows `Pending`. The application sends the request to its API and returns the receipt to `onAction`. The helper gives the receipt to the element.
 
 <!-- source: examples/guides/assemble.js -->
 ```js
@@ -105,9 +96,7 @@ async function api(request) {
 }
 
 // Step 5: send the request and give the receipt to the element.
-renew.addEventListener('mu-action', async (event) => {
-  renew.receipt(await api(event.detail));
-});
+onAction(renew, (tool, args, id, request) => api(request));
 ```
 
 Expected result:
@@ -115,7 +104,7 @@ Expected result:
 1. A press on `Renew` shows `Pending` at once.
 2. After the receipt, the button shows `Done: The loan is renewed.` and `Reference: R-0001`.
 
-The element ignores a receipt with a different `id`. If `ok` is `false`, the element shows `Not done` and the message. The element shows `Done` only after the receipt. If the request fails, give a receipt with `ok` set to `false`. If not, the action stays pending.
+The element ignores a receipt with a different `id`. If `ok` is `false`, the element shows `Not done` and the message. The element shows `Done` only after the receipt. If the handler throws, `onAction` gives a receipt with `ok` set to `false`.
 
 ## Step 6: add the thread
 

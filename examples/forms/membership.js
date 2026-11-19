@@ -2,10 +2,10 @@
 // form with 3 sections and 25 fields. The page acts as the application: it gives the binding and the receipt,
 // and it computes the read-only fields. A synthetic service gives each receipt after a short delay.
 import { define } from '../../src/thread/index.js';
+import { createKit, fill } from '../../src/kit.js';
 
 define();
 
-const fill = (component, data) => ({ component, version: '0.1.0', data });
 const AGENT = { type: 'agent', id: 'a-forms', name: 'Forms agent' };
 const PERSON = { type: 'human', id: 'u-robin', name: 'Robin' };
 const FEES = { Basic: 60, Family: 120, Senior: 40 };
@@ -50,7 +50,8 @@ const SECTIONS = [
     line('long-text-field', { name: 'notes', label: 'Notes' }),
   ] }),
 ];
-const FORM = { ...fill('form-card', { title: 'Membership form', submit_label: 'Send changes', sections: SECTIONS }), slots: { authorship: AGENT } };
+const { outer } = createKit({ actor: AGENT });
+const FORM = outer('form-card', { title: 'Membership form', submit_label: 'Send changes', sections: SECTIONS });
 
 // The application gives the tool, the title, the label of each field that a person can edit, the typed names
 // and the person who edits. The read-only fields are not in editable, so a request cannot carry them.

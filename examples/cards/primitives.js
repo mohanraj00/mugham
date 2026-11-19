@@ -1,35 +1,24 @@
 // An example page with each primitive. All data is synthetic and neutral.
 import { define } from '../../src/primitives/index.js';
+import { fill, mount } from '../../src/kit.js';
 
 define();
 
-const fill = (component, data) => ({ component, version: '0.1.0', data });
-
-function make(tag, value, ...children) {
-  const node = document.createElement(tag);
-  node.fill = value;
-  node.append(...children);
-  return node;
-}
-
-const button = make('mu-button', fill('button', { label: 'Renew' }));
-const secondary = make('mu-button', fill('button', { label: 'Later', emphasis: 'secondary' }));
-const disabled = make('mu-button', fill('button', { label: 'Return', disabled: true }));
-const status = make('mu-text', fill('text', { text: 'No action yet.', variant: 'caption' }));
+const main = document.getElementById('main');
+const stack = mount('stack', { label: 'Loan details', gap: 'medium' }, { parent: main });
+mount('text', { text: 'Field guide to moss', variant: 'strong' }, { parent: stack });
+mount('text', { text: 'Due on 1 December 2026.' }, { parent: stack });
+mount('field', { label: 'Shelf code', value: 'B-14', hint: 'A letter and a number.' }, { parent: stack });
+mount('field', { label: 'Branch', value: '', error: 'Give a branch name.' }, { parent: stack });
+const row = mount('stack', { label: 'Loan actions', direction: 'row', gap: 'small' }, { parent: stack });
+const button = mount('button', { label: 'Renew' }, { parent: row });
+mount('button', { label: 'Later', emphasis: 'secondary' }, { parent: row });
+mount('button', { label: 'Return', disabled: true }, { parent: row });
+const status = mount('text', { text: 'No action yet.', variant: 'caption' }, { parent: stack });
 status.id = 'status';
 button.addEventListener('mu-press', () => { status.fill = fill('text', { text: 'Renew was pressed.', variant: 'caption' }); });
 
-document.getElementById('main').append(
-  make('mu-stack', fill('stack', { label: 'Loan details', gap: 'medium' }),
-    make('mu-text', fill('text', { text: 'Field guide to moss', variant: 'strong' })),
-    make('mu-text', fill('text', { text: 'Due on 1 December 2026.' })),
-    make('mu-field', fill('field', { label: 'Shelf code', value: 'B-14', hint: 'A letter and a number.' })),
-    make('mu-field', fill('field', { label: 'Branch', value: '', error: 'Give a branch name.' })),
-    make('mu-stack', fill('stack', { label: 'Loan actions', direction: 'row', gap: 'small' }), button, secondary, disabled),
-    status),
-  make('mu-grid', fill('grid', { label: 'Reading list', min_column: 'narrow' }),
-    make('mu-text', fill('text', { text: 'Rivers and deltas' })),
-    make('mu-text', fill('text', { text: 'A short history of maps' })),
-    make('mu-text', fill('text', { text: 'Weather at sea' }))),
-  make('mu-text', fill('text', { text: '<b>This markup shows as text.</b>' })),
-  make('mu-text', fill('text', { text: 'x', style: 'color: red' })));
+const grid = mount('grid', { label: 'Reading list', min_column: 'narrow' }, { parent: main });
+for (const text of ['Rivers and deltas', 'A short history of maps', 'Weather at sea']) mount('text', { text }, { parent: grid });
+mount('text', { text: '<b>This markup shows as text.</b>' }, { parent: main });
+mount('text', { text: 'x', style: 'color: red' }, { parent: main });

@@ -26,6 +26,7 @@ The [guides](docs/guides/README.md) show how to build a page with the kit. A che
 - [Assemble a page](docs/guides/assemble.md): a stack, a grid of cards, an action with a receipt and a thread.
 - [Theme the kit](docs/guides/theme.md): each token, the two themes, forced colors, reduced motion and the parts a page must not change.
 - [For coding agents](docs/guides/agents.md): the rules, the file to read for each task and a checklist.
+- [Kit helpers](src/kit.md) for fills, actions and tool schemas.
 
 ## The thread
 
@@ -125,6 +126,23 @@ Each component has a contract file in [catalog/](catalog/README.md). The contrac
 The first five components are primitives. The other components use them.
 
 ## Quickstart
+
+Serve `src/` and `catalog/` over HTTP. Use this HTML to show a card with an action. The function in this example acts as a synthetic API. In an application, return the receipt of your API.
+
+```html
+<link rel="stylesheet" href="/src/tokens/tokens.css">
+<main></main>
+<script type="module">
+import { define } from '/src/components/index.js';
+import { mount, onAction } from '/src/kit.js';
+define();
+const card = mount('card', { title: 'Field guide to moss' }, { actor: { type: 'agent', id: 'loan-helper' }, parent: document.querySelector('main') });
+onAction(card, (tool) => ({ ok: tool === 'loan.renew', message: 'The service processed the request.' }));
+mount('action-button', { label: 'Renew' }, { parent: card, slot: 'actions', action: { tool: 'loan.renew', label: 'Renew' } });
+</script>
+```
+
+### Run the examples
 
 The examples are ES modules that import JSON files. A browser blocks module imports from a `file:` page. Thus the page needs an HTTP server. The kit has no dependency, so there is nothing to install.
 

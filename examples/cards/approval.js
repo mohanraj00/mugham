@@ -2,11 +2,11 @@
 // The page keeps no approval state of its own. It shows the decisions and the receipts that the API gives.
 // A real workflow service can take the place of the fixture API through its own HTTP API. See approval.md.
 import { define } from '../../src/components/index.js';
+import { fill, mount, onAction, validateFill } from '../../src/kit.js';
 
 define();
 
 const API = '/api';
-const VERSION = '0.1.0';
 const ACTIONS = [['approval.approve', 'Approve'], ['approval.reject', 'Reject']];
 const main = document.getElementById('main');
 
@@ -16,48 +16,49 @@ async function call(path, options) {
   return response.json();
 }
 
-// The fill of a decision card. The evidence and the status come from the API, and they show only as text.
-function decisionFill(decision) {
-  const fact = (label, value) => ({ component: 'fact', version: VERSION, data: { label, value } });
-  return { component: 'card', version: VERSION, slots: { authorship: decision.author }, data: {
+// The evidence and the status come from the API and show as text.
+function decisionData(decision) {
+  const fact = (label, value) => fill('fact', { label, value });
+  return {
     title: decision.title, summary: decision.summary, date: decision.due, date_label: 'Due',
     facts: [...decision.evidence.map((item) => fact(item.label, item.value)), fact('Status', decision.status)],
-  } };
+  };
 }
 
 function decisionCard(decision) {
-  const card = document.createElement('mu-card');
-  // The application trusts its API for the author of each decision. The authorship slot names the same actor.
-  card.actor = decision.author;
-  card.fill = decisionFill(decision);
+  const { author } = decision;
+  const data = decisionData(decision);
+  const slots = author === undefined ? undefined : { authorship: author };
+  // Check the fill before the card binds the author.
+  const actor = validateFill(fill('card', data, { slots })).length === 0 ? author : null;
+  const card = mount('card', data, { actor, slots });
+  if (!card.fill) return card;
   for (const [tool, word] of ACTIONS) {
     const label = `${word} ${decision.id}`;
-    const button = document.createElement('mu-action-button');
-    button.slot = 'actions';
-    button.action = { tool, label, arguments: { decision_id: decision.id } };
-    button.fill = { component: 'action-button', version: VERSION, data: { label } };
-    card.append(button);
+    mount('action-button', { label }, { parent: card, slot: 'actions', action: { tool, label, arguments: { decision_id: decision.id } } });
   }
   return card;
 }
 
 // Each action goes to the API. The button shows pending until the receipt comes back, and the API decides.
-document.addEventListener('mu-action', async (event) => {
-  const button = event.target;
-  const request = event.detail;
+onAction(main, async (tool, args, id, request, button) => {
   const card = button.closest('mu-card');
+  let receipt;
   try {
-    button.receipt(await call('/actions', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(request) }));
+    receipt = await call('/actions', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(request) });
   } catch (error) {
-    button.receipt({ id: request.id, ok: false, message: 'The API gave no receipt. ' + error.message });
-    return;
+    throw new Error('The API gave no receipt. ' + error.message);
   }
-  // The status on the card comes from the API again, not from the page.
-  try {
-    card.fill = decisionFill(await call('/decisions/' + encodeURIComponent(request.arguments.decision_id)));
-  } catch {
-    // The receipt shows on the button. The status on the card stays as the API gave it before.
-  }
+  // Read the status from the API after the receipt.
+  setTimeout(async () => {
+    try {
+      const decision = await call('/decisions/' + encodeURIComponent(args.decision_id));
+      card.fill = fill('card', decisionData(decision), { slots: { authorship: decision.author } });
+    } catch {
+      // Keep the last status from the API.
+    }
+  }, 0);
+  return receipt;
 });
 
 async function load() {
