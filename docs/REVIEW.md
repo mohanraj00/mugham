@@ -23,13 +23,13 @@ A harness does not review its own change. The branch prefix names the harness th
 | Codex | `@claude review this PR. Use the Review guidelines in AGENTS.md.` | `@codex security review` |
 | agy | `@claude review this PR. Use the Review guidelines in AGENTS.md.` | `@codex security review` |
 
-The Codex security review is the first choice for each builder. If Codex is not available, ask for the Claude security review with this exact text: `@claude do a security review of this PR. Use the Review guidelines in AGENTS.md.` A Claude security review is advisory, as the [Security review](#security-review) section says.
+The Codex security review is the first choice for each builder. If Codex is not available, ask for the Claude security review with this text as the first line: `@claude do a security review of this PR. Use the Review guidelines in AGENTS.md.` A Claude security review is advisory, as the [Security review](#security-review) section says.
 
 Follow these rules for each request:
 
 1. Ask when CI is green and the PR is ready.
-2. For a Codex code review request, write `Head: <sha>` on the next line of the comment. Use the short SHA of the PR head commit. Do not add this line to a Claude request. The Claude review starts only for the exact text in the table, and its comment names the head that it reviewed.
-3. Write a security review request as the exact text in the table, with no other text in the comment. If the comment has other text, for example a `Head:` line, Codex does a code review and no security review. The Codex result names the commit that it reviewed.
+2. For a Codex code review request, write `Head: <sha>` on the next line of the comment. Use the short SHA of the PR head commit. Do not add this line to a Claude request. The Claude review starts only if the first line of the comment is the text in the table. Later lines do not count. The comment of the review names the head that it reviewed.
+3. Write a Codex security review request as the exact text in the table, with no other text in the comment. If the comment has other text, for example a `Head:` line, Codex does a code review and no security review. The Codex result names the commit that it reviewed.
 4. Ask one time for each head commit. Before you ask, read the PR comments. If a request names the current head, or comes after the last push, do not ask again.
 5. If you push fixes after a review, ask again for the new head. Ask at most 3 times for each PR. After that, ask the maintainer to review. The `gate` job of the Claude review stops a second Claude review of one kind for a head. It also stops a Claude review after 3 of one kind.
 6. Fix each real finding, or write on the PR why it is not a defect. For a finding in the gates, use the stop rule of the [standard](STANDARD.md). The gates are the files of `mohanraj00/.github` and their copies in this project. Do not change a copy. File the finding in `mohanraj00/.github`.
@@ -39,10 +39,10 @@ The `cross-review` check passes only for a review of the current head from the o
 Codex reviews through the Codex GitHub integration. Claude Code reviews through the [Claude review](../.github/workflows/claude-review.yml) workflow. The workflow starts only if all of these are true:
 
 - The comment is on a PR.
-- The comment body is exactly one of the two Claude request texts in the table. GitHub compares these texts with no regard to letter case.
+- The comment names `@claude`, and the `gate` job reads its first line. The first line must be one of the two Claude request texts in the table. The `gate` job compares them with the case and the white space normalized.
 - The commenter is an owner, a member or a collaborator.
 
-A comment or a review with other text does not start the workflow. The comment text selects one of two fixed prompts, and it never goes into a prompt.
+For a comment with other text, the `gate` job sets no request kind, and the `review` and `post` jobs skip. The comment text selects one of two fixed prompts, and it never goes into a prompt.
 
 ### Claude review design
 
@@ -82,22 +82,23 @@ The check reads the text in NFKC form with no format characters. It does not fin
 
 ### Local fallback: agy
 
-If the GitHub reviewer is not available (no quota, an outage or no integration), run agy on your machine:
+If the GitHub reviewer is not available (no quota, an outage or no integration), run the shared tool `gates/cross_review.py` of `mohanraj00/.github`. Use the SHA of the gate pin in `.github/workflows/gates.yml`. The project keeps no copy of this tool. Get a checkout of `mohanraj00/.github` at that SHA outside the project checkout. Then run this command from the root of the project checkout:
 
 ```sh
-python3 -B tools/cross_review.py --work "$REVIEW_WORK"
+python3 -B <gates checkout>/gates/cross_review.py --base origin/main --work "$REVIEW_WORK"
 ```
 
-Post the report on the PR. It starts with `Review (agy <version>):` and names the base and head commits. If agy is not available, ask the maintainer for a manual review. If the PR needs a security review, the maintainer also does a manual security review, as the [Security review](#security-review) section says.
+The tool reads `.github/gates.json` of the base revision to select the security review. For a forced security review, add `--security yes`. Before the review, the tool sends one short prompt to agy with a time limit. If that call fails, times out or asks for a sign-in, the tool stops and sends no diff.
 
-The PR is untrusted input to agy:
+Post the report on the PR. It starts with `Review (agy <version>):` and names the base and head commits. If agy is not available, ask the maintainer for a manual review. If the PR needs a security review, the maintainer also does a manual security review, as the [Security review](#security-review) section says. The README of `mohanraj00/.github` owns the details of the tool.
 
-- agy runs headless and with `--sandbox` in an empty directory. It gets a new HOME that holds only its login token and an empty allow list. Thus, your global agy allow rules and MCP servers do not apply, and the PR cannot supply settings or instruction files.
+The PR is untrusted input to agy. The shared tool applies these rules:
+
+- agy runs headless and with `--sandbox` in an empty directory, with an empty allow list. The PR cannot supply settings or instruction files.
 - The prompt quotes `CONSTITUTION.md` and `AGENTS.md` from the base revision, not from the PR.
-- agy gets only basic environment variables and its own login key. The script also sets `SSH_CONNECTION`. If agy finds an SSH session, it uses only the file token and does not open the macOS keychain. agy does not document this behavior, so the script checks the agy log (`<work>/<kind>/agy.log`). The script needs a file token at `~/.gemini/antigravity-cli/antigravity-oauth-token` or an API key. If it has neither, it stops before agy starts. The report gives a warning if agy did not use file-only storage, or if agy changed the refresh token. agy output never changes your token file. Read the report before you post it, and remove anything that is not a review finding.
-- The tool resolves the base and head to commit SHAs once. If HEAD changes during the review, the report says so and the tool exits 1.
-- If the diff is larger than 90000 bytes, the tool cuts it and says so in the report. Get a manual review of the rest.
-- The full output and exit status stay in the work directory, which must be outside the checkout.
+- The tool resolves the base and head to commit SHAs once. If HEAD changes during the review, the report says so.
+- If the diff is larger than the limit of the tool, the tool cuts it and says so in the report. Get a manual review of the rest.
+- The full output stays in the work directory, which must be outside the checkout. Read the report before you post it, and remove anything that is not a review finding.
 
 ## Security review
 
@@ -122,7 +123,7 @@ The [Gates rerun](../.github/workflows/gates-rerun.yml) workflow starts the fail
 The `security-reviewed` label is only for the cases that a clean Codex result cannot show:
 
 - The review came from the Claude review workflow. Its result is advisory.
-- Codex is not available, and the review came from the agy fallback: `python3 -B tools/cross_review.py --security yes --work "$REVIEW_WORK"`. Post the report.
+- Codex is not available, and the review came from the agy fallback: the shared `gates/cross_review.py` with `--security yes`, as the [Local fallback](#local-fallback-agy) section says. Post the report.
 - A finding is not a defect, and the PR has an answer for it.
 - Codex and agy are both not available, and the maintainer did a manual security review. The maintainer posts the review on the PR. The review names the head commit and the base commit, and gives each finding with its fix or its answer.
 

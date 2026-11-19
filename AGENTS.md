@@ -37,7 +37,7 @@ Keep scratch work and raw runs outside the checkout and outside synced folders, 
 
 ## Review
 
-A harness does not review its own change. Ask the other harness for a review in a PR comment on GitHub: Claude Code writes `@codex review`. Codex and agy write `@claude review this PR. Use the Review guidelines in AGENTS.md.` If that reviewer is not available, run the local agy fallback, `python3 -B tools/cross_review.py`. A security-relevant change also needs a security review. [docs/REVIEW.md](docs/REVIEW.md) owns the request rules, the fallback, fork PR acceptance and the CI scope.
+A harness does not review its own change. Ask the other harness for a review in a PR comment on GitHub: Claude Code writes `@codex review`. Codex and agy write `@claude review this PR. Use the Review guidelines in AGENTS.md.` If that reviewer is not available, run the shared agy fallback, `gates/cross_review.py` of `mohanraj00/.github` at the gate pin. A security-relevant change also needs a security review. [docs/REVIEW.md](docs/REVIEW.md) owns the request rules, the fallback, fork PR acceptance and the CI scope.
 
 ## Review guidelines
 
