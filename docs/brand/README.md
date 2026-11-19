@@ -16,8 +16,10 @@ The mark is a lowercase m with two arches and one dot. The two arches are the tw
 | [mugham-wordmark-dark.svg](logos/mugham-wordmark-dark.svg) | The wordmark on a dark ground. |
 | [mugham-lockup.svg](logos/mugham-lockup.svg) | The mark and the wordmark on one baseline, on a light ground. |
 | [mugham-lockup-dark.svg](logos/mugham-lockup-dark.svg) | The lockup on a dark ground. |
+| [mugham-social.svg](mugham-social.svg) | The social preview image, 1280 by 640 pixels: the dark lockup and the line "A UI toolkit for agentic applications" on `brand-ink`. The content stays in the center, because a site can crop the edges. The line uses the `sans` stack. |
+| [mugham-social.png](mugham-social.png) | The PNG of the social preview image, for the repository settings. Make it again from the SVG if the SVG changes. |
 
-Each file is an SVG with no font, no script and no link.
+Each logo file is an SVG with no font, no script and no link. The social image has one line of text, so it uses a font stack.
 
 - Keep a clear space of one arch width (18 of the 64 units) on each side of the mark.
 - Use the mark at 16px minimum. Use the lockup at 24px high or more.
