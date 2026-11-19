@@ -279,6 +279,16 @@ for (const [name, contract] of Object.entries(CATALOG)) {
   });
 }
 
+test('schema exports refuse unknown field types', (t) => {
+  const field = CATALOG.button.data.label;
+  const originalType = field.type;
+  t.after(() => { field.type = originalType; });
+  field.type = 'future-type';
+  for (const schema of [describe, toolSchema]) {
+    assert.throws(() => schema('button'), { name: 'TypeError', message: /future-type/ });
+  }
+});
+
 test('schemas give resolved limits, enums and nested fill rules', () => {
   assert.equal(describe('card').properties.title.maxLength, 120);
   assert.equal(describe('card').properties.date.format, 'date');

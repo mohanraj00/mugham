@@ -106,6 +106,7 @@ function fieldSchema(field, reference) {
     case 'component': return field.names
       ? { title, oneOf: field.names.map(reference) }
       : { title, ...reference(field.name) };
+    default: throw new TypeError(`Unknown field type ${String(type)}`);
   }
 }
 
