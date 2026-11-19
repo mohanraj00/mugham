@@ -2,7 +2,7 @@
 // The page keeps no approval state of its own. It shows the decisions and the receipts that the API gives.
 // A real workflow service can take the place of the fixture API through its own HTTP API. See approval.md.
 import { define } from '../../src/components/index.js';
-import { createKit, fill, mount, onAction } from '../../src/kit.js';
+import { fill, mount, onAction, validateFill } from '../../src/kit.js';
 
 define();
 
@@ -26,9 +26,13 @@ function decisionData(decision) {
 }
 
 function decisionCard(decision) {
-  // The application trusts its API for the author of each decision.
-  const kit = createKit({ actor: decision.author });
-  const card = kit.mount('card', decisionData(decision));
+  const { author } = decision;
+  const data = decisionData(decision);
+  const slots = author === undefined ? undefined : { authorship: author };
+  // Check the fill before the card binds the author.
+  const actor = validateFill(fill('card', data, { slots })).length === 0 ? author : null;
+  const card = mount('card', data, { actor, slots });
+  if (!card.fill) return card;
   for (const [tool, word] of ACTIONS) {
     const label = `${word} ${decision.id}`;
     mount('action-button', { label }, { parent: card, slot: 'actions', action: { tool, label, arguments: { decision_id: decision.id } } });
