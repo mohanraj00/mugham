@@ -16,7 +16,7 @@ Start with the [quickstart](#quickstart) or the [guides](docs/guides/README.md).
 
 Agents and LLMs: read [CONSTITUTION.md](CONSTITUTION.md) and [AGENTS.md](AGENTS.md) first.
 
-Status: release `v0.3.0` is the newest. It has the contract format 2, the design tokens, the primitives, the catalog components, the message envelope and the thread for people and agents. It also has the evidence components, typed form edits, the chat controls, the data grid, rich text, the upload control, the offline data source interface and two examples on a fixture API. A reader of a local bundle, a cache or a database belongs to the application. The plan is in [docs/STATUS.md](docs/STATUS.md) and in the GitHub milestones.
+Status: release `v0.4.0` is the newest. It has the contract format 2, the design tokens, the primitives, the catalog components, the message envelope and the thread for people and agents. It also has the evidence components, typed form edits, the chat controls, the data grid, rich text, the upload control, the offline data source interface two examples on a fixture API, the helper functions, the short contract form, the default page style and one entry point for the examples. The offline mode is planned for v0.5. A reader of a local bundle, a cache or a database belongs to the application. The plan is in [docs/STATUS.md](docs/STATUS.md) and in the GitHub milestones.
 
 ## Docs
 
