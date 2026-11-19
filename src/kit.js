@@ -44,13 +44,17 @@ export function mount(name, data, { actor = null, parent, slot, action, ...optio
   const element = document.createElement(tag);
   element.actor = actor;
   if (slot !== undefined) element.slot = slot;
-  if (action !== undefined) element.action = action;
+  if (action !== undefined) {
+    if (!('action' in element)) throw new TypeError(`mount: ${name} does not support an action binding`);
+    element.action = action;
+  }
   element.fill = value;
   parent?.append(element);
   return element;
 }
 
 const handled = new WeakSet();
+const FAILED = 'The request failed.';
 
 export function onAction(root, handler) {
   const listen = async (event) => {
@@ -66,12 +70,15 @@ export function onAction(root, handler) {
       receipt = await handler(tool, args, id, request, element);
     } catch (error) {
       const message = error instanceof Error ? error.message : typeof error === 'string' ? error : '';
-      receipt = { ok: false, message: message.slice(0, 200) || 'The request failed.' };
+      receipt = { ok: false, message: message.slice(0, 200) || FAILED };
     }
     if (receipt && typeof receipt === 'object' && !Array.isArray(receipt) && !Object.hasOwn(receipt, 'id')) {
       receipt = { ...receipt, id };
     }
-    element.receipt(receipt);
+    if (element.receipt(receipt) !== false) return;
+    if (element.receipt({ ok: false, message: FAILED, id }) === false) {
+      console.error('onAction: The element refused the failure receipt.', id);
+    }
   };
   root.addEventListener('mu-action', listen);
   return () => root.removeEventListener('mu-action', listen);

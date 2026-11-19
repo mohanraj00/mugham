@@ -24,7 +24,7 @@ const element = kit.mount('card', data, { parent: document.body });
 
 ## `mount(name, data, options)`
 
-Create, fill and return an element. Set `options.parent` to append it. Set `options.slot` to put it in a named slot of its parent. You can give `version` and `slots` as for `fill`. Set `options.actor` to bind the actor and fill its declared authorship slot. Set `options.action` in application code to bind a tool before the element gets its fill. The element checks the fill and shows a refusal for invalid data. An unknown name or a contract with no defined element causes a `TypeError`.
+Create, fill and return an element. Set `options.parent` to append it. Set `options.slot` to put it in a named slot of its parent. You can give `version` and `slots` as for `fill`. Set `options.actor` to bind the actor and fill its declared authorship slot. Set `options.action` in application code to bind a tool before the element gets its fill. An invalid binding or an element without action support causes a `TypeError` before the helper appends the element. The element checks the fill and shows a refusal for invalid data. An unknown name or a contract with no defined element causes a `TypeError`.
 
 ```js
 const renew = mount('action-button', { label: 'Renew' }, {
@@ -34,7 +34,9 @@ const renew = mount('action-button', { label: 'Renew' }, {
 
 ## `onAction(root, handler)`
 
-Listen for `mu-action` on an element or a root that contains it. The first helper listener that receives an action event calls its handler. The handler gets `(tool, args, id, request, element)`. The full request includes any typed edits. The handler can return a receipt or a promise that gives a receipt. Give `ok` as a boolean and add `message` or `reference` if necessary. The helper adds the request id if the receipt has no `id`. The element checks the receipt. If the handler throws, the helper gives the element a receipt with `ok` set to `false`. Call the returned function to remove the listener.
+Listen for `mu-action` on an element or a root that contains it. The first helper listener that receives an action event calls its handler. The handler gets `(tool, args, id, request, element)`. The full request includes any typed edits. The handler can return a receipt or a promise that gives a receipt. Give `ok` as a boolean and add `message` or `reference` if necessary. A message can have up to 200 characters. The helper adds the request id if the receipt has no `id`.
+
+If the handler throws, the helper sends a receipt with `ok` set to `false`. If the element refuses a receipt, the helper sends a failure receipt with the request id and the message `The request failed.` If the element also refuses the failure receipt, the helper reports the refusal in the console. A button shows `Done` only after it accepts a receipt with `ok` set to `true`. Call the returned function to remove the listener.
 
 ```js
 const stop = onAction(renew, (tool, args, id, request) => sendToApi(request));

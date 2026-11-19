@@ -78,6 +78,17 @@ test('mount sets the actor and action before the fill and appends the element la
   assert.throws(() => mount('fact', {}), /no defined element for fact/);
 });
 
+test('mount refuses an action on a component without an action binding', (t) => {
+  class Button { static component = 'button'; }
+  useDocument(t, new Map([['mu-button', Button]]), () => new Button());
+  const parent = { append: t.mock.fn() };
+  const action = { tool: 'loan.renew', label: 'Renew' };
+  assert.throws(() => mount('button', { label: 'Renew' }, { parent, action }), {
+    name: 'TypeError', message: 'mount: button does not support an action binding',
+  });
+  assert.equal(parent.append.mock.callCount(), 0);
+});
+
 test('the helpers use the resolved contract and tag of a registered component', (t) => {
   class Base {
     static [BRAND] = true;
@@ -140,11 +151,11 @@ test('onAction runs only one handler for a received event', async () => {
 });
 
 test('onAction sends a failed receipt for a rejection and keeps a stated receipt id', async () => {
-  for (const [handler, state, message] of [
-    [() => { throw new Error('The service failed.'); }, 'error', 'The service failed.'],
-    [async () => { throw new Error('The request failed.'); }, 'error', 'The request failed.'],
-    [() => ({ ok: false, message: 'The loan is closed.' }), 'error', 'The loan is closed.'],
-    [() => ({ id: 'other', ok: true }), 'pending', ''],
+  for (const [handler, message] of [
+    [() => { throw new Error('The service failed.'); }, 'The service failed.'],
+    [async () => { throw new Error('The request failed.'); }, 'The request failed.'],
+    [() => ({ ok: false, message: 'The loan is closed.' }), 'The loan is closed.'],
+    [() => ({ id: 'other', ok: true }), 'The request failed.'],
   ]) {
     const root = new EventTarget();
     const source = new ActionState();
@@ -154,9 +165,48 @@ test('onAction sends a failed receipt for a rejection and keeps a stated receipt
     event.composedPath = () => [source, root];
     root.dispatchEvent(event);
     await Promise.resolve();
-    assert.equal(source.state, state);
+    assert.equal(source.state, 'error');
     assert.equal(source.message, message);
   }
+});
+
+for (const [name, receipt] of [
+  ['undefined', undefined],
+  ['a receipt with no boolean ok', { message: 'Renewed.' }],
+  ['a receipt with a message over 200 characters', { ok: true, message: 'x'.repeat(201) }],
+]) {
+  test(`onAction sends a failed receipt when the handler returns ${name}`, async () => {
+    const root = new EventTarget();
+    const source = new ActionState();
+    source.bind({ tool: 'loan.renew' });
+    onAction(root, () => receipt);
+    const event = new CustomEvent('mu-action', { detail: source.start() });
+    event.composedPath = () => [source, root];
+    root.dispatchEvent(event);
+    await Promise.resolve();
+    assert.equal(source.state, 'error');
+    assert.equal(source.message, 'The request failed.');
+  });
+}
+
+test('onAction reports a refused failure receipt', async (t) => {
+  const root = new EventTarget();
+  const source = new ActionState();
+  source.bind({ tool: 'loan.renew' });
+  const request = source.start();
+  const receipt = t.mock.method(source, 'receipt', () => false);
+  const report = t.mock.method(console, 'error', () => {});
+  onAction(root, () => ({ ok: true }));
+  const event = new CustomEvent('mu-action', { detail: request });
+  event.composedPath = () => [source, root];
+  root.dispatchEvent(event);
+  await Promise.resolve();
+  assert.deepEqual(receipt.mock.calls.map((call) => call.arguments[0]), [
+    { ok: true, id: request.id },
+    { ok: false, message: 'The request failed.', id: request.id },
+  ]);
+  assert.equal(report.mock.callCount(), 1);
+  assert.equal(source.state, 'pending');
 });
 
 // This checks the part of the Draft 2020-12 meta-schema that the helpers emit.
