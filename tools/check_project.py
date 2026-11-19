@@ -12,7 +12,7 @@ REQUIRED = ['CONSTITUTION.md', 'AGENTS.md', 'CLAUDE.md', 'GEMINI.md', 'README.md
             '.github/dependabot.yml', '.github/gates.json', '.github/workflows/ci.yml', '.github/workflows/gates.yml',
             '.github/workflows/gates-rerun.yml', '.github/workflows/claude-review.yml', '.github/ISSUE_TEMPLATE/bug.yml',
             '.github/ISSUE_TEMPLATE/feature.yml', '.github/ISSUE_TEMPLATE/docs.yml', '.github/ISSUE_TEMPLATE/config.yml',
-            'tools/claude_review.py', 'tools/cross_review.py']
+            'tools/claude_review.py']
 
 
 def main():
@@ -69,11 +69,9 @@ def main():
     sys.path.insert(0, str(ROOT / 'tools'))
     from claude_review import workflow_errors
     errors += ['claude-review.yml ' + x for x in workflow_errors((ROOT / '.github/workflows/claude-review.yml').read_text(encoding='utf-8'))]
-    # The agy fallback must not load the global allow rules or MCP servers of the maintainer.
-    review = (ROOT / 'tools/cross_review.py').read_text(encoding='utf-8')
-    for need in ["env['HOME']=home", "'--sandbox'", "'allow':[]"]:
-        if need not in review:
-            errors.append('cross_review.py must keep ' + need)
+    # The agy fallback is the shared tool at the gate pin. The project keeps no copy.
+    if (ROOT / 'tools/cross_review.py').exists():
+        errors.append('tools/cross_review.py must not exist: use gates/cross_review.py of the pinned gates')
     print(json.dumps({'passed': not errors, 'local_links_checked': links, 'errors': errors,
                       'scope': 'Layout, links and workflow pins only. No component, runtime or browser result.'}, indent=2))
     return 1 if errors else 0
