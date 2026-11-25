@@ -76,13 +76,74 @@ const PANEL = `(async () => {
 })()`;
 const docsOf = (name) => (name === 'thread' ? DOCS.thread : (DOCS.components[name] ?? DOCS.application));
 
-export async function exampleIndexChecks(session, sessionId, base, { evaluate, open, sleep, pythonServer }) {
+const PHONE = { width: 375, height: 812, deviceScaleFactor: 2, mobile: true };
+const media = (value) => ({ features: [{ name: 'prefers-color-scheme', value }] });
+
+function compactView() {
+  const root = document.documentElement;
+  const problems = [];
+  let focused = 0;
+  function walk(scope) {
+    for (const node of scope.querySelectorAll('*')) {
+      if (node.shadowRoot) walk(node.shadowRoot);
+      if (!node.matches('a[href], button, input, select, textarea, summary, [tabindex]') || node.matches(':disabled')
+        || !node.getClientRects().length || getComputedStyle(node).visibility !== 'visible') continue;
+      node.focus({ preventScroll: true });
+      const style = getComputedStyle(node);
+      const hex = style.getPropertyValue('--mu-color-focus').trim();
+      const rgb = hex.slice(1).match(/../g)?.map((channel) => parseInt(channel, 16)).join(', ');
+      if (scope.activeElement === node) focused += 1;
+      if (scope.activeElement !== node || style.outlineStyle !== 'solid' || style.outlineWidth !== '2px' || style.outlineColor !== `rgb(${rgb})`) {
+        problems.push(node.getAttribute('aria-label') || node.getAttribute('part') || node.tagName);
+      }
+    }
+  }
+  walk(document);
+  return { width: innerWidth, scrollWidth: root.scrollWidth, focused, problems,
+    spacing: getComputedStyle(root).getPropertyValue('--mu-space-4').trim() };
+}
+
+function densityComparison() {
+  const read = (id) => {
+    const section = document.getElementById(id);
+    const list = section.querySelector('mu-card-grid').shadowRoot.querySelector('ul');
+    const grid = section.querySelector('mu-data-grid').shadowRoot.querySelector('[part="data-grid"]');
+    return { left: section.offsetLeft, top: section.offsetTop, gap: parseFloat(getComputedStyle(list).gap),
+      columns: getComputedStyle(list).gridTemplateColumns.split(' ').length, font: parseFloat(getComputedStyle(grid).fontSize) };
+  };
+  const main = document.querySelector('main');
+  const full = getComputedStyle(main).paddingInlineStart;
+  document.documentElement.removeAttribute('data-mu-page');
+  const capped = getComputedStyle(main).paddingInlineStart;
+  document.documentElement.dataset.muPage = 'full';
+  return { default: read('default'), compact: read('compact'), full: parseFloat(full), capped: parseFloat(capped) };
+}
+
+export async function exampleIndexChecks(session, sessionId, base, { evaluate, open, sleep, pythonServer, key, touchTargetProblems }) {
   const page = 'examples/index.html';
   const steps = [];
   const step = (where, name, ok, detail) => steps.push({ page: where, step: name, ok: Boolean(ok), detail: JSON.stringify(detail) });
   const shown = (state) => state.entries.filter((entry) => entry.shown).map((entry) => entry.name);
   const servers = {};
+  const checkCompact = async (where) => {
+    await session.send('Emulation.setDeviceMetricsOverride', PHONE, sessionId);
+    await evaluate(session, sessionId, 'document.documentElement.dataset.muDensity = "compact"');
+    // Tab sets keyboard focus before the check moves focus to each control.
+    await key(session, sessionId, 'Tab', 'Tab', 9);
+    for (const mode of ['light', 'dark']) {
+      await session.send('Emulation.setEmulatedMedia', media(mode), sessionId);
+      const view = await evaluate(session, sessionId, `(${compactView})()`);
+      const small = await touchTargetProblems(session, sessionId, true);
+      step(where, `compact ${mode}: the page fits at 375 CSS pixels`,
+        view.spacing === '0.75rem' && view.width === PHONE.width && view.scrollWidth === PHONE.width, view);
+      step(where, `compact ${mode}: each touch target is at least 44 by 44 CSS pixels`, small.length === 0, small);
+      step(where, `compact ${mode}: each control keeps its 2px focus ring`, view.focused > 0 && view.problems.length === 0, view.problems);
+    }
+    await session.send('Emulation.setEmulatedMedia', media('light'), sessionId);
+    await session.send('Emulation.clearDeviceMetricsOverride', {}, sessionId);
+  };
   try {
+    await session.send('Emulation.setEmulatedMedia', media('light'), sessionId);
     await open(session, sessionId, `${base}/${page}`);
     let state = await evaluate(session, sessionId, INDEX);
     for (let i = 0; i < 100 && state.entries.length === 0; i += 1) { await sleep(50); state = await evaluate(session, sessionId, INDEX); }
@@ -108,6 +169,7 @@ export async function exampleIndexChecks(session, sessionId, base, { evaluate, o
     await evaluate(session, sessionId, type(''));
     state = await evaluate(session, sessionId, INDEX);
     step(page, 'an empty filter shows each example again', shown(state).length === EXAMPLES.length && state.count === `${EXAMPLES.length} examples`, state.count);
+    await checkCompact(page);
 
     let marked = 0;
     let noted = 0;
@@ -152,12 +214,23 @@ export async function exampleIndexChecks(session, sessionId, base, { evaluate, o
       }
       if (wide) {
         step(where, 'a wide screen shows the docs panel next to the example', panel?.beside === true, { beside: panel?.beside });
-        await session.send('Emulation.setDeviceMetricsOverride', { width: 375, height: 812, deviceScaleFactor: 2, mobile: true }, sessionId);
+        await session.send('Emulation.setDeviceMetricsOverride', PHONE, sessionId);
         const narrow = await evaluate(session, sessionId, PANEL);
         step(where, 'a narrow screen shows the docs panel below the example', narrow?.below === true, { below: narrow?.below });
         await session.send('Emulation.clearDeviceMetricsOverride', {}, sessionId);
       }
+      if (example.path === 'tables/density.html') {
+        await session.send('Emulation.setDeviceMetricsOverride', { width: 1920, height: 900, deviceScaleFactor: 1, mobile: false }, sessionId);
+        const view = await evaluate(session, sessionId, `(${densityComparison})()`);
+        step(where, 'full width keeps the side space of 16 CSS pixels', view.full === 16 && view.capped > view.full, view);
+        step(where, 'the compact grids are beside the default grids and use smaller gaps, type and columns',
+          view.default.top === view.compact.top && view.default.left < view.compact.left && view.default.gap > view.compact.gap
+            && view.default.columns < view.compact.columns && view.default.font > view.compact.font, view);
+      }
+      await checkCompact(where);
     }
+    await open(session, sessionId, new URL('/examples/apps/', servers['apps_server.py'].url).href);
+    await checkCompact('examples/apps/');
     const fixtures = EXAMPLES.filter((example) => example.needs).length;
     step(page, 'each example with a fixture API tells how to start it, and each link across two servers tells the need',
       fixtures >= 5 && noted === fixtures && marked >= fixtures, { fixtures, noted, marked });

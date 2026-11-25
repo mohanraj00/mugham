@@ -95,6 +95,18 @@ To use your own page style instead, do not link `page.css`. Link `tokens.css` an
 
 To change only some rules, link your style sheet after `page.css`. The block spacing rules have a specificity of zero, so each rule of your style sheet wins. A container that sets its own `gap` removes the block space of its children with `margin-block-start: 0`, as `examples/apps/app.css` does. Each example page uses the default style, and `examples/page.css` holds only the layout classes of the examples.
 
+## Compact density and full width
+
+Set `data-mu-density="compact"` on `<html>` to use compact density on the full page. To use it in one part of a page, set the attribute on the container of that part. The elements in the container use the compact tokens, also in their shadow roots.
+
+Compact density reduces the first four space tokens, the body and caption type sizes, and the minimum widths of grid columns. Use these tokens for gaps, content padding and text. The preset uses the same colors in each theme as the default density.
+
+Keep each control target at least 44 by 44 CSS pixels (`2.75rem` with a root size of 16px). Keep the root font size and the control minimum sizes. A radio or checkbox and its label make one target. Keep the 2px focus ring and the contrast ratios for text, control edges and focus rings.
+
+With `page.css`, set `data-mu-page="full"` on `<html>` to set `--mu-size-page` to `100%`. The header, main content and footer use the available width and keep the side space that `--mu-space-4` gives. You can use this option with either density.
+
+The [density example](../../examples/tables/density.html) uses full width. It shows the same synthetic card grid and data grid in both densities, side by side on a wide screen.
+
 ## A second theme
 
 [examples/guides/theme.css](../../examples/guides/theme.css) sets the `forest` theme on each element in a `.theme-forest` container. It gives a light value and a dark value for each color, and it changes one corner radius:

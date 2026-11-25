@@ -7,6 +7,11 @@
 .snap-controls { display: flex; flex-wrap: wrap; align-items: end; gap: var(--mu-space-3); }
 .snap-controls label { display: grid; gap: var(--mu-space-1); }
 .snap-impact { display: grid; gap: var(--mu-space-2); }
+.density-comparison {
+  display: grid; gap: var(--mu-space-4);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 19rem), 1fr));
+}
+.density-comparison > section { min-width: 0; margin-block: 0; }
 /* The index of the examples and the frame of each example page. */
 .filter { display: grid; gap: var(--mu-space-1); max-inline-size: 24rem; }
 .filter input {

@@ -171,6 +171,7 @@ python3 tools/serve.py
    - `http://localhost:8000/examples/evidence/diff.html`: a diff of two versions of a synthetic hall booking, and a large diff that starts closed.
    - `http://localhost:8000/examples/thread/rich-text.html`: an agent message with rich text in a thread, markup that shows as text and a refused script address.
    - `http://localhost:8000/examples/tables/budget.html`: an editable grid with a synthetic budget, a total row that the page computes and a refused amount.
+   - `http://localhost:8000/examples/tables/density.html`: a card grid and a data grid in the default and compact densities.
    - `http://localhost:8000/examples/evidence/excerpt.html`: an excerpt of a synthetic document in a message, and a refused excerpt.
    - `http://localhost:8000/examples/evidence/provenance.html`: a card with the authorship slot and the citation slot, and a refused card.
    - `http://localhost:8000/examples/tables/table.html`: a table of synthetic plots with keyboard sorting and an empty table.

@@ -8,6 +8,7 @@
 :root { color-scheme: light dark; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 :root[data-mu-theme="light"] { color-scheme: light; }
 :root[data-mu-theme="dark"] { color-scheme: dark; }
+:root[data-mu-page="full"] { --mu-size-page: 100%; }
 
 body {
   margin: 0; min-height: 100vh;
