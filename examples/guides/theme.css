@@ -7,6 +7,7 @@
   --mu-color-focus: #2b6a3c;
   --mu-color-on-accent: #ffffff;
   --mu-color-surface: #f5f8f3;
+  --mu-color-surface-subtle: #ecf2e9;
   --mu-color-text: #16241a;
   --mu-color-text-muted: #46584b;
   --mu-radius-2: 0.25rem;
@@ -19,6 +20,7 @@
     --mu-color-focus: #8ccf9d;
     --mu-color-on-accent: #0b1f11;
     --mu-color-surface: #111a14;
+    --mu-color-surface-subtle: #1a251d;
     --mu-color-text: #e2ece4;
     --mu-color-text-muted: #9db3a3;
   }
@@ -30,6 +32,7 @@
   --mu-color-focus: #8ccf9d;
   --mu-color-on-accent: #0b1f11;
   --mu-color-surface: #111a14;
+  --mu-color-surface-subtle: #1a251d;
   --mu-color-text: #e2ece4;
   --mu-color-text-muted: #9db3a3;
 }
