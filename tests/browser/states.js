@@ -50,13 +50,34 @@ export async function stateChecks(session, sessionId, { evaluate, key, sleep }, 
   check('each control shows hover and pressed, and a disabled control shows no change', layered >= 12 && wrong.length === 0,
     wrong.length ? wrong : layered);
   await evaluate(session, sessionId, 'document.activeElement?.blur(), window.muBlur()');
+  const originalWidth = await evaluate(session, sessionId, 'innerWidth');
+  const waitForWidth = (width) => evaluate(session, sessionId, `new Promise((resolve, reject) => {
+    let frames = 0;
+    let frame;
+    const timeout = setTimeout(() => {
+      cancelAnimationFrame(frame);
+      reject(new Error('Expected viewport width ${width}, got ' + innerWidth));
+    }, 5000);
+    function checkWidth() {
+      frames = innerWidth === ${width} ? frames + 1 : 0;
+      if (frames === 2) {
+        clearTimeout(timeout);
+        resolve();
+      } else {
+        frame = requestAnimationFrame(checkWidth);
+      }
+    }
+    frame = requestAnimationFrame(checkWidth);
+  })`);
   try {
     await session.send('Emulation.setDeviceMetricsOverride', { width: 375, height: 812, deviceScaleFactor: 1, mobile: true }, sessionId);
+    await waitForWidth(375);
     const receipt = await evaluate(session, sessionId, 'window.muReceiptLayout()');
     check('375px: the receipt has no horizontal scroll, and the copy control wraps when the row is narrow',
       receipt.width === 375 && receipt.scroll === 0 && receipt.sameRow && receipt.wraps && receipt.target, receipt);
   } finally {
     await session.send('Emulation.clearDeviceMetricsOverride', {}, sessionId);
+    await waitForWidth(originalWidth);
   }
   if (mode !== 'light') return results;
 
@@ -65,13 +86,13 @@ export async function stateChecks(session, sessionId, { evaluate, key, sleep }, 
   await session.send('Browser.grantPermissions', { origin, permissions: ['clipboardReadWrite', 'clipboardSanitizedWrite'] });
   await session.send('Emulation.setFocusEmulationEnabled', { enabled: true }, sessionId);
   for (const [name, expected] of [['code', 'tray check --all'], ['reference', 'R-0001']]) {
-    const at = await evaluate(session, sessionId, `window.muCopyPoint('${name}')`);
     let before = null;
     for (let i = 0; i < 80; i += 1) {
       before = await evaluate(session, sessionId, `window.muCopyState('${name}')`);
       if (before.label === 'Copy') break;
       await sleep(50);
     }
+    const at = await evaluate(session, sessionId, `window.muCopyPoint('${name}')`);
     await mouse('mouseMoved', at.x, at.y);
     await mouse('mousePressed', at.x, at.y, down);
     await mouse('mouseReleased', at.x, at.y, { button: 'left', buttons: 0, clickCount: 1 });
