@@ -234,9 +234,17 @@ Each release has the archive `mugham.tar` and its `mugham.tar.sha256` file as re
 
 Run the project checks with `make check`. The checks need Python 3, Node.js and Chrome.
 
-## Browser support
+## Limits
 
-The kit imports JSON files with the syntax `import x from './x.json' with { type: 'json' }`. A browser must support this syntax. These are the minimum versions:
+### Server side rendering
+
+The kit renders each component in the browser when its JavaScript runs. The kit does not support server side rendering or declarative shadow DOM. [Decision 0003](docs/decisions/0003-shadow-dom.md#effects)
+
+### Browser support
+
+The kit uses plain JavaScript modules. You can serve them with no build step. The browser loads the catalog with JSON import attributes, so it must support `import x from './x.json' with { type: 'json' }`. [Decision 0001](docs/decisions/0001-build-tools.md)
+
+Use one of these browser versions or a later version.
 
 | Browser | Minimum version |
 |---|---|

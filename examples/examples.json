@@ -76,7 +76,7 @@
       "title": "Guides",
       "examples": [
         {"name": "Contracts guide", "path": "guides/contracts.html", "components": ["card", "bird-count"], "text": "The page of the contracts guide: a valid fill, refused fills and an application contract."},
-        {"name": "Assemble guide", "path": "guides/assemble.html", "components": ["stack", "grid", "card", "action-button", "thread"], "text": "The page of the assembly guide: a thread with a card and an action."},
+        {"name": "Assemble guide", "path": "guides/assemble.html", "components": ["stack", "grid", "card", "action-button", "editable-form", "field", "thread"], "text": "The assembly guide shows a thread, a card with an action and a form with a draft reply."},
         {"name": "Theme guide", "path": "guides/theme.html", "components": ["card", "action-button", "field"], "text": "The page of the theme guide: the kit theme and a second theme."}
       ]
     }

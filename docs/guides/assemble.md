@@ -146,6 +146,15 @@ Expected result:
 5. A press on `Renew` in the thread shows `Pending`. After the receipt, it shows `Done: The loan is renewed.` and `Reference: R-0002`.
 6. At the end of the source, `thread.state` is `ended`.
 
+## Choose a form
+
+| Component | When to use it | Which field values it sends |
+|---|---|---|
+| [`form-card`](../../catalog/form-card.json) | Use it to review a long form in sections. The card shows labels and values first. A person opens one field at a time to edit it. The card can show read-only values. | Only the changed field values. |
+| [`editable-form`](../../catalog/editable-form.json) | Use it to enter or edit values in a form with up to 20 fields. The inputs are visible when the form opens. | The values of all enabled fields. |
+
+The example page shows an editable form with a draft reply. [Action labels example](agents.md#action-labels)
+
 ## Check the page
 
 `make check` runs `tools/browser_check.mjs`. That check opens this page in headless Chrome and checks each expected result above. To run only the browser check:
