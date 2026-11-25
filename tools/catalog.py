@@ -422,6 +422,15 @@ def fill_errors(fill, catalog, path='', depth=0):
     if (not errors and fill['component'] == 'range-field' and contract['data'].get('value', {}).get('type') == 'number-or-pair'
             and all(is_type(data.get(key), 'number') for key in ('minimum', 'maximum', 'step')) and 'value' in data):
         errors += range_errors(data, prefix + 'data.')
+    if (not errors and fill['component'] == 'select-field' and isinstance(data.get('choices'), list)
+            and contract['data'].get('choices', {}).get('items', {}).get('type') == 'text'):
+        choices = data['choices']
+        if not choices:
+            errors.append(prefix + 'data.choices: give at least one choice')
+        elif len(set(choices)) != len(choices):
+            errors.append(prefix + 'data.choices: the choices must be unique')
+        elif 'value' in data and data['value'] not in choices:
+            errors.append(prefix + 'data.value: the value is not one of the choices')
     return errors + slot_errors(fill, contract, prefix, depth)
 
 

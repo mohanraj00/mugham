@@ -15,6 +15,7 @@ Each element that refuses a fill shows a short reason and the next step. Open `T
 | `choice-field.json` | `mu-choice-field` | primitive | A labeled radio group with 1 to 20 choices. |
 | `toggle-field.json` | `mu-toggle-field` | primitive | A labeled checkbox or switch for a yes or no value. |
 | `range-field.json` | `mu-range-field` | primitive | One or two sliders with a number box for each handle. |
+| `select-field.json` | `mu-select-field` | primitive | A combobox for one choice, with search for long lists. |
 | `stack.json` | `mu-stack` | primitive | A labeled group in one column or one row. |
 | `grid.json` | `mu-grid` | primitive | A labeled group in columns. |
 | `fact.json` | in `mu-card` | component | A label and a value. |
@@ -255,7 +256,7 @@ A field that did not change has no edit. A disabled field has no edit, because t
 
 ### Input types
 
-An editable form accepts seven field contracts. Each one has the data fields `name`, `label`, `hint`, `error`, `disabled` and `typed`, and the same states. A typed edit works the same with each input type.
+An editable form accepts eight field contracts. Each one has the data fields `name`, `label`, `hint`, `error`, `disabled` and `typed`, and the same states. A typed edit works the same with each input type.
 
 | Contract | Value | Other data | The request sends |
 |---|---|---|---|
@@ -266,6 +267,11 @@ An editable form accepts seven field contracts. Each one has the data fields `na
 | `choice-field` | One of the choices. | `choices`: 1 to 20 unique texts. | The text of the choice. |
 | `toggle-field` | A boolean. The default is `false`. | `display` can be `checkbox` (the default) or `switch`. | `true` or `false`. |
 | `range-field` | A number for one handle, or a pair of numbers for two handles. | `minimum`, `maximum` and a positive `step`, all required. | A number or a pair in low to high order. |
+| `select-field` | One of the choices. | `choices`: 1 to 500 unique texts. | The text of the choice, or empty text if there is no selection. |
+
+Omit the value of a select field to start with no selection. Space, Enter, Up or Down opens the list. A list of more than seven choices has a search box that takes focus when the list opens. Search matches text in any part of a choice and ignores case. The field announces `No match` when the search has no result.
+
+Up, Down, Home and End move the active option. Enter selects the active option and closes the list. Escape closes the list and returns focus to the control. Tab, Shift+Tab and a click outside the field close the list. These exits keep the current value.
 
 The form refuses a fill in which the data of a field do not agree. Examples are a minimum that is more than the maximum, a value outside the range, and a value that is not one of the choices. The refusal names the field, for example `data.fields[2].data.value: the number is outside the range`.
 

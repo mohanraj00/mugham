@@ -99,7 +99,11 @@ jobs:
             '  userns,' '}' | sudo tee /etc/apparmor.d/chrome-for-testing > /dev/null
           sudo apparmor_parser -r /etc/apparmor.d/chrome-for-testing
       - name: Run the accessibility and rendering check in headless Chrome
-        run: CHROME="$RUNNER_TEMP/chrome-linux64/chrome" node tools/browser_check.mjs
+        run: |
+          set -euo pipefail
+          npm pack --ignore-scripts --pack-destination "$RUNNER_TEMP" axe-core@4.10.3
+          tar -xOzf "$RUNNER_TEMP/axe-core-4.10.3.tgz" package/axe.min.js > "$RUNNER_TEMP/axe.min.js"
+          CHROME="$RUNNER_TEMP/chrome-linux64/chrome" MUGHAM_AXE_CORE="$RUNNER_TEMP/axe.min.js" node tools/browser_check.mjs
   actionlint:
     runs-on: ubuntu-24.04
     timeout-minutes: 5

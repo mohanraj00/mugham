@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // The accessibility and rendering check of the kit in headless Chrome, through the Chrome DevTools Protocol.
-// It uses only Node.js and Chrome. See docs/decisions/0001-build-tools.md, Option A.
+// See docs/decisions/0001-build-tools.md and docs/decisions/0008-select-field-axe.md.
 import { spawn } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync, existsSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:http';
@@ -20,6 +20,7 @@ import { snapshotChecks } from '../tests/browser/snapshots.js';
 import { UPLOAD_FILES, uploadExampleChecks, uploadKeyboardChecks } from '../tests/browser/upload.js';
 import { plannedErrors, queueExampleChecks } from '../tests/browser/queue.js';
 import { RANGE_PAGE, rangeExampleChecks } from '../tests/browser/range-field.js';
+import { SELECT_PAGE, selectExampleChecks } from '../tests/browser/select-field.js';
 
 export const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
 // The upload checks give synthetic files to a file input. The files are in a temporary folder, not in the checkout.
@@ -97,6 +98,7 @@ const EXAMPLES = {
   [RANGE_PAGE]: [3, 0, [['form', 'Loan limits'], ['slider', 'Loan period in days'], ['spinbutton', 'Loan period in days number'],
     ['group', 'Price range'], ['slider', 'Price range Minimum'], ['spinbutton', 'Price range Minimum number'],
     ['slider', 'Price range Maximum'], ['spinbutton', 'Price range Maximum number']]],
+  [SELECT_PAGE]: [2, 0, [['form', 'Pickup details'], ['combobox', 'Pickup branch']]],
   'examples/forms/membership.html': [2, 0, [['list', 'Thread'], ['article', 'Message from Forms agent, Agent'], ['form', 'Membership form'],
     ['group', 'Household'], ['button', 'Edit Children: 1'], ['button', 'Send changes']]],
   'examples/cards/register.html': [4, 1, [['article', 'Tray A1'], ['list', 'Thread'], ['article', 'Message from Garden helper, Agent'], ['article', 'Tray B2']]],
@@ -426,16 +428,19 @@ export async function pageRules(session, sessionId, where) {
   const unnamed = nodes.filter((node) => !node.ignored && CONTROLS.has(node.role?.value) && !node.name?.value?.trim())
     .map((node) => node.role.value);
   const markup = await evaluate(session, sessionId, `(() => {
-    const ROLES = new Set(['alert', 'article', 'button', 'checkbox', 'dialog', 'form', 'grid', 'group', 'heading', 'img', 'link', 'list',
-      'listitem', 'log', 'main', 'navigation', 'none', 'presentation', 'radio', 'radiogroup', 'region', 'slider', 'status', 'switch', 'textbox']);
-    const VALUES = { 'aria-invalid': ['true', 'false'], 'aria-live': ['off', 'polite', 'assertive'], 'aria-disabled': ['true', 'false'], tabindex: ['-1', '0'] };
+    const ROLES = new Set(['alert', 'article', 'button', 'checkbox', 'combobox', 'dialog', 'form', 'grid', 'group', 'heading', 'img', 'link', 'list',
+      'listbox', 'listitem', 'log', 'main', 'navigation', 'none', 'option', 'presentation', 'radio', 'radiogroup', 'region', 'slider', 'status', 'switch', 'textbox']);
+    const BOOLEAN = ['true', 'false'];
+    const VALUES = { 'aria-invalid': BOOLEAN, 'aria-live': ['off', 'polite', 'assertive'], 'aria-disabled': BOOLEAN,
+      'aria-expanded': BOOLEAN, 'aria-selected': BOOLEAN, 'aria-autocomplete': ['none', 'inline', 'list', 'both'], tabindex: ['-1', '0'] };
+    const REFERENCES = ['aria-describedby', 'aria-labelledby', 'aria-controls', 'aria-activedescendant', 'for'];
     const problems = [];
     const check = (root, label) => {
       const ids = new Map();
       for (const node of root.querySelectorAll('[id]')) ids.set(node.id, (ids.get(node.id) || 0) + 1);
       for (const [id, count] of ids) if (count > 1) problems.push(label + ': the id ' + id + ' shows ' + count + ' times');
-      for (const node of root.querySelectorAll('[aria-describedby], [aria-labelledby], label[for]')) {
-        const refs = [node.getAttribute('aria-describedby'), node.getAttribute('aria-labelledby'), node.getAttribute('for')]
+      for (const node of root.querySelectorAll(REFERENCES.map((name) => '[' + name + ']').join(','))) {
+        const refs = REFERENCES.map((name) => node.getAttribute(name))
           .filter(Boolean).join(' ').split(/\\s+/).filter(Boolean);
         for (const ref of refs) if (!ids.has(ref)) problems.push(label + ': ' + node.tagName.toLowerCase() + ' refers to the missing id ' + ref);
       }
@@ -1006,9 +1011,16 @@ async function main() {
         ok: found.elements === elements && found.refused === refused, detail: JSON.stringify(found) });
       report.accessibility.push(...await axErrors(session, sessionId, expected, page));
       report.examples.push(...await pageRules(session, sessionId, page));
+      if (page === SELECT_PAGE && process.env.MUGHAM_AXE_CORE) {
+        await evaluate(session, sessionId, readFileSync(process.env.MUGHAM_AXE_CORE, 'utf8') + '\n;void 0');
+        const violations = await evaluate(session, sessionId, `axe.run().then(({ violations }) =>
+          violations.map(({ id, nodes }) => ({ id, targets: nodes.map(({ target }) => target) })))`);
+        report.examples.push({ page, step: 'axe-core finds no violation', ok: violations.length === 0, detail: JSON.stringify(violations) });
+      }
     }
     report.keyboard.push(...await noticeSwitchChecks(session, sessionId, base, problems));
     report.keyboard.push(...await rangeExampleChecks(session, sessionId, base, MODES, { evaluate, open, key }, problems));
+    report.keyboard.push(...await selectExampleChecks(session, sessionId, base, MODES, { evaluate, open, key, pageRules }, problems));
     // The fixture of decision 0006 has one defect of each kind. The generic rules must find each one.
     await open(session, sessionId, `${base}/tests/browser/rules.html`);
     for (let i = 0; i < 100 && !await evaluate(session, sessionId, 'window.muRulesReady === true'); i += 1) await sleep(50);

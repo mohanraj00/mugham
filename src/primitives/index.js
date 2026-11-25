@@ -4,8 +4,9 @@ import { ReadMoreElement, READ_MORE_CSS } from './read-more.js';
 import { el, sheet } from '../render/dom.js';
 import { FieldElement, MuChoiceField, MuDateField, MuField, MuLongTextField, MuNumberField, MuToggleField } from './fields.js';
 import { MuRangeField } from './range-field.js';
+import { MuSelectField } from './select-field.js';
 
-export { FieldElement, MuChoiceField, MuDateField, MuField, MuLongTextField, MuNumberField, MuRangeField, MuToggleField };
+export { FieldElement, MuChoiceField, MuDateField, MuField, MuLongTextField, MuNumberField, MuRangeField, MuSelectField, MuToggleField };
 
 export const FIELDS = Object.freeze({
   field: ['mu-field', MuField],
@@ -15,6 +16,7 @@ export const FIELDS = Object.freeze({
   'choice-field': ['mu-choice-field', MuChoiceField],
   'toggle-field': ['mu-toggle-field', MuToggleField],
   'range-field': ['mu-range-field', MuRangeField],
+  'select-field': ['mu-select-field', MuSelectField],
 });
 
 const GAPS = { small: 'var(--mu-space-1)', medium: 'var(--mu-space-2)', large: 'var(--mu-space-4)' };
