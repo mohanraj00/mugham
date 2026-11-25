@@ -157,9 +157,12 @@ A button of the component sends a `mu-queue-step` event with `detail.key` and `d
 These rules apply:
 
 - On install, the worker reads each file from the network and keeps it in the cache `mugham-shell <scope> <version>`. `<scope>` is the scope URL of the registration. If one file fails, the install fails.
+- The worker reads each file with no credentials: no cookie, no HTTP sign-in and no client certificate. If the server gives an error or a redirect for a file, for example to a sign-in page, the install fails. Thus the cache holds only an answer that the server gives to each person. It never holds a page or data that the server makes for one signed-in person, so a second person on the device cannot get them.
+- List only files that are the same for each person. An application whose files need a sign-in cannot keep them with this worker.
 - On activate, the worker removes each older cache of its own scope and takes the open pages. It does not touch the cache of a different scope, so two applications on one origin can each have a worker.
 - A new worker with a new version waits until the pages of the old worker close, as each service worker does. The application decides if it calls `skipWaiting()`.
 - For a `GET` request of a listed URL, the worker asks the network first. If the network fails, it gives the file from the cache.
+- A request to the network goes out as the page made it, with its credentials. The worker does not keep that answer.
 - The worker does not answer other requests. Thus it keeps no API response and no action. A request with a different method, a different origin or a URL that is not on the list goes to the network as usual.
 
 The web app manifest, the icons and the install prompt belong to the application.

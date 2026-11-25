@@ -10,14 +10,16 @@ const ORIGIN = 'https://app.example';
 function scope({ caches = new Map(), network = async () => new Response('new') } = {}) {
   const listeners = {};
   const fetched = [];
+  const requests = [];
   const open = async (name) => {
     if (!caches.has(name)) caches.set(name, new Map());
     const cache = caches.get(name);
     return {
-      addAll: async (requests) => {
+      addAll: async (list) => {
         const entries = [];
-        for (const request of requests) {
+        for (const request of list) {
           fetched.push(request.url);
+          requests.push(request);
           const response = await network(request);
           if (!response.ok) throw new TypeError('The file gave the status ' + response.status);
           entries.push([request.url, response]);
@@ -28,7 +30,7 @@ function scope({ caches = new Map(), network = async () => new Response('new') }
     };
   };
   const self = {
-    location: { href: ORIGIN + '/app/worker.js' }, claimed: 0, fetched,
+    location: { href: ORIGIN + '/app/worker.js' }, claimed: 0, fetched, requests,
     addEventListener: (type, listener) => { listeners[type] = listener; },
     caches: { open, keys: async () => [...caches.keys()], delete: async (name) => caches.delete(name) },
     clients: { claim: async () => { self.claimed += 1; } },
@@ -88,6 +90,26 @@ test('if one file fails, the install fails and keeps nothing', async () => {
   const self = scope({ caches, network: async (request) => new Response('', { status: request.url.endsWith('app.js') ? 404 : 200 }) });
   globalThis.mughamOffline.serve(self, { version: 'v1', files: FILES });
   await assert.rejects(self.send('install'), /404/);
+  assert.equal(caches.get(cacheOf('v1')).size, 0);
+});
+
+test('the install reads each listed file with no credentials', async () => {
+  // Expected: the cache never holds the answer that the server gives to one signed-in person.
+  const self = scope();
+  globalThis.mughamOffline.serve(self, { version: 'v1', files: FILES });
+  await self.send('install');
+  assert.deepEqual(self.requests.map((request) => [request.credentials, request.cache, request.redirect]), FILES.map(() => ['omit', 'reload', 'error']));
+});
+
+test('if a file redirects with no credentials, for example to a sign-in page, the install fails and keeps nothing', async () => {
+  const caches = new Map();
+  // A model of the network: a request with redirect: 'error' fails at a redirect, as the fetch standard says.
+  const self = scope({ caches, network: async (request) => {
+    if (request.url.endsWith('/app/') && request.redirect === 'error') throw new TypeError('Failed to fetch: a redirect');
+    return new Response('Sign in');
+  } });
+  globalThis.mughamOffline.serve(self, { version: 'v1', files: FILES });
+  await assert.rejects(self.send('install'), /a redirect/);
   assert.equal(caches.get(cacheOf('v1')).size, 0);
 });
 

@@ -1,8 +1,8 @@
 // The service worker part of the offline mode. docs/contracts/offline-queue.md is the contract.
 // The application owns the worker file, its scope and its registration. This file has no import and no export,
 // so a classic worker loads it with importScripts. Then the worker calls mughamOffline.serve(self, options).
-// The worker keeps only the files that the application lists. It keeps no API response and no action, and it
-// sends no action. The queue of the page sends each action (src/offline/queue.js).
+// The worker keeps only the files that the application lists, and it reads them with no credentials. It keeps no
+// API response and no action, and it sends no action. The queue of the page sends each action (src/offline/queue.js).
 (() => {
   const PREFIX = 'mugham-shell';
   const VERSION = /^[A-Za-z0-9._-]{1,64}$/;
@@ -30,11 +30,14 @@
     const mine = `${PREFIX} ${place} `;
     const name = mine + version;
 
+    // The worker reads each file with no credentials: no cookie, no HTTP sign-in and no client certificate. Thus
+    // the cache holds only an answer that the server gives to each person, and never the page or the data of one
+    // signed-in person. A redirect, for example to a sign-in page, is not the file.
     // If one file fails, the install fails, and the older worker stays.
     scope.addEventListener('install', (event) => {
       event.waitUntil((async () => {
         const cache = await scope.caches.open(name);
-        await cache.addAll([...urls].map((url) => new Request(url, { cache: 'reload' })));
+        await cache.addAll([...urls].map((url) => new Request(url, { cache: 'reload', credentials: 'omit', redirect: 'error' })));
       })());
     });
 
