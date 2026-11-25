@@ -2,6 +2,7 @@
 // and from the constitution: an action shows as done only after its receipt comes back.
 import { define } from '../../src/components/index.js';
 import { CATALOG } from '../../src/render/catalog.js';
+import { showsRefusal } from './refusal.js';
 
 define();
 
@@ -12,6 +13,10 @@ const results = [];
 const check = (name, ok, detail = '') => results.push({ name, ok: Boolean(ok), detail: String(detail) });
 const refusedText = (node) => node.shadowRoot.querySelector('[part="details"] > div')?.textContent ?? '';
 const refusalStatus = (node) => node.shadowRoot.querySelector('[role="status"]')?.textContent;
+const refusedAction = (node, error, detail) => node.dataset.state === 'refused' && node.fill === null
+  && !node.shadowRoot.querySelector('button:not([part="copy"])')
+  && showsRefusal(node.shadowRoot, 'action-button', error)
+  && JSON.stringify(detail) === JSON.stringify({ errors: [error] });
 const fill = (component, data) => ({ component, version: '0.1.0', data });
 // An outer fill. Only the outer fill has slots, and a contract with ai_content requires the authorship slot.
 const AUTHOR = { type: 'agent', id: 'agent-check', name: 'Checker' };
@@ -586,9 +591,16 @@ check('action-button: a refused button sends no request', button.dataset.state =
   }
 
   for (const fields of [{ icon: 'unknown' }, { icon: '<svg/>' }, { icon: 'https://example.org/icon.svg' }, { display: 'unknown' }]) {
-    const node = mount('action-button', { label: 'Approve request 42', ...fields });
-    check('action-button: refuses an unknown ' + Object.keys(fields)[0], node.dataset.state === 'refused'
-      && !node.shadowRoot.querySelector('button, svg'));
+    const field = Object.keys(fields)[0];
+    const allowed = CATALOG['action-button'].data[field].values;
+    const error = `data.${field}: must be one of ${allowed.join(', ')}`;
+    const node = document.createElement('mu-action-button');
+    let detail;
+    node.addEventListener('mu-refused', (event) => { detail = event.detail; }, { once: true });
+    stage.append(node);
+    node.fill = outer('action-button', { label: 'Approve request 42', ...fields });
+    check('action-button: refuses an unknown ' + field, refusedAction(node, error, detail)
+      && !node.shadowRoot.querySelector('svg'), JSON.stringify({ text: node.shadowRoot.textContent, detail }));
   }
 
   const label = MARKUP.slice(0, 40);
@@ -783,10 +795,12 @@ check('action-button: the description of the application shows', described.datas
   ]) {
     const node = mount('action-button', { label, ...data });
     check(`action-button: ${name} shows before binding`, node.dataset.state === 'disabled' && node.shadowRoot.querySelector('button'));
+    let detail;
+    node.addEventListener('mu-refused', (event) => { detail = event.detail; }, { once: true });
     node.action = action;
-    check(`action-button: ${name} is refused after binding`, node.dataset.state === 'refused'
-      && !node.shadowRoot.querySelector('button')
-      && refusedText(node).includes(`data.${field}: the ${field} is not the ${field} of the application`), node.shadowRoot.textContent);
+    const error = `data.${field}: the ${field} is not the ${field} of the application`;
+    check(`action-button: ${name} is refused after binding`, refusedAction(node, error, detail),
+      JSON.stringify({ text: node.shadowRoot.textContent, detail }));
   }
   const node = document.createElement('mu-action-button');
   node.action = binding;
@@ -794,10 +808,13 @@ check('action-button: the description of the application shows', described.datas
   const control = node.shadowRoot.querySelector('button');
   check('action-button: the icon and display of the application show', node.dataset.state === 'default'
     && control?.getAttribute('aria-label') === label && control.querySelector('[part="icon"]'));
+  let detail;
+  node.addEventListener('mu-refused', (event) => { detail = event.detail; }, { once: true });
+  stage.append(node);
   node.fill = outer('action-button', { label, icon: 'check', display: 'both' });
-  check('action-button: a new fill with a different display is refused', node.dataset.state === 'refused'
-    && !node.shadowRoot.querySelector('button')
-    && refusedText(node).includes('data.display: the display is not the display of the application'), node.shadowRoot.textContent);
+  check('action-button: a new fill with a different display is refused',
+    refusedAction(node, 'data.display: the display is not the display of the application', detail),
+    JSON.stringify({ text: node.shadowRoot.textContent, detail }));
 }
 
 const misnamedForm = mount('editable-form', { ...FORM, submit_label: 'View details' });

@@ -3,6 +3,7 @@
 // the constitution: an action shows as done only after its receipt, and the content of an agent never
 // shows as the content of a person.
 import { define } from '../../src/thread/index.js';
+import { showsRefusal } from './refusal.js';
 
 define();
 
@@ -38,8 +39,10 @@ function mount() {
 const items = (thread) => [...thread.shadowRoot.querySelectorAll('li.message')];
 const item = (thread, index) => items(thread)[index];
 const header = (node) => node.querySelector('.actor')?.textContent ?? '';
-const live = (thread) => thread.shadowRoot.querySelector('[aria-live="polite"]');
+// The details disclosure also has a live region for the Copy button.
+const live = (thread) => thread.shadowRoot.querySelector('.live[aria-live="polite"]');
 const refusedText = (node) => node.querySelector('.refusal [part="details"] > div')?.textContent;
+const BANNER_ERROR = 'component: no contract has the name banner';
 
 async function run() {
   // Two people and two agents in one thread. Each message shows its actor and the actor type.
@@ -132,7 +135,8 @@ async function run() {
   replaced.push(snapshot('k1', CATALOG_AGENT, { format: 2, fill: fill('banner', { text: 'Sale' }) }));
   await settle();
   check('refused: a snapshot that replaces a component with an undeclared component shows a refusal',
-    item(replaced, 0).querySelector('.refusal') && !item(replaced, 0).querySelector('mu-card'), item(replaced, 0).textContent);
+    showsRefusal(item(replaced, 0).querySelector('.refusal'), 'banner', BANNER_ERROR)
+    && !item(replaced, 0).querySelector('mu-card'), item(replaced, 0).textContent);
   check('live: the region announces a refusal that replaces a part', live(replaced).textContent !== saidBefore
     && live(replaced).textContent === 'The thread refused a part of the message from Catalog agent, Agent.', live(replaced).textContent);
 
@@ -143,8 +147,7 @@ async function run() {
   await settle();
   const refusal = item(refused, 0).querySelector('.refusal');
   check('refused: an undeclared component shows a plain reason and keeps the error in the disclosure',
-    refusal?.querySelector('[part="reason"]')?.textContent === 'This content did not show because it did not match the rules of the application.'
-    && refusedText(item(refused, 0)) === 'banner: component: no contract has the name banner',
+    showsRefusal(refusal, 'banner', BANNER_ERROR),
     refusal?.textContent);
   check('refused: the refused component makes no element', !refused.shadowRoot.querySelector('mu-banner'));
   check('refused: the refused part keeps the actor', header(item(refused, 0)) === 'Catalog agent Agent', header(item(refused, 0)));
@@ -323,9 +326,11 @@ async function run() {
   keptCalls[0].done({ ok: true, message: 'Renewed.' });
   await settle();
   check('done: the receipt goes to the element that sent the request', keptButton.dataset.state === 'done', keptButton.dataset.state);
-  check('refused: the snapshot shows after the receipt', item(kept, 0).querySelector('.refusal')
+  check('refused: the snapshot shows after the receipt',
+    showsRefusal(item(kept, 0).querySelector('.refusal'), 'banner', BANNER_ERROR)
     && !item(kept, 0).querySelector('mu-action-button')
-    && live(kept).textContent.includes('The thread refused a part of the message from Renewal agent, Agent.'), live(kept).textContent);
+    && live(kept).textContent.includes('The thread refused a part of the message from Renewal agent, Agent.'),
+  `${item(kept, 0).textContent} | ${live(kept).textContent}`);
   // The same fill again cannot make a done action start again.
   const once = mount();
   once.bind = () => RENEW;
@@ -390,12 +395,17 @@ async function run() {
   told.push(snapshot('h1', CATALOG_AGENT, { format: 2, fill: fill('banner', { text: 'Sale' }) }));
   await settle();
   check('live: the region announces a refused part of a new message',
-    live(told).textContent.includes('The thread refused a part of the message from Catalog agent, Agent.'), live(told).textContent);
+    showsRefusal(item(told, 0).querySelector('.refusal'), 'banner', BANNER_ERROR)
+    && live(told).textContent.includes('The thread refused a part of the message from Catalog agent, Agent.'),
+  `${item(told, 0).textContent} | ${live(told).textContent}`);
   told.push(snapshot('h2', RENEW_AGENT, { format: 2, fill: fill('action-button', { label: 'Delete' }) }));
   await settle();
+  const refusedButton = item(told, 1).querySelector('mu-action-button');
   check('live: the region announces a fill that its element refuses',
-    item(told, 1).querySelector('mu-action-button')?.dataset.state === 'refused'
-    && live(told).textContent.includes('The thread refused a part of the message from Renewal agent, Agent.'), live(told).textContent);
+    refusedButton?.dataset.state === 'refused'
+    && showsRefusal(refusedButton.shadowRoot, 'action-button', 'data.label: the label is not the label of the application')
+    && live(told).textContent.includes('The thread refused a part of the message from Renewal agent, Agent.'),
+  `${refusedButton?.shadowRoot.textContent} | ${live(told).textContent}`);
   const unbound = mount();
   unbound.push(snapshot('h3', RENEW_AGENT, { format: 2, fill: renewFill }));
   await settle();
@@ -406,7 +416,7 @@ async function run() {
   long.push(snapshot('h5', CATALOG_AGENT, { format: 2, fill: fill('banner', { text: 'Sale' }) }));
   await settle();
   check('live: a long text does not remove the refusal from the region',
-    live(long).textContent.includes('The thread refused a part of the message from Catalog agent, Agent.'), live(long).textContent.length);
+    live(long).textContent.includes('The thread refused a part of the message from Catalog agent, Agent.'), live(long).textContent);
 
   // Many messages in one update do not remove a refusal or an error from the region.
   const many = mount();
@@ -415,7 +425,7 @@ async function run() {
   await settle();
   check('live: many messages keep the refusal and stay short',
     live(many).textContent.includes('The thread refused a part of the message from Catalog agent, Agent.')
-    && live(many).textContent.includes('37 earlier messages.') && live(many).textContent.length < 1200, live(many).textContent.length);
+    && live(many).textContent.includes('37 earlier messages.') && live(many).textContent.length < 1200, live(many).textContent);
 
   // With no perform, the mu-action event goes up to the page, and the page gives the receipt.
   const open = mount();

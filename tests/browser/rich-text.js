@@ -1,5 +1,7 @@
 // Expected elements, limits and refusal texts come from catalog/rich-*.json and src/components/rich-text.md.
 // tools/browser_check.mjs imports the keyboard checks in Node and loads this page in each media mode.
+import { showsRefusal } from './refusal.js';
+
 export async function richTextKeyboardChecks(session, sessionId, { evaluate, key }, page) {
   const results = [];
   const check = (name, ok, detail) => results.push({ page, step: name, ok: Boolean(ok), detail: JSON.stringify(detail) });
@@ -287,7 +289,9 @@ async function browserChecks() {
   check('thread: a rich text part shows with the actor of the envelope', parts.length === 2 && parts[0].dataset.state === 'default'
     && parts[0].actor.id === AUTHOR.id && tags(parts[0], '.heading') === 'h2 h3 h4', parts.length);
   check('thread: a rich text with a script address shows a refusal', parts[1]?.dataset.state === 'refused'
-    && !root(parts[1]).querySelector('button, a') && window.muUnsafe === undefined);
+    && showsRefusal(root(parts[1]), 'rich-text', 'data.blocks[0].data.content[0].data.url: the page does not permit this link')
+    && !root(parts[1]).querySelector('button:not([part="copy"]), a, [href]') && window.muUnsafe === undefined,
+  parts[1]?.shadowRoot.textContent);
 
   // These checks moved the focus. Put the Tab start point before the keyboard target. The link is the next Tab stop.
   const keyboard = document.getElementById('keyboard');
