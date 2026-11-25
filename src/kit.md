@@ -34,9 +34,9 @@ const renew = mount('action-button', { label: 'Renew' }, {
 
 ## `onAction(root, handler)`
 
-Listen for `mu-action` on an element or a root that contains it. The first helper listener that receives an action event calls its handler. The handler gets `(tool, args, id, request, element)`. The full request includes any typed edits. The handler can return a receipt or a promise that gives a receipt. Give `ok` as a boolean and add `message` or `reference` if necessary. A message can have up to 200 characters. The helper adds the request id if the receipt has no `id`.
+Listen for `mu-action` on an element or a root that contains it. The first helper listener that receives an action event calls its handler. The handler gets `(tool, args, id, request, element)`. The full request includes any typed edits. The handler can return a receipt or a promise that gives a receipt. Give `ok` as `true` or `false`. If present, `message` and `reference` must be text, with 200 and 80 characters maximum. If the receipt gives an `id` or a `key`, each must match the request. The helper adds the request id only to a valid receipt with no `id`.
 
-If the handler throws, the helper sends a receipt with `ok` set to `false`. If the element refuses a receipt, the helper sends a failure receipt with the request id and the message `The request failed.` If the element also refuses the failure receipt, the helper reports the refusal in the console. If a cancel or an earlier receipt ended the action during the wait, the helper sends no receipt. A button shows `Done` only after it accepts a receipt with `ok` set to `true`. Call the returned function to remove the listener.
+If the handler throws, the promise rejects or the result is invalid or refused, the action stays pending. An action button or form shows `Pending: No receipt came back.` and offers Retry and Cancel. The same controls show after the wait limit if the handler gives no answer. Retry uses the same key and a new id. A late receipt can still resolve the pending action. After Cancel, a late receipt cannot change the action. A valid receipt with `ok: false` shows `Not done`. A local failure before send gives its own reason. Call the returned function to remove the listener.
 
 ```js
 const stop = onAction(renew, (tool, args, id, request) => sendToApi(request));
@@ -44,7 +44,7 @@ const stop = onAction(renew, (tool, args, id, request) => sendToApi(request));
 
 ## `queueActions(root, queue)`
 
-Connect the action elements below `root` to an offline queue of `src/offline/queue.js`. Each action goes through the queue, online and offline. The helper is `onAction` with `queue.perform`, and `queue.listen(root)` for the cancel events and for the steps of `mu-action-queue`. The queue gives the pending detail and the receipt to each element. Call the returned function to remove the listeners. [Offline queue](../docs/contracts/offline-queue.md) gives the rules.
+Connect the action elements below `root` to an offline queue of `src/offline/queue.js`. Each action goes through the queue, online and offline. The helper is `onAction` with `queue.perform`, and `queue.listen(root)` for the cancel events and for the steps of `mu-action-queue`. The queue gives each element its pending detail. After the queue checks a transport receipt, it returns the receipt with the id from the original call of `perform`. Call the returned function to remove the listeners. [Offline queue](../docs/contracts/offline-queue.md) gives the rules.
 
 ```js
 const queue = await openQueue({ principal: memberId, send: (request, { signal, principal }) => sendToApi(request, signal, principal) });

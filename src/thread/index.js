@@ -2,6 +2,7 @@
 // The thread reads AG-UI 1.0 events only through the reader of src/envelope/. It shows each text as text,
 // and each component part only through the element of its catalog contract.
 import { createReader } from '../envelope/envelope.js';
+import { deliverReceipt } from '../actions/action.js';
 import { define as defineComponents } from '../components/index.js';
 import { BASE, EDGE, LIFT, REFUSED_NEXT, el, sheet } from '../render/dom.js';
 import { registeredTag } from '../render/registry.js';
@@ -26,8 +27,6 @@ const TYPES = Object.freeze({ human: 'Person', agent: 'Agent', system: 'System' 
 // The envelope reader accepts only a message with a valid actor, so the element accepts this actor.
 const actorOf = ({ actor }) => ({ type: actor.type, id: actor.id, ...(actor.name === undefined ? {} : { name: actor.name }) });
 const REFUSED_PART = 'Refused: the thread did not show this part. ';
-const FAILED = 'The request failed.';
-const REFUSED_RECEIPT = 'The thread refused the receipt.';
 const SOURCE_FAILED = 'The source of events failed.';
 // The live region gives a short text of each message, so one long message cannot remove a later notice.
 const MAX_SUMMARY = 120;
@@ -442,25 +441,15 @@ export class MuThread extends HTMLElement {
   }
 
   // An action goes to perform. The element shows pending until the receipt comes back.
-  async #act(event) {
+  #act(event) {
     const element = event.target;
     const request = event.detail;
     if (typeof this.perform !== 'function' || !this.#owners.has(element)) return;
     event.stopPropagation();
     const messageId = this.#owners.get(element);
     const message = this.messages.find((item) => item.messageId === messageId);
-    let receipt;
-    try {
-      // The element is the third argument, so an offline queue can give it the detail of the pending state.
-      receipt = await this.perform(request, message, element);
-    } catch {
-      element.receipt({ id: request.id, ok: false, message: FAILED });
-      return;
-    }
-    const value = receipt !== null && typeof receipt === 'object' && !Array.isArray(receipt) ? { ...receipt, id: request.id } : null;
-    if (!element.receipt(value) && element.action.state === 'pending') {
-      element.receipt({ id: request.id, ok: false, message: REFUSED_RECEIPT });
-    }
+    // The element is the third argument, so an offline queue can give it the detail of the pending state.
+    return deliverReceipt(element, request, () => this.perform(request, message, element));
   }
 }
 

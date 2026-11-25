@@ -241,6 +241,7 @@ async function run() {
   acting.perform = (request, message) => new Promise((done, fail) => calls.push({ request, message, done, fail }));
   for (const id of ['a1', 'a2', 'a3', 'a4']) acting.push(snapshot(id, RENEW_AGENT, { format: 2, fill: fill('action-button', { label: 'Renew' }) }));
   acting.push(snapshot('a5', RENEW_AGENT, { format: 2, fill: fill('action-button', { label: 'Delete' }) }));
+  acting.push(snapshot('a8', RENEW_AGENT, { format: 2, fill: fill('action-button', { label: 'Renew' }) }));
   await settle();
   const button = (index) => item(acting, index).querySelector('mu-action-button');
   const status = (index) => button(index).shadowRoot.querySelector('.status').textContent;
@@ -269,13 +270,34 @@ async function run() {
   await settle();
   calls[2].fail(new Error('network'));
   await settle();
-  check('error: a failed request shows an error', button(2).dataset.state === 'error' && status(2) === 'Not done: The request failed.', status(2));
+  const stalled = (index) => button(index).dataset.state === 'pending' && button(index).dataset.wait === 'stalled'
+    && status(index) === 'Pending: No receipt came back.';
+  const control = (index, part) => button(index).shadowRoot.querySelector(`[part="${part}"]`);
+  check('pending: a lost reply leaves retry and cancel', stalled(2) && control(2, 'retry') && control(2, 'cancel'), status(2));
   button(3).shadowRoot.querySelector('button').click();
   await settle();
   calls[3].done({ ok: true, message: 'x'.repeat(201) });
   await settle();
-  check('error: a refused receipt shows an error', button(3).dataset.state === 'error'
-    && status(3) === 'Not done: The thread refused the receipt.', status(3));
+  check('pending: a malformed receipt leaves the action pending', stalled(3), status(3));
+  button(2).shadowRoot.querySelector('button').click();
+  check('pending: another press does not send a request', calls.length === 4, calls.length);
+  control(2, 'retry')?.click();
+  check('retry: the request has the original key and a new id', calls[4]?.request.key === calls[2].request.key
+    && calls[4]?.request.id !== calls[2].request.id);
+  calls[4]?.done({ ok: true, id: 'other', key: calls[2].request.key });
+  await settle();
+  check('pending: a foreign id is no receipt', stalled(2), status(2));
+  button(5).shadowRoot.querySelector('button').click();
+  calls[5]?.done({ ok: true, id: calls[5].request.id, key: 'other' });
+  await settle();
+  check('pending: a foreign key is no receipt', stalled(5), status(5));
+  control(2, 'retry')?.click();
+  calls[6]?.done({ ok: true, key: calls[6].request.key });
+  await settle();
+  check('done: a valid receipt without an id takes the id of its try', button(2).dataset.state === 'done', status(2));
+  control(3, 'cancel')?.click();
+  check('cancel: the notice says the service may have done the action', button(3).dataset.state === 'default'
+    && status(3) === 'Canceled. No receipt came back, so it is possible that the service did the action.', status(3));
 
   // A snapshot cannot replace a pending action. The element stays until its receipt comes back.
   const kept = mount();

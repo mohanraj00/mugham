@@ -67,9 +67,8 @@ An action in a component goes to `perform`, through the `mu-action` event of the
 
 1. The element shows `Pending`.
 2. The thread calls `perform(request, message, element)`.
-3. The thread gives the receipt to `receipt()` of the element, with the id of the request. Only then does the element show `Done` or `Not done`.
-4. If `perform` fails, the thread gives a receipt with `ok` equal to `false` and the message `The request failed.`
-5. If the element refuses the receipt, for example because its message is too long, the thread gives a receipt with `ok` equal to `false` and the message `The thread refused the receipt.`
+3. The thread checks the receipt. A supplied id or key must match this request. If the receipt omits the id, the thread adds it after the other fields pass the check. The thread then calls `receipt()` of the element. A valid receipt with `ok: true` can show `Done`. A valid receipt with `ok: false` shows `Not done`.
+4. If `perform` throws, its promise rejects or the receipt is invalid or refused, the request stays pending. An action button or form offers Retry and Cancel after a try with no receipt. Retry keeps the key and uses a new id. A file with no receipt still shows `Uploading`.
 
 A new event never replaces the element of a component part that did not change. The key order of a fill is not a change. Thus the same fill again cannot make a done action start again.
 

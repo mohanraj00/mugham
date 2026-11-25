@@ -3,13 +3,16 @@
 // has the same key and a new id. The application gives the send function, and it adds its credentials there.
 // The queue keeps no header, no cookie and no credential. It never shows an action as done: only a receipt does.
 // Each record belongs to one principal, the signed-in person that the application names. A queue takes and sends
-// only the records of its principal, so an action of one person never goes out with the credentials of a different one.
+// only the records of its principal. The application checks the credentials in the send function.
 const TOOL = /^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)*$/;
 const ID = /^[A-Za-z0-9._:-]{1,128}$/;
 const NAME = /^[a-z0-9_-]{1,64}$/;
 // An argument name that looks like a credential. This is a guard, not a proof.
 const CREDENTIAL = /token|secret|passw|passphrase|authorization|cookie|credential|bearer|api_?key|access_?key|private_?key/i;
 const STATES = ['queued', 'sent', 'stalled', 'rejected'];
+const RECORD_VERSION = 1;
+const REQUIRED_KEYS = ['key', 'principal', 'owner', 'order', 'tool', 'arguments', 'label', 'queued', 'tries', 'state', 'message'];
+const RECORD_KEYS = new Set([...REQUIRED_KEYS, 'version', 'edits']);
 const MAX_ACTIONS = 100;
 const MAX_RECORD = 200000;
 const MAX_LABEL = 120;
@@ -32,9 +35,36 @@ const UNSENT = Symbol('unsent');
 const isPlain = (value) => value !== null && typeof value === 'object' && !Array.isArray(value)
   && [Object.prototype, null].includes(Object.getPrototypeOf(value));
 const isScalar = (value) => typeof value === 'string' || typeof value === 'boolean' || (typeof value === 'number' && Number.isFinite(value));
-const isCount = (value) => Number.isInteger(value) && value >= 0;
+const isCount = (value) => Number.isSafeInteger(value) && value >= 0;
 const isPrincipal = (value) => typeof value === 'string' && value.length >= 1 && value.length <= MAX_PRINCIPAL;
+const shortText = (value, max) => typeof value === 'string' && value.length <= max * 2 && [...value].length <= max;
 const refusal = (message) => Object.freeze({ ok: false, message });
+
+// Checks and copies the receipt fields. A transport checks one request id. The action state can also
+// accept ids of earlier tries with the same key.
+export function receiptOf(value, request, ids) {
+  if (!isPlain(value) || !Object.hasOwn(value, 'ok')) return null;
+  const { ok } = value;
+  if (typeof ok !== 'boolean') return null;
+  const receipt = { ok };
+  if (Object.hasOwn(value, 'id')) {
+    const { id } = value;
+    if (typeof id !== 'string' || !(ids ? ids.has(id) : id === request.id)) return null;
+    receipt.id = id;
+  }
+  if (Object.hasOwn(value, 'key')) {
+    const { key } = value;
+    if (typeof key !== 'string' || key !== request.key) return null;
+    receipt.key = key;
+  }
+  for (const [field, limit] of [['message', MAX_MESSAGE], ['reference', MAX_REFERENCE]]) {
+    if (!Object.hasOwn(value, field)) continue;
+    const content = value[field];
+    if (!shortText(content, limit)) return null;
+    receipt[field] = content;
+  }
+  return receipt;
+}
 
 // A deep copy of the typed edits of a request, or null. An edit has only scalar values and one actor object.
 function editsOf(edits) {
@@ -53,50 +83,39 @@ function editsOf(edits) {
   return copy;
 }
 
-// Makes the record of a request. The result is { record } or { error }. The record has only the keys of the
-// contract, so nothing else of the request goes into the store.
+// Apply the same checks before the first write and before adoption. A record with no version is a version 1 record.
+function recordError(record) {
+  if (!isPlain(record) || !REQUIRED_KEYS.every((key) => Object.hasOwn(record, key))
+    || !Reflect.ownKeys(record).every((key) => RECORD_KEYS.has(key) && Object.prototype.propertyIsEnumerable.call(record, key))
+    || (Object.hasOwn(record, 'version') && record.version !== RECORD_VERSION)) return 'The record is not valid.';
+  const { key, principal, owner, order, tool, arguments: args, label, queued, tries, state, message } = record;
+  if (typeof key !== 'string' || !ID.test(key)) return 'The request has no valid key.';
+  if (typeof tool !== 'string' || tool.length > 80 || !TOOL.test(tool)) return 'The tool name is not valid.';
+  if (!isPlain(args) || !Object.values(args).every(isScalar)) return 'The arguments are not valid.';
+  const secret = Object.keys(args).find((name) => CREDENTIAL.test(name));
+  if (secret !== undefined) return `The queue does not keep the argument ${secret.slice(0, 40)}. Its name looks like a credential.`;
+  if (Object.hasOwn(record, 'edits') && editsOf(record.edits) === null) return 'The edits are not valid.';
+  if (!isPrincipal(principal) || typeof owner !== 'string' || !ID.test(owner) || !isCount(order) || !isCount(tries)
+    || typeof label !== 'string' || label.length < 1 || label.length > MAX_LABEL
+    || typeof queued !== 'string' || !ISO_TIME.test(queued) || !Number.isFinite(Date.parse(queued))
+    || !STATES.includes(state) || !shortText(message, MAX_MESSAGE)) return 'The record is not valid.';
+  if (JSON.stringify(record).length > MAX_RECORD) return 'The action is too large for the queue.';
+  return '';
+}
+
+// Makes the record from selected fields. Nothing else from the request goes into the store.
 function recordOf(request, label, { principal, owner, order, queued }) {
   if (!isPlain(request)) return { error: 'The request is not valid.' };
-  const { id, key, tool, arguments: args = {} } = request;
+  const { id, key, tool, arguments: args = {}, edits } = request;
   if (typeof id !== 'string' || !ID.test(id)) return { error: 'The request has no valid id.' };
-  if (typeof key !== 'string' || !ID.test(key)) return { error: 'The request has no valid key.' };
-  if (typeof tool !== 'string' || tool.length > 80 || !TOOL.test(tool)) return { error: 'The tool name is not valid.' };
-  if (!isPlain(args) || !Object.values(args).every(isScalar)) return { error: 'The arguments are not valid.' };
-  const secret = Object.keys(args).find((name) => CREDENTIAL.test(name));
-  if (secret !== undefined) return { error: `The queue does not keep the argument ${secret.slice(0, 40)}. Its name looks like a credential.` };
-  const record = { key, principal, owner, order, tool, arguments: { ...args }, label: (typeof label === 'string' && label ? label : tool).slice(0, MAX_LABEL),
-    queued, tries: 0, state: 'queued', message: '' };
-  if (request.edits !== undefined) {
-    record.edits = editsOf(request.edits);
-    if (!record.edits) return { error: 'The edits are not valid.' };
-  }
-  if (JSON.stringify(record).length > MAX_RECORD) return { error: 'The action is too large for the queue.' };
+  const record = { version: RECORD_VERSION, key, principal, owner, order, tool, arguments: args,
+    label: (typeof label === 'string' && label ? label : typeof tool === 'string' ? tool : '').slice(0, MAX_LABEL),
+    queued, tries: 0, state: 'queued', message: '', ...(edits === undefined ? {} : { edits }) };
+  const error = recordError(record);
+  if (error) return { error };
+  record.arguments = { ...args };
+  if (edits !== undefined) record.edits = editsOf(edits);
   return { record };
-}
-
-// Returns true if a record of the store has the form of the contract. The queue does not send other records.
-function isRecord(record) {
-  return isPlain(record) && typeof record.key === 'string' && ID.test(record.key) && isPrincipal(record.principal)
-    && typeof record.owner === 'string'
-    && typeof record.order === 'number' && typeof record.tool === 'string' && TOOL.test(record.tool)
-    && isPlain(record.arguments) && Object.values(record.arguments).every(isScalar)
-    && !Object.keys(record.arguments).some((name) => CREDENTIAL.test(name))
-    && (record.edits === undefined || editsOf(record.edits) !== null)
-    && typeof record.label === 'string' && record.label.length >= 1 && record.label.length <= MAX_LABEL
-    && typeof record.queued === 'string' && ISO_TIME.test(record.queued) && isCount(record.tries)
-    && STATES.includes(record.state) && typeof record.message === 'string' && record.message.length <= MAX_MESSAGE;
-}
-
-// The frozen receipt of a try, or null if the value is not a valid receipt of this request.
-function receiptOf(value, request) {
-  if (!isPlain(value) || typeof value.ok !== 'boolean') return null;
-  if (value.id !== undefined && value.id !== request.id) return null;
-  if (value.key !== undefined && value.key !== request.key) return null;
-  const message = value.message ?? '';
-  const reference = value.reference ?? '';
-  if (typeof message !== 'string' || message.length > MAX_MESSAGE) return null;
-  if (typeof reference !== 'string' || reference.length > MAX_REFERENCE) return null;
-  return Object.freeze({ id: request.id, key: request.key, ok: value.ok, message, reference });
 }
 
 // A store that keeps the records in memory only. A reload loses them.
@@ -156,7 +175,7 @@ export class ActionQueue {
   #owner = crypto.randomUUID();
   // The records of this owner, in order. Each record is also in the store.
   #list = [];
-  // The page parts that wait for a receipt: key -> { element, promise, resolve }.
+  // The page parts that wait for a receipt: key -> { id, element, promise, resolve }.
   #waiters = new Map();
   // The keys of the records that this queue removed. The queue never takes them from the store again.
   #gone = new Set();
@@ -240,7 +259,7 @@ export class ActionQueue {
       return waiting.promise;
     }
     if (this.#closed) return Promise.resolve(refusal(CLOSED));
-    const waiter = { element };
+    const waiter = { id: request?.id, element };
     waiter.promise = new Promise((resolve) => { waiter.resolve = resolve; });
     const add = this.#adds.then(async () => {
       if (this.#find(key)) return 'The queue has an action with this key.';
@@ -483,7 +502,7 @@ export class ActionQueue {
     const take = async () => {
       const held = this.#locks ? new Set(((await this.#locks.query()).held ?? []).map((lock) => lock.name)) : null;
       // The oldest records come first, so the queue takes them first if it has no room for all of them.
-      const stored = (await this.#store.all()).filter(isRecord).sort((a, b) => a.order - b.order);
+      const stored = (await this.#store.all()).filter((record) => !recordError(record)).sort((a, b) => a.order - b.order);
       for (const record of stored) {
         if (this.#closed) break;
         if (this.#find(record.key) || this.#gone.has(record.key)) continue;
@@ -566,7 +585,8 @@ export class ActionQueue {
         record.message = receipt.message || REJECTED;
         await this.#keep(record);
       }
-      waiter?.resolve(receipt);
+      // The caller knows the id of its request. The queue has already checked its transport id.
+      if (waiter) waiter.resolve(Object.freeze({ ...receipt, id: waiter.id }));
       this.#changed({ key: record.key, receipt });
     }
   }
@@ -589,7 +609,12 @@ export class ActionQueue {
       const late = {};
       const clock = new Promise((done) => { timer = setTimeout(() => done(late), this.#timeout); });
       const value = await Promise.race([answer, clock]);
-      if (value !== late) return receiptOf(value, request);
+      if (value !== late) {
+        const receipt = receiptOf(value, request);
+        if (!receipt) return null;
+        const { ok, message = '', reference = '' } = receipt;
+        return Object.freeze({ id: request.id, key: request.key, ok, message, reference });
+      }
       control.abort();
       return null;
     } catch {

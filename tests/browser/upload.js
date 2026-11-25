@@ -253,6 +253,12 @@ async function browserChecks() {
     && upload.receipt({ id: one.id }) === false && upload.receipt({ id: one.id, ok: true, message: 'x'.repeat(201) }) === false
     && upload.receipt({ id: one.id, ok: true, reference: 'x'.repeat(81) }) === false && upload.receipt(null) === false
     && rows(upload)[0] === 'receipt-a.pdf 400 bytes Uploading');
+  for (const [field, request] of [['message', one], ['reference', two]]) {
+    const before = rows(upload).join('|');
+    const accepted = upload.receipt({ id: request.id, ok: true, [field]: null });
+    check(`receipt: a null ${field} leaves the file pending`, accepted === false
+      && rows(upload).join('|') === before && upload.action.state === 'pending' && upload.receipts.length === 0);
+  }
   check('receipt: the receipt of the request is accepted', upload.receipt({ id: one.id, ok: true, reference: 'F-0001' }) === true);
   check('receipt: Done and the reference show after the receipt', rows(upload).join('|')
     === 'receipt-a.pdf 400 bytes Done Reference: F-0001|receipt-c.PDF 400 bytes Uploading' && upload.dataset.state === 'pending');
@@ -428,8 +434,8 @@ async function browserChecks() {
   settle[0]({ ok: true, reference: 'F-0007' });
   settle[1]({ ok: true, message: 'x'.repeat(201) });
   await frame();
-  check('thread: a receipt shows Done, and a receipt that is not valid shows Not done', rows(inThread).join('|')
-    === 'receipt-a.pdf 400 bytes Done Reference: F-0007|receipt-b.pdf 400 bytes Not done: The thread refused the receipt.', rows(inThread).join('|'));
+  check('thread: a valid receipt shows Done, and an invalid receipt leaves the file uploading', rows(inThread).join('|')
+    === 'receipt-a.pdf 400 bytes Done Reference: F-0007|receipt-b.pdf 400 bytes Uploading', rows(inThread).join('|'));
 
   // New data keeps the files and the focus on the same control.
   const later = () => new Promise((done) => setTimeout(done, 0));

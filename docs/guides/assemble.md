@@ -104,7 +104,7 @@ Expected result:
 1. A press on `Renew` shows `Pending` at once.
 2. After the receipt, the button shows `Done: The loan is renewed.` and `Reference: R-0001`.
 
-The element ignores a receipt with a different `id`. If `ok` is `false`, the element shows `Not done` and the message. The element shows `Done` only after the receipt. If the handler throws, `onAction` gives a receipt with `ok` set to `false`.
+The helper checks each supplied `id` and `key` against the request. A valid receipt with `ok: false` gives `Not done` and the message. A valid receipt with `ok: true` can give `Done`. A failure before send gives its own reason. If the handler throws, its promise rejects or its result is invalid, the action stays pending. When the button offers Retry, it sends the same key with a new id. Cancel clears the pending action.
 
 ## Step 6: add the thread
 

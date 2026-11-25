@@ -150,7 +150,7 @@ test('a retry of a person sends a stalled action again and gives the same promis
   // The element sends a new request for the retry: the same key and a new id.
   const again = queue.perform({ ...first, id: crypto.randomUUID() }, element());
   assert.equal(again, promise);
-  assert.equal((await promise).ok, true);
+  assert.deepEqual(await promise, { id: first.id, key: first.key, ok: true, message: '', reference: '' });
   assert.equal(net.sent.length, 2);
   assert.ok(net.sent.every((item) => item.key === first.key));
   queue.close();
@@ -172,12 +172,29 @@ test('a try with no answer in the time limit is stalled, and its signal aborts',
 
 test('a result that is not a valid receipt is no receipt', async () => {
   for (const value of [null, 'ok', { ok: 'yes' }, { ok: true, id: 'other' }, { ok: true, key: 'other' },
+    { ok: true, id: undefined }, { ok: true, key: undefined },
     { ok: true, message: 'm'.repeat(201) }, { ok: true, reference: 'r'.repeat(81) }]) {
     const net = device({ answer: () => value });
     const queue = await net.open();
     queue.perform(request(), element());
     await until(() => queue.entries[0]?.state === 'stalled', 'the stalled state for ' + JSON.stringify(value));
     queue.close();
+  }
+});
+
+test('null text in a receipt leaves the stored record pending', async (t) => {
+  for (const field of ['message', 'reference']) {
+    await t.test(field, async () => {
+      const net = device({ answer: () => ({ ok: true, [field]: null }) });
+      const queue = await net.open();
+      const first = request();
+      queue.perform(first, element());
+      await until(() => net.sent.length === 1, 'the try');
+      await queue.flush();
+      assert.equal(queue.entries[0]?.state, 'stalled');
+      assert.deepEqual((await net.store.all()).map((record) => [record.key, record.state]), [[first.key, 'stalled']]);
+      queue.close();
+    });
   }
 });
 
@@ -270,7 +287,7 @@ test('the store holds only the keys of the contract, and no secret of the reques
   queue.perform(first, element());
   await until(() => queue.entries.length === 1, 'the entry');
   const [record] = await net.store.all();
-  assert.deepEqual(Object.keys(record).sort(), [...RECORD_KEYS, 'edits'].sort());
+  assert.deepEqual(Object.keys(record).sort(), [...RECORD_KEYS, 'edits', 'version'].sort());
   assert.deepEqual(record.arguments, { tool_id: 'T-01' });
   assert.ok(!JSON.stringify(await net.store.all()).includes('synthetic-credential'));
   net.go(true);
@@ -591,6 +608,46 @@ test('a stored record that breaks a limit of the contract is not taken', async (
   assert.deepEqual(queue.entries.map((entry) => entry.key), [first.key]);
   queueFill('Pending actions', queue.entries);
   queue.close();
+});
+
+test('only valid stored records of a known version are sent', async (t) => {
+  const net = device();
+  net.online = false;
+  const before = await net.open();
+  const first = request();
+  before.perform(first, element());
+  await until(() => before.entries.length === 1, 'the stored action');
+  before.close();
+  const [record] = await net.store.all();
+  const { version, ...legacy } = record;
+  for (const [name, change] of [
+    ['unknown version', { version: 2 }],
+    ['invalid tool name', { tool: 'Tool.Reserve' }],
+    ['long tool name', { tool: 'x'.repeat(81) }],
+    ['large record', { arguments: { note: 'x'.repeat(200000) } }],
+    ['extra key', { extra: true }],
+    ['invalid arguments', { arguments: { tool: { id: 'T-01' } } }],
+    ['credential name', { arguments: { token: 'synthetic' } }],
+    ['invalid order', { order: NaN }],
+    ['invalid principal', { principal: '' }],
+  ]) {
+    await t.test(name, async () => {
+      const invalid = { ...legacy, ...change };
+      await net.store.put(invalid);
+      const queue = await net.open({ online: () => true });
+      await queue.flush();
+      assert.deepEqual(net.sent.splice(0), []);
+      assert.deepEqual(await net.store.all(), [invalid]);
+      queue.close();
+    });
+  }
+  assert.equal(version, 1);
+  await net.store.put(legacy);
+  const after = await net.open({ online: () => true });
+  await after.flush();
+  assert.deepEqual(net.sent.map((sent) => sent.key), [first.key]);
+  assert.deepEqual(await net.store.all(), []);
+  after.close();
 });
 
 test('the queue takes 100 stored actions at the maximum, the oldest first', async () => {

@@ -98,6 +98,7 @@ Each saved change is one action. The grid sends a `mu-action` event with the req
 - The changed cell shows the marker `Pending` until the receipt comes back. The state of the grid is `pending`.
 - One request is pending at a time. A change that a person saves during that time shows `Changed`. It goes in the next request, after the receipt.
 - The application calls `grid.receipt({ id, ok, message })`. With `ok` set to `true`, the marker goes away and the cell keeps the new value. With `ok` set to `false`, the cell shows `Not done`, and the status text gives the row, the column and the message. The state of the grid is `error`.
+- If the receipt is missing or invalid, the cell stays pending. A receipt must match the pending request and have a boolean `ok`. Optional receipt text must be within its length limit.
 - A person can save the same value again to send the change again. A save of the value from before the change removes the marker and sends no action. While a request of the same cell is pending, such a change waits for the receipt, because the receipt can confirm a different value. The last saved value is the value that stays.
 - A new binding removes each change of the old binding.
 

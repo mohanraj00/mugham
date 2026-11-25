@@ -5,6 +5,7 @@
 // src/components/upload.md gives the rules.
 import { MuElement } from '../primitives/base.js';
 import { bindingErrors } from '../actions/action.js';
+import { receiptOf } from '../offline/queue.js';
 import { el, sheet } from '../render/dom.js';
 
 const KEYS = new Set(['tool', 'arguments', 'label', 'accept', 'max_size', 'max_files']);
@@ -15,22 +16,12 @@ const EXTENSION = /^\.[a-z0-9]{1,16}$/;
 const MAX_ACCEPT = 20;
 const MAX_FILES = 20;
 const MAX_SIZE = 1000000000;
-// A receipt has a message of 200 characters at most and a reference of 80 characters at most, as each action.
-const MAX_MESSAGE = 200;
-const MAX_REFERENCE = 80;
 // The text of each file state. Done shows only after a receipt with ok.
 const STATES = Object.freeze({ pending: 'Pending', uploading: 'Uploading', done: 'Done', error: 'Not done' });
 const UNAVAILABLE = 'This upload is not available.';
 
 const integer = (value, max) => Number.isInteger(value) && value >= 1 && value <= max;
 const files = (count) => (count === 1 ? '1 file' : `${count} files`);
-
-function short(value, max) {
-  if (typeof value !== 'string' || value.length > max * 2) return false;
-  let count = 0;
-  for (const _ of value) count += 1;
-  return count <= max;
-}
 
 // The size of a file as text, with decimal units.
 export function bytes(size) {
@@ -148,17 +139,17 @@ export class MuUpload extends MuElement {
 
   // Returns true if the receipt belongs to a file that waits for it. Only a receipt with ok shows Done.
   receipt(value) {
-    if (value === null || typeof value !== 'object' || typeof value.id !== 'string' || typeof value.ok !== 'boolean') return false;
-    const entry = this.#files.find((item) => item.state === 'uploading' && item.id === value.id);
-    const message = value.message ?? '';
-    const reference = value.reference ?? '';
-    if (!entry || !short(message, MAX_MESSAGE) || !short(reference, MAX_REFERENCE)) return false;
-    entry.state = value.ok ? 'done' : 'error';
+    const id = value?.id;
+    const entry = this.#files.find((item) => item.state === 'uploading' && item.id === id);
+    const receipt = entry && receiptOf(value, entry);
+    if (!receipt?.id) return false;
+    const { ok, message = '', reference = '' } = receipt;
+    entry.state = ok ? 'done' : 'error';
     entry.message = message;
     entry.reference = reference;
     this.#refresh();
     this.dispatchEvent(new CustomEvent('mu-receipt', { bubbles: true, composed: true,
-      detail: Object.freeze({ id: entry.id, name: entry.file.name, size: entry.file.size, ok: value.ok, message, reference }) }));
+      detail: Object.freeze({ id: entry.id, name: entry.file.name, size: entry.file.size, ok, message, reference }) }));
     return true;
   }
 

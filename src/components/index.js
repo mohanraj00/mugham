@@ -180,6 +180,10 @@ class ActionElement extends MuElement {
     return accepted;
   }
 
+  noReceipt(id) {
+    if (this.#action.noReceipt(id)) this.#update();
+  }
+
   // The time in milliseconds that a try waits for its receipt. After that time the action is stalled, and the
   // element offers a retry and a cancel. The action stays pending, and a later receipt is still valid.
   get patience() {
@@ -271,13 +275,13 @@ class ActionElement extends MuElement {
   // If the binding has a confirm step, the element shows it first and sends the action only after a person confirms.
   send(extra, started, edits) {
     if (this.dataset.state === 'refused' || !this.fill || this.#asking) return;
+    const state = this.#action.state;
+    if (state !== 'default' && state !== 'error') return;
     const confirm = this.#action.confirm;
     if (!confirm) {
       this.#start(extra, started, false, edits);
       return;
     }
-    const state = this.#action.state;
-    if (state !== 'default' && state !== 'error') return;
     const cancel = el('button', { type: 'button', part: 'cancel' }, 'Cancel');
     const accept = el('button', { type: 'button', part: 'accept' }, confirm.label);
     const step = el('div', { class: 'step', role: 'group', 'aria-label': confirm.message, part: 'confirm' },
@@ -311,7 +315,10 @@ class ActionElement extends MuElement {
 
   #start(extra, started, confirmed, edits) {
     const request = this.#action.start(extra, confirmed, edits);
-    if (!request) return;
+    if (!request) {
+      this.#update();
+      return;
+    }
     started?.(request);
     this.#update();
     this.dispatchEvent(new CustomEvent('mu-action', { bubbles: true, composed: true, detail: request }));

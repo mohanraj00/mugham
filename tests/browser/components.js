@@ -673,8 +673,8 @@ check('action-button: a refused button sends no request', button.dataset.state =
   let request = null;
   keyed.addEventListener('mu-action', (event) => { request = event.detail; });
   keyed.shadowRoot.querySelector('[part="button"]').click();
-  check('exit: a receipt with the key of the action and the id of a try of the queue is valid', !keyed.receipt({ id: 'try-of-the-queue', ok: true })
-    && !keyed.receipt({ id: request.id, key: 'other', ok: true }) && keyed.receipt({ id: 'try-of-the-queue', key: request.key, ok: false, message: 'The tool is reserved.' })
+  check('exit: a receipt with both identifiers must match both', !keyed.receipt({ id: 'other', key: request.key, ok: true })
+    && !keyed.receipt({ id: request.id, key: 'other', ok: true }) && keyed.receipt({ id: request.id, key: request.key, ok: false, message: 'The tool is reserved.' })
     && keyed.dataset.state === 'error' && keyed.shadowRoot.querySelector('[role="status"]').textContent === 'Not done: The tool is reserved.');
   // With no queue, the element finds a try with no receipt by itself, after its patience time.
   const slow = mount('action-button', { label: 'Reserve' });

@@ -176,18 +176,19 @@ The fill keeps these values, and the element compares them with the binding. The
 
 ### The request and the receipt
 
-A fill gives only data, so a model cannot select a tool. On a press, the element sends a `mu-action` event with an id, a key, the tool and the arguments, and shows `Pending`. The key stays the same for each try of the action, and each try has a new id. Use the key as the idempotency key of the API. The application sends the request to its API. The response of that API is the receipt. The receipt does not come through the stream of the thread. When the receipt comes back, the application calls `element.receipt({ id, ok, message, reference })`. Only then does the element show `Done` or `Not done`. The element ignores a receipt with a different id. A receipt can also name the action with `key`. Then the key must be the key of the pending action, and the id can be the id of each try.
+A fill gives only data, so a model cannot select a tool. On a press, the element sends a `mu-action` event with an id, a key, the tool and the arguments, and shows `Pending`. The key stays the same for each try of the action, and each try has a new id. Use the key as the idempotency key of the API. The application sends the request to its API. Give the receipt to `element.receipt({ id, ok, message, reference })` outside the thread stream. A receipt must give the id of one of the pending tries, the key of the pending action, or both. If it gives both, both must match. A valid receipt with `ok: true` can show `Done`. A valid receipt with `ok: false` shows `Not done` and the reason. If a local check prevents the send, the status gives the local reason.
 
 A pending action has an exit. If no receipt comes back in 30 seconds, the element shows `Pending: No receipt came back.` with the buttons `Retry` and `Cancel`. It stays pending, and a later receipt is still valid. `Retry` sends a `mu-action` event with the same key and a new id. `Cancel` sends a `mu-action-cancel` event that a listener can prevent. The element never shows `Done` without a receipt. [Offline queue](../docs/contracts/offline-queue.md) gives these rules and the queue that keeps an action while the device is offline.
 
 | Key | Content |
 |---|---|
-| `id` | The id of the request. |
-| `ok` | `true` if the API did the action. |
+| `id` | The id of one try of the pending action. |
+| `key` | The key of the pending action. |
+| `ok` | `true` if the API did the action, or `false` if the API rejected it. |
 | `message` | Optional. A text of 200 characters maximum. |
 | `reference` | Optional. A reference from the API, for example a record id. A text of 80 characters maximum. |
 
-The element shows the message and the reference only as text, never as markup. A `Copy` button after the status copies the reference to the clipboard. If the message or the reference is too long, the element refuses the receipt, and the action stays pending.
+The element shows the message and the reference as text. A `Copy` button after the status copies the reference to the clipboard. An omitted message or reference is valid. If either field is present, it must be text within its limit. If the element refuses a receipt, the action stays pending.
 
 A script can read `element.action.state`, but it cannot write it. A receipt confirms only the values of its request. If a person edits a field while the request is pending, the form does not show `Done` after the receipt. It asks for a new save. An edit after `Done` also lets the form save again.
 
