@@ -8,7 +8,7 @@ const PAGE = [
   'queue.html', 'queue.js',
 ];
 const EXAMPLES = [
-  'docs.js', 'docs.json', 'examples.json', 'forms/notices.js', 'frame.css', 'frame.js', 'page.css',
+  'docs.js', 'docs.json', 'examples.json', 'frame.css', 'frame.js', 'page.css',
 ];
 const SRC = [
   'actions/action.js', 'components/chart.js', 'components/data-grid.js', 'components/image.js',

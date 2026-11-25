@@ -1,7 +1,7 @@
 {
   "name": "toggle-field",
   "kind": "primitive",
-  "description": "A labeled yes or no field. The default display is a checkbox. The switch display shows On or Off. The value is false if the fill does not give it.",
+  "description": "A labeled yes or no field. Its control is a native checkbox, with the switch role in the switch display, and the label is its accessible name. The switch shows On or Off. The value is false if the fill does not give it.",
   "ai_content": false,
   "data": {
     "name": {"type": "text", "size": "short"},
