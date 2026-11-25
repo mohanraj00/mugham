@@ -31,7 +31,7 @@ export function typeText(field) {
     case 'boolean': return 'true or false';
     case 'date': return 'A date as YYYY-MM-DD';
     case 'enum': return `One of: ${field.values.join(', ')}`;
-    case 'number-or-pair': return 'A number or a pair of numbers.';
+    case 'number-or-pair': return 'A number or a pair of numbers';
     case 'list': return `A list of ${field.max_items} items maximum. Each item: ${typeText(field.items)}`;
     case 'component': return `A fill of ${targets(field).join(' or ')}`;
     default: return field.type;
