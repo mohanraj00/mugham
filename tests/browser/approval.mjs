@@ -33,7 +33,8 @@ const STATE = `(() => [...document.querySelectorAll('mu-card')].map((card) => ({
   state: card.dataset.state,
   text: card.shadowRoot.textContent,
   buttons: Object.fromEntries([...card.querySelectorAll('mu-action-button')].map((button) => [button.fill.data.label,
-    { state: button.dataset.state, status: button.shadowRoot.querySelector('.status').textContent }])),
+    { state: button.dataset.state, status: button.shadowRoot.querySelector('.status').textContent,
+      reference: button.shadowRoot.querySelector('[part="reference"]')?.textContent }])),
 })))()`;
 // The click and the read run in one task, before the response of the API can come back.
 const press = (label) => `(() => {
@@ -84,7 +85,8 @@ async function main() {
     step('the approve is pending before the receipt', pending.state === 'pending' && pending.status === 'Pending', pending);
     cards = await until((value) => value[0].buttons['Approve D-0001'].state !== 'pending' && value[0].text.includes('approved'));
     const approve = cards[0].buttons['Approve D-0001'];
-    step('the receipt of the API makes the approve done', approve.state === 'done' && /^Done: .*Reference: A-\d{4}$/.test(approve.status), approve);
+    step('the receipt of the API makes the approve done', approve.state === 'done' && approve.status.startsWith('Done:')
+      && /^Reference: A-\d{4}$/.test(approve.reference), approve);
     step('the card shows the new status of the API', cards[0].text.includes('approved'), cards[0].text);
 
     await evaluate(session, sessionId, press('Reject D-0001'));

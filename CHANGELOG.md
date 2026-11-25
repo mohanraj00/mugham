@@ -2,6 +2,10 @@
 
 Each release has an entry. The newest entry is first.
 
+## Unreleased
+
+- A successful receipt shows `Done` at full opacity with a success color for its edge and state text (#133). Action buttons with an icon display show a check. The copy control sits next to the reference and wraps when the row is too narrow. This applies to action buttons, both forms, data grids and uploads.
+
 ## 0.5.0, 2026-11-25
 
 When you upgrade from 0.4.0, the new data keys are optional. An action request has a new `key` field. Pass it to the API and use it as the API's idempotency key so the API does the action only once across all tries. By default, action buttons and forms show `Retry` and `Cancel` after 30 seconds with no receipt. A failed call or an invalid result leaves the action pending. This replaces the former status `Not done: The request failed.` Update application code that relies on that status to handle the pending state. The kit refuses a receipt with `null` in `message` or `reference`. If the API or the action handler supplies `null` for either field, change it to omit that field. If the handler supplies an `id` or a `key`, use the matching value from the request.

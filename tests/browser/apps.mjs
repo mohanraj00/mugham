@@ -22,7 +22,10 @@ const HELPERS = `window.mu = {
     return found;
   },
   one(selector) { return window.mu.all(selector)[0]; },
-  action(node) { return node ? { state: node.dataset.state, status: node.shadowRoot.querySelector('.status').textContent } : null; },
+  action(node) {
+    return node ? { state: node.dataset.state, status: node.shadowRoot.querySelector('.status').textContent,
+      reference: node.shadowRoot.querySelector('[part="reference"]')?.textContent } : null;
+  },
   press(node, part = 'button') { node.shadowRoot.querySelector(part === 'button' ? 'button' : '[part=' + part + ']').click(); },
   edit(form, name, change) {
     const field = [...form.shadowRoot.querySelectorAll('mu-field')].find((item) => item.fill.data.name === name);
@@ -96,8 +99,9 @@ async function main() {
       && sent.pending.state === 'pending' && sent.pending.status === 'Pending', sent);
     let form = await until(`(() => { const a = mu.action(mu.one('mu-editable-form')); return a.state === 'pending' ? null : a; })()`);
     step(page, 'the receipt makes the reply done, with a reference', form?.state === 'done'
-      && /^Done: The reply to T-2041 is sent, with the edits of a person\.Reference: MSG-\d{4}$/.test(form.status), form);
-    const reference = form?.status.match(/MSG-\d{4}/)?.[0];
+      && form.status === 'Done: The reply to T-2041 is sent, with the edits of a person.'
+      && /^Reference: MSG-\d{4}$/.test(form.reference), form);
+    const reference = form?.reference?.match(/MSG-\d{4}/)?.[0];
     thread = await until(`(() => { const t = mu.thread(); return t.actors.includes('Help desk System') ? t : null; })()`);
     step(page, 'the thread shows the sent reply and the reference', thread?.text.includes('We refunded 3.40 to your card.')
       && thread.text.includes(`T-2041 is answered. Reference ${reference}.`), thread?.actors);
@@ -126,8 +130,9 @@ async function main() {
       && approve.asked.step === 'Approve CR-311? The timetable changes on 2026-12-06.', approve.asked);
     step(page, 'the confirm shows Pending before the receipt', approve.pending.state === 'pending' && approve.pending.status === 'Pending', approve.pending);
     const done = await until(`(() => { const a = mu.action(mu.all('mu-action-button').find((node) => node.fill.data.label === 'Approve CR-311')); return a.state === 'pending' ? null : a; })()`);
-    step(page, 'the receipt makes the approve done, with a reference', done?.state === 'done' && /^Done: The change CR-311 is approved\.Reference: CHG-\d{4}$/.test(done.status), done);
-    const change = done?.status.match(/CHG-\d{4}/)?.[0];
+    step(page, 'the receipt makes the approve done, with a reference', done?.state === 'done'
+      && done.status === 'Done: The change CR-311 is approved.' && /^Reference: CHG-\d{4}$/.test(done.reference), done);
+    const change = done?.reference?.match(/CHG-\d{4}/)?.[0];
     const log = await until(`(() => { const t = document.getElementById('log').textContent; return t.includes('CHG-') ? t : null; })()`);
     step(page, 'the decision log shows the reference of the receipt', log === `${change}: CR-311 approved. Run route 12 every 15 minutes on Saturday.`, log);
     thread = await until(`(() => { const t = mu.thread(); return t.actors.includes('Change log System') ? t : null; })()`);
@@ -155,7 +160,7 @@ async function main() {
     await run(`(() => { const form = mu.one('mu-editable-form'); mu.edit(form, 'seal', () => 'worn'); form.shadowRoot.querySelector('button[type=submit]').click(); return true; })()`);
     form = await until(`(() => { const a = mu.action(mu.one('mu-editable-form')); return a.state === 'pending' ? null : a; })()`);
     step(page, 'the receipt makes the findings done, with a reference', form?.state === 'done'
-      && /^Done: The findings for I-0417 are saved\.Reference: INS-\d{4}$/.test(form.status), form);
+      && form.status === 'Done: The findings for I-0417 are saved.' && /^Reference: INS-\d{4}$/.test(form.reference), form);
     list = await until(`(() => { const t = ${checklist}; return t.includes('Needs work') ? t : null; })()`);
     step(page, 'the API replaces the checklist with the findings', list?.includes('4.2 bar today') && list.includes('Worn today')
       && !list.includes('Not checked'), list);
@@ -170,7 +175,7 @@ async function main() {
     step(page, 'Close opens a confirm step, then shows Pending', close.asked.state === 'confirm' && close.pending.state === 'pending', close);
     const closed = await until(`(() => { const a = mu.action(mu.one('mu-action-button')); return a.state === 'pending' ? null : a; })()`);
     step(page, 'the receipt makes the close done, with a reference', closed?.state === 'done'
-      && /^Done: The inspection I-0417 is closed\.Reference: INS-\d{4}$/.test(closed.status), closed);
+      && closed.status === 'Done: The inspection I-0417 is closed.' && /^Reference: INS-\d{4}$/.test(closed.reference), closed);
     thread = await until(`(() => { const t = mu.thread(); return t.text.includes('I-0417 is closed.') ? t : null; })()`);
     step(page, 'the thread shows the closed inspection', thread?.actors.includes('Dispatch System') && thread.refusals.length === 0, thread?.actors);
     steps.push(...await coverSteps(session, sessionId));

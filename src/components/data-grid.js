@@ -6,6 +6,7 @@ import { MuElement } from '../primitives/base.js';
 import { ActionState } from '../actions/action.js';
 import { el, sheet } from '../render/dom.js';
 import { isDate } from '../render/validate.js';
+import { REFERENCE_CSS, showReference } from './receipt.js';
 
 const NUMBER = /^[+-]?(\d+\.?\d*|\.\d+)(e[+-]?\d+)?$/i;
 // The maximum number of code points of a text value. It is the limit of catalog/text-cell.json.
@@ -87,7 +88,7 @@ function parse(column, raw) {
 
 export class MuDataGrid extends MuElement {
   static component = 'data-grid';
-  static styles = [sheet(`
+  static styles = [REFERENCE_CSS, sheet(`
     :host { display: block; min-width: 0; }
     .grid { color: var(--mu-color-text); font: var(--mu-type-body); display: flex; flex-direction: column; gap: var(--mu-space-2); }
     .scroll {
@@ -116,11 +117,12 @@ export class MuDataGrid extends MuElement {
     p { margin: 0; overflow-wrap: anywhere; }
     .title { font-weight: var(--mu-type-weight-strong); }
     .status { font: var(--mu-type-caption); min-height: 1.5em; }
+    .status.done { color: var(--mu-color-success); border-inline-start: 2px solid currentColor; padding-inline-start: var(--mu-space-2); }
     .muted { font: var(--mu-type-caption); color: var(--mu-color-text-muted); }
     @media (forced-colors: active) {
       .scroll, th, td, .editor { border-color: CanvasText; }
       th, td { background: Canvas; }
-      td[aria-readonly="true"], td[data-state="error"] .marker, .status.error, .muted { color: CanvasText; }
+      td[aria-readonly="true"], td[data-state="error"] .marker, .status.done, .status.error, .muted { color: CanvasText; }
     }
   `)];
 
@@ -142,6 +144,8 @@ export class MuDataGrid extends MuElement {
   #armed = false;
   #scroll = null;
   #status = null;
+  #reference = null;
+  #success = null;
 
   // The state of the action can only be read. Only the binding, a saved change and a receipt change it.
   get action() {
@@ -172,6 +176,7 @@ export class MuDataGrid extends MuElement {
     this.#changes.clear();
     this.#confirmed.clear();
     this.#sent = null;
+    this.#success = null;
     if (this.fill) this.fill = this.fill;
   }
 
@@ -181,6 +186,7 @@ export class MuDataGrid extends MuElement {
     const change = this.#sent;
     const ok = this.#action.state === 'done';
     const message = this.#action.message;
+    const reference = this.#action.reference;
     this.#sent = null;
     // The action can start again for the next change.
     this.#action.reopen();
@@ -199,7 +205,9 @@ export class MuDataGrid extends MuElement {
     if (cell && newer && newer !== change && newer.value === this.#base(cell)) this.#changes.delete(change.id);
     if (cell) this.#paint(cell);
     const name = cell ? `${cell.row.label}, ${cell.column.label}` : 'a cell';
-    this.#say(ok ? '' : `Not done: ${name}.${message ? ' ' + message : ''}`, !ok);
+    // If a newer change of this cell stays, its marker shows the current state.
+    if (ok && this.#changes.has(change.id)) this.#say('');
+    else this.#say(`${ok ? 'Done' : 'Not done'}: ${name}.${message ? ' ' + message : ''}`, ok ? 'done' : 'error', reference);
     this.#flush();
     this.#sync();
     return true;
@@ -322,12 +330,14 @@ export class MuDataGrid extends MuElement {
     });
     this.#scroll = el('div', { class: 'scroll', part: 'scroll' }, table);
     this.#status = el('p', { class: 'status', id: 'status', role: 'status', 'aria-live': 'polite', part: 'status' });
+    this.#reference = el('div', { class: 'reference-row' });
+    if (this.#success) this.#say(this.#success.words, 'done', this.#success.reference);
     if (keep) queueMicrotask(() => this.#restore(keep));
     const author = this.fill.slots.authorship;
     const name = author.name ? ` (${author.name})` : '';
     return [el('div', { class: 'grid', role: 'group', 'aria-label': data.label, part: 'data-grid' },
       el('p', { class: 'title', part: 'title' }, data.label), this.#scroll,
-      data.rows.length ? null : el('p', { part: 'empty' }, 'No rows. Change the request, or try again later.'), this.#status,
+      data.rows.length ? null : el('p', { part: 'empty' }, 'No rows. Change the request, or try again later.'), this.#status, this.#reference,
       el('p', { class: 'muted', part: 'authorship' }, `Author: ${author.type} ${author.id}${name}`))];
   }
 
@@ -372,9 +382,11 @@ export class MuDataGrid extends MuElement {
       change ? el('span', { class: 'marker', part: 'changed' }, MARKERS[change.state]) : '');
   }
 
-  #say(words, error = false) {
-    this.#status.className = 'status' + (error ? ' error' : '');
+  #say(words, state = '', reference = '') {
+    this.#success = state === 'done' ? { words, reference } : null;
+    this.#status.className = 'status ' + state;
     this.#status.textContent = words;
+    showReference(this.#reference, reference);
   }
 
   #sync() {
@@ -483,13 +495,13 @@ export class MuDataGrid extends MuElement {
     const result = parse(cell.column, input.value);
     if (result.reason !== undefined && stay) {
       input.setAttribute('aria-invalid', 'true');
-      this.#say(result.reason, true);
+      this.#say(result.reason, 'error');
       return;
     }
     this.#editing = null;
     if (result.reason !== undefined) {
       this.#paint(cell);
-      this.#say('Not saved. ' + result.reason, true);
+      this.#say('Not saved. ' + result.reason, 'error');
       return;
     }
     this.#say('');

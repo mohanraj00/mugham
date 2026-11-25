@@ -64,7 +64,7 @@ export async function uploadExampleChecks(session, sessionId, base, { evaluate, 
     const root = upload.shadowRoot;
     const api = await (await fetch('/api/tickets/T-2041/files')).json();
     return { state: upload.dataset.state, limits: root.querySelector('[part="limits"]').textContent,
-      rows: [...root.querySelectorAll('[part="file"]')].map((row) => [...row.querySelectorAll('span')].map((item) => item.textContent)
+      rows: [...root.querySelectorAll('[part="file"]')].map((row) => [...row.querySelectorAll('[part="name"], [part="size"], [part="state"], [part="reference"]')].map((item) => item.textContent)
         .filter(Boolean).join(' ')).sort(),
       problems: [...root.querySelectorAll('[part="problems"] li')].map((item) => item.textContent),
       list: [...document.querySelectorAll('#files li')].map((item) => item.textContent), note: document.getElementById('note').textContent,
@@ -153,7 +153,7 @@ async function browserChecks() {
   };
   const drop = (element, ...list) => part(element, 'drop').dispatchEvent(new DragEvent('drop', { dataTransfer: transfer(list), bubbles: true, cancelable: true }));
   const rows = (element) => [...root(element).querySelectorAll('[part="file"]')].map((row) =>
-    [...row.querySelectorAll('span')].map((item) => item.textContent).filter(Boolean).join(' '));
+    [...row.querySelectorAll('[part="name"], [part="size"], [part="state"], [part="reference"]')].map((item) => item.textContent).filter(Boolean).join(' '));
   const problems = (element) => [...root(element).querySelectorAll('[part="problems"] li')].map((item) => item.textContent);
   const summary = (element) => root(element).querySelector('[part="status"] p').textContent;
   const send = (element) => part(element, 'send').click();
@@ -282,6 +282,10 @@ async function browserChecks() {
   upload.fill = fill({ help: 'Two receipts are here.' });
   check('new data: the files and their states stay', part(upload, 'help').textContent === 'Two receipts are here.'
     && rows(upload).join('|') === 'receipt-a.pdf 400 bytes Done Reference: F-0001|receipt-c.PDF 400 bytes Done' && upload.dataset.state === 'done');
+  const doneSend = part(upload, 'send');
+  send(upload);
+  check('receipt: the done upload button keeps full opacity and sends no more files',
+    doneSend.getAttribute('aria-disabled') === 'true' && getComputedStyle(doneSend).opacity === '1' && upload.requests.length === 3);
   check('the control never reads the content of a file', reads === 0, reads);
   check('the control shows no preview', !root(upload).querySelector('img, picture, object, embed, iframe, video, audio, canvas, svg, a'));
   for (const restore of spied) restore();
@@ -388,7 +392,14 @@ async function browserChecks() {
   const states = mount(fill(), { ...BINDING, max_files: 4 });
   pick(states, pdf('done.pdf'), pdf('not-done.pdf'), pdf('uploading.pdf'));
   send(states);
-  states.receipt({ id: states.requests[0].id, ok: true });
+  states.receipt({ id: states.requests[0].id, ok: true, reference: 'F-0001' });
+  const doneFile = part(states, 'file');
+  const reference = doneFile.querySelector('[part="reference"]');
+  const color = resolved(mode === 'forced-colors' ? 'CanvasText' : 'var(--mu-color-success)');
+  check('receipt: the done file has a success edge, state text and a copy control next to the reference',
+    getComputedStyle(doneFile).borderTopColor === color && getComputedStyle(part(states, 'state')).color === color
+    && reference?.textContent === 'Reference: F-0001' && reference.checkVisibility()
+    && reference.parentElement.querySelector('[part="copy"]')?.checkVisibility());
   states.receipt({ id: states.requests[1].id, ok: false, message: 'The API refused this file.' });
   pick(states, pdf('pending.pdf'), pdf('notes.txt', 10, 'text/plain'));
   const stateTexts = [...root(states).querySelectorAll('[part="state"]')];

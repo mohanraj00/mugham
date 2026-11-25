@@ -592,8 +592,8 @@ check('action-button: a refused button sends no request', button.dataset.state =
     && marked.shadowRoot.querySelector('[part="tooltip"]')?.textContent === label && !marked.shadowRoot.querySelector('img, script'));
   marked.remove();
 
-  const node = mount('action-button', { label: 'Approve request 42', icon: 'check', display: 'icon' });
-  node.action = { tool: 'request.approve', label: 'Approve request 42', icon: 'check', display: 'icon' };
+  const node = mount('action-button', { label: 'Approve request 42', icon: 'send', display: 'icon' });
+  node.action = { tool: 'request.approve', label: 'Approve request 42', icon: 'send', display: 'icon' };
   let request;
   node.addEventListener('mu-action', (event) => { request = event.detail; });
   const control = node.shadowRoot.querySelector('button');
@@ -606,7 +606,11 @@ check('action-button: a refused button sends no request', button.dataset.state =
   control.click();
   node.receipt({ id: request?.id, ok: true, reference: 'R-42' });
   check('action-button: icon display shows Done and its receipt reference', status.checkVisibility() && status.innerText.startsWith('Done')
-    && visibleText(status.querySelector('[part="reference"]'), 'Reference: R-42'));
+    && visibleText(node.shadowRoot.querySelector('[part="reference"]'), 'Reference: R-42'));
+  check('action-button: an icon display shows the check and keeps its name after a receipt',
+    control.querySelector('[part="icon"] path').getAttribute('d') === 'M2.5 8.5 6.5 12 13.5 4'
+    && control.querySelector('[part="icon"]').getAttribute('aria-hidden') === 'true'
+    && control.getAttribute('aria-label') === 'Approve request 42' && control.getAttribute('aria-disabled') === 'true');
 }
 
 // The exits of a pending action (docs/contracts/offline-queue.md). An action has one key for all its tries. A pending
@@ -1556,6 +1560,19 @@ const actionStyle = getComputedStyle(fresh.shadowRoot.querySelector('button'));
 const probe = document.createElement('span');
 stage.append(probe);
 const resolved = (value) => { probe.style.color = value; return getComputedStyle(probe).color; };
+const checkDoneForm = (name, form, id) => {
+  const button = form.shadowRoot.querySelector('[part="button"]');
+  const status = form.shadowRoot.querySelector('[part="status"]');
+  const reference = form.shadowRoot.querySelector('[part="reference"]');
+  const forced = mode === 'forced-colors';
+  check(name + ': the done submit button stays disabled and shows the receipt',
+    button.getAttribute('aria-disabled') === 'true' && getComputedStyle(button).opacity === '1'
+    && getComputedStyle(button).borderTopColor === resolved(forced ? 'ButtonText' : 'var(--mu-color-success)')
+    && status.checkVisibility() && status.textContent === 'Done'
+    && getComputedStyle(status).color === resolved(forced ? 'CanvasText' : 'var(--mu-color-success)')
+    && reference?.textContent === 'Reference: ' + id && reference.parentElement.querySelector('[part="copy"]')?.checkVisibility());
+};
+checkDoneForm('editable form', askedForm, 'MOVE-0001');
 if (mode === 'forced-colors') {
   check('forced colors: the card border uses CanvasText', cardStyle.borderTopColor === resolved('CanvasText'), cardStyle.borderTopColor);
   check('forced colors: the action button uses ButtonText', actionStyle.color === resolved('ButtonText'), actionStyle.color);
@@ -1583,6 +1600,8 @@ if (mode === 'reduced-motion') {
   cardSubmit(node);
   check('form card: the next request has a new key and the same values', sent.length === 2 && sent[1].key !== first.key && sent[1].arguments.children === 2,
     JSON.stringify(sent[1]));
+  node.receipt({ id: sent[1].id, ok: true, reference: 'F-0001' });
+  checkDoneForm('form card', node, 'F-0001');
   // Save moved the focus to the value. Move the start point of Tab to the top of the page again.
   top.focus();
   top.blur();

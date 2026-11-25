@@ -1,6 +1,6 @@
 {
   "name": "upload",
-  "description": "A control that takes files from a person, with a file picker or a drop. Page code binds the tool, the accepted types, the size limit and the file count. The control checks each file before a request. The application sends each file with its own transport. Done shows only after the receipt.",
+  "description": "A person picks or drops files. Page code binds the tool, accepted types, size limit and file count. The control checks each file before the application sends it. Done shows only after a successful receipt. Each file receipt can show a reference with a copy control.",
   "data": {
     "label": {"type": "text", "required": true, "min_length": 1, "size": "line"},
     "help": {"type": "text", "label": "Help text", "min_length": 1, "size": "summary"},
@@ -16,7 +16,7 @@
   "states": ["+disabled", "+pending", "+done", "+error", "+refused"],
   "tokens": [
     "color.text", "color.text-muted", "color.surface", "color.border", "color.accent", "color.on-accent",
-    "color.danger", "space.1", "space.2", "space.3", "radius.1", "radius.2", "type.body", "type.caption",
+    "color.danger", "color.success", "space.1", "space.2", "space.3", "radius.1", "radius.2", "type.body", "type.caption",
     "type.weight-strong"
   ],
   "accessibility": {"role": "group", "name": {"field": "label"}, "keyboard": ["Tab", "Shift+Tab", "Enter", "Space"]}

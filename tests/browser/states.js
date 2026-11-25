@@ -37,7 +37,8 @@ export async function stateChecks(session, sessionId, { evaluate, key, sleep }, 
     await mouse('mouseReleased', 1, 1, { button: 'left', buttons: 0, clickCount: 1 });
     let ok;
     if (at.disabled) {
-      ok = hover.layer === rest.layer && pressed.layer === rest.layer && rest.opacity === (mode === 'forced-colors' ? '1' : '0.6')
+      ok = hover.layer === rest.layer && pressed.layer === rest.layer
+        && rest.opacity === (at.opaque || mode === 'forced-colors' ? '1' : '0.6')
         && ['not-allowed', 'progress'].includes(rest.cursor);
     // Forced colors remove the layer. Hover shows a line, and a pressed button or summary shows a ground.
     } else if (mode === 'forced-colors') ok = hover.edge !== rest.edge && (at.kind !== 'layer' || pressed.layer !== hover.layer);
@@ -49,6 +50,14 @@ export async function stateChecks(session, sessionId, { evaluate, key, sleep }, 
   check('each control shows hover and pressed, and a disabled control shows no change', layered >= 12 && wrong.length === 0,
     wrong.length ? wrong : layered);
   await evaluate(session, sessionId, 'document.activeElement?.blur(), window.muBlur()');
+  try {
+    await session.send('Emulation.setDeviceMetricsOverride', { width: 375, height: 812, deviceScaleFactor: 1, mobile: true }, sessionId);
+    const receipt = await evaluate(session, sessionId, 'window.muReceiptLayout()');
+    check('375px: the receipt has no horizontal scroll, and the copy control wraps when the row is narrow',
+      receipt.width === 375 && receipt.scroll === 0 && receipt.sameRow && receipt.wraps && receipt.target, receipt);
+  } finally {
+    await session.send('Emulation.clearDeviceMetricsOverride', {}, sessionId);
+  }
   if (mode !== 'light') return results;
 
   // The copy controls, with a real press. The clipboard gets the text, and Copied shows for a short time.
@@ -159,6 +168,8 @@ async function browserChecks() {
   action('Renew');
   const busy = action('Renew now');
   const done = action('Renew again');
+  const longReceipt = action('Renew one more loan');
+  const unavailable = mount('mu-action-button', fill('action-button', { label: 'Renew later' }));
   const LOAN = { title: 'Field guide to moss', summary: 'A short guide for walks in wet woods.', status: 'On loan',
     collapsed_summary: 'Due on 1 December.', collapsible: true };
   const CITED = { ...SLOTS, citation: { source: 'Synthetic loan record', locator: 'https://example.org/loans/1' } };
@@ -255,6 +266,51 @@ async function browserChecks() {
   done.element.dataset.state);
   check('receipt: the reference has a copy control', root(done.element).querySelector('[part="reference"]').textContent === 'Reference: R-0001'
     && root(done.element).querySelector('[part="copy"]').getAttribute('aria-label') === 'Copy reference');
+  done.control.click();
+  check('receipt: a done button stays disabled and sends no second request',
+    done.control.getAttribute('aria-disabled') === 'true' && done.requests.length === 1 && !done.control.querySelector('svg'));
+  longReceipt.control.click();
+  longReceipt.element.receipt({ id: longReceipt.requests[0].id, ok: true, reference: 'R'.repeat(80) });
+  const doneStatus = root(done.element).querySelector('[part="status"]');
+  const doneStyle = getComputedStyle(done.control);
+  const offStyle = getComputedStyle(root(unavailable).querySelector('button'));
+  const forced = media('(forced-colors: active)');
+  const success = resolved(forced ? 'ButtonText' : 'var(--mu-color-success)');
+  const canvas = resolved(forced ? 'CanvasText' : 'var(--mu-color-success)');
+  check('receipt: the done button and state text use the success style',
+    doneStyle.opacity === '1' && doneStyle.borderTopColor === success && doneStyle.color === success
+    && doneStyle.borderTopColor !== offStyle.borderTopColor && getComputedStyle(doneStatus).color === canvas
+    && doneStatus.checkVisibility());
+  if (forced) {
+    check('forced colors: the unavailable action uses GrayText', offStyle.color === resolved('GrayText')
+      && offStyle.borderTopColor === resolved('GrayText'));
+  } else {
+    const surface = resolved('var(--mu-color-surface)');
+    const page = resolved('var(--mu-color-page)');
+    const copyStyle = getComputedStyle(root(done.element).querySelector('[part="copy"]'));
+    const luminance = (value) => {
+      const linear = value.match(/\d+/g).map((channel) => {
+        const fraction = Number(channel) / 255;
+        return fraction <= 0.04045 ? fraction / 12.92 : ((fraction + 0.055) / 1.055) ** 2.4;
+      });
+      return linear[0] * 0.2126 + linear[1] * 0.7152 + linear[2] * 0.0722;
+    };
+    const contrast = (a, b) => {
+      const [low, high] = [luminance(a), luminance(b)].sort((left, right) => left - right);
+      return (high + 0.05) / (low + 0.05);
+    };
+    check('receipt: done and unavailable text have 4.5:1 contrast and their edges have 3:1 contrast',
+      offStyle.opacity === '1' && contrast(offStyle.color, offStyle.backgroundColor) >= 4.5
+      && contrast(offStyle.borderTopColor, page) >= 3 && contrast(doneStyle.borderTopColor, page) >= 3
+      && contrast(doneStyle.color, doneStyle.backgroundColor) >= 4.5 && contrast(getComputedStyle(doneStatus).color, page) >= 4.5);
+    check('receipt: the copy control has a less strong edge', contrast(copyStyle.borderTopColor, surface) >= 3
+      && contrast(copyStyle.borderTopColor, surface) < contrast(copyStyle.color, surface));
+  }
+  if (media('(prefers-reduced-motion: reduce)')) {
+    check('reduced motion: the done state and copy control have no motion',
+      [done.control, doneStatus, root(done.element).querySelector('[part="copy"]')].every((item) =>
+        times(item).every((time) => time === 0) && getComputedStyle(item).animationName === 'none'));
+  }
   check('disabled: a disabled button has the disabled style', getComputedStyle(root(closed).querySelector('button')).opacity === (media('(forced-colors: active)') ? '1' : '0.6')
     && getComputedStyle(root(closed).querySelector('button')).cursor === 'not-allowed');
   // The radio and its label are one control, so the label has the disabled style too.
@@ -351,6 +407,7 @@ async function browserChecks() {
     item.scrollIntoView({ block: 'center', behavior: 'instant' });
     const box = item.getBoundingClientRect();
     return { x: Math.round(box.left + box.width / 2), y: Math.round(box.top + box.height / 2), kind: kind(item), disabled: off(item),
+      opaque: [done.control, longReceipt.control].includes(item) || item.getRootNode().host === unavailable,
       name: `${item.getRootNode().host.localName} ${item.getAttribute('aria-label') || item.textContent.trim() || item.type}` };
   };
   window.muStyle = (index) => {
@@ -377,6 +434,20 @@ async function browserChecks() {
   };
   window.muBlur = () => { for (const item of controls) item.blur(); return true; };
   const copies = { code: rich, reference: done.element };
+  window.muReceiptLayout = () => {
+    const reference = root(done.element).querySelector('[part="reference"]');
+    const copy = root(done.element).querySelector('[part="copy"]');
+    const row = reference.parentElement;
+    const box = (item) => item.getBoundingClientRect();
+    const initial = box(copy);
+    const label = box(reference);
+    const sameRow = row.contains(copy) && initial.left >= label.right && initial.top <= label.top && initial.bottom >= label.bottom;
+    const scroll = document.documentElement.scrollWidth - innerWidth;
+    done.element.style.inlineSize = '100px';
+    const wraps = box(copy).top >= box(reference).bottom;
+    done.element.style.inlineSize = '';
+    return { width: innerWidth, scroll, sameRow, wraps, target: initial.width >= 44 && initial.height >= 44 };
+  };
   window.muCopyPoint = (name) => {
     const item = root(copies[name]).querySelector('[part="copy"]');
     item.scrollIntoView({ block: 'center', behavior: 'instant' });

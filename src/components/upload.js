@@ -7,6 +7,7 @@ import { MuElement } from '../primitives/base.js';
 import { bindingErrors } from '../actions/action.js';
 import { receiptOf } from '../offline/queue.js';
 import { el, sheet } from '../render/dom.js';
+import { ACTION_RESULT_CSS, REFERENCE_CSS, showReference } from './receipt.js';
 
 const KEYS = new Set(['tool', 'arguments', 'label', 'accept', 'max_size', 'max_files']);
 // The values of a file that each request sends. A bound argument cannot have one of these names.
@@ -93,15 +94,17 @@ export class MuUpload extends MuElement {
     .file > span { grid-column: 1; min-width: 0; overflow-wrap: anywhere; }
     .file > button { grid-column: 2; grid-row: 1 / span 3; }
     .state { font-weight: var(--mu-type-weight-strong); }
+    .file[data-state="done"] { border-color: var(--mu-color-success); }
+    .file[data-state="done"] .state, .notes .done { color: var(--mu-color-success); }
     .file[data-state="error"] .state, .problems { color: var(--mu-color-danger); }
     .notes { display: flex; flex-direction: column; gap: var(--mu-space-1); font: var(--mu-type-caption); min-height: 1.5em; }
     @media (forced-colors: active) {
-      .drop, .file { border-color: CanvasText; }
+      .drop, .file, .file[data-state="done"] { border-color: CanvasText; }
       .drop.over { border-color: Highlight; }
-      .muted, .problems, .file[data-state="error"] .state { color: CanvasText; }
+      .muted, .problems, .file[data-state="error"] .state, .file[data-state="done"] .state, .notes .done { color: CanvasText; }
       button, button[part="send"] { background: ButtonFace; color: ButtonText; border-color: ButtonText; forced-color-adjust: none; }
     }
-  `)];
+  `), REFERENCE_CSS, ACTION_RESULT_CSS];
 
   #binding = null;
   // The files of the list. Each entry has the file, its state and the nodes of its row.
@@ -268,7 +271,7 @@ export class MuUpload extends MuElement {
     const remove = el('button', { type: 'button', part: 'remove', 'aria-label': `Remove ${entry.file.name}` }, 'Remove');
     remove.addEventListener('click', () => this.#remove(entry));
     entry.status = el('span', { class: 'state', part: 'state' });
-    entry.detail = el('span', { class: 'muted', part: 'reference' });
+    entry.detail = el('span', { class: 'reference-row' });
     entry.remove = remove;
     entry.row = el('li', { class: 'file', part: 'file' }, el('span', { part: 'name' }, entry.file.name),
       el('span', { class: 'muted', part: 'size' }, bytes(entry.file.size)), entry.status, entry.detail, remove);
@@ -317,12 +320,16 @@ export class MuUpload extends MuElement {
       count[entry.state] += 1;
       entry.row.dataset.state = entry.state;
       entry.status.textContent = STATES[entry.state] + (entry.message ? ': ' + entry.message : '');
-      entry.detail.textContent = entry.reference ? 'Reference: ' + entry.reference : '';
+      showReference(entry.detail, entry.reference);
       entry.remove.hidden = entry.state !== 'pending' && entry.state !== 'error';
     }
     const bound = Boolean(this.#binding);
     choose.setAttribute('aria-disabled', bound ? 'false' : 'true');
     send.setAttribute('aria-disabled', bound && count.pending + count.error > 0 ? 'false' : 'true');
+    const state = this.state();
+    send.dataset.state = state;
+    choose.dataset.state = bound ? 'default' : 'disabled';
+    summary.classList.toggle('done', state === 'done');
     const words = [];
     if (count.pending) words.push(`${files(count.pending)} to upload.`);
     if (count.uploading) words.push(`Uploading ${files(count.uploading)}.`);
@@ -330,6 +337,6 @@ export class MuUpload extends MuElement {
     if (count.error) words.push(`Not done: ${files(count.error)}.`);
     summary.textContent = words.join(' ');
     problems.replaceChildren(...this.#problems.map((item) => el('li', {}, `${item.name}: ${item.reason}`)));
-    if (this.fill) this.dataset.state = this.state();
+    if (this.fill) this.dataset.state = state;
   }
 }

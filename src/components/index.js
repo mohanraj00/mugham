@@ -3,7 +3,8 @@ import { MuElement } from '../primitives/base.js';
 import { ReadMoreElement, READ_MORE_CSS } from '../primitives/read-more.js';
 import { define as definePrimitives, FIELDS } from '../primitives/index.js';
 import { ActionState } from '../actions/action.js';
-import { EDGE, LIFT, copyControl, el, icon, sheet } from '../render/dom.js';
+import { EDGE, LIFT, el, icon, sheet } from '../render/dom.js';
+import { ACTION_RESULT_CSS, REFERENCE_CSS, showReference } from './receipt.js';
 import { fillErrors } from '../render/validate.js';
 import { CONTRACTS } from '../render/registry.js';
 import { MuTable } from './table.js';
@@ -67,7 +68,7 @@ const CARD_CSS = sheet(`
   }
 `);
 const ACTION_CSS = sheet(`
-  :host { display: inline-flex; flex-direction: column; gap: var(--mu-space-1); }
+  :host { display: inline-flex; flex-direction: column; gap: var(--mu-space-1); max-inline-size: 100%; }
   button {
     font: var(--mu-type-body); min-height: 2.75rem; min-width: 2.75rem; padding: var(--mu-space-2) var(--mu-space-3);
     border-radius: var(--mu-radius-2); border: 1px solid var(--mu-color-accent);
@@ -84,17 +85,17 @@ const ACTION_CSS = sheet(`
     border: 1px solid var(--mu-color-border); border-radius: var(--mu-radius-2);
   }
   .action-tooltip[hidden] { display: none !important; }
-  .status { font: var(--mu-type-caption); color: var(--mu-color-text-muted); min-height: 1lh; }
+  .status { display: block; font: var(--mu-type-caption); color: var(--mu-color-text-muted); min-height: 1lh; overflow-wrap: anywhere; }
+  .status.done { color: var(--mu-color-success); }
   .status.error { color: var(--mu-color-danger); }
-  .reference { display: block; }
-  .copy-area[hidden] { display: none; }
+  .result { display: flex; flex-direction: column; gap: var(--mu-space-1); }
   .copy { border-radius: var(--mu-radius-2); }
   .step { display: flex; flex-wrap: wrap; align-items: center; gap: var(--mu-space-2); }
   .step p { flex-basis: 100%; margin: 0; }
   .step button[part="cancel"] { background: transparent; color: var(--mu-color-accent); }
   @media (forced-colors: active) {
     button { background: ButtonFace; color: ButtonText; border-color: ButtonText; forced-color-adjust: none; }
-    .status, .status.error { color: CanvasText; }
+    .status, .status.done, .status.error { color: CanvasText; }
     .action-tooltip { background: Canvas; color: CanvasText; border-color: CanvasText; }
   }
 `);
@@ -147,9 +148,7 @@ class ActionElement extends MuElement {
   // The area of the confirm step, and the step while it shows.
   #area = null;
   #asking = null;
-  // The reference that the copy control copies, and the area of the control.
-  #reference = '';
-  #copy = null;
+  #reference = null;
   // The exits of a pending action that shows now: queued or stalled. The timer of a try with no receipt.
   #exit = '';
   #timer = null;
@@ -252,23 +251,16 @@ class ActionElement extends MuElement {
     return data.disabled ? 'disabled' : this.#action.state;
   }
 
-  // Returns the area of the confirm step. The subclass puts it in the shadow root.
+  // Returns the confirm area and the receipt text. Each subclass puts them in its shadow root.
   attach(control, status) {
     this.#control = control;
     this.#status = status;
     this.#asking = null;
-    this.#reference = '';
-    this.#copy = el('span', { class: 'copy-area' });
-    this.#copy.hidden = true;
+    this.#reference = el('span', { class: 'reference-row' });
     this.#area = el('div', { class: 'confirm-area' });
     this.#exit = '';
     this.#update();
-    return this.#area;
-  }
-
-  // The status is in the shadow root now, so the copy control of a reference can go after it.
-  rendered() {
-    this.#update();
+    return [this.#area, el('div', { class: 'result' }, status, this.#reference)];
   }
 
   // The started function runs only for an accepted request, before the element sends the event.
@@ -386,23 +378,15 @@ class ActionElement extends MuElement {
     else delete this.dataset.wait;
     this.#exits(wait);
     this.#watch(wait);
+    this.#control.dataset.state = state;
     this.#control.setAttribute('aria-disabled', state === 'default' || state === 'error' ? 'false' : 'true');
     // A pending action is busy until its receipt comes back. The control accepts no second press.
     if (state === 'pending') this.#control.setAttribute('aria-busy', 'true');
     else this.#control.removeAttribute('aria-busy');
     const words = [STATUS[state], state === 'confirm' ? '' : this.#action.message].filter(Boolean).join(': ');
-    this.#status.className = 'status' + (state === 'error' ? ' error' : '');
-    // The reference comes from the API of the application. It shows only as text.
-    const reference = state === 'confirm' ? '' : this.#action.reference;
-    this.#status.replaceChildren(words, reference ? el('span', { class: 'reference', part: 'reference' }, 'Reference: ' + reference) : '');
-    // The copy control of the reference comes after the status and not in it, because the status is a live
-    // region for text. The control stays the same node while the reference stays the same.
-    if (reference !== this.#reference) {
-      this.#reference = reference;
-      this.#copy.replaceChildren(...(reference ? [copyControl(reference, 'reference')] : []));
-      this.#copy.hidden = !reference;
-    }
-    if (this.#status.parentNode && this.#copy.previousSibling !== this.#status) this.#status.after(this.#copy);
+    this.#status.className = 'status ' + state;
+    this.#status.textContent = words;
+    showReference(this.#reference, state === 'confirm' ? '' : this.#action.reference);
     this.updated(state);
   }
 }
@@ -410,7 +394,9 @@ class ActionElement extends MuElement {
 export class MuActionButton extends ActionElement {
   static component = 'action-button';
   static focus = true;
-  static styles = [ACTION_CSS];
+  static styles = [ACTION_CSS, REFERENCE_CSS, ACTION_RESULT_CSS];
+  #graphic = null;
+  #doneGraphic = null;
 
   // The application gives the description, icon and display of the bound action. The fill must agree with the binding.
   check(data) {
@@ -430,13 +416,19 @@ export class MuActionButton extends ActionElement {
     const status = el('span', { class: 'status', role: 'status', 'aria-live': 'polite', part: 'status' });
     const display = data.icon ? data.display ?? 'text' : 'text';
     const iconOnly = display === 'icon';
-    const graphic = display === 'text' ? null : icon(data.icon);
-    const button = el('button', { type: 'button', part: 'button', class: graphic ? 'with-icon' : null,
-      'aria-label': iconOnly ? data.label : null }, graphic, iconOnly ? null : data.label);
+    this.#graphic = display === 'text' ? null : icon(data.icon);
+    this.#doneGraphic = this.#graphic ? icon('check') : null;
+    const button = el('button', { type: 'button', part: 'button', class: this.#graphic ? 'with-icon' : null,
+      'aria-label': iconOnly ? data.label : null }, this.#graphic, iconOnly ? null : data.label);
     button.addEventListener('click', () => this.send());
-    const area = this.attach(button, status);
     return [iconOnly ? this.#withTooltip(button, data.label) : button,
-      data.description ? el('span', { class: 'muted' }, data.description) : null, area, status];
+      data.description ? el('span', { class: 'muted' }, data.description) : null, ...this.attach(button, status)];
+  }
+
+  updated(state) {
+    if (!this.#graphic) return;
+    if (state === 'done') this.#graphic.replaceWith(this.#doneGraphic);
+    else this.#doneGraphic.replaceWith(this.#graphic);
   }
 
   #withTooltip(button, label) {
@@ -638,7 +630,7 @@ export class MuCardGrid extends MuElement {
 export class MuEditableForm extends ActionElement {
   static component = 'editable-form';
   static labelField = 'submit_label';
-  static styles = [CARD_CSS, ACTION_CSS, sheet(`
+  static styles = [CARD_CSS, ACTION_CSS, REFERENCE_CSS, ACTION_RESULT_CSS, sheet(`
     :host { display: block; }
     form { display: flex; flex-direction: column; gap: var(--mu-space-3); }
   `)];
@@ -710,9 +702,8 @@ export class MuEditableForm extends ActionElement {
     });
     const status = el('span', { class: 'status', role: 'status', 'aria-live': 'polite', part: 'status' });
     const submit = el('button', { type: 'submit', part: 'button' }, data.submit_label);
-    const area = this.attach(submit, status);
     const form = el('form', { 'aria-label': data.title, part: 'form' },
-      el('p', { class: 'title' }, data.title), provenance(this.fill.slots), ...this.#fields, el('div', {}, submit), area, status);
+      el('p', { class: 'title' }, data.title), provenance(this.fill.slots), ...this.#fields, el('div', {}, submit), ...this.attach(submit, status));
     // An edit after done makes the values new, so the form can save again.
     form.addEventListener('mu-edit', () => this.reopen());
     form.addEventListener('submit', (event) => {
@@ -761,7 +752,7 @@ const OPEN_EDITOR = 'Save or cancel this field first.';
 export class MuFormCard extends ActionElement {
   static component = 'form-card';
   static labelField = 'submit_label';
-  static styles = [CARD_CSS, ACTION_CSS, sheet(`
+  static styles = [CARD_CSS, ACTION_CSS, REFERENCE_CSS, ACTION_RESULT_CSS, sheet(`
     :host { display: block; container-type: inline-size; }
     form { gap: var(--mu-space-3); }
     .section { display: flex; flex-direction: column; gap: var(--mu-space-2);
@@ -1037,9 +1028,8 @@ export class MuFormCard extends ActionElement {
     const status = el('span', { class: 'status', role: 'status', 'aria-live': 'polite', part: 'status' });
     this.#note = el('span', { class: 'hint', part: 'note', 'aria-live': 'polite' });
     const submit = el('button', { type: 'submit', part: 'button' }, data.submit_label);
-    const area = this.attach(submit, status);
     const form = el('form', { 'aria-label': data.title, part: 'form' },
-      el('p', { class: 'title' }, data.title), provenance(this.fill.slots), ...sections, el('div', {}, submit), this.#note, area, status);
+      el('p', { class: 'title' }, data.title), provenance(this.fill.slots), ...sections, el('div', {}, submit), this.#note, ...this.attach(submit, status));
     form.addEventListener('submit', (event) => {
       event.preventDefault();
       if (this.dataset.state === 'refused' || !this.fill) return;

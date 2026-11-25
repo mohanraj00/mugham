@@ -260,7 +260,7 @@ async function run() {
   calls[0].done({ ok: true, message: 'Renewed.', reference: 'R-0042' });
   await settle();
   check('done: the receipt makes the action done', element.dataset.state === 'done' && status(0).startsWith('Done: Renewed.')
-    && status(0).includes('Reference: R-0042'), status(0));
+    && element.shadowRoot.querySelector('[part="reference"]')?.textContent === 'Reference: R-0042', status(0));
   button(1).shadowRoot.querySelector('button').click();
   await settle();
   calls[1].done({ ok: false, message: 'The loan has 3 renewals.' });
