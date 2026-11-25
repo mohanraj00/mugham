@@ -138,7 +138,13 @@ export function serve() {
     response.writeHead(200, { 'content-type': TYPES[extname(file)] + '; charset=utf-8', 'cache-control': 'no-store' });
     response.end(readFileSync(file));
   });
-  return new Promise((done) => server.listen(0, '127.0.0.1', () => done(server)));
+  return new Promise((done, fail) => {
+    server.once('error', fail);
+    server.listen(0, '127.0.0.1', () => {
+      server.off('error', fail);
+      done(server);
+    });
+  });
 }
 
 class Session {
@@ -759,13 +765,20 @@ async function main() {
   const base = `http://127.0.0.1:${server.address().port}`;
   const profile = mkdtempSync(join(tmpdir(), 'mugham-chrome-'));
   const report = { passed: false, chrome: '', pages: {}, accessibility: [], keyboard: [], examples: [], errors: [],
-    scope: 'Headless Chrome on this machine: the check pages in four media modes, the accessibility tree, the keyboard, the example pages, and the example apps in the light theme, the dark theme and at the phone width. It also checks each example in compact density at 375 CSS pixels, in the light and dark themes. No screen reader.' };
+    scope: 'Headless Chrome on this machine: the long thread bench, the check pages in four media modes, the accessibility tree, the keyboard, the example pages, and the example apps in the light theme, the dark theme and at the phone width. It also checks each example in compact density at 375 CSS pixels, in the light and dark themes. No screen reader.' };
   let chrome;
   try {
     const started = await startChrome(profile);
     chrome = started.chrome;
     const session = started.session;
     report.chrome = (await session.send('Browser.getVersion')).product;
+    try {
+      const { runThreadBench } = await import('./thread_bench.mjs');
+      report.threadBench = await runThreadBench(session, base);
+      report.errors.push(...report.threadBench.errors);
+    } catch (error) {
+      report.errors.push(`Thread bench: ${error.message}`);
+    }
     const { targetId } = await session.send('Target.createTarget', { url: 'about:blank' });
     const { sessionId } = await session.send('Target.attachToTarget', { targetId, flatten: true });
     const problems = [];
