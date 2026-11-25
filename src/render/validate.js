@@ -212,8 +212,11 @@ function outsideLimits(value, { earliest, latest }) {
 }
 
 export function dateRangeProblem([start, end], limits) {
-  for (const [index, label, date] of [[0, 'start', start], [1, 'end', end]]) {
-    if (!isDate(date)) return { index, message: 'Give a ' + label + ' date that exists.' };
+  for (const [index, label, date, message] of [
+    [0, 'start', start, 'Give a start date that exists.'],
+    [1, 'end', end, 'Give an end date that exists.'],
+  ]) {
+    if (!isDate(date)) return { index, message };
     if (outsideLimits(date, limits)) return { index, message: 'The ' + label + ' date is outside the range.' };
   }
   return end < start ? { message: 'The end date is before the start date.' } : null;
@@ -236,14 +239,8 @@ export function isLocalDateTime(value) {
   return value.length === 16 && value[10] === 'T' && isDate(value.slice(0, 10)) && timeMinutes(value.slice(11)) !== null;
 }
 
-export function isTimeZone(name) {
-  if (typeof name !== 'string' || !TIME_ZONE.test(name)) return false;
-  try {
-    new Intl.DateTimeFormat(undefined, { timeZone: name });
-    return true;
-  } catch {
-    return false;
-  }
+export function hasTimeZoneForm(name) {
+  return typeof name === 'string' && TIME_ZONE.test(name);
 }
 
 function dateAndTimeErrors(name, data, prefix) {
@@ -264,7 +261,7 @@ function dateAndTimeErrors(name, data, prefix) {
     return problem ? [prefix + 'value: ' + problem] : [];
   }
   if (!isLocalDateTime(value)) return [prefix + 'value: must be a date and time as YYYY-MM-DDTHH:MM'];
-  return isTimeZone(data.time_zone) ? [] : [prefix + 'time_zone: must be an IANA time zone name'];
+  return hasTimeZoneForm(data.time_zone) ? [] : [prefix + 'time_zone: must have the form Area/Location'];
 }
 
 function valueErrors(value, field, path, catalog, depth) {

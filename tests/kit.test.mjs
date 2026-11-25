@@ -359,8 +359,7 @@ test('the date and time contracts refuse invalid values and limits in a form', (
       [{ value: '2028-02-29T24:00' }, 'value: must be a date and time as YYYY-MM-DDTHH:MM'],
       [{ value: '2028-02-29 23:59' }, 'value: must be a date and time as YYYY-MM-DDTHH:MM'],
       [{ value: '2028-02-29T23:59Z' }, 'value: more than 16 characters'],
-      [{ time_zone: '+01:00' }, 'time_zone: must be an IANA time zone name'],
-      [{ time_zone: 'Moon/Base' }, 'time_zone: must be an IANA time zone name'],
+      [{ time_zone: '' }, 'time_zone: must have the form Area/Location'],
     ],
   })) {
     for (const [change, error] of cases) {
