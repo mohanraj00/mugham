@@ -34,7 +34,9 @@ export function sheet(css) {
 export const EDGE = 'color-mix(in srgb, var(--mu-color-border) 45%, transparent)';
 export const LIFT = '0 1px 2px color-mix(in srgb, var(--mu-color-border) 25%, transparent)';
 
-// The path of each icon of the kit. An icon is an inline SVG that the kit draws. No data goes into it.
+// The kit draws each icon as an inline SVG. Each path is a constant of the kit.
+// A fill can only select an icon name. The contract enum and the binding check limit the name.
+// The icon function refuses a name that is not a key of ICONS.
 const ICONS = Object.freeze({
   chevron: 'M3.5 6 8 10.5 12.5 6',
   check: 'M2.5 8.5 6.5 12 13.5 4',

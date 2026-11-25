@@ -2,6 +2,7 @@
 
 tests/browser/states.js checks each state in a browser. This file checks the source and the doc.
 """
+import json
 from pathlib import Path
 import re
 import unittest
@@ -78,9 +79,54 @@ class InteractionTest(unittest.TestCase):
         self.assertIn('Object.hasOwn(ICONS, name)', DOM)
         self.assertIn("path.setAttribute('d', ICONS[name])", DOM)
         self.assertIn("['aria-hidden', 'true']", DOM)
+
+        contract = json.loads(text(ROOT / 'catalog/action-button.json'))
+        icon_field = contract['data']['icon']
+        self.assertEqual(icon_field['type'], 'enum')
+        self.assertCountEqual(icon_field['values'], paths.keys() - {'chevron'})
+
+        components_path = ROOT / 'src/components/index.js'
+        components = text(components_path)
+        button_start = components.index('\nexport class MuActionButton ')
+        button_end = components.index('\n}', button_start)
+        check_start = components.index('\n  check(data) {', button_start, button_end)
+        check = components[check_start:components.index('\n  }', check_start, button_end)]
+        self.assertLess(check.index('const { description, icon, display } = this.action;'),
+                        check.index('if (data.icon !== icon)'))
+        render_start = components.index('\n  render(data) {', button_start, button_end)
+        render_end = components.index('\n  }', render_start, button_end)
+
+        declarations = {
+            ROOT / 'src/actions/action.js': 'get icon(',
+            ROOT / 'src/render/dom.js': 'function icon(',
+        }
+        literal_call = re.compile(r"icon\('([^']*)'\)")
+        fill_calls = 0
         for path in SOURCES:
-            for name in re.findall(r"\bicon\('([^']*)'\)", text(path)):
-                self.assertEqual(name, 'chevron', path.name)
+            source = text(path)
+            for call in re.finditer(r'\b(?:(?:function|get)\s+)?icon\s*\(', source):
+                if call.group() == declarations.get(path):
+                    continue
+                start = call.start()
+                if source.startswith('icon(data.icon)', start):
+                    self.assertEqual(path, components_path)
+                    self.assertTrue(render_start < start < render_end, 'icon(data.icon) must be in MuActionButton.render')
+                    fill_calls += 1
+                else:
+                    literal = literal_call.match(source, start)
+                    self.assertIsNotNone(literal, f'{path.name}: {source[start:].splitlines()[0]}')
+                    self.assertIn(literal.group(1), paths, path.name)
+        self.assertEqual(fill_calls, 1)
+
+        base = text(ROOT / 'src/primitives/base.js')
+        fill_check = base.index('fillErrors(value, CONTRACTS)')
+        other_checks = base.index(
+            'if (errors.length === 0) errors.push(...authorErrors(value, this.#actor), ...this.check(value.data));'
+        )
+        refusal = base.index('if (errors.length) {\n      this.refuse(errors);\n      return;\n    }')
+        self.assertLess(fill_check, other_checks)
+        self.assertLess(other_checks, refusal)
+        self.assertLess(refusal, base.index('this.render('))
 
     def test_the_copy_control_writes_only_to_the_clipboard_after_a_press(self):
         body = DOM[DOM.index('export function copyControl'):DOM.index('// Shared rules for each primitive')]
