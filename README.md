@@ -110,7 +110,7 @@ Each component has a contract file in [catalog/](catalog/README.md). The contrac
 | `mu-card` | Shows a title, a summary, a date and up to six facts. | [card.json](catalog/card.json) |
 | fact | A label and a value in a card. It has no element of its own. | [fact.json](catalog/fact.json) |
 | `mu-action-button` | A button for one action. It shows done only after the receipt comes back. | [action-button.json](catalog/action-button.json) |
-| `mu-editable-form` | Up to 20 fields for text, long text, a number, a range, a date, a choice or a yes or no value. A person edits the values and submits them as one action. | [editable-form.json](catalog/editable-form.json) |
+| `mu-editable-form` | Up to 20 fields for text, long text, a number, a range, a date, a choice, a select or a yes or no value. A person edits the values and submits them as one action. | [editable-form.json](catalog/editable-form.json) |
 | `mu-form-card` | A long form in sections, as labels and values. A person edits one field in place and sends the changes as one action. Some fields are read-only. | [form-card.json](catalog/form-card.json) |
 | `mu-card-grid` | A labeled list of cards in columns of equal width. | [card-grid.json](catalog/card-grid.json) |
 | `mu-citation` | The source of a claim: a source name, a locator as text and an open button. | [citation.json](catalog/citation.json) |
