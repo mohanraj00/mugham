@@ -226,6 +226,8 @@ function galleryMedia() {
   const probe = document.createElement('span');
   document.body.append(probe);
   const system = (value) => { probe.style.color = value; return getComputedStyle(probe).color; };
+  // This function runs in the page, so it cannot use the zero helper of this module.
+  const zero = (value) => value.split(',').every((item) => parseFloat(item) === 0);
   const page = getComputedStyle(document.body);
   const select = getComputedStyle(document.getElementById('preset'));
   const label = document.querySelector('mu-status').shadowRoot.querySelector('[part="label"]');
