@@ -5,6 +5,7 @@ Each release has an entry. The newest entry is first.
 ## Unreleased
 
 - The contract schemas accept the `checkbox` and `switch` roles (#150). The toggle field declares `checkbox` and uses its label as its accessible name.
+- Data grids and uploads offer `Retry` and `Cancel` after a try with no receipt (#138). A queued grid change also offers `Cancel`. Cancel keeps the grid edit as `Changed`. Each retry keeps the same key and uses a new id. The offline queue refuses requests with files.
 - An editable form accepts a yes or no field as a checkbox or a switch (#122). The switch shows `On` or `Off`. The form sends `true` or `false`.
 
 - A refused element or thread part shows a short reason and the next step (#132). Open `Technical details` to read or copy the component name and the validation errors. The `mu-refused` event still gives all the errors.

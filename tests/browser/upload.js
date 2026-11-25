@@ -48,6 +48,20 @@ export async function uploadKeyboardChecks(session, sessionId, { evaluate, key }
   found = await state();
   check('The file shows Done only after the receipt', found.rows.join('|') === 'receipt-a.txt 39 bytes Done Reference: F-0001'
     && found.state === 'done', found);
+  await evaluate(session, sessionId, 'window.muUploadStall()');
+  await key(session, sessionId, 'Tab', 'Tab', 9);
+  found = await state();
+  check('Tab reaches the Copy button of the file with a receipt', found.focus === 'Copy reference', found);
+  await key(session, sessionId, 'Tab', 'Tab', 9);
+  found = await state();
+  check('Tab reaches Retry for the stalled file', found.focus === 'Retry note.txt', found);
+  await key(session, sessionId, 'Tab', 'Tab', 9);
+  found = await state();
+  check('Tab moves from Retry to Cancel', found.focus === 'Cancel note.txt', found);
+  await key(session, sessionId, ' ', 'Space', 32, ' ');
+  found = await state();
+  check('Space cancels the upload and moves focus to Remove', found.focus === 'Remove note.txt'
+    && found.rows[1]?.startsWith('note.txt 4 bytes Pending: Canceled.'), found);
   return results;
 }
 
@@ -423,6 +437,44 @@ async function browserChecks() {
     check('reduced motion: no transition or animation', parseFloat(sendStyle.transitionDuration) === 0 && sendStyle.animationName === 'none');
   }
 
+  const pending = mount();
+  const afterPatience = () => new Promise((done) => setTimeout(done, 20));
+  pending.patience = 1;
+  pick(pending, pdf('first.pdf'), pdf('second.pdf'));
+  send(pending);
+  const [firstTry, secondFile] = pending.requests;
+  check('pending: a file in flight has no exits', part(pending, 'retry').hidden && part(pending, 'cancel').hidden);
+  await afterPatience();
+  const [firstRow, secondRow] = root(pending).querySelectorAll('[part="file"]');
+  const retry = firstRow.querySelector('[part="retry"]');
+  const cancel = firstRow.querySelector('[part="cancel"]');
+  check(`${mode}: a file with no receipt shows the reason and both exits`, pending.dataset.state === 'pending'
+    && rows(pending).every((row) => row.endsWith('Pending: No receipt came back.')) && !root(pending).textContent.includes('Done')
+    && retry.getAttribute('aria-label') === 'Retry first.pdf' && cancel.getAttribute('aria-label') === 'Cancel first.pdf'
+    && [retry, cancel].every((button) => button.checkVisibility() && button.getBoundingClientRect().height >= 44));
+  retry.focus();
+  retry.click();
+  const retried = last(pending);
+  check('retry: only the selected file goes out with the same key and a new id', pending.requests.length === 3
+    && retried.key === firstTry.key && retried.id !== firstTry.id && retried.file === firstTry.file
+    && retried.arguments === firstTry.arguments && root(pending).activeElement === part(pending, 'send')
+    && secondRow.dataset.state === 'stalled');
+  check('receipt: a foreign id with the same key leaves the file uploading', !pending.receipt({ id: 'other', key: firstTry.key, ok: true })
+    && firstRow.dataset.state === 'uploading');
+  await afterPatience();
+  cancel.focus();
+  cancel.click();
+  check('cancel: the file stays in the list, with the focus on its Remove button', pending.requests.length === 3
+    && rows(pending)[0].startsWith('first.pdf 400 bytes Pending: Canceled.')
+    && root(pending).activeElement === firstRow.querySelector('[part="remove"]'));
+  check('cancel: a late receipt of either try changes nothing', !pending.receipt({ id: firstTry.id, ok: true })
+    && !pending.receipt({ key: retried.key, ok: true }) && pending.receipts.length === 0 && secondRow.dataset.state === 'stalled');
+  check('receipt: a stalled file accepts its own late receipt', pending.receipt({ id: secondFile.id, ok: true })
+    && secondRow.dataset.state === 'done' && firstRow.dataset.state === 'pending');
+  send(pending);
+  check('cancel: a new upload of the same file has a new key', pending.requests.length === 4 && last(pending).key !== firstTry.key);
+  pending.receipt({ id: last(pending).id, ok: true });
+
   // A thread shows an upload. The application gives the binding with bind and sends each file in perform.
   const thread = document.createElement('mu-thread');
   const performed = [];
@@ -486,6 +538,13 @@ async function browserChecks() {
       state: keyed.dataset.state };
   };
   window.muUploadAnswer = () => keyed.receipt({ id: last(keyed).id, ok: true, reference: 'F-0001' });
+  window.muUploadStall = async () => {
+    keyed.patience = 1;
+    pick(keyed, pdf('note.txt', 4, 'text/plain'));
+    send(keyed);
+    await afterPatience();
+    part(keyed, 'choose').focus();
+  };
   window.muChecks = { mode, results };
 }
 

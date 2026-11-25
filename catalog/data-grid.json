@@ -1,6 +1,6 @@
 {
   "name": "data-grid",
-  "description": "An editable grid with column and row headers and typed cells. Move between cells with the keyboard. Edit each cell in place. Each save sends one action to the application. The cell shows a marker until a receipt comes back. A successful receipt shows Done below the grid. The kit computes no formula.",
+  "description": "A grid with typed cells. The status gives the reason for a wait. If no receipt comes back, the grid offers Retry and Cancel. Cancel keeps the sent edit Changed if it is the last edit of the cell. A newer edit stays ready to send. A successful receipt shows Done. The kit computes no formula.",
   "data": {
     "label": {"type": "text", "required": true, "min_length": 1, "size": "title"},
     "columns": {
@@ -25,7 +25,7 @@
     "role": "group",
     "name": {"field": "label"},
     "keyboard": [
-      "Tab", "Shift+Tab", "Enter", "Escape", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Home", "End"
+      "Tab", "Shift+Tab", "Enter", "Escape", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Home", "End", "Space"
     ]
   }
 }

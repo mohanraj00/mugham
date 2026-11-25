@@ -252,6 +252,7 @@ export class ActionQueue {
   // gets the detail of the pending state through hold(). A second request with the same key is a retry of a
   // person: it gives the same promise, and the queue sends the action again.
   perform(request, element = null) {
+    if (isPlain(request) && Object.hasOwn(request, 'file')) return Promise.resolve(refusal('The queue cannot keep a file.'));
     const key = isPlain(request) ? request.key : undefined;
     const waiting = this.#waiters.get(key);
     if (waiting) {

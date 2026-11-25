@@ -3,6 +3,7 @@ import { MuElement } from '../primitives/base.js';
 import { ReadMoreElement, READ_MORE_CSS } from '../primitives/read-more.js';
 import { define as definePrimitives, FIELDS } from '../primitives/index.js';
 import { ActionState } from '../actions/action.js';
+import { PATIENCE, patienceOf, ReceiptTimer } from './pending.js';
 import { EDGE, LIFT, el, icon, sheet } from '../render/dom.js';
 import { ACTION_RESULT_CSS, REFERENCE_CSS, showReference } from './receipt.js';
 import { fillErrors } from '../render/validate.js';
@@ -133,9 +134,6 @@ function openLocator(source, locator) {
 }
 
 const STALE = 'Saved the values from before your last edit. Save again to send the edit.';
-// The time that a try waits for its receipt before the element offers a retry and a cancel.
-const PATIENCE = 30000;
-
 // The text of each state. A pending action never shows as done.
 const STATUS = { default: '', disabled: '', confirm: '', pending: 'Pending', done: 'Done', error: 'Not done' };
 
@@ -151,7 +149,7 @@ class ActionElement extends MuElement {
   #reference = null;
   // The exits of a pending action that shows now: queued or stalled. The timer of a try with no receipt.
   #exit = '';
-  #timer = null;
+  #timer = new ReceiptTimer();
   #patience = PATIENCE;
 
   // The state of the action can only be read. Only bind(), start() and receipt() change it.
@@ -190,8 +188,7 @@ class ActionElement extends MuElement {
   }
 
   set patience(value) {
-    if (!(Number.isFinite(value) && value >= 1 && value <= 3600000)) throw new TypeError('patience: a number of milliseconds from 1 to 3600000');
-    this.#patience = value;
+    this.#patience = patienceOf(value);
   }
 
   // Sets the detail of the pending action: { key, wait, tries, message }, where wait is sent, queued or stalled
@@ -355,19 +352,6 @@ class ActionElement extends MuElement {
     if (focused) (retry ?? cancel).focus();
   }
 
-  // A try that gets no receipt in the patience time is stalled. The timer runs only while a try is in flight.
-  #watch(wait) {
-    if (wait !== 'sent') {
-      clearTimeout(this.#timer);
-      this.#timer = null;
-    } else if (this.#timer === null) {
-      this.#timer = setTimeout(() => {
-        this.#timer = null;
-        this.hold({ key: this.#action.key, wait: 'stalled' });
-      }, this.#patience);
-    }
-  }
-
   #update() {
     if (!this.fill || !this.#control) return;
     const state = this.#asking ? 'confirm' : this.#action.state;
@@ -377,7 +361,7 @@ class ActionElement extends MuElement {
     if (wait) this.dataset.wait = wait;
     else delete this.dataset.wait;
     this.#exits(wait);
-    this.#watch(wait);
+    this.#timer.watch(wait, this.#patience, () => this.hold({ key: this.#action.key, wait: 'stalled' }));
     this.#control.dataset.state = state;
     this.#control.setAttribute('aria-disabled', state === 'default' || state === 'error' ? 'false' : 'true');
     // A pending action is busy until its receipt comes back. The control accepts no second press.

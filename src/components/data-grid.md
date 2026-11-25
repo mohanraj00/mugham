@@ -4,13 +4,14 @@
 
 ```js
 import { define } from './src/components/index.js';
+import { onAction } from './src/kit.js';
 define();
 const grid = document.createElement('mu-data-grid');
 grid.actor = { type: 'agent', id: 'agent-budget' };
 grid.action = { tool: 'budget.set_amount', arguments: { budget_id: 'B-2027' }, title: 'Synthetic budget 2027',
   rows: { rent: 'Rent', food: 'Food' }, columns: { jan: { label: 'January', type: 'number' } } };
 grid.fill = fill;
-grid.addEventListener('mu-action', async (event) => grid.receipt(await postToTheApi(event.detail)));
+onAction(grid, (tool, args, id, request) => postToTheApi(request));
 ```
 
 ## Data
@@ -38,10 +39,11 @@ The grid follows the ARIA grid pattern. The table has the role `grid`. Each colu
 
 | Key | Result |
 |---|---|
-| Tab, Shift+Tab | Moves the focus into the grid, to the cell that had the focus last, and out of the grid. |
+| Tab, Shift+Tab | Move the focus into and out of the grid. The grid has one cell in the Tab order. The buttons below the grid have their own Tab stops. |
 | Arrow keys | Move the focus one cell. The focus stops at the edge of the grid. |
 | Home, End | Move to the first or the last cell of the row. With Control, move to the first or the last cell of the grid. |
 | Enter | Opens the editor of the cell with its value. In the editor, Enter saves. |
+| Enter, Space | On Retry or Cancel, do the selected action. |
 | A typed character | Opens the editor with that character in place of the value. |
 | Escape | In the editor, cancels. The cell shows its value from before the edit. |
 | ArrowDown, ArrowUp | In the editor of a choice cell, give the next or the previous choice. |
@@ -91,16 +93,32 @@ A request sends the fixed arguments, a row key and a column key, and the person 
 Each saved change is one action. The grid sends a `mu-action` event with the request:
 
 ```json
-{ "id": "…", "tool": "budget.set_amount", "arguments": { "row": "rent", "column": "jan", "value": 1250, "budget_id": "B-2027" } }
+{ "id": "…", "key": "…", "tool": "budget.set_amount", "arguments": { "row": "rent", "column": "jan", "value": 1250, "budget_id": "B-2027" } }
 ```
 
-- A save of the value that the cell shows sends no action.
-- The changed cell shows the marker `Pending` until the receipt comes back. The state of the grid is `pending`.
-- One request is pending at a time. A change that a person saves during that time shows `Changed`. It goes in the next request, after the receipt.
+- A save of the value that the cell shows sends no action unless the last action of that cell was canceled or rejected.
+- The changed cell shows the marker `Pending` until a receipt or a cancel. The state of the grid is `pending`.
+- One request is pending at a time. A change that a person saves during that time shows `Changed`. The next change goes out after a receipt or a cancel.
 - The application calls `grid.receipt({ id, ok, message, reference })`. With `ok` set to `true`, the marker goes away and the cell keeps the new value. The status below the grid shows `Done` with the row and column. With `ok` set to `false`, the cell shows `Not done` and the state of the grid is `error`. The status shows an optional message, and the optional reference has a copy control.
-- If the receipt is missing or invalid, the cell stays pending. A receipt must match the pending request and have a boolean `ok`. Optional receipt text must be within its length limit.
-- A person can save the same value again to send the change again. A save of the value from before the change removes the marker and sends no action. While a request of the same cell is pending, such a change waits for the receipt, because the receipt can confirm a different value. The last saved value is the value that stays.
+- If the receipt is missing or invalid, the cell stays pending. The receipt must have the key of the pending action, the id of one of its tries, or both. If it has both, both must match. The value of `ok` must be `true` or `false`. The optional `message` and `reference` must be text of 200 and 80 characters maximum.
+- A save of the value from before the change removes the marker and sends no action. While a request of the same cell is pending, such a change waits for its result, because a receipt can confirm a different value. The last saved value is the value that stays.
 - A new binding removes each change of the old binding.
+
+### Pending actions
+
+`grid.hold({ key, wait, tries, message })` sets the detail of a pending action. The key must match. The grid gives the detail in `data-wait` and shows its reason below the grid. Connect the grid with `queueActions` to let the offline queue give that detail and handle retry and cancel events. [The action elements](../../docs/contracts/offline-queue.md#the-action-elements) gives the rules for these methods and events.
+
+| Wait | Status | Buttons |
+|---|---|---|
+| `sent` | `Pending` | None |
+| `queued` | `Pending` with the reason from the queue. | `Cancel` |
+| `stalled` | `Pending: No receipt came back.` | `Retry` and `Cancel` |
+
+The default wait for a receipt is 30000 milliseconds. Set `grid.patience` before a try to change it. A failed call or an invalid result from `onAction` also makes the grid show the exits. A valid receipt can still come back while they show.
+
+Retry sends another `mu-action` event. The arguments and the idempotency key stay the same. The new try has a new id. Send the key to the service so the service can do the action one time across all tries.
+
+Cancel sends a cancelable `mu-action-cancel` event with `detail.key`. If a listener prevents the event, the grid waits for the owner of the request to call `grid.cancel(key)`. Otherwise the grid cancels it. If the sent edit is the last edit of the cell, it stays `Changed`. Save it again to send it with a new key. A newer edit of the same cell stays ready to send. When it goes out, it has a new key and shows `Pending`. After a cancel, the grid ignores receipts of the canceled action.
 
 ## New values
 

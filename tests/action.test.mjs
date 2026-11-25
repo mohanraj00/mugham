@@ -2,7 +2,7 @@
 // the kit shows an action as done only after the receipt of the API comes back.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { ActionState, bindingErrors } from '../src/actions/action.js';
+import { ActionState, bindingErrors, deliverReceipt } from '../src/actions/action.js';
 
 test('a binding needs a valid tool name and scalar arguments', () => {
   assert.deepEqual(bindingErrors({ tool: 'library.renew', arguments: { loan_id: 'L-0001' } }), []);
@@ -302,6 +302,24 @@ const pendingAction = () => {
   action.bind({ tool: 'tool.reserve', arguments: { tool_id: 'T-01' } });
   return { action, request: action.start() };
 };
+
+test('receipt delivery rejects a foreign id and a late receipt after a cancel', async () => {
+  const { action, request } = pendingAction();
+  const element = { action, receipt: (value) => action.receipt(value), noReceipt: (id) => action.noReceipt(id) };
+  await deliverReceipt(element, request, () => ({ id: 'other', key: request.key, ok: true }));
+  assert.deepEqual([action.state, action.wait], ['pending', 'stalled']);
+  const retry = action.retry();
+  assert.equal(retry.key, request.key);
+  assert.notEqual(retry.id, request.id);
+  let answer;
+  const late = deliverReceipt(element, retry, () => new Promise((resolve) => { answer = resolve; }));
+  assert.equal(action.noReceipt(retry.id), true);
+  assert.equal(action.cancel(), true);
+  const next = action.start();
+  answer({ id: retry.id, key: retry.key, ok: true });
+  await late;
+  assert.deepEqual([action.state, action.wait, action.key], ['pending', 'sent', next.key]);
+});
 
 test('an action has one key for all its tries, and each try has a new id', () => {
   const { action, request } = pendingAction();
