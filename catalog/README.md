@@ -273,7 +273,7 @@ An editable form accepts twelve field contracts. Each one has the data fields `n
 | `date-field` | A date as `YYYY-MM-DD`. | `earliest` and `latest`, both optional. | A string, for example `2026-12-01`. |
 | `date-range-field` | Two dates as `YYYY-MM-DD`, with the start date first. | `earliest` and `latest`, both optional. | A list of two texts in start to end order. |
 | `time-field` | A 24-hour time as `HH:MM`. | `earliest`, `latest` and `step`, all optional. | A string, for example `09:15`. |
-| `date-time-field` | A local date and time as `YYYY-MM-DDTHH:MM`. | A required IANA `time_zone`, for example `Europe/Oslo`. | A string, for example `2028-04-12T09:30`. |
+| `date-time-field` | A local date and time as `YYYY-MM-DDTHH:MM`. | A required `time_zone` in `Area/Location` form, for example `Europe/Oslo`. | A string, for example `2028-04-12T09:30`. |
 | `choice-field` | One of the choices. | `choices`: 1 to 20 unique texts. | The text of the choice. |
 | `toggle-field` | A boolean. The default is `false`. | `display` can be `checkbox` (the default) or `switch`. | `true` or `false`. |
 | `range-field` | A number for one handle, or a pair of numbers for two handles. | `minimum`, `maximum` and a positive `step`, all required. | A number or a pair in low to high order. |
@@ -308,7 +308,7 @@ The date range, time and date-time fields require a value. Each uses native cont
 
 Give the time step as a positive integer in minutes. The default is one minute. Steps start at the earliest time or at `00:00` when the earliest time is omitted. Limits are inclusive and apply within one day.
 
-The date-time field shows the time zone as fixed text next to the control. The Python validator checks the `Area/Location` form, which can have more than two parts. The JavaScript validator also checks that `Intl.DateTimeFormat` accepts the name. The kit checks the calendar date and clock time and sends the local value without an offset. The application handles time zone conversion and daylight saving rules.
+The date-time field shows the time zone as fixed text next to the control. Both fill validators check the `Area/Location` form, which can have more than two parts. The action binding also checks that the client knows the time zone. The kit checks the calendar date and clock time and sends the local value without an offset. The application handles time zone conversion and daylight saving rules.
 
 ### Form card
 

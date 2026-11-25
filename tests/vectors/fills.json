@@ -1,6 +1,28 @@
 {
  "note": "Shared cases for tools/catalog.py and src/render/validate.js. tests/test_vectors.py checks that the Python validator gives each expected list.",
  "catalog": {
+  "date-time-field": {
+   "format": 2,
+   "name": "date-time-field",
+   "version": "0.1.0",
+   "kind": "primitive",
+   "description": "A local date and time with a fixed time zone label.",
+   "ai_content": false,
+   "data": {
+    "label": { "type": "text", "label": "Label", "required": true, "min_length": 1, "max_length": 80 },
+    "value": { "type": "text", "label": "Value", "required": true, "editable": true, "min_length": 16, "max_length": 16 },
+    "time_zone": { "type": "text", "label": "Time zone", "required": true, "max_length": 80 }
+   },
+   "states": ["default"],
+   "tokens": [],
+   "accessibility": {
+    "role": "textbox",
+    "name": { "field": "label" },
+    "keyboard": [],
+    "forced_colors": true,
+    "reduced_motion": true
+   }
+  },
   "loan-card": {
    "format": 2,
    "name": "loan-card",
@@ -167,6 +189,90 @@
   }
  },
  "cases": [
+  {
+   "name": "a date-time fill accepts a two-part time zone",
+   "fill": {
+    "component": "date-time-field",
+    "version": "0.1.0",
+    "data": {
+     "label": "Setup date and time",
+     "value": "2028-02-29T08:00",
+     "time_zone": "Europe/Oslo"
+    }
+   },
+   "errors": []
+  },
+  {
+   "name": "a date-time fill accepts a three-part time zone",
+   "fill": {
+    "component": "date-time-field",
+    "version": "0.1.0",
+    "data": {
+     "label": "Setup date and time",
+     "value": "2028-02-29T08:00",
+     "time_zone": "America/Argentina/Buenos_Aires"
+    }
+   },
+   "errors": []
+  },
+  {
+   "name": "a date-time fill accepts an unknown time zone with the correct form",
+   "fill": {
+    "component": "date-time-field",
+    "version": "0.1.0",
+    "data": {
+     "label": "Setup date and time",
+     "value": "2028-02-29T08:00",
+     "time_zone": "Moon/Base"
+    }
+   },
+   "errors": []
+  },
+  {
+   "name": "a date-time fill refuses a UTC offset as a time zone",
+   "fill": {
+    "component": "date-time-field",
+    "version": "0.1.0",
+    "data": {
+     "label": "Setup date and time",
+     "value": "2028-02-29T08:00",
+     "time_zone": "UTC+1"
+    }
+   },
+   "errors": [
+    "data.time_zone: must have the form Area/Location"
+   ]
+  },
+  {
+   "name": "a date-time fill refuses a one-part time zone",
+   "fill": {
+    "component": "date-time-field",
+    "version": "0.1.0",
+    "data": {
+     "label": "Setup date and time",
+     "value": "2028-02-29T08:00",
+     "time_zone": "Oslo"
+    }
+   },
+   "errors": [
+    "data.time_zone: must have the form Area/Location"
+   ]
+  },
+  {
+   "name": "a date-time fill refuses an empty time zone",
+   "fill": {
+    "component": "date-time-field",
+    "version": "0.1.0",
+    "data": {
+     "label": "Setup date and time",
+     "value": "2028-02-29T08:00",
+     "time_zone": ""
+    }
+   },
+   "errors": [
+    "data.time_zone: must have the form Area/Location"
+   ]
+  },
   {
    "name": "valid loan",
    "fill": {

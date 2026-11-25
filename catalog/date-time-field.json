@@ -1,7 +1,7 @@
 {
   "name": "date-time-field",
   "kind": "primitive",
-  "description": "A labeled native input with a required date and time as YYYY-MM-DDTHH:MM. The calendar date and clock time must exist. The required IANA time zone name has the form Area/Location and shows as fixed text. The value has no offset.",
+  "description": "A labeled native input with a required date and time as YYYY-MM-DDTHH:MM. The calendar date and clock time must exist. The required time zone name has the form Area/Location and shows as fixed text. The value has no offset.",
   "ai_content": false,
   "parts": [
     {"name": "copy", "description": "Button that copies text.", "guardrail": true},
@@ -19,7 +19,7 @@
     "name": {"type": "text", "size": "short"},
     "label": {"type": "text", "required": true, "min_length": 1, "size": "line"},
     "value": {"type": "text", "required": true, "editable": true, "min_length": 16, "max_length": 16},
-    "time_zone": {"type": "text", "required": true, "min_length": 3, "size": "line"},
+    "time_zone": {"type": "text", "required": true, "size": "line"},
     "hint": {"type": "text", "size": "summary"},
     "error": {"type": "text", "size": "summary"},
     "disabled": {"type": "boolean"},
