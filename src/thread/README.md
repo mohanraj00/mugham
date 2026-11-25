@@ -96,3 +96,13 @@ If a snapshot gives a new fill for the same action component and the binding is 
 - The thread updates the page one time for each frame, not one time for each event. On a hidden page, it updates after 100 ms. If the page becomes hidden before the frame, the update also comes after 100 ms.
 - An event that changes no message, no run and no error gives no update. Examples are an unknown event, an ignored event and an error after the list of errors is full.
 - The thread has no history input and no compose box. The application owns them. A message of a person comes as AG-UI events with an actor of the type `human`.
+
+## Long thread bench
+
+Run `node tools/thread_bench.mjs` to get the JSON report. To use the pinned Chrome build of CI, set `CHROME` to the executable for the version in [the CI workflow](../../.github/workflows/ci.yml). The report gives the Chrome version.
+
+The bench loads threads of 500 and 1000 synthetic messages. A third case loads 500 messages with a 200-row data grid. Each count includes the message that receives a long stream of text. After 10 warm-up updates, each case measures 60 updates with one text delta per frame. The page is 1280 by 800 CSS pixels.
+
+The report gives each update time, the median and the 95th percentile. It also gives the render times for the history and the message end marker, and the total elapsed time between them, with the wait for each frame. The update time includes the thread render and layout. Event input, the wait for a frame and paint are outside that time. The report gives the JavaScript heap size and, where Chrome supplies it, the embedder heap size in bytes. It measures them before and after the case, after garbage collection each time.
+
+The target is a 95th percentile below 16 ms for a text update in the 500-message case without the grid. The browser check fails above 32 ms for this case. The 16 ms margin allows one more frame for load on a shared CI runner. The 1000-message case and the grid case give measurements for comparison.
