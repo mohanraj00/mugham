@@ -28,7 +28,9 @@ Two items are not in this rule. A link in a sentence of a rich text has the size
 
 ## Actions
 
-A pending action shows `Pending`, and its control has `aria-busy="true"` and `aria-disabled="true"`. A second press sends no second request. The receipt changes the state in the same task, with no delay and no animation.
+A pending action shows `Pending`, and its control has `aria-busy="true"` and `aria-disabled="true"`. A second press sends no second request. A valid receipt changes the state in the same task, with no delay and no animation. A receipt with `ok: false` shows `Not done`. If a required confirmation fails before send, the status shows `Not done: The request did not leave this device. Confirm the action and try again.`
+
+An action button or form that gets no valid receipt stays pending. After a failed call or an invalid or refused result, the helper lets the element offer Retry and Cancel. The element also offers these controls after its wait limit. Retry sends the same key with a new id. The offline queue sets its own pending detail.
 
 ## Empty and refused states
 

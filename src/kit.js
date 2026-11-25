@@ -1,4 +1,5 @@
 import FILL_SCHEMA from '../catalog/schema/fill.schema.json' with { type: 'json' };
+import { deliverReceipt } from './actions/action.js';
 import { CONTRACTS, registeredTag } from './render/registry.js';
 import { actorErrors, fillErrors } from './render/validate.js';
 
@@ -54,10 +55,9 @@ export function mount(name, data, { actor = null, parent, slot, action, ...optio
 }
 
 const handled = new WeakSet();
-const FAILED = 'The request failed.';
 
 export function onAction(root, handler) {
-  const listen = async (event) => {
+  const listen = (event) => {
     const element = event.composedPath?.()?.[0] ?? event.target;
     const request = event.detail;
     if (typeof element?.receipt !== 'function' || typeof request?.id !== 'string'
@@ -65,22 +65,7 @@ export function onAction(root, handler) {
     handled.add(event);
 
     const { id, tool, arguments: args } = request;
-    let receipt;
-    try {
-      receipt = await handler(tool, args, id, request, element);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : typeof error === 'string' ? error : '';
-      receipt = { ok: false, message: message.slice(0, 200) || FAILED };
-    }
-    // A cancel or an earlier receipt ended the action during the wait. Then this result has no action.
-    if (typeof element.action?.state === 'string' && element.action.state !== 'pending') return;
-    if (receipt && typeof receipt === 'object' && !Array.isArray(receipt) && !Object.hasOwn(receipt, 'id')) {
-      receipt = { ...receipt, id };
-    }
-    if (element.receipt(receipt) !== false) return;
-    if (element.receipt({ ok: false, message: FAILED, id }) === false) {
-      console.error('onAction: The element refused the failure receipt.', id);
-    }
+    return deliverReceipt(element, request, () => handler(tool, args, id, request, element));
   };
   root.addEventListener('mu-action', listen);
   return () => root.removeEventListener('mu-action', listen);

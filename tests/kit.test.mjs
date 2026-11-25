@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { ActionState, bindingErrors } from '../src/actions/action.js';
 import { createKit, describe, fill, mount, onAction, queueActions, toolSchema, validateFill } from '../src/kit.js';
+import { memoryStore, openQueue } from '../src/offline/queue.js';
 import { CATALOG } from '../src/render/catalog.js';
 import { BRAND, register } from '../src/render/registry.js';
 import { schemaErrors } from '../src/render/validate.js';
@@ -163,63 +164,61 @@ test('onAction uses the target when the event path is unavailable or empty', asy
   }
 });
 
-test('onAction sends a failed receipt for a rejection and keeps a stated receipt id', async () => {
-  for (const [handler, message] of [
-    [() => { throw new Error('The service failed.'); }, 'The service failed.'],
-    [async () => { throw new Error('The request failed.'); }, 'The request failed.'],
-    [() => ({ ok: false, message: 'The loan is closed.' }), 'The loan is closed.'],
-    [() => ({ id: 'other', ok: true }), 'The request failed.'],
-  ]) {
-    const root = new EventTarget();
-    const source = new ActionState();
-    source.bind({ tool: 'loan.renew' });
-    onAction(root, handler);
-    const event = new CustomEvent('mu-action', { detail: source.start() });
-    event.composedPath = () => [source, root];
-    root.dispatchEvent(event);
-    await Promise.resolve();
-    assert.equal(source.state, 'error');
-    assert.equal(source.message, message);
-  }
-});
-
-for (const [name, receipt] of [
-  ['undefined', undefined],
-  ['a receipt with no boolean ok', { message: 'Renewed.' }],
-  ['a receipt with a message over 200 characters', { ok: true, message: 'x'.repeat(201) }],
+for (const [name, handler] of [
+  ['a thrown error', () => { throw new Error('The connection closed.'); }],
+  ['a rejected promise', () => Promise.reject(new Error('The connection closed.'))],
+  ['no result', () => undefined],
+  ['a missing ok', () => ({ message: 'Renewed.' })],
+  ['a message over 200 characters', () => ({ ok: true, message: 'x'.repeat(201) })],
+  ['a foreign id', (request) => ({ id: 'other', key: request.key, ok: true })],
+  ['a foreign key', (request) => ({ id: request.id, key: 'other', ok: true })],
 ]) {
-  test(`onAction sends a failed receipt when the handler returns ${name}`, async () => {
-    const root = new EventTarget();
+  test(`onAction keeps the action pending after ${name} and a retry keeps the key`, async () => {
+    let listen;
+    const root = { addEventListener: (_type, listener) => { listen = listener; } };
     const source = new ActionState();
     source.bind({ tool: 'loan.renew' });
-    onAction(root, () => receipt);
-    const event = new CustomEvent('mu-action', { detail: source.start() });
-    event.composedPath = () => [source, root];
-    root.dispatchEvent(event);
-    await Promise.resolve();
-    assert.equal(source.state, 'error');
-    assert.equal(source.message, 'The request failed.');
+    const request = source.start();
+    onAction(root, (_tool, _args, id, current) => (id === request.id ? handler(current) : { ok: true }));
+    await listen({ target: source, detail: request });
+    assert.deepEqual([source.state, source.wait, source.message], ['pending', 'stalled', 'No receipt came back.']);
+    assert.equal(source.start(), null);
+    const retry = source.retry();
+    assert.equal(retry.key, request.key);
+    assert.notEqual(retry.id, request.id);
+    await listen({ target: source, detail: retry });
+    assert.equal(source.state, 'done');
   });
 }
 
-test('onAction reports a refused failure receipt', async (t) => {
-  const root = new EventTarget();
+test('onAction keeps the action pending when the element refuses the receipt', async (t) => {
+  let listen;
+  const root = { addEventListener: (_type, listener) => { listen = listener; } };
   const source = new ActionState();
   source.bind({ tool: 'loan.renew' });
   const request = source.start();
   const receipt = t.mock.method(source, 'receipt', () => false);
-  const report = t.mock.method(console, 'error', () => {});
   onAction(root, () => ({ ok: true }));
-  const event = new CustomEvent('mu-action', { detail: request });
-  event.composedPath = () => [source, root];
-  root.dispatchEvent(event);
-  await Promise.resolve();
-  assert.deepEqual(receipt.mock.calls.map((call) => call.arguments[0]), [
-    { ok: true, id: request.id },
-    { ok: false, message: 'The request failed.', id: request.id },
-  ]);
-  assert.equal(report.mock.callCount(), 1);
-  assert.equal(source.state, 'pending');
+  await listen({ target: source, detail: request });
+  assert.deepEqual(receipt.mock.calls.map((call) => call.arguments[0]), [{ ok: true, id: request.id }]);
+  assert.deepEqual([source.state, source.wait, source.key], ['pending', 'stalled', request.key]);
+  assert.equal(source.cancel(), true);
+});
+
+test('a failed older try does not stall a newer try', async () => {
+  let listen;
+  const root = { addEventListener: (_type, listener) => { listen = listener; } };
+  const source = new ActionState();
+  source.bind({ tool: 'loan.renew' });
+  const request = source.start();
+  const { promise, reject } = Promise.withResolvers();
+  onAction(root, () => promise);
+  const received = listen({ target: source, detail: request });
+  source.hold({ key: request.key, wait: 'stalled' });
+  const retry = source.retry();
+  reject(new Error('The connection closed.'));
+  await received;
+  assert.deepEqual([source.state, source.wait, source.key], ['pending', 'sent', retry.key]);
 });
 
 // This checks the part of the Draft 2020-12 meta-schema that the helpers emit.
@@ -400,11 +399,53 @@ test('queueActions sends each action through the queue and connects its listener
   event.composedPath = () => [element, root];
   root.dispatchEvent(event);
   assert.deepEqual(calls, [['listen', root], [request, element]]);
-  // The receipt of the queue has the key of the action and the id of a try that the queue made.
-  resolve({ id: 'a-try-of-the-queue', key: request.key, ok: true, reference: 'B-0001' });
+  // The queue checks its own transport id and returns the id of the element's request.
+  resolve({ id: request.id, key: request.key, ok: true, reference: 'B-0001' });
   await promise;
   await Promise.resolve();
   assert.deepEqual([source.state, source.reference], ['done', 'B-0001']);
   stop();
   assert.deepEqual(calls.at(-1), ['stop']);
+});
+
+test('queueActions gives the element a receipt after a queued retry', { timeout: 3000 }, async (t) => {
+  const root = new EventTarget();
+  const source = new ActionState();
+  source.bind({ tool: 'tool.reserve' });
+  const stalled = Promise.withResolvers();
+  const done = Promise.withResolvers();
+  const sent = [];
+  const element = {
+    action: source,
+    hold(update) {
+      source.hold(update);
+      if (source.wait === 'stalled') stalled.resolve();
+    },
+    receipt(value) {
+      const accepted = source.receipt(value);
+      if (accepted) done.resolve(value);
+      return accepted;
+    },
+  };
+  const queue = await openQueue({ principal: 'member-1', store: memoryStore(), locks: null, events: null,
+    send: (request) => {
+      sent.push(request);
+      if (sent.length === 1) throw new Error('The connection closed.');
+      return { id: request.id, key: request.key, ok: true };
+    } });
+  const stop = queueActions(root, queue);
+  t.after(() => { stop(); queue.close(); });
+  const dispatch = (request) => {
+    const event = new CustomEvent('mu-action', { detail: request });
+    event.composedPath = () => [element, root];
+    root.dispatchEvent(event);
+  };
+  const first = source.start();
+  dispatch(first);
+  await stalled.promise;
+  dispatch(source.retry());
+  assert.equal((await done.promise).id, first.id);
+  assert.equal(source.state, 'done');
+  assert.deepEqual(sent.map((request) => request.key), [first.key, first.key]);
+  assert.equal(new Set([first.id, ...sent.map((request) => request.id)]).size, 3);
 });

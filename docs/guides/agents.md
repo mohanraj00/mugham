@@ -79,7 +79,7 @@ Verify each item before you report the page as done.
 - [ ] The page calls `define` of `src/components/index.js`, and `define` of `src/thread/index.js` if it uses `mu-thread`.
 - [ ] No element shows `Refused`, and `data-state` is not `refused` on an element, except for each fill that you planned to refuse.
 - [ ] No fill has an `actions` key, a key that its contract does not declare, or markup that you expect to render.
-- [ ] Each action element has a binding. A press shows `Pending`, and only the receipt shows `Done` or `Not done`.
+- [ ] Each action element has a binding. After send it shows `Pending`, and a missing or invalid receipt keeps it pending. A valid receipt can show `Done` or `Not done`. A local failure before send gives its own reason.
 - [ ] Each message of the thread shows the correct actor name and type: `Person`, `Agent` or `System`.
 - [ ] Each component with `ai_content` set to `true` shows `Author:` with the bound actor.
 - [ ] The page has no `innerHTML`, no inline script and no inline style. It works with the content security policy of [examples/guides/assemble.html](../../examples/guides/assemble.html).

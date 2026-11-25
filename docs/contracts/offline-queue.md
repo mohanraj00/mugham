@@ -50,7 +50,7 @@ Do not throw an error for a decision of the service. An error means that no rece
 
 If the store cannot give its records, the promise rejects. Then the application decides: for example, it uses `memoryStore()` and tells the person that a reload loses the pending actions.
 
-`queue.perform(request, element)` adds a request and returns a promise of its receipt. These rules apply:
+`queue.perform(request, element)` adds a request and returns a promise of its receipt. The queue checks the receipt against the transport request. The promise gives the receipt with the id from the original call of `perform` and the same action key. A retry of that action uses the same promise. These rules apply:
 
 - The queue is the only path of each action, online and offline. Thus the order stays the same.
 - The queue sends one action at a time, in the order of `perform`. It sends the next action only after the receipt of the action before it.
@@ -82,7 +82,7 @@ No state of the queue shows as done. `queue.entries` gives a frozen list of the 
 
 ## What the queue stores
 
-The store holds one record for each action: `key`, `principal`, `owner`, `order`, `tool`, `arguments`, `edits`, `label`, `queued`, `tries`, `state` and `message`. The queue makes each record from a request that it checked. It copies only these keys.
+The store holds one version 1 record for each action. The value of `version` is `1`. The other required fields are `key`, `principal`, `owner`, `order`, `tool`, `arguments`, `label`, `queued`, `tries`, `state` and `message`. It also has `edits` if the request has edits. The queue makes each record from a request that it checked. It copies only these fields.
 
 The queue stores no secret and no token:
 
@@ -90,7 +90,7 @@ The queue stores no secret and no token:
 - The queue refuses a request with an argument name that looks like a credential, for example `token`, `password`, `secret`, `api_key`, `authorization` or `cookie`. This is a guard, not a proof. The application must not bind a secret as an argument of an action.
 - A record is 200000 characters maximum as JSON.
 
-A queue takes a record from the store only if the record agrees with this contract: the keys, the types and the limits, for example a label of 1 to 120 characters. Each other record stays in the store, and no queue sends it. If the store has more than 100 records of the principal, the queue takes the oldest 100 and takes the others when it has room.
+A queue takes a record from the store only if its version is supported and its keys, types and limits agree with the rules for that version. If a record has no `version`, the queue applies the version 1 rules. Each other record stays in the store, and no queue sends it. If the store has more than 100 valid records of the principal, the queue takes the oldest 100 and takes the others when it has room.
 
 The service worker does not keep an action and does not send one. It keeps only the files that the application lists.
 
@@ -135,7 +135,7 @@ Each queue has an owner id. A queue sends only its own records. With the Web Loc
 - `Retry` sends a `mu-action` event with a new request: the same `key` and a new `id`.
 - `Cancel` sends a `mu-action-cancel` event with `detail.key`. The event can be canceled. If no listener prevents it, the action goes back to its start state with a message. The message says if a try left the device. After a try, the kit does not know if the service did the action, and the message says so.
 - A queue prevents the event for each action that it holds. After the store removed the record, the queue calls `element.cancel(key)`, and then the action goes back to its start state.
-- A receipt is valid if its `key` is the key of the pending action. Without a `key`, its `id` must be the id of one try of the pending action.
+- A receipt must have the `key` of the pending action, the `id` of one of its tries, or both. If it has both, both must match. The value of `ok` must be `true` or `false`. If present, `message` must be text of 200 characters maximum and `reference` must be text of 80 characters maximum. An invalid receipt leaves the action pending.
 
 The element never shows `Done` without a receipt with `ok: true`.
 

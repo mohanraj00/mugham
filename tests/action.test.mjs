@@ -184,7 +184,8 @@ test('an action with a confirm step starts only after a person confirms', () => 
   assert.deepEqual({ ...action.confirm }, { message: 'Cancel the loan L-0001?', label: 'Cancel the loan' });
   assert.throws(() => { action.confirm.label = 'Run'; }, TypeError);
   assert.equal(action.start(), null);
-  assert.equal(action.state, 'default');
+  assert.deepEqual([action.state, action.key, action.message],
+    ['error', '', 'The request did not leave this device. Confirm the action and try again.']);
   const request = action.start({}, true);
   assert.equal(request.tool, 'library.cancel');
   assert.equal(action.state, 'pending');
@@ -356,7 +357,7 @@ test('a cancel of a waiting action goes back to the start state and says if a tr
   assert.equal(sent.action.cancel(), false);
 });
 
-test('a receipt is valid with the key of the action, or with the id of one of its tries', () => {
+test('a receipt needs a matching key or id, and both must match when present', () => {
   const first = pendingAction();
   first.action.hold({ key: first.request.key, wait: 'stalled' });
   const second = first.action.retry();
@@ -367,6 +368,18 @@ test('a receipt is valid with the key of the action, or with the id of one of it
   assert.equal(first.action.receipt({ id: second.id, ok: false }), false);
   const keyed = pendingAction();
   assert.equal(keyed.action.receipt({ id: keyed.request.id, key: 'other', ok: true }), false);
-  assert.equal(keyed.action.receipt({ id: 'a-try-of-the-queue', key: keyed.request.key, ok: false, message: 'The tool is reserved.' }), true);
+  assert.equal(keyed.action.receipt({ id: 'other', key: keyed.request.key, ok: true }), false);
+  assert.equal(keyed.action.receipt({ id: undefined, key: keyed.request.key, ok: true }), false);
+  assert.equal(keyed.action.receipt({ id: keyed.request.id, key: undefined, ok: true }), false);
+  assert.equal(keyed.action.receipt({ key: keyed.request.key, ok: false, message: 'The tool is reserved.' }), true);
   assert.deepEqual([keyed.action.state, keyed.action.message], ['error', 'The tool is reserved.']);
 });
+
+for (const field of ['message', 'reference']) {
+  test(`an action refuses a receipt with a null ${field}`, () => {
+    const { action, request } = pendingAction();
+    assert.equal(action.receipt({ id: request.id, ok: true, [field]: null }), false);
+    assert.equal(action.state, 'pending');
+    assert.equal(action.receipt({ id: request.id, ok: true }), true);
+  });
+}

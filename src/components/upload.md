@@ -75,7 +75,7 @@ Each file shows its name, its size and its state. The Upload button sends one `m
 { id: '…', tool: 'ticket.attach', arguments: { name: 'receipt-a.pdf', size: 613, type: 'application/pdf', ticket_id: 'T-2041' }, file }
 ```
 
-The application sends the file, then calls `upload.receipt({ id, ok, message, reference })`. `message` has 200 code points maximum and `reference` has 80 code points maximum. The element then sends a `mu-receipt` event with `id`, `name`, `size`, `ok`, `message` and `reference`.
+The application sends the file, then calls `upload.receipt({ id, ok, message, reference })`. The receipt must give the pending file's id and `ok` as `true` or `false`. If present, `message` and `reference` must be text, with 200 and 80 characters maximum. After the control accepts the receipt, it sends a `mu-receipt` event with `id`, `name`, `size`, `ok`, `message` and `reference`.
 
 | File state | Text | Condition |
 |---|---|---|
@@ -84,7 +84,7 @@ The application sends the file, then calls `upload.receipt({ id, ok, message, re
 | done | `Done` | A receipt with `ok` set to `true` came back. The reference of the receipt shows below. |
 | not done | `Not done` | A receipt with `ok` set to `false` came back. The message of the receipt shows. A person can send the file again or remove it. |
 
-`Done` shows only after the receipt. The control ignores a receipt with an unknown id or with a text that is too long, and `receipt()` then gives `false`.
+`Done` shows only after a valid receipt with `ok: true`. A missing or invalid receipt leaves the file in `Uploading`. For an invalid receipt, `receipt()` gives `false`.
 
 In a thread, the application gives the binding with `bind`. The thread gives each request to `perform`, with the file, and gives the receipt to the control.
 

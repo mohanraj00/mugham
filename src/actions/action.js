@@ -4,6 +4,7 @@
 // try has a new request id. A pending action with no receipt has an exit: a retry or a cancel. It never shows done.
 // docs/contracts/offline-queue.md gives the rules.
 import actionButton from '../../catalog/action-button.json' with { type: 'json' };
+import { receiptOf } from '../offline/queue.js';
 
 const TOOL = /^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)*$/;
 const MAX_MESSAGE = 200;
@@ -20,8 +21,6 @@ const ACTION_DISPLAYS = [...actionButton.data.display.values];
 // A confirm step has a message of 200 characters at most and a button label of 40 characters at most.
 const MAX_CONFIRM_MESSAGE = 200;
 const MAX_CONFIRM_LABEL = 40;
-// A receipt reference, for example a record id, has 80 characters at most.
-const MAX_REFERENCE = 80;
 // The edit types of a typed field (catalog/README.md, "Typed edits"). An actor id has 128 characters at most.
 const EDIT_TYPES = new Set(['judgment', 'correction', 'override']);
 const MAX_ACTOR_ID = 128;
@@ -29,6 +28,7 @@ const MAX_ACTOR_ID = 128;
 const WAITS = Object.freeze({ sent: '', queued: 'Waiting for a connection.', stalled: 'No receipt came back.' });
 const CANCELED = 'Canceled. The request did not leave this device.';
 const CANCELED_UNKNOWN = 'Canceled. No receipt came back, so it is possible that the service did the action.';
+const UNCONFIRMED = 'The request did not leave this device. Confirm the action and try again.';
 const ISO_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
 
 // Returns true if the text has more than max characters. The loop stops at max + 1, so a very long text
@@ -40,6 +40,22 @@ function longer(text, max) {
     if (count > max) return true;
   }
   return false;
+}
+
+// A failed call or an invalid or refused result leaves the outcome unknown.
+export async function deliverReceipt(element, request, send) {
+  try {
+    const receipt = receiptOf(await send(), request);
+    const state = element.action?.state;
+    if (typeof state === 'string' && state !== 'pending') return;
+    if (receipt) {
+      if (receipt.id === undefined) receipt.id = request.id;
+      if (element.receipt(receipt) !== false) return;
+    }
+  } catch {
+    // No receipt came back that the element could accept.
+  }
+  element.noReceipt?.(request.id);
 }
 
 // Returns the first max characters of the text, with no copy of the remaining characters.
@@ -264,7 +280,12 @@ export class ActionState {
   // the request needs a list of edits, and the request carries them with the new values and the editor.
   start(extra = {}, confirmed = false, edits = undefined) {
     if (!this.#binding || this.#state === 'pending' || this.#state === 'done') return null;
-    if (this.#binding.confirm && confirmed !== true) return null;
+    if (this.#binding.confirm && confirmed !== true) {
+      this.#state = 'error';
+      this.#message = UNCONFIRMED;
+      this.#reference = '';
+      return null;
+    }
     if (Object.keys(extra).some((name) => !Object.hasOwn(this.#binding.editable, name))) return null;
     const typed = this.#binding.typed.length > 0;
     if (!typed && edits !== undefined && !(Array.isArray(edits) && edits.length === 0)) return null;
@@ -295,6 +316,12 @@ export class ActionState {
     if (tries !== undefined) this.#tries = tries;
     this.#message = message ? first(message, MAX_MESSAGE) : WAITS[wait];
     return true;
+  }
+
+  // Only the current try can stall the action. A late failure of an earlier try changes nothing.
+  noReceipt(id) {
+    if (this.#state !== 'pending' || this.#wait !== 'sent' || id !== this.#request.id) return false;
+    return this.hold({ key: this.#request.key, wait: 'stalled' });
   }
 
   // Returns the request of a new try of a stalled action, or null. The key stays the same, and the id is new.
@@ -331,19 +358,14 @@ export class ActionState {
     return true;
   }
 
-  // Returns true if the receipt belongs to the pending action. Only a valid receipt changes the state. A receipt
-  // with a key must have the key of the action. A receipt with no key must have the id of one of its tries.
+  // A receipt must match the key of the action, the id of one of its tries, or both when both are present.
   receipt(value) {
-    if (!this.#request || this.#state !== 'pending' || value === null || typeof value !== 'object') return false;
-    const mine = value.key === undefined ? this.#ids.has(value.id) : value.key === this.#request.key;
-    if (!mine || typeof value.ok !== 'boolean') return false;
-    const message = value.message ?? '';
-    if (typeof message !== 'string' || longer(message, MAX_MESSAGE)) return false;
-    const reference = value.reference ?? '';
-    if (typeof reference !== 'string' || longer(reference, MAX_REFERENCE)) return false;
-    this.#state = value.ok ? 'done' : 'error';
-    this.#message = message;
-    this.#reference = reference;
+    if (this.#state !== 'pending') return false;
+    const receipt = receiptOf(value, this.#request, this.#ids);
+    if (!receipt || (receipt.key === undefined && receipt.id === undefined)) return false;
+    this.#state = receipt.ok ? 'done' : 'error';
+    this.#message = receipt.message ?? '';
+    this.#reference = receipt.reference ?? '';
     this.#clear();
     return true;
   }
