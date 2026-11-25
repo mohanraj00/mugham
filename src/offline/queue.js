@@ -555,8 +555,8 @@ export class ActionQueue {
         return;
       }
       const waiter = this.#waiters.get(record.key);
-      // An element that is not in the page now cannot show a rejection.
-      const shows = waiter && waiter.element?.isConnected !== false;
+      // Only an element that is in the page now can show a rejection. A call of perform with no element has none.
+      const shows = Boolean(waiter?.element) && waiter.element.isConnected !== false;
       this.#waiters.delete(record.key);
       if (receipt.ok || shows) {
         this.#drop(record);

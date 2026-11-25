@@ -634,6 +634,26 @@ test('a rejection for an element that is not in the page stays in the queue unti
   queue.close();
 });
 
+test('a rejection of an action that perform got with no element stays in the queue', async () => {
+  // Expected: no element shows the rejection, so the queue view keeps it until a person dismisses it.
+  const net = device({ answer: () => ({ ok: false, message: 'The tool T-02 is already reserved.' }) });
+  const queue = await net.open();
+  const first = request('T-02');
+  const receipt = await queue.perform(first);
+  assert.deepEqual([receipt.ok, receipt.message], [false, 'The tool T-02 is already reserved.']);
+  await until(() => queue.entries[0]?.state === 'rejected', 'the rejection');
+  assert.deepEqual(queue.entries.map((entry) => [entry.key, entry.state, entry.message]), [[first.key, 'rejected', 'The tool T-02 is already reserved.']]);
+  assert.deepEqual((await net.store.all()).map((record) => [record.key, record.state]), [[first.key, 'rejected']]);
+  // A receipt with ok: true needs no element. The action leaves the queue.
+  const done = device();
+  const other = await done.open();
+  assert.equal((await other.perform(request('T-01'))).ok, true);
+  assert.deepEqual(other.entries, []);
+  assert.equal(queue.dismiss(first.key), true);
+  queue.close();
+  other.close();
+});
+
 test('clear removes each action with no try in flight, for a sign-out', async () => {
   let release;
   const net = device({ answer: () => new Promise((done) => { release = () => done({ ok: true }); }) });
