@@ -238,13 +238,15 @@ async function browserChecks() {
   // More than one change of one cell before the receipt: the last saved value is the value that stays.
   const quick = mount(budget());
   edit(quick, 'rent', 'jan', '1000');
+  const beforeReceipt = last(quick);
   edit(quick, 'rent', 'jan', '1100');
   edit(quick, 'rent', 'jan', '900');
   check('quick changes: a change back to the old value stays while a request of the cell is pending', quick.requests.length === 1
     && at(quick, 'rent', 'jan').textContent === '900Changed' && quick.dataset.state === 'pending');
   answer(quick);
   check('quick changes: after the receipt the last saved value goes in the next request', quick.requests.length === 2
-    && last(quick).arguments.value === 900 && at(quick, 'rent', 'jan').textContent === '900Pending' && status(quick) === '');
+    && last(quick).key !== beforeReceipt.key && last(quick).arguments.value === 900
+    && at(quick, 'rent', 'jan').textContent === '900Pending' && status(quick) === '');
   answer(quick);
   check('quick changes: the cell shows the last saved value', at(quick, 'rent', 'jan').textContent === '900' && quick.dataset.state === 'default'
     && quick.requests.length === 2);
@@ -654,6 +656,29 @@ async function browserChecks() {
   edit(pending, 'rent', 'jan', '910');
   check('cancel: a new save of the same value has a new key', pending.requests.length === 4 && last(pending).key !== firstTry.key);
   answer(pending);
+
+  const newer = mount(budget());
+  edit(newer, 'rent', 'jan', '930');
+  const sent = last(newer);
+  edit(newer, 'rent', 'jan', '940');
+  check('a newer edit of the same cell waits while the first try is pending', newer.requests.length === 1
+    && at(newer, 'rent', 'jan').textContent === '940Changed' && newer.dataset.wait === 'sent');
+  newer.hold({ key: sent.key, wait: 'stalled' });
+  exit(newer, 'retry').click();
+  const retried = last(newer);
+  check('retry sends the first edit again and the newer edit still waits', newer.requests.length === 2
+    && retried.key === sent.key && retried.id !== sent.id && retried.arguments.value === 930
+    && at(newer, 'rent', 'jan').textContent === '940Changed');
+  newer.hold({ key: sent.key, wait: 'stalled' });
+  exit(newer, 'cancel').click();
+  const next = last(newer);
+  check('cancel sends the newer edit of the same cell with a new key', newer.requests.length === 3
+    && next.key !== sent.key && next.arguments.row === 'rent' && next.arguments.column === 'jan'
+    && next.arguments.value === 940 && at(newer, 'rent', 'jan').textContent === '940Pending'
+    && newer.dataset.state === 'pending' && newer.dataset.wait === 'sent');
+  check('a late receipt for the canceled edit leaves the newer edit Pending', !newer.receipt({ id: retried.id, key: sent.key, ok: true })
+    && at(newer, 'rent', 'jan').textContent === '940Pending');
+  answer(newer);
 
   const offline = mount(budget());
   const { queueActions } = await import('../../src/kit.js');

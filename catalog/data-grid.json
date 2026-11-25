@@ -1,6 +1,6 @@
 {
   "name": "data-grid",
-  "description": "An editable grid with headers and typed cells. Each save sends one action to the application. The status gives the reason for a wait and offers Retry and Cancel after a try with no receipt. Cancel leaves the cell Changed. A successful receipt shows Done. The kit computes no formula.",
+  "description": "A grid with typed cells. The status gives the reason for a wait. If no receipt comes back, the grid offers Retry and Cancel. Cancel keeps the sent edit Changed if it is the last edit of the cell. A newer edit stays ready to send. A successful receipt shows Done. The kit computes no formula.",
   "data": {
     "label": {"type": "text", "required": true, "min_length": 1, "size": "title"},
     "columns": {

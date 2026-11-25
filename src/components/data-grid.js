@@ -215,12 +215,11 @@ export class MuDataGrid extends MuElement {
     const sent = this.#sent;
     if (!sent || !key || key !== this.#action.key || !this.#action.cancel()) return false;
     this.#sent = null;
-    const change = this.#changes.get(sent.id);
-    if (change) {
-      // Keep the last value of the cell. A person must save it again before it can go out.
-      change.state = 'changed';
-      change.canceled = true;
-      const cell = this.#find(change.row, change.column);
+    if (this.#changes.get(sent.id) === sent) {
+      // The sent edit stays Changed until a person saves it again.
+      sent.state = 'changed';
+      sent.canceled = true;
+      const cell = this.#find(sent.row, sent.column);
       if (cell) this.#paint(cell);
     }
     if (this.fill) this.#say(this.#action.message);
