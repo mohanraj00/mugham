@@ -36,6 +36,19 @@ async function api(request) {
 // Step 5: send the request and give the receipt to the element.
 onAction(renew, (tool, args, id, request) => api(request));
 
+// Action labels in docs/guides/agents.md. A synthetic value stands in for the model response.
+const replyAction = {
+  tool: 'library.send_reply', label: 'Send reply', title: 'Reply about loan L-0001',
+  arguments: { loan_id: 'L-0001' }, editable: { reply: 'Reply' },
+};
+const modelData = { reply: 'Your loan is due on 2026-12-01.' };
+const replyForm = kit.mount('editable-form', {
+  title: replyAction.title,
+  submit_label: replyAction.label,
+  fields: [fill('field', { name: 'reply', label: replyAction.editable.reply, value: modelData.reply })],
+}, { parent: stack, action: replyAction });
+onAction(replyForm, (tool, args, id, request) => ({ id: request.id, ok: true, message: 'The synthetic API received the reply.' }));
+
 const thread = document.querySelector('mu-thread');
 thread.before(stack);
 

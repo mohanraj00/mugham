@@ -39,6 +39,38 @@ const renewAction = { tool: 'library.renew', label: 'Renew', arguments: { loan_i
 onAction(renew, (tool, args, id, request) => api(request));
 ```
 
+## Action labels
+
+The label in the fill must equal the label in the binding. If the binding says `Send reply`, the kit refuses a fill that says `Send Reply`. The exact match keeps the visible label under the control of the application. [Catalog action rules](../../catalog/README.md#the-binding)
+
+The application gives the label to the model in the tool schema. If the model returns a full fill, use `const` to set the allowed value of `data.label` or, for a form, `data.submit_label`. Use the value from the binding. [Tool schema helper](../../src/kit.md#toolschemaname)
+
+You can also ask the model for field values only. Put the action label in the schema description and ask for a single `reply` value. The application uses this value to build the form fill. It copies the title, field label and submit label from the binding. This example uses the actor and stack from the assemble page. [Assemble example setup](assemble.md#step-3-put-cards-in-a-stack-and-a-grid)
+
+<!-- source: examples/guides/assemble.js -->
+```js
+const replyAction = {
+  tool: 'library.send_reply', label: 'Send reply', title: 'Reply about loan L-0001',
+  arguments: { loan_id: 'L-0001' }, editable: { reply: 'Reply' },
+};
+const modelData = { reply: 'Your loan is due on 2026-12-01.' };
+const replyForm = kit.mount('editable-form', {
+  title: replyAction.title,
+  submit_label: replyAction.label,
+  fields: [fill('field', { name: 'reply', label: replyAction.editable.reply, value: modelData.reply })],
+}, { parent: stack, action: replyAction });
+```
+
+The form shows the draft and the `Send reply` button. A person can edit the draft, and then send it.
+
+## Narration claims
+
+The narration check compares only explicit `[Field: value]` claims with the card fill. Give the model the fact labels and values and the date label and value from the card. Ask it to copy the labels and values exactly. For the tray example, use this prompt. [Decision 0005](../decisions/0005-narration-check.md)
+
+> Write one sentence about the tray. Use each card field in the form `[Field: value]`. Copy each label and value exactly. Use one colon and one space between them. Use square brackets only for claims. The card fields are `Count` with value `12`, `Status` with value `ready`, and `Date` with value `2026-11-15`.
+
+The example response is `The tray has [Count: 12] items, with [Status: ready] on [Date: 2026-11-15].` Pass the response and the card fill to the narration check. This response gives three matching claims. [Tray example](../../examples/evidence/narration.json)
+
 ## Checklist
 
 Verify each item before you report the page as done.

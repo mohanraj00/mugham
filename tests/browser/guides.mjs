@@ -142,6 +142,22 @@ export async function guideChecks(session, sessionId, base, { evaluate, open, sl
   await named(page, [['group', 'Loans of Robin'], ['group', 'Current loans'], ['article', 'Field guide to moss'], ['list', 'Thread'],
     ['article', 'Message from Robin, Person'], ['article', 'Message from Loan helper, Agent'], ['button', 'Renew']]);
 
+  // docs/guides/agents.md uses the reply form on the assemble page.
+  const reply = await evaluate(session, sessionId, `(() => {
+    const form = document.querySelector('mu-editable-form');
+    const original = form.fill;
+    const state = form.dataset.state;
+    const label = form.shadowRoot.querySelector('button[type=submit]').textContent;
+    const draft = form.values().reply;
+    form.fill = { ...original, data: { ...original.data, submit_label: 'Send Reply' } };
+    const refused = form.dataset.state === 'refused' && form.shadowRoot.textContent.includes('data.submit_label: the label is not the label of the application');
+    form.fill = original;
+    return { state, label, draft, refused };
+  })()`);
+  step(page, 'the form shows the application label and the draft from the model', reply.state === 'default'
+    && reply.label === 'Send reply' && reply.draft === 'Your loan is due on 2026-12-01.', reply);
+  step(page, 'the form refuses a label with a different case', reply.refused, reply);
+
   // docs/guides/theme.md, in the four media modes of the kit checks.
   page = 'examples/guides/theme.html';
   for (const [mode, { features, test }] of Object.entries(THEME_MODES)) {
