@@ -118,7 +118,7 @@ The default wait for a receipt is 30000 milliseconds. Set `grid.patience` before
 
 Retry sends another `mu-action` event. The arguments and the idempotency key stay the same. The new try has a new id. Send the key to the service so the service can do the action one time across all tries.
 
-Cancel sends a cancelable `mu-action-cancel` event with `detail.key`. If a listener prevents the event, the grid waits for the owner of the request to call `grid.cancel(key)`. Otherwise the grid cancels it. A cancel keeps the edit as `Changed`. Save the edit again to send it with a new key. After a cancel, the grid ignores receipts of the canceled action.
+Cancel sends a cancelable `mu-action-cancel` event with `detail.key`. If a listener prevents the event, the grid waits for the owner of the request to call `grid.cancel(key)`. Otherwise the grid cancels it. If the sent edit is the last edit of the cell, it stays `Changed`. Save it again to send it with a new key. A newer edit of the same cell stays ready to send. When it goes out, it has a new key and shows `Pending`. After a cancel, the grid ignores receipts of the canceled action.
 
 ## New values
 
