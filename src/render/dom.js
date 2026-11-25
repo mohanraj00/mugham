@@ -35,7 +35,15 @@ export const EDGE = 'color-mix(in srgb, var(--mu-color-border) 45%, transparent)
 export const LIFT = '0 1px 2px color-mix(in srgb, var(--mu-color-border) 25%, transparent)';
 
 // The path of each icon of the kit. An icon is an inline SVG that the kit draws. No data goes into it.
-const ICONS = Object.freeze({ chevron: 'M3.5 6 8 10.5 12.5 6' });
+const ICONS = Object.freeze({
+  chevron: 'M3.5 6 8 10.5 12.5 6',
+  check: 'M2.5 8.5 6.5 12 13.5 4',
+  cross: 'M4 4 12 12 M12 4 4 12',
+  edit: 'M3 10 10.5 2.5 13.5 5.5 6 13 2.5 13.5Z M9 4 12 7',
+  delete: 'M2.5 4.5h11 M6 4.5V2.5h4v2 M4 4.5l.75 9h6.5l.75-9 M8 7v4',
+  send: 'M2 6 14 2 10 14 7 9 2 6Z M7 9 14 2',
+  retry: 'M2.5 3v4h4 M2.8 7a5.5 5.5 0 1 1 .6 4',
+});
 const SVG = 'http://www.w3.org/2000/svg';
 
 // An icon is decoration. The control that holds it keeps the accessible name.

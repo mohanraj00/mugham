@@ -69,9 +69,14 @@ class InteractionTest(unittest.TestCase):
         for path in ['src/primitives/base.js', 'src/thread/index.js']:
             self.assertIn('REFUSED_NEXT', text(ROOT / path))
 
-    def test_an_icon_is_a_fixed_path_and_takes_no_data(self):
+    def test_each_icon_uses_a_fixed_path_from_the_kit(self):
         icons = re.search(r'const ICONS = Object\.freeze\(\{([^}]*)\}\);', DOM).group(1)
-        self.assertEqual(re.findall(r"(\w+): '([^']+)'", icons), [('chevron', 'M3.5 6 8 10.5 12.5 6')])
+        paths = dict(re.findall(r"(\w+): '([^']+)'", icons))
+        self.assertEqual(set(paths), {'chevron', 'check', 'cross', 'edit', 'delete', 'send', 'retry'})
+        self.assertEqual(paths['chevron'], 'M3.5 6 8 10.5 12.5 6')
+        self.assertEqual(len(set(paths.values())), len(paths))
+        self.assertIn('Object.hasOwn(ICONS, name)', DOM)
+        self.assertIn("path.setAttribute('d', ICONS[name])", DOM)
         self.assertIn("['aria-hidden', 'true']", DOM)
         for path in SOURCES:
             for name in re.findall(r"\bicon\('([^']*)'\)", text(path)):

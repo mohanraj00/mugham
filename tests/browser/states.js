@@ -9,8 +9,6 @@ export async function stateChecks(session, sessionId, { evaluate, key, sleep }, 
   const check = (step, ok, detail) => results.push({ page, step: `${mode}: ${step}`, ok: Boolean(ok), detail: JSON.stringify(detail) });
   const mouse = (type, x, y, extra = {}) => session.send('Input.dispatchMouseEvent', { type, x, y, ...extra }, sessionId);
   const down = { button: 'left', buttons: 1, clickCount: 1 };
-  // A transition of the kit is 120 ms at the maximum. Reduced motion has no transition.
-  const settle = () => (mode === 'reduced-motion' ? null : sleep(200));
   const count = await evaluate(session, sessionId, 'window.muControls()');
   check('the page has each type of control', count >= 20, count);
 
@@ -30,13 +28,10 @@ export async function stateChecks(session, sessionId, { evaluate, key, sleep }, 
   for (let i = 0; i < count; i += 1) {
     await mouse('mouseMoved', 1, 1);
     const at = await evaluate(session, sessionId, `window.muPoint(${i})`);
-    await settle();
     const rest = await evaluate(session, sessionId, `window.muStyle(${i})`);
     await mouse('mouseMoved', at.x, at.y);
-    await settle();
     const hover = await evaluate(session, sessionId, `window.muStyle(${i})`);
     await mouse('mousePressed', at.x, at.y, down);
-    await settle();
     const pressed = await evaluate(session, sessionId, `window.muStyle(${i})`);
     await mouse('mouseMoved', 1, 1, { button: 'left', buttons: 1 });
     await mouse('mouseReleased', 1, 1, { button: 'left', buttons: 0, clickCount: 1 });
@@ -360,8 +355,13 @@ async function browserChecks() {
   };
   window.muStyle = (index) => {
     const item = controls[index];
+    const layer = face(item);
+    // Read the final state styles. The motion checks above measure the transition durations.
+    for (const transition of layer.getAnimations()) {
+      if (transition instanceof CSSTransition) transition.finish();
+    }
     const style = getComputedStyle(item);
-    const shown = getComputedStyle(face(item));
+    const shown = getComputedStyle(layer);
     // A line that does not show has no color: a border or an outline with no style or no width.
     // A link shows hover as a thick underline.
     const line = (name) => (shown[`${name}Style`] !== 'none' && shown[`${name}Width`] !== '0px' ? shown[`${name}Color`] : 'none');
