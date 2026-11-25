@@ -21,7 +21,7 @@
         "citation": {"$ref": "#/$defs/slot"}
       }
     },
-    "parts": {"type": "array", "items": {"$ref": "#/$defs/part"}},
+    "parts": {"type": "array", "maxItems": 40, "items": {"$ref": "#/$defs/part"}},
     "data": {
       "type": "object",
       "maxProperties": 40,
@@ -71,7 +71,7 @@
       "required": ["name", "description", "guardrail"],
       "additionalProperties": false,
       "properties": {
-        "name": {"type": "string", "pattern": "^[a-z0-9-]+$"},
+        "name": {"type": "string", "maxLength": 40, "pattern": "^[a-z0-9-]+$"},
         "description": {"type": "string", "minLength": 1, "maxLength": 300},
         "guardrail": {"type": "boolean"}
       }
