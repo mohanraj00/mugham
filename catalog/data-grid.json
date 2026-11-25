@@ -1,6 +1,6 @@
 {
   "name": "data-grid",
-  "description": "An editable grid with column and row headers and typed cells. A person moves between cells with the keyboard and edits each cell in place. Each saved change goes to the application as one action. The cell shows a marker while it waits for a receipt. A successful receipt shows Done below the grid.",
+  "description": "An editable grid with column and row headers and typed cells. Move between cells with the keyboard. Edit each cell in place. Each save sends one action to the application. The cell shows a marker until a receipt comes back. A successful receipt shows Done below the grid. The kit computes no formula.",
   "data": {
     "label": {"type": "text", "required": true, "min_length": 1, "size": "title"},
     "columns": {

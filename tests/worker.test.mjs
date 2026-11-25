@@ -2,6 +2,9 @@
 // docs/contracts/offline-queue.md: the worker keeps only the listed files, and it answers no other request.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readdirSync, readFileSync } from 'node:fs';
+import { sep } from 'node:path';
+import { runInNewContext } from 'node:vm';
 import '../src/offline/worker.js';
 
 const ORIGIN = 'https://app.example';
@@ -50,6 +53,25 @@ const get = (path, init) => new Request(ORIGIN + path, init);
 
 // The name of the cache of one scope and one version.
 const cacheOf = (version, place = ORIGIN + '/app/') => `mugham-shell ${place} ${version}`;
+
+test('the queue example worker keeps each kit module', async () => {
+  const self = scope();
+  self.location.href = ORIGIN + '/examples/cards/queue-worker.js';
+  const script = readFileSync(new URL('../examples/cards/queue-worker.js', import.meta.url), 'utf8');
+  runInNewContext(script, {
+    self,
+    // The test already loaded the classic worker script.
+    importScripts() {},
+    mughamOffline: globalThis.mughamOffline,
+  });
+  await self.send('install');
+  const modules = readdirSync(new URL('../src/', import.meta.url), { recursive: true })
+    .map((name) => name.split(sep).join('/'))
+    .filter((name) => name.endsWith('.js') && name !== 'offline/worker.js');
+  const kept = new Set(self.fetched);
+  const missing = modules.filter((name) => !kept.has(ORIGIN + '/src/' + name)).sort();
+  assert.deepEqual(missing, []);
+});
 
 test('the install keeps each listed file, and the activate removes each older cache of its scope', async () => {
   const caches = new Map([[cacheOf('v1'), new Map()], ['other-cache', new Map()]]);

@@ -1,6 +1,7 @@
 // The service worker of the offline queue example. The application owns this file. It gives the kit the list of
 // the files of the page. The kit keeps only these files, so the page loads offline. It keeps no API response.
 // tests/browser/queue.js checks that the list has each file that the page loads.
+// tests/worker.test.mjs checks that the list has each kit module.
 importScripts('../../src/offline/worker.js');
 
 const PAGE = [
@@ -11,10 +12,11 @@ const EXAMPLES = [
 ];
 const SRC = [
   'actions/action.js', 'components/chart.js', 'components/data-grid.js', 'components/image.js',
-  'components/index.js', 'components/rich-text.js', 'components/status.js', 'components/table.js',
-  'components/upload.js', 'kit.js', 'offline/queue.js', 'offline/source.js', 'primitives/base.js',
-  'primitives/fields.js', 'primitives/index.js', 'primitives/read-more.js', 'render/catalog.js', 'render/dom.js',
-  'render/registry.js', 'render/resolve.js', 'render/validate.js', 'styles/page.css', 'tokens/tokens.css',
+  'components/index.js', 'components/receipt.js', 'components/rich-text.js', 'components/status.js',
+  'components/table.js', 'components/upload.js', 'envelope/envelope.js', 'kit.js', 'narration/check.js',
+  'offline/queue.js', 'offline/source.js', 'primitives/base.js', 'primitives/fields.js', 'primitives/index.js',
+  'primitives/read-more.js', 'render/catalog.js', 'render/dom.js', 'render/registry.js', 'render/resolve.js',
+  'render/validate.js', 'styles/page.css', 'thread/index.js', 'tokens/tokens.css',
 ];
 const CATALOG = [
   'action-button.json', 'action-queue.json', 'button.json', 'card-grid.json', 'card.json', 'chart-series.json',
@@ -29,5 +31,5 @@ const CATALOG = [
   'text-cell.json', 'text.json', 'upload.json',
 ];
 
-mughamOffline.serve(self, { version: 'queue-example-1', files: [...PAGE, ...EXAMPLES.map((name) => '../' + name),
+mughamOffline.serve(self, { version: 'queue-example-2', files: [...PAGE, ...EXAMPLES.map((name) => '../' + name),
   ...SRC.map((name) => '../../src/' + name), ...CATALOG.map((name) => '../../catalog/' + name)] });
