@@ -586,7 +586,7 @@ async function main() {
   const base = `http://127.0.0.1:${server.address().port}`;
   const profile = mkdtempSync(join(tmpdir(), 'mugham-chrome-'));
   const report = { passed: false, chrome: '', pages: {}, accessibility: [], keyboard: [], examples: [], errors: [],
-    scope: 'Headless Chrome checks the test pages in four media modes, the accessibility tree, and keyboard use. It checks each example in compact density at 375 CSS pixels in light and dark. No screen reader.' };
+    scope: 'Headless Chrome on this machine: the check pages in four media modes, the accessibility tree, the keyboard, the example pages, and the example apps in the light theme, the dark theme and at the phone width. It also checks each example in compact density at 375 CSS pixels, in the light and dark themes. No screen reader.' };
   let chrome;
   try {
     const started = await startChrome(profile);
