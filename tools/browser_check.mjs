@@ -884,7 +884,7 @@ async function main() {
             detail: JSON.stringify(choice) });
           report.accessibility.push(...await axErrors(session, sessionId, [['form', 'Input form'], ['textbox', 'Note'],
             ['textbox', 'Copies'], ['textbox', 'Due date'], ['group', 'Branch'], ['radio', 'North'], ['radio', 'South'],
-            ['radio', 'Harbor']], page + ' input types'));
+            ['radio', 'Harbor'], ['checkbox', 'Send a reminder'], ['switch', 'Send a notice']], page + ' input types'));
         }
         // A form card: Enter opens the editor of a value, Escape cancels, Enter in the field saves, and Space on Save saves.
         // The focus goes back to the value after each step.

@@ -45,7 +45,7 @@
       "required": ["role", "keyboard", "forced_colors", "reduced_motion"],
       "additionalProperties": false,
       "properties": {
-        "role": {"enum": ["article", "button", "form", "group", "list", "region", "status", "textbox", "none"]},
+        "role": {"enum": ["article", "button", "checkbox", "form", "group", "list", "region", "status", "switch", "textbox", "none"]},
         "name": {
           "oneOf": [
             {"type": "object", "required": ["field"], "additionalProperties": false, "properties": {"field": {"$ref": "#/$defs/field_name"}}},
