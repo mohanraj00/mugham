@@ -1,0 +1,30 @@
+{
+  "name": "date-range-field",
+  "kind": "primitive",
+  "description": "Two native date inputs in a named group. The required value is a pair of dates as YYYY-MM-DD, start then end. Both dates must exist and stay within the optional limits. The end date can equal the start date or come after it.",
+  "ai_content": false,
+  "data": {
+    "name": {"type": "text", "size": "short"},
+    "label": {"type": "text", "required": true, "min_length": 1, "size": "line"},
+    "value": {
+      "type": "list", "required": true, "editable": true, "min_items": 2, "max_items": 2,
+      "items": {"type": "date", "label": "Date"}
+    },
+    "earliest": {"type": "date"},
+    "latest": {"type": "date"},
+    "hint": {"type": "text", "size": "summary"},
+    "error": {"type": "text", "size": "summary"},
+    "disabled": {"type": "boolean"},
+    "typed": {"type": "boolean"}
+  },
+  "states": ["+disabled", "+error"],
+  "tokens": [
+    "color.surface", "color.text", "color.text-muted", "color.border", "color.focus", "color.danger", "space.1",
+    "space.2", "radius.1", "type.body", "type.caption", "motion.fast"
+  ],
+  "accessibility": {
+    "role": "group",
+    "name": {"field": "label"},
+    "keyboard": ["Tab", "Shift+Tab", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Space"]
+  }
+}

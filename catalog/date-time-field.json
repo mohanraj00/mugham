@@ -1,0 +1,26 @@
+{
+  "name": "date-time-field",
+  "kind": "primitive",
+  "description": "A labeled native input with a required date and time as YYYY-MM-DDTHH:MM. The calendar date and clock time must exist. The required IANA time zone name has the form Area/Location and shows as fixed text. The value has no offset.",
+  "ai_content": false,
+  "data": {
+    "name": {"type": "text", "size": "short"},
+    "label": {"type": "text", "required": true, "min_length": 1, "size": "line"},
+    "value": {"type": "text", "required": true, "editable": true, "min_length": 16, "max_length": 16},
+    "time_zone": {"type": "text", "required": true, "min_length": 3, "size": "line"},
+    "hint": {"type": "text", "size": "summary"},
+    "error": {"type": "text", "size": "summary"},
+    "disabled": {"type": "boolean"},
+    "typed": {"type": "boolean"}
+  },
+  "states": ["+disabled", "+error"],
+  "tokens": [
+    "color.surface", "color.text", "color.text-muted", "color.border", "color.focus", "color.danger", "space.1",
+    "space.2", "radius.1", "type.body", "type.caption", "motion.fast"
+  ],
+  "accessibility": {
+    "role": "textbox",
+    "name": {"field": "label"},
+    "keyboard": ["Tab", "Shift+Tab", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Space"]
+  }
+}

@@ -21,6 +21,7 @@ import { UPLOAD_FILES, uploadExampleChecks, uploadKeyboardChecks } from '../test
 import { plannedErrors, queueExampleChecks } from '../tests/browser/queue.js';
 import { RANGE_PAGE, rangeExampleChecks } from '../tests/browser/range-field.js';
 import { MULTI_CHOICE_PAGE, multiChoiceExampleChecks } from '../tests/browser/multi-choice-field.js';
+import { BOOKING_PAGE, bookingExampleChecks } from '../tests/browser/date-time-fields.js';
 import { SELECT_PAGE, selectExampleChecks } from '../tests/browser/select-field.js';
 
 export const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
@@ -100,6 +101,7 @@ const EXAMPLES = {
     ['slider', 'Price range Maximum'], ['spinbutton', 'Price range Maximum number']]],
   [MULTI_CHOICE_PAGE]: [3, 0, [['form', 'Garden bed'], ['group', 'Sun levels'], ['checkbox', 'Full sun'],
     ['combobox', 'Plants'], ['button', 'Remove Mist fern']]],
+  [BOOKING_PAGE]: [4, 0, [['form', 'Room booking'], ['group', 'Booking dates'], ['button', 'Save booking']]],
   [SELECT_PAGE]: [2, 0, [['form', 'Pickup details'], ['combobox', 'Pickup branch']]],
   'examples/forms/membership.html': [2, 0, [['list', 'Thread'], ['article', 'Message from Forms agent, Agent'], ['form', 'Membership form'],
     ['group', 'Household'], ['button', 'Edit Children: 1'], ['button', 'Send changes']]],
@@ -417,7 +419,7 @@ async function axErrors(session, sessionId, expected, where) {
 // The generic rules of decision 0006. They cover the risks of the axe-core rules that apply to the markup of the kit.
 // Each control in the accessibility tree has a name. In each root, an id is unique and each id reference finds its
 // target. Each role, each value of an ARIA attribute and each tabindex is valid. A tabindex above 0 changes the focus order.
-const CONTROLS = new Set(['button', 'checkbox', 'combobox', 'DisclosureTriangle', 'link', 'listbox', 'menuitem', 'option', 'radio',
+const CONTROLS = new Set(['button', 'checkbox', 'combobox', 'Date', 'DateTime', 'DisclosureTriangle', 'InputTime', 'link', 'listbox', 'menuitem', 'option', 'radio',
   'searchbox', 'slider', 'spinbutton', 'switch', 'tab', 'textbox']);
 export async function pageRules(session, sessionId, where) {
   const { nodes } = await session.send('Accessibility.getFullAXTree', {}, sessionId);
@@ -992,6 +994,7 @@ async function main() {
     report.keyboard.push(...await rangeExampleChecks(session, sessionId, base, MODES, { evaluate, open, key }, problems));
     report.keyboard.push(...await selectExampleChecks(session, sessionId, base, MODES, { evaluate, open, key, pageRules }, problems));
     report.keyboard.push(...await multiChoiceExampleChecks(session, sessionId, base, MODES, { evaluate, open, key, pageRules }, problems));
+    report.keyboard.push(...await bookingExampleChecks(session, sessionId, base, MODES, { evaluate, open, key, pageRules }, problems));
     // The fixture of decision 0006 has one defect of each kind. The generic rules must find each one.
     await open(session, sessionId, `${base}/tests/browser/rules.html`);
     for (let i = 0; i < 100 && !await evaluate(session, sessionId, 'window.muRulesReady === true'); i += 1) await sleep(50);

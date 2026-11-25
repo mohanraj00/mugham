@@ -3,11 +3,13 @@ import { MuElement } from './base.js';
 import { ReadMoreElement, READ_MORE_CSS } from './read-more.js';
 import { el, sheet } from '../render/dom.js';
 import { FieldElement, MuChoiceField, MuDateField, MuField, MuLongTextField, MuNumberField, MuToggleField } from './fields.js';
+import { MuDateRangeField, MuDateTimeField, MuTimeField } from './date-time-fields.js';
 import { MuMultiChoiceField } from './multi-choice-field.js';
 import { MuRangeField } from './range-field.js';
 import { MuSelectField } from './select-field.js';
 
 export { FieldElement, MuChoiceField, MuDateField, MuField, MuLongTextField, MuMultiChoiceField, MuNumberField, MuRangeField, MuSelectField, MuToggleField };
+export { MuDateRangeField, MuDateTimeField, MuTimeField };
 
 export const FIELDS = Object.freeze({
   field: ['mu-field', MuField],
@@ -19,6 +21,9 @@ export const FIELDS = Object.freeze({
   'range-field': ['mu-range-field', MuRangeField],
   'select-field': ['mu-select-field', MuSelectField],
   'multi-choice-field': ['mu-multi-choice-field', MuMultiChoiceField],
+  'date-range-field': ['mu-date-range-field', MuDateRangeField],
+  'time-field': ['mu-time-field', MuTimeField],
+  'date-time-field': ['mu-date-time-field', MuDateTimeField],
 });
 
 const GAPS = { small: 'var(--mu-space-1)', medium: 'var(--mu-space-2)', large: 'var(--mu-space-4)' };
