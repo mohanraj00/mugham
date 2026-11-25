@@ -6,7 +6,7 @@
 import actionButton from '../../catalog/action-button.json' with { type: 'json' };
 import { copyArgs, copyValue, isTextList, receiptOf } from '../offline/queue.js';
 import { isOrderedPair, sameValue } from '../render/range.js';
-import { isTimeZone } from '../render/validate.js';
+import { hasTimeZoneForm } from '../render/validate.js';
 
 const TOOL = /^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)*$/;
 const MAX_MESSAGE = 200;
@@ -80,6 +80,16 @@ function scalar(value) {
   return typeof value === 'string' || typeof value === 'boolean' || (typeof value === 'number' && Number.isFinite(value));
 }
 
+function isKnownTimeZone(name) {
+  if (!hasTimeZoneForm(name)) return false;
+  try {
+    new Intl.DateTimeFormat(undefined, { timeZone: name });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function bindingErrors(binding) {
   if (binding === null || typeof binding !== 'object' || Array.isArray(binding)) return ['the action must be an object'];
   const errors = [];
@@ -125,7 +135,7 @@ export function bindingErrors(binding) {
   const zones = binding.time_zones;
   if (zones !== undefined && (zones === null || typeof zones !== 'object' || Array.isArray(zones)
     || ![Object.prototype, null].includes(Object.getPrototypeOf(zones))
-    || !Object.entries(zones).every(([name, zone]) => names.has(name) && isTimeZone(zone)))) {
+    || !Object.entries(zones).every(([name, zone]) => names.has(name) && isKnownTimeZone(zone)))) {
     errors.push('time_zones must map editable field names to IANA time zone names');
   }
   // The application gives the typed names and the person who edits, so a fill cannot remove the type of an edit.
