@@ -2,7 +2,9 @@
 
 Each release has an entry. The newest entry is first.
 
-## Unreleased
+## 0.5.0, 2026-11-25
+
+When you upgrade from 0.4.0, the new data keys are optional. An action request has a new `key` field. Pass it to the API and use it as the API's idempotency key so the API does the action only once across all tries. By default, action buttons and forms show `Retry` and `Cancel` after 30 seconds with no receipt. A failed call or an invalid result leaves the action pending. This replaces the former status `Not done: The request failed.` Update application code that relies on that status to handle the pending state. The kit refuses a receipt with `null` in `message` or `reference`. If the API or the action handler supplies `null` for either field, change it to omit that field. If the handler supplies an `id` or a `key`, use the matching value from the request.
 
 - The offline mode with a queue of pending actions (#12). `openQueue` in `src/offline/queue.js` keeps each action on the device, in IndexedDB, and sends the queue in order after the device reconnects. A queued action shows as pending, never as done. The application gives the send function and adds its credentials there, so the queue stores no secret and no token. The application also names the principal of the queue, and a queue sends only the records of its principal. A closed queue sends nothing. A cancel is complete only after the device removed the action, so a canceled action does not go out after a reload. `queueActions` in `src/kit.js` connects the action elements to a queue. [docs/contracts/offline-queue.md](docs/contracts/offline-queue.md) gives the rules.
 - A request has a `key` that stays the same for each try of its action, and each try has a new `id`. Use the key as the idempotency key of the API. A receipt can name its action with `key`.
@@ -12,7 +14,10 @@ Each release has an entry. The newest entry is first.
 - `thread.perform` gets the element as its third argument.
 - The example `examples/cards/queue.html` on the fixture API `tools/queue_server.py` shows the offline mode with synthetic data.
 
-Upgrade from 0.4: an application that uses 0.4.0 needs no code change. A request has the new key `key`. A pending action now shows `Retry` and `Cancel` after 30 seconds with no receipt. An API that does not use the key can get the same action two times after a retry of a person, so use the key as the idempotency key.
+- A compact density preset and a full-width page option (#119). Set `data-mu-density="compact"` on the page or a container to reduce spacing, text sizes and minimum grid column widths. Keep each control target at least 44 by 44 CSS pixels. Set `data-mu-page="full"` on `<html>` with `page.css` to use the available page width. [Theme guide](docs/guides/theme.md#compact-density-and-full-width) gives the rules.
+- An icon display for the action button (#118). The optional `icon` key selects one of six icons in the kit. The optional `display` key selects `text`, `icon` or `both`. An icon-only button keeps its label as the accessible name and shows it on hover and focus. The status and receipt reference stay visible. For a bound button, the application controls these keys, and the fill must agree with the binding. [Catalog action rules](catalog/README.md#the-binding) give the details.
+- Documentation for five design choices (#136). The README gives the rules for server side rendering and the minimum browser versions. The agent guide explains how to match action labels to their bindings and how to write narration claims. The assemble guide explains when to use a form card or an editable form. [README limits](README.md#limits), [agent guide](docs/guides/agents.md#action-labels) and [assemble guide](docs/guides/assemble.md#choose-a-form) give the details.
+- Security review fixes for actions and the offline queue (#15). If a try fails or gives no valid receipt, the action stays pending. Action buttons and forms offer `Retry` and `Cancel`. A retry keeps the key and uses a new id. One receipt check verifies supplied ids and keys and refuses a receipt with `null` in `message` or `reference`. The thread keeps the id and key that a valid result supplies. Each new queue record has `version: 1`, and the queue checks the full stored record before replay. [SECURITY.md](SECURITY.md) describes the boundaries as built. [Offline queue contract](docs/contracts/offline-queue.md) gives the record and receipt rules.
 
 ## 0.4.0, 2026-11-19
 
