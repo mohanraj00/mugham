@@ -4,7 +4,7 @@
 // The worker keeps only the files that the application lists. It keeps no API response and no action, and it
 // sends no action. The queue of the page sends each action (src/offline/queue.js).
 (() => {
-  const PREFIX = 'mugham-shell-';
+  const PREFIX = 'mugham-shell';
   const VERSION = /^[A-Za-z0-9._-]{1,64}$/;
   const MAX_FILES = 500;
 
@@ -24,7 +24,11 @@
   function serve(scope, { version, files } = {}) {
     if (typeof version !== 'string' || !VERSION.test(version)) throw new TypeError('version: 1 to 64 characters of letters, digits, ., - and _');
     const urls = listed(scope, files);
-    const name = PREFIX + version;
+    // The name of the cache has the scope of the registration. Thus two applications on one origin, each with
+    // its own scope, do not remove the cache of each other. A URL has no space, so each prefix is exact.
+    const place = typeof scope.registration?.scope === 'string' ? scope.registration.scope : new URL('./', scope.location.href).href;
+    const mine = `${PREFIX} ${place} `;
+    const name = mine + version;
 
     // If one file fails, the install fails, and the older worker stays.
     scope.addEventListener('install', (event) => {
@@ -37,7 +41,7 @@
     scope.addEventListener('activate', (event) => {
       event.waitUntil((async () => {
         for (const key of await scope.caches.keys()) {
-          if (key.startsWith(PREFIX) && key !== name) await scope.caches.delete(key);
+          if (key.startsWith(mine) && key !== name) await scope.caches.delete(key);
         }
         await scope.clients.claim();
       })());

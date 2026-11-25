@@ -46,16 +46,41 @@ function scope({ caches = new Map(), network = async () => new Response('new') }
 const FILES = ['./', 'app.js', '/kit/src/kit.js?v=1'];
 const get = (path, init) => new Request(ORIGIN + path, init);
 
-test('the install keeps each listed file, and the activate removes each older cache', async () => {
-  const caches = new Map([['mugham-shell-v1', new Map()], ['other-cache', new Map()]]);
+// The name of the cache of one scope and one version.
+const cacheOf = (version, place = ORIGIN + '/app/') => `mugham-shell ${place} ${version}`;
+
+test('the install keeps each listed file, and the activate removes each older cache of its scope', async () => {
+  const caches = new Map([[cacheOf('v1'), new Map()], ['other-cache', new Map()]]);
   const self = scope({ caches });
   globalThis.mughamOffline.serve(self, { version: 'v2', files: FILES });
   await self.send('install');
   assert.deepEqual(self.fetched, [ORIGIN + '/app/', ORIGIN + '/app/app.js', ORIGIN + '/kit/src/kit.js?v=1']);
-  assert.deepEqual([...caches.get('mugham-shell-v2').keys()], self.fetched);
+  assert.deepEqual([...caches.get(cacheOf('v2')).keys()], self.fetched);
   await self.send('activate');
-  assert.deepEqual([...caches.keys()], ['other-cache', 'mugham-shell-v2']);
+  assert.deepEqual([...caches.keys()], ['other-cache', cacheOf('v2')]);
   assert.equal(self.claimed, 1);
+});
+
+test('the activate keeps the cache of each other scope of the same origin', async () => {
+  // Expected: a worker removes only the older caches of its own registration scope. A scope whose URL starts
+  // with the URL of this scope is a different scope.
+  const other = [cacheOf('v1', ORIGIN + '/second/'), cacheOf('v1', ORIGIN + '/app/admin/'), cacheOf('v1', ORIGIN + '/')];
+  const caches = new Map([[cacheOf('v1'), new Map()], ...other.map((name) => [name, new Map()])]);
+  const self = scope({ caches });
+  globalThis.mughamOffline.serve(self, { version: 'v2', files: FILES });
+  await self.send('install');
+  await self.send('activate');
+  assert.deepEqual([...caches.keys()], [...other, cacheOf('v2')]);
+});
+
+test('the cache name uses the scope of the registration, not the folder of the worker file', async () => {
+  const caches = new Map([[cacheOf('v1', ORIGIN + '/'), new Map()], [cacheOf('v1'), new Map()]]);
+  const self = scope({ caches });
+  self.registration = { scope: ORIGIN + '/' };
+  globalThis.mughamOffline.serve(self, { version: 'v2', files: FILES });
+  await self.send('install');
+  await self.send('activate');
+  assert.deepEqual([...caches.keys()], [cacheOf('v1'), cacheOf('v2', ORIGIN + '/')]);
 });
 
 test('if one file fails, the install fails and keeps nothing', async () => {
@@ -63,7 +88,7 @@ test('if one file fails, the install fails and keeps nothing', async () => {
   const self = scope({ caches, network: async (request) => new Response('', { status: request.url.endsWith('app.js') ? 404 : 200 }) });
   globalThis.mughamOffline.serve(self, { version: 'v1', files: FILES });
   await assert.rejects(self.send('install'), /404/);
-  assert.equal(caches.get('mugham-shell-v1').size, 0);
+  assert.equal(caches.get(cacheOf('v1')).size, 0);
 });
 
 test('a listed file comes from the network first, and from the cache when the network fails', async () => {

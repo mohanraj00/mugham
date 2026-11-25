@@ -24,6 +24,10 @@ const CLOSED = 'The queue is closed.';
 const NO_CONNECTION = 'Waiting for a connection.';
 const EARLIER = 'Waiting for an earlier action.';
 const NO_RECEIPT = 'No receipt came back.';
+const NOT_REMOVED = 'The device cannot remove the action. Try again.';
+const ISO_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
+// The result of a try that did not leave the device, because the queue closed first.
+const UNSENT = Symbol('unsent');
 
 const isPlain = (value) => value !== null && typeof value === 'object' && !Array.isArray(value)
   && [Object.prototype, null].includes(Object.getPrototypeOf(value));
@@ -78,8 +82,9 @@ function isRecord(record) {
     && isPlain(record.arguments) && Object.values(record.arguments).every(isScalar)
     && !Object.keys(record.arguments).some((name) => CREDENTIAL.test(name))
     && (record.edits === undefined || editsOf(record.edits) !== null)
-    && typeof record.label === 'string' && typeof record.queued === 'string' && isCount(record.tries)
-    && STATES.includes(record.state) && typeof record.message === 'string';
+    && typeof record.label === 'string' && record.label.length >= 1 && record.label.length <= MAX_LABEL
+    && typeof record.queued === 'string' && ISO_TIME.test(record.queued) && isCount(record.tries)
+    && STATES.includes(record.state) && typeof record.message === 'string' && record.message.length <= MAX_MESSAGE;
 }
 
 // The frozen receipt of a try, or null if the value is not a valid receipt of this request.
@@ -155,6 +160,13 @@ export class ActionQueue {
   #waiters = new Map();
   // The keys of the records that this queue removed. The queue never takes them from the store again.
   #gone = new Set();
+  // The keys of the actions whose cancel waits for the store, and of the actions that the store did not remove.
+  #leaving = new Set();
+  #stuck = new Set();
+  // True after a pass stopped at an action whose cancel waits for the store.
+  #blocked = false;
+  // True if the store has more records of this principal than the queue had room for.
+  #more = false;
   #watchers = new Set();
   #adds = Promise.resolve();
   #running = null;
@@ -287,27 +299,28 @@ export class ActionQueue {
     return true;
   }
 
-  // Removes an action that waits for a connection or that got no receipt. Returns false for each other action,
-  // also for an action with a try in flight.
+  // Starts the cancel of an action that waits for a connection or that got no receipt. Returns false for each
+  // other action, also for an action with a try in flight. The cancel is complete only after the store removed the
+  // record: then the promise of perform gives null, and the element shows the cancel. Thus a canceled action
+  // cannot go out after a reload. If the store cannot remove the record, the action stays pending.
   cancel(key) {
     const record = this.#find(key);
     // The queue cancels only an action that shows a cancel: not a try in flight, and not the action that it sends next.
     const shown = record ? this.#shown(record).state : '';
-    if (shown !== 'queued' && shown !== 'stalled') return false;
-    this.#remove(record);
-    // The canceled action can be the action that stopped the queue. The queue continues with the next action.
-    this.flush();
-    this.#changed();
+    if ((shown !== 'queued' && shown !== 'stalled') || this.#leaving.has(key)) return false;
+    this.#withdraw(record);
     return true;
   }
 
   // Removes each action with no try in flight, for example when a person signs out. An action with a try in
-  // flight stays until its receipt comes back. Returns the number of removed actions.
-  clear() {
-    const waiting = this.#list.filter((record) => record.state !== 'sent');
-    for (const record of waiting) this.#remove(record);
-    if (waiting.length) this.#changed();
-    return waiting.length;
+  // flight stays until its receipt comes back. Returns a promise of the number of removed actions. The promise
+  // settles after the store removed the records.
+  async clear() {
+    // An action that perform still writes to the store is in the list after this wait.
+    await this.#adds;
+    const waiting = this.#list.filter((record) => record.state !== 'sent' && !this.#leaving.has(record.key));
+    const removed = await Promise.all(waiting.map((record) => this.#withdraw(record)));
+    return removed.filter(Boolean).length;
   }
 
   // Removes a rejected action after a person read the rejection.
@@ -324,8 +337,11 @@ export class ActionQueue {
   listen(root) {
     const cancel = (event) => {
       const key = event.detail?.key;
-      // If the queue has the action and cannot cancel it now, the element must not cancel it.
-      if ((this.#waiters.has(key) || this.#find(key)) && !this.cancel(key)) event.preventDefault();
+      if (!this.#waiters.has(key) && !this.#find(key)) return;
+      // The queue has the action, so the element must not cancel it by itself. The queue cancels the element
+      // after the store removed the record.
+      event.preventDefault();
+      this.cancel(key);
     };
     const step = (event) => {
       const { key, step: name } = event.detail ?? {};
@@ -354,13 +370,42 @@ export class ActionQueue {
     return this.#list.find((record) => record.key === key);
   }
 
-  // Removes a record and ends the wait of its page part: the element cancels, and the promise gives null.
-  #remove(record) {
-    this.#drop(record);
-    const waiter = this.#waiters.get(record.key);
-    this.#waiters.delete(record.key);
-    waiter?.element?.cancel?.(record.key);
-    waiter?.resolve(null);
+  // Removes a record from the store, then ends the wait of its page part: the element cancels, and the promise
+  // gives null. While the store works, the queue does not send this record or a record after it. Returns true
+  // if the store removed the record.
+  async #withdraw(record) {
+    const { key } = record;
+    this.#leaving.add(key);
+    this.#stuck.delete(key);
+    let removed = true;
+    try {
+      await this.#store.remove(key);
+    } catch {
+      removed = false;
+    }
+    this.#leaving.delete(key);
+    if (removed) {
+      this.#list = this.#list.filter((item) => item !== record);
+      this.#gone.add(key);
+      const waiter = this.#waiters.get(key);
+      this.#waiters.delete(key);
+      try {
+        waiter?.element?.cancel?.(key);
+      } catch {
+        // An element of the application cannot stop the queue.
+      }
+      waiter?.resolve(null);
+    } else {
+      this.#stuck.add(key);
+    }
+    // After a cancel, the queue continues with the next action. After a failed cancel, the action waits as
+    // before. The queue sends it again only if a pass stopped at it, or at the next flush.
+    if (removed || this.#blocked) {
+      this.#blocked = false;
+      this.flush();
+    }
+    this.#changed();
+    return removed;
   }
 
   #drop(record) {
@@ -375,10 +420,13 @@ export class ActionQueue {
   #shown(record) {
     if (record.state === 'rejected') return { state: 'rejected', message: record.message };
     if (record.state === 'sent') return { state: 'sent', message: '' };
-    if (!this.#online()) return { state: 'queued', message: NO_CONNECTION };
-    if (record.state === 'stalled') return { state: 'stalled', message: NO_RECEIPT };
-    if (this.#list.find((item) => item.state !== 'rejected') !== record) return { state: 'queued', message: EARLIER };
-    return this.#running && !this.#closed ? { state: 'sent', message: '' } : { state: 'queued', message: NO_CONNECTION };
+    // The store did not remove this action after a cancel, so it still waits. The message tells the person.
+    const stuck = this.#stuck.has(record.key);
+    if (!this.#online()) return { state: 'queued', message: stuck ? NOT_REMOVED : NO_CONNECTION };
+    if (record.state === 'stalled') return { state: 'stalled', message: stuck ? NOT_REMOVED : NO_RECEIPT };
+    if (this.#list.find((item) => item.state !== 'rejected') !== record) return { state: 'queued', message: stuck ? NOT_REMOVED : EARLIER };
+    if (this.#running && !this.#closed && !this.#leaving.has(record.key)) return { state: 'sent', message: '' };
+    return { state: 'queued', message: stuck ? NOT_REMOVED : NO_CONNECTION };
   }
 
   // A failed write does not stop the queue. The key of the action protects against a second send after a reload.
@@ -430,14 +478,24 @@ export class ActionQueue {
   // Takes each record of its principal whose owner holds no lock, for example after a reload. With no Web Locks API,
   // the queue takes each record of its principal. The lock of the queue name lets only one queue take records at a time.
   async #adopt() {
+    // The queue reads this again in each pass. A store that fails gives no reason for one more pass.
+    this.#more = false;
     const take = async () => {
       const held = this.#locks ? new Set(((await this.#locks.query()).held ?? []).map((lock) => lock.name)) : null;
-      for (const record of await this.#store.all()) {
-        if (!isRecord(record) || this.#find(record.key) || this.#gone.has(record.key)) continue;
+      // The oldest records come first, so the queue takes them first if it has no room for all of them.
+      const stored = (await this.#store.all()).filter(isRecord).sort((a, b) => a.order - b.order);
+      for (const record of stored) {
+        if (this.#closed) break;
+        if (this.#find(record.key) || this.#gone.has(record.key)) continue;
         // A record of a different principal stays in the store. This queue does not show it and does not send it.
         if (record.principal !== this.#principal) continue;
         // A record of this owner that is not in the list is in the middle of perform. perform adds it to the list.
         if (record.owner === this.#owner || held?.has(`mugham-queue:${this.#name}:${record.owner}`)) continue;
+        // A full queue takes the other records in a later pass, when it has room.
+        if (this.#list.length >= MAX_ACTIONS) {
+          this.#more = true;
+          break;
+        }
         // A try that was in flight has no receipt now. The record waits, and the next try has the same key.
         const mine = { ...record, owner: this.#owner, state: record.state === 'rejected' ? 'rejected' : 'queued' };
         if (mine.state === 'queued') mine.message = '';
@@ -460,16 +518,36 @@ export class ActionQueue {
     }
     while (!this.#closed && this.#online()) {
       const record = this.#list.find((item) => item.state !== 'rejected');
-      if (!record) return;
+      // A cancel of the first action waits for the store. The queue sends nothing until the cancel is complete.
+      if (!record) {
+        // The queue sent each action that it had. One more pass takes the records that had no room.
+        if (this.#more && this.#list.length < MAX_ACTIONS) this.#again = true;
+        return;
+      }
+      if (this.#leaving.has(record.key)) {
+        this.#blocked = true;
+        return;
+      }
+      const before = record.state;
       record.tries += 1;
       record.state = 'sent';
       record.message = '';
+      this.#stuck.delete(record.key);
       this.#changed();
       // The store knows about the try before the request leaves the device.
       await this.#keep(record);
       const request = Object.freeze({ id: crypto.randomUUID(), key: record.key, tool: record.tool,
         arguments: Object.freeze({ ...record.arguments }), ...(record.edits ? { edits: Object.freeze(editsOf(record.edits)) } : {}) });
       const receipt = await this.#try(request);
+      if (receipt === UNSENT) {
+        // The queue closed before the request left the device, for example at a sign-out. The record stays for
+        // its principal as it was before this try.
+        record.tries -= 1;
+        record.state = before;
+        await this.#keep(record);
+        this.#changed();
+        return;
+      }
       if (!receipt) {
         record.state = this.#online() ? 'stalled' : 'queued';
         await this.#keep(record);
@@ -477,26 +555,37 @@ export class ActionQueue {
         return;
       }
       const waiter = this.#waiters.get(record.key);
-      if (receipt.ok || waiter) {
+      // An element that is not in the page now cannot show a rejection.
+      const shows = waiter && waiter.element?.isConnected !== false;
+      this.#waiters.delete(record.key);
+      if (receipt.ok || shows) {
         this.#drop(record);
-        this.#waiters.delete(record.key);
-        waiter?.resolve(receipt);
       } else {
         // The page has no element for this action. The rejection stays until a person dismisses it.
         record.state = 'rejected';
         record.message = receipt.message || REJECTED;
         await this.#keep(record);
       }
+      waiter?.resolve(receipt);
       this.#changed({ key: record.key, receipt });
     }
   }
 
-  // One try. The result is a receipt, or null if no valid receipt came back in the time limit.
+  // One try. The result is a receipt, null if no valid receipt came back in the time limit, or UNSENT if the
+  // queue closed before the request left the device.
   async #try(request) {
     const control = new AbortController();
     let timer;
+    // The queue reads its closed state in the same task as the call of the send function. After a close, the
+    // credentials of the send function can be the credentials of a different person.
+    if (this.#closed) return UNSENT;
+    let answer;
     try {
-      const answer = Promise.resolve().then(() => this.#send(request, { signal: control.signal }));
+      answer = Promise.resolve(this.#send(request, { signal: control.signal, principal: this.#principal }));
+    } catch {
+      return null;
+    }
+    try {
       const late = {};
       const clock = new Promise((done) => { timer = setTimeout(() => done(late), this.#timeout); });
       const value = await Promise.race([answer, clock]);

@@ -240,9 +240,10 @@ test('a cancel removes a waiting action, and the queue refuses a cancel of a try
   await until(() => queue.entries.length === 1, 'the entry');
   assert.equal(queue.cancel(first.key), true);
   assert.equal(await promise, null);
+  // The store has no record of the action at the time of the cancel.
+  assert.deepEqual(await net.store.all(), []);
   assert.deepEqual(button.canceled, [first.key]);
   assert.deepEqual(queue.entries, []);
-  await until(async () => (await net.store.all()).length === 0, 'the empty store');
   net.go(true);
   const second = request('T-02');
   const flying = queue.perform(second, element());
@@ -441,6 +442,198 @@ test('the first action shows a try in flight only while a flush runs', async () 
   queue.close();
 });
 
+// A store with changed methods. Each other method goes to the base store.
+const storeWith = (base, over) => ({ all: () => base.all(), put: (record) => base.put(record), remove: (key) => base.remove(key), ...over });
+
+test('a cancel is complete only after the store removed the record, and the queue sends nothing in that time', async () => {
+  const base = memoryStore();
+  let removal;
+  const store = storeWith(base, { remove: (key) => new Promise((done) => { removal = () => done(base.remove(key)); }) });
+  const net = device({ store });
+  net.online = false;
+  const queue = await net.open();
+  const buttons = [element(), element('Reserve Drill')];
+  const requests = [request('T-01'), request('T-02')];
+  const receipts = requests.map((item, index) => queue.perform(item, buttons[index]));
+  let first = 'none';
+  receipts[0].then((value) => { first = value; });
+  await until(() => queue.entries.length === 2, 'two entries');
+  assert.equal(queue.cancel(requests[0].key), true);
+  // A second cancel of the same action starts nothing.
+  assert.equal(queue.cancel(requests[0].key), false);
+  net.go(true);
+  await queue.flush();
+  await sleep(20);
+  // The store still has the record. The action is pending, not canceled, and no request left the device.
+  assert.equal(first, 'none');
+  assert.deepEqual(buttons[0].canceled, []);
+  assert.deepEqual(queue.entries.map((entry) => [entry.key, entry.state]), requests.map((item) => [item.key, 'queued']));
+  assert.equal(net.sent.length, 0);
+  removal();
+  assert.equal(await receipts[0], null);
+  assert.deepEqual(buttons[0].canceled, [requests[0].key]);
+  // After the cancel, the queue continues with the next action.
+  assert.equal((await receipts[1]).ok, true);
+  assert.deepEqual(net.sent.map((item) => item.key), [requests[1].key]);
+  queue.close();
+});
+
+test('if the store cannot remove a canceled action, the action stays pending and shows no cancel', async () => {
+  const base = memoryStore();
+  let broken = true;
+  const store = storeWith(base, { remove: async (key) => {
+    if (broken) throw new Error('The store is read-only.');
+    return base.remove(key);
+  } });
+  const net = device({ store });
+  net.online = false;
+  const queue = await net.open();
+  const button = element();
+  const first = request();
+  let receipt = 'none';
+  const promise = queue.perform(first, button);
+  promise.then((value) => { receipt = value; });
+  await until(() => queue.entries.length === 1, 'the entry');
+  queue.cancel(first.key);
+  await until(() => queue.entries[0].message === 'The device cannot remove the action. Try again.', 'the message');
+  // No cancel shows: the store still has the record, so a reload sends the action.
+  assert.equal(receipt, 'none');
+  assert.deepEqual(button.canceled, []);
+  assert.deepEqual(queue.entries.map((entry) => [entry.key, entry.state]), [[first.key, 'queued']]);
+  assert.deepEqual(button.holds.at(-1), { key: first.key, wait: 'queued', tries: 0, message: 'The device cannot remove the action. Try again.' });
+  assert.deepEqual((await base.all()).map((record) => record.key), [first.key]);
+  assert.equal(await queue.clear(), 0);
+  assert.equal(queue.entries.length, 1);
+  // The store works again. The second cancel removes the record, and then the cancel shows.
+  broken = false;
+  assert.equal(queue.cancel(first.key), true);
+  assert.equal(await promise, null);
+  assert.deepEqual(button.canceled, [first.key]);
+  assert.deepEqual(await base.all(), []);
+  net.go(true);
+  await queue.flush();
+  assert.equal(net.sent.length, 0);
+  queue.close();
+});
+
+test('a queue that closes during the store write of a try sends nothing', async () => {
+  // Expected: after a sign-out, the send function can have the credentials of a different person. The queue
+  // reads its closed state again after the store write, so the request does not leave the device.
+  const base = memoryStore();
+  let write;
+  const waits = [];
+  const store = storeWith(base, { put: (record) => (record.state === 'sent'
+    ? new Promise((done) => { waits.push(record.key); write = () => done(base.put(record)); }) : base.put(record)) });
+  const net = device({ store });
+  const queue = await net.open();
+  const first = request();
+  queue.perform(first, element());
+  await until(() => waits.length === 1, 'the store write of the try');
+  queue.close();
+  write();
+  await queue.flush();
+  await sleep(20);
+  assert.equal(net.sent.length, 0);
+  // The record stays for its principal as it was before the try.
+  assert.deepEqual((await base.all()).map((record) => [record.key, record.state, record.tries]), [[first.key, 'queued', 0]]);
+  const other = await openQueue({ send: net.send, principal: 'member-2', store: base, online: () => true, events: net.events, locks: null });
+  await other.flush();
+  assert.equal(net.sent.length, 0);
+  other.close();
+  const again = await openQueue({ send: net.send, principal: 'member-1', store: base, online: () => true, events: net.events, locks: null });
+  await until(() => net.sent.length === 1, 'the try of the same person');
+  assert.equal(net.sent[0].key, first.key);
+  await again.flush();
+  again.close();
+});
+
+test('the send function gets the principal of the queue', async () => {
+  const seen = [];
+  const net = device({ answer: (value, context) => {
+    seen.push([context.principal, context.signal instanceof AbortSignal]);
+    return { ok: true };
+  } });
+  const queue = await net.open();
+  assert.equal((await queue.perform(request(), element())).ok, true);
+  assert.deepEqual(seen, [['member-1', true]]);
+  queue.close();
+});
+
+test('a send function that throws in its call gives no receipt', async () => {
+  const net = device();
+  const queue = await openQueue({ send: () => { throw new Error('No session.'); }, principal: 'member-1', store: net.store,
+    online: () => true, events: net.events, locks: null });
+  queue.perform(request(), element());
+  await until(() => queue.entries[0]?.state === 'stalled', 'the stalled action');
+  assert.equal(queue.entries[0].message, 'No receipt came back.');
+  queue.close();
+});
+
+test('a stored record that breaks a limit of the contract is not taken', async () => {
+  // Expected: the queue view accepts each entry of the queue. A record with a label, a message or a time that the
+  // contract of the view refuses stays in the store.
+  const net = device();
+  net.online = false;
+  const before = await net.open();
+  const first = request('T-01');
+  before.perform(first, element());
+  await until(() => before.entries.length === 1, 'the entry');
+  before.close();
+  const [record] = await net.store.all();
+  for (const change of [{ label: '' }, { label: 'x'.repeat(121) }, { message: 'x'.repeat(201) }, { queued: 'yesterday' }, { queued: '2026-11-25' }]) {
+    await net.store.put({ ...record, ...change });
+    const queue = await net.open();
+    assert.deepEqual(queue.entries, [], JSON.stringify(Object.keys(change)));
+    queue.close();
+  }
+  await net.store.put(record);
+  const queue = await net.open();
+  assert.deepEqual(queue.entries.map((entry) => entry.key), [first.key]);
+  queueFill('Pending actions', queue.entries);
+  queue.close();
+});
+
+test('the queue takes 100 stored actions at the maximum, the oldest first', async () => {
+  const net = device();
+  net.online = false;
+  const before = await net.open();
+  before.perform(request('T-01'), element());
+  await until(() => before.entries.length === 1, 'the entry');
+  before.close();
+  const [record] = await net.store.all();
+  await net.store.remove(record.key);
+  // The store gives the newest record first.
+  for (let order = 105; order >= 1; order -= 1) await net.store.put({ ...record, key: 'key-' + order, order, owner: 'gone' });
+  const queue = await net.open();
+  assert.equal(queue.entries.length, 100);
+  assert.deepEqual([queue.entries[0].key, queue.entries[99].key], ['key-1', 'key-100']);
+  assert.equal((await queue.perform(request('T-02'), element())).message, 'The device holds 100 pending actions. Wait until the device sends them.');
+  // The other records stay in the store. The queue takes them when it has room.
+  net.go(true);
+  await until(() => net.sent.length === 105, 'each stored action');
+  assert.deepEqual(net.sent.map((item) => item.key), Array.from({ length: 105 }, (unused, index) => 'key-' + (index + 1)));
+  queue.close();
+});
+
+test('a rejection for an element that is not in the page stays in the queue until a person dismisses it', async () => {
+  const net = device({ answer: () => ({ ok: false, message: 'The tool T-02 is already reserved.' }) });
+  net.online = false;
+  const queue = await net.open();
+  const button = { ...element('Reserve Drill'), isConnected: true };
+  const first = request('T-02');
+  const promise = queue.perform(first, button);
+  await until(() => queue.entries.length === 1, 'the entry');
+  // The page removed the element while the action waited.
+  button.isConnected = false;
+  net.go(true);
+  assert.equal((await promise).ok, false);
+  await until(() => queue.entries[0]?.state === 'rejected', 'the rejection');
+  assert.deepEqual(queue.entries.map((entry) => [entry.key, entry.state, entry.message]), [[first.key, 'rejected', 'The tool T-02 is already reserved.']]);
+  assert.equal(queue.dismiss(first.key), true);
+  assert.deepEqual(queue.entries, []);
+  queue.close();
+});
+
 test('clear removes each action with no try in flight, for a sign-out', async () => {
   let release;
   const net = device({ answer: () => new Promise((done) => { release = () => done({ ok: true }); }) });
@@ -449,7 +642,12 @@ test('clear removes each action with no try in flight, for a sign-out', async ()
   const requests = [request('T-01'), request('T-02'), request('T-03')];
   const receipts = requests.map((item, index) => queue.perform(item, buttons[index]));
   await until(() => queue.entries.length === 3 && net.sent.length === 1, 'three entries and the first try');
-  assert.equal(queue.clear(), 2);
+  // The fourth action is in the middle of perform. clear removes it too.
+  const late = request('T-04');
+  const last = queue.perform(late, element('Reserve Hand saw'));
+  assert.equal(await queue.clear(), 3);
+  assert.equal(await last, null);
+  assert.deepEqual((await net.store.all()).map((record) => record.key), [requests[0].key]);
   assert.deepEqual(queue.entries.map((entry) => [entry.key, entry.state]), [[requests[0].key, 'sent']]);
   assert.deepEqual([await receipts[1], await receipts[2]], [null, null]);
   assert.deepEqual([buttons[1].canceled, buttons[2].canceled], [[requests[1].key], [requests[2].key]]);
@@ -534,9 +732,11 @@ test('listen connects the cancel event and the steps of the queue component', as
   const first = request('T-01');
   const waiting = queue.perform(first, element());
   await until(() => queue.entries.length === 1, 'the entry');
-  // The queue has the action and cancels it, so the element can cancel too.
-  assert.equal(cancel(first.key), true);
+  // The queue has the action, so the element does not cancel by itself. The queue cancels it after the store
+  // removed the record.
+  assert.equal(cancel(first.key), false);
   assert.equal(await waiting, null);
+  assert.deepEqual(await net.store.all(), []);
   // The queue does not know this key. The element decides.
   assert.equal(cancel('unknown'), true);
   const second = request('T-02');
@@ -548,6 +748,7 @@ test('listen connects the cancel event and the steps of the queue component', as
   // A try is in flight. The queue prevents the cancel, so the element stays pending.
   assert.equal(cancel(second.key), false);
   step(third.key, 'cancel');
+  await until(() => queue.entries.length === 1, 'the cancel');
   assert.deepEqual(queue.entries.map((entry) => entry.key), [second.key]);
   release();
   assert.equal((await flying).ok, true);

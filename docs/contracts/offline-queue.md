@@ -22,7 +22,7 @@ A new action has a new key. A retry of an action has the same key and a new id. 
 
 ## The send function
 
-The application gives one function, `send(request, { signal })`. It sends the request to the API of the application or the service and returns a promise of a receipt. The application adds its credentials in this function. The kit never gets them.
+The application gives one function, `send(request, { signal, principal })`. It sends the request to the API of the application or the service and returns a promise of a receipt. The application adds its credentials in this function. The kit never gets them.
 
 | Result of `send` | Meaning |
 |---|---|
@@ -30,7 +30,7 @@ The application gives one function, `send(request, { signal })`. It sends the re
 | A receipt with `ok: false` | The service rejected the action. This is a decision of the service. |
 | A thrown error, a rejected promise, no answer in the time limit, or a result that is not a valid receipt | No receipt came back. The kit does not know if the service did the action. |
 
-A receipt is an object with `ok` (`true` or `false`), an optional `message` of 200 characters maximum and an optional `reference` of 80 characters maximum. If it has an `id`, the value must be the id of the request. If it has a `key`, the value must be the key of the request. `signal` is an `AbortSignal`. The kit aborts it at the time limit.
+A receipt is an object with `ok` (`true` or `false`), an optional `message` of 200 characters maximum and an optional `reference` of 80 characters maximum. If it has an `id`, the value must be the id of the request. If it has a `key`, the value must be the key of the request. `signal` is an `AbortSignal`. The kit aborts it at the time limit. `principal` is the principal of the queue. If the send function reads the session at the time of each try, compare the two. If a different person is signed in, throw an error and send nothing.
 
 Do not throw an error for a decision of the service. An error means that no receipt came back.
 
@@ -57,11 +57,13 @@ If the store cannot give its records, the promise rejects. Then the application 
 - A second flush that starts while a try is in flight sends nothing. Thus one `online` event, or two, send each action one time.
 - Each try of an action has the same `key` and a new `id`.
 - A receipt with `ok: true` removes the action from the queue. The promise gives the receipt, and the element shows `Done`.
-- A receipt with `ok: false` removes the action from the queue. The promise gives the receipt, and the element shows `Not done` with the message. If the page has no element for the action, for example after a reload, the action stays in the queue as `rejected` until a person dismisses it.
+- A receipt with `ok: false` removes the action from the queue. The promise gives the receipt, and the element shows `Not done` with the message. If the page has no element for the action, for example after a reload, or if the element is not connected to the page, the action stays in the queue as `rejected` until a person dismisses it.
 - If no receipt comes back, the action stays in the queue, and the queue stops. The state is `queued` if the device is offline, and `stalled` if it is online. The queue sends the action again, with the same key, after an `online` event, after a retry of a person, or when the next action comes in.
-- A cancel removes an action that is `queued` or `stalled`. The promise gives `null`. The queue refuses a cancel of an action that is in flight. After a cancel, the queue continues with the next action.
+- A cancel removes an action that is `queued` or `stalled`. The queue refuses a cancel of an action that is in flight. The queue first removes the record from the store. Only then is the cancel complete: the promise gives `null`, the element shows the cancel, and the queue continues with the next action. While the store works, the queue does not send the action or an action after it.
+- If the store cannot remove the record, the cancel does not occur. The action stays pending with the message `The device cannot remove the action. Try again.`, and the queue sends it as each other pending action. Thus the page never shows a cancel for an action that goes out after a reload.
 - The queue refuses a request that is not valid, and a request when it holds 100 actions. Then the promise gives a receipt with `ok: false` and the reason, and the queue keeps nothing.
 - If the store cannot keep an action, the promise gives a receipt with `ok: false`, and the queue does not send the action.
+- A closed queue sends nothing. The queue reads its closed state in the same task as each call of the send function. If the queue closes before that call, the request does not leave the device, and the record stays in the store as it was.
 
 The states of an action in the queue are:
 
@@ -74,9 +76,9 @@ The states of an action in the queue are:
 
 Offline, each waiting action shows as `queued`. Online, a running flush sends the first action next, so that action shows as `sent`. With no running flush, the first action shows as `queued`, so the page never shows a try that is not in flight.
 
-No state of the queue shows as done. `queue.entries` gives a frozen list of the actions with `key`, `tool`, `label`, `arguments`, `queued`, `tries`, `state` and `message`. `queue.watch(listener)` calls the listener after each change. `queue.retry(key)`, `queue.cancel(key)` and `queue.dismiss(key)` do the exits. A retry sends the queue again from its first action, because the order stays the same. `queue.flush()` sends the queue now. `queue.clear()` removes each action with no try in flight. `queue.close()` stops the queue.
+No state of the queue shows as done. `queue.entries` gives a frozen list of the actions with `key`, `tool`, `label`, `arguments`, `queued`, `tries`, `state` and `message`. `queue.watch(listener)` calls the listener after each change. `queue.retry(key)`, `queue.cancel(key)` and `queue.dismiss(key)` do the exits. A retry sends the queue again from its first action, because the order stays the same. `queue.cancel(key)` returns `true` when the cancel starts. `queue.flush()` sends the queue now. `queue.clear()` removes each action with no try in flight. It returns a promise of the number of removed actions, and the promise settles after the store removed the records. `queue.close()` stops the queue.
 
-`queueActions(root, queue)` in `src/kit.js` connects the action elements below `root` to the queue. It is `onAction` with `queue.perform`, and `queue.listen(root)` for the cancel events and for the steps of `mu-action-queue`.
+`queueActions(root, queue)` in `src/kit.js` connects the action elements below `root` to the queue. It is `onAction` with `queue.perform`, and `queue.listen(root)` for the cancel events and for the steps of `mu-action-queue`. An application that calls `queue.perform` by itself must also call `queue.listen(root)`. Without it, a cancel on an element does not remove the action from the queue.
 
 ## What the queue stores
 
@@ -88,6 +90,8 @@ The queue stores no secret and no token:
 - The queue refuses a request with an argument name that looks like a credential, for example `token`, `password`, `secret`, `api_key`, `authorization` or `cookie`. This is a guard, not a proof. The application must not bind a secret as an argument of an action.
 - A record is 200000 characters maximum as JSON.
 
+A queue takes a record from the store only if the record agrees with this contract: the keys, the types and the limits, for example a label of 1 to 120 characters. Each other record stays in the store, and no queue sends it. If the store has more than 100 records of the principal, the queue takes the oldest 100 and takes the others when it has room.
+
 The service worker does not keep an action and does not send one. It keeps only the files that the application lists.
 
 ## The principal
@@ -98,7 +102,8 @@ A device can have more than one person. An action that one person made must not 
 - A queue takes, shows and sends only the records of its principal. A record of a different principal, and a record with no valid principal, stays in the store. No queue of a different principal sends it.
 - After a sign-out, close the queue. After the next sign-in, open a new queue with the new principal.
 - If the same person signs in again, the queue of that person takes the records and sends them.
-- To remove the waiting actions of a person at sign-out, call `queue.clear()` before `queue.close()`. Then the store keeps no action of that person, but an action with a try in flight stays until its receipt comes back.
+- Close the queue before the application changes the credentials of the send function. A closed queue calls the send function no more. A try that is in flight at that time continues, with the credentials that the send function gave to it.
+- To remove the waiting actions of a person at sign-out, call `await queue.clear()` before `queue.close()`. Then the store keeps no action of that person, but an action with a try in flight stays until its receipt comes back. If the promise gives a number that is smaller than the number of waiting actions, the store did not remove each record.
 
 The principal is an id, not a credential. Do not give a token as the principal.
 
@@ -129,6 +134,7 @@ Each queue has an owner id. A queue sends only its own records. With the Web Loc
 - A `stalled` action shows the buttons `Retry` and `Cancel`. A `queued` action shows `Cancel`.
 - `Retry` sends a `mu-action` event with a new request: the same `key` and a new `id`.
 - `Cancel` sends a `mu-action-cancel` event with `detail.key`. The event can be canceled. If no listener prevents it, the action goes back to its start state with a message. The message says if a try left the device. After a try, the kit does not know if the service did the action, and the message says so.
+- A queue prevents the event for each action that it holds. After the store removed the record, the queue calls `element.cancel(key)`, and then the action goes back to its start state.
 - A receipt is valid if its `key` is the key of the pending action. Without a `key`, its `id` must be the id of one try of the pending action.
 
 The element never shows `Done` without a receipt with `ok: true`.
@@ -150,8 +156,9 @@ A button of the component sends a `mu-queue-step` event with `detail.key` and `d
 
 These rules apply:
 
-- On install, the worker reads each file from the network and keeps it in the cache `mugham-shell-<version>`. If one file fails, the install fails.
-- On activate, the worker removes each older `mugham-shell-` cache and takes the open pages.
+- On install, the worker reads each file from the network and keeps it in the cache `mugham-shell <scope> <version>`. `<scope>` is the scope URL of the registration. If one file fails, the install fails.
+- On activate, the worker removes each older cache of its own scope and takes the open pages. It does not touch the cache of a different scope, so two applications on one origin can each have a worker.
+- A new worker with a new version waits until the pages of the old worker close, as each service worker does. The application decides if it calls `skipWaiting()`.
 - For a `GET` request of a listed URL, the worker asks the network first. If the network fails, it gives the file from the cache.
 - The worker does not answer other requests. Thus it keeps no API response and no action. A request with a different method, a different origin or a URL that is not on the list goes to the network as usual.
 
