@@ -3,7 +3,7 @@
 // and each component part only through the element of its catalog contract.
 import { createReader } from '../envelope/envelope.js';
 import { deliverReceipt } from '../actions/action.js';
-import { define as defineComponents } from '../components/index.js';
+import { CARD_MESSAGE_ACTOR, define as defineComponents } from '../components/index.js';
 import { BASE, EDGE, LIFT, REFUSED_NEXT, REFUSED_REASON, el, refusalDetails, sheet } from '../render/dom.js';
 import { registeredTag } from '../render/registry.js';
 import { ReadMore, READ_MORE_CSS, READ_MORE_LABELS, clampErrors } from '../primitives/read-more.js';
@@ -91,6 +91,7 @@ export class MuThread extends HTMLElement {
   // The application gives the binding of each action part, and the function that sends a request to its API.
   bind = null;
   perform = null;
+  bindCardAuthor = null;
 
   #clamp = null;
   #textParts = new Map();
@@ -431,8 +432,20 @@ export class MuThread extends HTMLElement {
       }
     }
     this.#bindings.set(node, stable(binding));
-    // The actor of the envelope is the trusted actor. The element refuses a fill that names a different author.
-    node.actor = actorOf(message);
+    const messageActor = actorOf(message);
+    if (fill.component === 'card' || fill.component === 'card-grid') node[CARD_MESSAGE_ACTOR] = messageActor;
+    // A different card author needs a trusted binding from the application.
+    const author = fill.slots?.authorship;
+    if (fill.component === 'card' && this.bindCardAuthor && author
+      && (author.type !== messageActor.type || author.id !== messageActor.id)) {
+      try {
+        node.actor = this.bindCardAuthor(structuredClone(fill), structuredClone(message)) ?? messageActor;
+      } catch {
+        return refusalOf(fill.component, ['the application could not bind the card author']);
+      }
+    } else {
+      node.actor = messageActor;
+    }
     node.fill = fill;
     this.#owners.set(node, message.messageId);
     return node;

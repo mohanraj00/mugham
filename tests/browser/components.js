@@ -173,7 +173,13 @@ const citedText = deepText(cited);
 const openButton = cited.shadowRoot.querySelector('[part="open"]');
 const openAsks = [];
 cited.addEventListener('mu-open', (event) => openAsks.push(event.detail.locator));
-check('card: shows the authorship slot as text', citedText.includes('Author: agent agent-check (Checker)'), citedText.slice(0, 200));
+const authorLine = cited.shadowRoot.querySelector('[part="authorship"]');
+const authorName = authorLine?.querySelector('span');
+check('card: shows the name before the type and id', authorLine?.textContent === 'Author: Checker (agent, agent-check)', authorLine?.textContent);
+check('card: the name uses the text color and the type and id use the muted color', authorName
+  && getComputedStyle(authorName).color === getComputedStyle(cited.shadowRoot.querySelector('[part="card"]')).color
+  && (matchMedia('(forced-colors: active)').matches
+    || getComputedStyle(authorLine).color !== getComputedStyle(authorName).color));
 check('card: shows the citation slot as text', citedText.includes('Source: Synthetic loan rules')
   && citedText.includes('https://example.org/rules/loans'), citedText.slice(0, 200));
 check('card: the locator makes no link', deepQuery(cited, 'a, link, iframe, img').length === 0);
@@ -189,7 +195,8 @@ check('card: the application can open the locator itself', openAsks.length === 2
 cited.removeEventListener('mu-open', handled);
 window.open = realOpen;
 const authorOnly = deepText(slotted('card', LOAN, { authorship: AUTHOR }));
-check('card: an empty citation slot shows no source', authorOnly.includes('Author: agent agent-check') && !authorOnly.includes('Source:'), authorOnly.slice(0, 200));
+check('card: an author with no name shows the type and id', authorOnly.includes('Author: agent, agent-check'), authorOnly.slice(0, 200));
+check('card: an empty citation slot shows no source', !authorOnly.includes('Source:'), authorOnly.slice(0, 200));
 for (const name of ['card', 'editable-form', 'card-grid']) {
   const node = slotted(name, VALID[name], undefined);
   check(`${name}: refuses a fill with no authorship slot`, node.dataset.state === 'refused'
@@ -199,7 +206,8 @@ const formText = deepText(slotted('editable-form', FORM, { authorship: AUTHOR })
 check('editable-form: shows the authorship slot as text', formText.includes('Author: agent agent-check'), formText.slice(0, 200));
 const gridCards = deepQuery(slotted('card-grid', VALID['card-grid'], CITED), 'mu-card');
 check('card-grid: each card takes the slots of the grid', gridCards.length === 2
-  && gridCards.every((card) => deepText(card).includes('Author: agent agent-check (Checker)') && deepText(card).includes('Source: Synthetic loan rules')));
+  && gridCards.every((card) => card.shadowRoot.querySelector('[part="authorship"]')?.textContent === 'Author: Checker (agent, agent-check)'
+    && deepText(card).includes('Source: Synthetic loan rules')));
 const nestedSlots = slotted('card-grid', { label: 'Loans', cards: [{ ...fill('card', LOAN), slots: { authorship: AUTHOR } }] }, { authorship: AUTHOR });
 check('card-grid: refuses a nested card with its own slots', nestedSlots.dataset.state === 'refused'
   && refusedText(nestedSlots).includes('data.cards[0].slots: a nested fill takes the slots of its outer fill'), nestedSlots.shadowRoot.textContent);

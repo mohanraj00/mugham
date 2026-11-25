@@ -21,6 +21,7 @@ await thread.read(events);
 | `push(event)` | Gives one AG-UI 1.0 event to the reader. |
 | `read(source)` | Reads each event of an async source, or of any iterable, in order. The promise resolves when the source ends. If the source fails, the thread shows a notice and the promise resolves. |
 | `bind` | Optional. A function `(fill, message)` that gives the action binding of an `action-button`, an `editable-form`, a `form-card`, a `data-grid` or an `upload` part. A `data-grid` binding has `tool`, `arguments`, `title`, `rows` and `columns`. An `upload` binding has `tool`, `arguments`, `label`, `accept`, `max_size` and `max_files`. [The catalog README](../../catalog/README.md#actions) gives the binding. If it gives no binding, the element shows as disabled and sends no action. If the fill does not agree with the binding, the element refuses the fill. |
+| `bindCardAuthor` | Optional. Set this function before you give the thread its events. For a card part that claims a different author, `(fill, message)` returns the author from a trusted application source. The author has a `type`, an `id` and an optional `name`. Return `undefined` when the source gives no author. |
 | `perform` | Optional. An async function `(request, message, element)` that sends the request to the API of the application and gives its receipt. With an offline queue, give `(request, message, element) => queue.perform(request, element)`, so the element shows the detail of its pending state. The request of an upload also has `file`, and `perform` sends that file. If it is not set, the `mu-action` event or the `mu-upload` event goes up to the page, and the page calls `receipt()` of the element. |
 | `messages` | A copy of the envelopes, in the order of the thread. |
 | `state` | `idle`, `reading`, `ended` or `failed`. The element also sets `data-state` to this value. |
@@ -36,7 +37,9 @@ Each message is a list item with an article. The article has the name `Message f
 
 - The header shows the actor name and the actor type. If the actor has no name, the header shows the actor id. The type text is `Person` for `human`, `Agent` for `agent` and `System` for `system`.
 - The thread takes the actor only from the envelope. The AG-UI `role` never changes the actor. The content of an agent never shows as the content of a person.
-- The thread sets the `actor` of each component element to the actor of the envelope, before the fill. A fill of a contract with `ai_content` set to `true` must have an authorship slot with the `type` and the `id` of that actor. If the slot has a `name`, it must be the name of that actor. If not, the thread or the element refuses the part. Thus an agent cannot name a person as the author of its card.
+- The thread binds the envelope actor to each component before it sets the fill. For a card part, the application can use `bindCardAuthor` to bind a different verified author. Verify this author with a trusted application source that identifies the author of the card. An authorship claim in a fill is data from the model and cannot verify itself.
+- A fill of a contract with `ai_content` set to `true` must have an authorship slot with the `type` and the `id` of the bound actor. If the slot has a `name`, it must match the bound actor's name. The thread or the element refuses a claim that fails this check.
+- A card in a thread uses a subtle surface and keeps its article label. When the card author and the message actor have the same type and id, the visible author line shows `Author: same as the message`. A screen reader reads the full author. A different verified author shows in full.
 - A refused message has no actor. It shows `Refused message` and the first error. It never shows an actor name.
 
 ## States

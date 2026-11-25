@@ -19,7 +19,7 @@ const ROBIN = actor('human', 'u-robin', 'Robin');
 const SAM = actor('human', 'u-sam', 'Sam');
 const CATALOG_AGENT = actor('agent', 'a-catalog', 'Catalog agent');
 const RENEW_AGENT = actor('agent', 'a-renew', 'Renewal agent');
-// A card names its author. The thread binds the actor of the envelope, so the author must be that actor.
+// The author must match the verified actor that the thread binds to the card.
 const CATALOG_AGENT_ID = { type: 'agent', id: 'a-catalog' };
 const RENEW_AGENT_ID = { type: 'agent', id: 'a-renew' };
 const card = (title, author) => ({ ...fill('card', { title }), slots: { authorship: author } });
@@ -170,17 +170,35 @@ async function run() {
   check('text: a card part shows as its element', item(unsafe, 1).querySelector('mu-card')?.dataset.state === 'default');
   check('text: markup in an error shows as text', item(unsafe, 2).textContent.includes(MARKUP));
 
-  // The thread binds the actor of the envelope to each component. The content of an agent never shows as
-  // the content of a person.
+  // A card by the message actor keeps the full author in the accessibility tree.
+  // A different author needs a binding from the application.
   const authored = mount();
+  authored.bindCardAuthor = (_fill, message) => message.messageId === 'p4' ? RENEW_AGENT.mugham.actor : undefined;
   authored.push(snapshot('p1', CATALOG_AGENT, { format: 2, fill: card('Weather at sea', CATALOG_AGENT_ID) }));
   authored.push(snapshot('p2', CATALOG_AGENT, { format: 2, fill: card('Weather at sea', { type: 'human', id: 'u-robin' }) }));
   authored.push(snapshot('p3', CATALOG_AGENT, { format: 2, fill: fill('card', { title: 'Weather at sea' }) }));
+  authored.push(snapshot('p4', CATALOG_AGENT, { format: 2, fill: card('Renewal rules', RENEW_AGENT.mugham.actor) }));
+  authored.push(snapshot('p5', CATALOG_AGENT, { format: 2, fill: {
+    ...fill('card-grid', { label: 'Weather notes', cards: [fill('card', { title: 'Wind at sea' })] }),
+    slots: { authorship: CATALOG_AGENT_ID },
+  } }));
+  authored.push(snapshot('p6', actor('agent', 'a-catalog'), { format: 2, fill: card('Sea levels', CATALOG_AGENT_ID) }));
   await settle();
   const authorCard = item(authored, 0).querySelector('mu-card');
-  check('author: a card part shows the actor of the envelope as its author', authorCard?.dataset.state === 'default'
-    && authorCard.actor?.type === 'agent' && authorCard.actor.id === 'a-catalog'
-    && authorCard.shadowRoot.textContent.includes('Author: agent a-catalog'), authorCard?.shadowRoot.textContent);
+  const authorLine = (node) => node?.shadowRoot.querySelector('[part="authorship"]');
+  const shortLine = (node) => authorLine(node)?.querySelector('[aria-hidden="true"]')?.textContent;
+  const cardArticle = authorCard.shadowRoot.querySelector('[part="card"]');
+  check('author: a card by the message actor shows the short line', authorCard.dataset.state === 'default'
+    && shortLine(authorCard) === 'Author: same as the message', authorLine(authorCard)?.textContent);
+  check('thread card: the article keeps its label', cardArticle.getAttribute('aria-label') === 'Weather at sea');
+  if (matchMedia('(forced-colors: active)').matches) {
+    check('thread card: the border shows in forced colors', parseFloat(getComputedStyle(cardArticle).borderTopWidth) >= 1
+      && getComputedStyle(cardArticle).borderTopColor !== 'rgba(0, 0, 0, 0)');
+  } else {
+    const surface = matchMedia('(prefers-color-scheme: dark)').matches ? 'rgb(31, 36, 43)' : 'rgb(239, 242, 245)';
+    check('thread card: the subtle surface differs from the message surface', getComputedStyle(cardArticle).backgroundColor === surface
+      && getComputedStyle(item(authored, 0).querySelector('article')).backgroundColor !== surface);
+  }
   const spoofCard = item(authored, 1).querySelector('mu-card');
   check('author: a card of an agent that names a person as its author is refused', spoofCard?.dataset.state === 'refused'
     && spoofCard.shadowRoot.querySelector('[part="details"] > div')?.textContent.includes('slots.authorship: the author is not the bound actor')
@@ -188,6 +206,13 @@ async function run() {
   check('author: a card with no authorship is refused', !item(authored, 2).querySelector('mu-card')
     && refusedText(item(authored, 2)) === 'card: slots.authorship: a required slot is missing',
     item(authored, 2).textContent);
+  const otherCard = item(authored, 3).querySelector('mu-card');
+  check('author: a verified different author shows in full', header(item(authored, 3)) === 'Catalog agent Agent'
+    && authorLine(otherCard)?.textContent === 'Author: Renewal agent (agent, a-renew)' && !shortLine(otherCard), authorLine(otherCard)?.textContent);
+  const gridCard = item(authored, 4).querySelector('mu-card-grid').shadowRoot.querySelector('mu-card');
+  check('author: a card in a thread grid also shortens a repeat author', shortLine(gridCard) === 'Author: same as the message');
+  const unnamedCard = item(authored, 5).querySelector('mu-card');
+  check('author: the short line also shows when the message actor has no name', shortLine(unnamedCard) === 'Author: same as the message');
 
   // A citation part shows as its element, with the actor of the envelope as its author.
   const cited = mount();

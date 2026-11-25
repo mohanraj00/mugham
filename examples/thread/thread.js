@@ -39,6 +39,9 @@ async function* events(url) {
 }
 
 const thread = document.querySelector('mu-thread');
+// The fixture application verifies the author of this card by its message id.
+thread.bindCardAuthor = (_fill, message) => message.messageId === 'm-5-rules'
+  ? { type: 'agent', id: 'a-renew', name: 'Renewal agent' } : undefined;
 thread.bind = (fill) => (fill.component === 'action-button' ? RENEW : undefined);
 // The API decides. Its response is the receipt.
 thread.perform = async (request) => {
