@@ -289,7 +289,7 @@ async function galleryChecks(session, sessionId, base, { evaluate, open, sleep, 
         step(page, `${name}: the controls select the expected values`,
           view.preset === preset && view.mode === mode && view.colorScheme === mode
           && view.text === expected[mode] && view.spacing === expected.spacing, view);
-        step(page, `${name}: the gallery fits at 375 CSS pixels`, view.width === 375 && view.scrollWidth === 375, view);
+        step(page, `${name}: the gallery fits at 375 CSS pixels`, view.width === 375 && view.scrollWidth <= view.width, view);
         step(page, `${name}: each catalog fill renders`, view.missing.length === 0 && view.refused.length === 0
           && view.image === 'default' && view.messages === 2, view);
         for (const rule of await pageRules(session, sessionId, page)) {
