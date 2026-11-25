@@ -194,7 +194,7 @@ openButton.click();
 check('card: the application can open the locator itself', openAsks.length === 2 && opened.length === 1, JSON.stringify(opened));
 cited.removeEventListener('mu-open', handled);
 window.open = realOpen;
-const authorOnly = deepText(slotted('card', LOAN, { authorship: AUTHOR }));
+const authorOnly = deepText(slotted('card', LOAN, { authorship: { type: AUTHOR.type, id: AUTHOR.id } }));
 check('card: an author with no name shows the type and id', authorOnly.includes('Author: agent, agent-check'), authorOnly.slice(0, 200));
 check('card: an empty citation slot shows no source', !authorOnly.includes('Source:'), authorOnly.slice(0, 200));
 for (const name of ['card', 'editable-form', 'card-grid']) {
