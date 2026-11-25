@@ -4,7 +4,7 @@ import { ActionState, bindingErrors } from '../src/actions/action.js';
 import { createKit, describe, fill, mount, onAction, queueActions, toolSchema, validateFill } from '../src/kit.js';
 import { memoryStore, openQueue } from '../src/offline/queue.js';
 import { CATALOG } from '../src/render/catalog.js';
-import { stepGrid } from '../src/render/range.js';
+import { rangeEditProblem, stepGrid } from '../src/render/range.js';
 import { BRAND, register } from '../src/render/registry.js';
 import { schemaErrors } from '../src/render/validate.js';
 
@@ -374,6 +374,21 @@ test('the step grid rounds to a step and moves within the available limits', () 
   assert.equal(grid.move(0.15, -1n), 0.05);
   assert.equal(grid.move(0.15, 10n), 0.25);
   assert.equal(grid.move(0.15, -10n), -0.05);
+});
+
+test('range edit problems give the reason and the declared limits', () => {
+  const data = { minimum: 0.05, maximum: 0.25, step: 0.1 };
+  const grid = stepGrid(data);
+  for (const [value, reason] of [
+    [NaN, 'Give a number.'],
+    [0.04, 'The number is outside the range 0.05 to 0.25.'],
+    [0.35, 'The number is outside the range 0.05 to 0.25.'],
+    [0.1, 'Step size is 0.1. Start at 0.05.'],
+    [0.25, 'The low value must be at most the high value.'],
+    [0.15, null],
+  ]) {
+    assert.equal(rangeEditProblem(value, data, grid, [0.05, 0.15]), reason);
+  }
 });
 
 test('the action button tool schema gives optional icon and display enums', () => {

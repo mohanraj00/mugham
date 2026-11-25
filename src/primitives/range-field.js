@@ -1,7 +1,7 @@
 // A native slider and number box for each value. The range field contract sets the step and the limits.
 import { FieldElement } from './fields.js';
 import { el, sheet } from '../render/dom.js';
-import { copyPair, sameValue, stepGrid } from '../render/range.js';
+import { copyPair, rangeEditProblem, sameValue, stepGrid } from '../render/range.js';
 
 const MOVES = Object.freeze({
   ArrowUp: 1n, ArrowRight: 1n, ArrowDown: -1n, ArrowLeft: -1n, PageUp: 10n, PageDown: -10n,
@@ -54,10 +54,11 @@ export class MuRangeField extends FieldElement {
     this.#values = Array.isArray(data.value) ? [...data.value] : [data.value];
     const pair = Array.isArray(data.value);
     const labelId = id + '-label';
-    const label = el('span', { id: labelId, part: 'label' }, data.label);
+    const label = el('label', { id: labelId, for: id, part: 'label' }, data.label);
     this.#rows = (pair ? ['Minimum', 'Maximum'] : ['']).map((name, index) => {
       const handleId = id + '-handle-' + index;
-      const slider = el('input', { type: 'range', part: 'slider', 'aria-labelledby': name ? labelId + ' ' + handleId : labelId });
+      const slider = el('input', { id: index === 0 ? id : null, type: 'range', part: 'slider',
+        'aria-labelledby': pair ? labelId + ' ' + handleId : null });
       const numberName = [data.label, name, 'number'].filter(Boolean).join(' ');
       const number = el('input', { type: 'number', part: 'number', 'aria-label': numberName });
       slider.step = number.step = String(data.step);
@@ -124,13 +125,9 @@ export class MuRangeField extends FieldElement {
 
   #fromNumber(row) {
     if (row.number.disabled) return;
-    const { minimum, maximum, step } = this.fill.data;
     const value = row.number.valueAsNumber;
-    const [min, max] = this.#bounds(row.index);
-    if (!Number.isFinite(value)) row.problem = 'Give a number.';
-    else if (value < minimum || value > maximum) row.problem = `Give a number from ${minimum} to ${maximum}.`;
-    else if (!this.#grid.onStep(value)) row.problem = `Use steps of ${step} from ${minimum}.`;
-    else if (value < min || value > max) row.problem = 'The low value must be at most the high value.';
+    const problem = rangeEditProblem(value, this.fill.data, this.#grid, this.#bounds(row.index));
+    if (problem) row.problem = problem;
     else this.#accept(row, value, row.number);
   }
 

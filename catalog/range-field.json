@@ -1,7 +1,7 @@
 {
   "name": "range-field",
   "kind": "primitive",
-  "description": "A labeled slider with a number box for each handle. A number gives one handle. A pair gives two handles in a named group. Values use steps from the minimum, stay in range, and keep the low value at or below the high value.",
+  "description": "One or two named sliders each have a named number box. A native label names the first slider. A pair has a named group. Values use steps from the minimum and stay in range and in order. An invalid edit keeps the last value and shows the reason, with the limits for a number outside the range.",
   "ai_content": false,
   "data": {
     "name": {"type": "text", "size": "short"},

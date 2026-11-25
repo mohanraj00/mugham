@@ -57,6 +57,14 @@ export function stepGrid({ minimum, maximum, step }) {
   };
 }
 
+export function rangeEditProblem(value, { minimum, maximum, step }, grid, [min, max]) {
+  if (!Number.isFinite(value)) return 'Give a number.';
+  if (value < minimum || value > maximum) return `The number is outside the range ${minimum} to ${maximum}.`;
+  if (!grid.onStep(value)) return `Step size is ${step}. Start at ${minimum}.`;
+  if (value < min || value > max) return 'The low value must be at most the high value.';
+  return null;
+}
+
 // Call this after the fill has passed the checks for required fields and their types.
 export function rangeErrors(data, prefix) {
   const { minimum, maximum, step, value } = data;

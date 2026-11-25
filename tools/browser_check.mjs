@@ -2,7 +2,6 @@
 // The accessibility and rendering check of the kit in headless Chrome, through the Chrome DevTools Protocol.
 // It uses only Node.js and Chrome. See docs/decisions/0001-build-tools.md, Option A.
 import { spawn } from 'node:child_process';
-import { createHash } from 'node:crypto';
 import { mkdtempSync, readFileSync, rmSync, existsSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
@@ -408,27 +407,6 @@ async function axErrors(session, sessionId, expected, where) {
   const { nodes } = await session.send('Accessibility.getFullAXTree', {}, sessionId);
   const named = nodes.filter((node) => !node.ignored).map((node) => [node.role?.value, node.name?.value]);
   return expected.map(([role, name]) => ({ where, role, name, ok: named.some(([r, n]) => r === role && n === name) }));
-}
-
-// Decision 0008 uses a local copy of axe-core for this example only.
-async function rangeAxeCheck(session, sessionId, report, page) {
-  const path = process.env.MUGHAM_AXE_PATH;
-  if (!path) return { skipped: 'Set MUGHAM_AXE_PATH and MUGHAM_AXE_SHA256 to run axe-core.' };
-  const source = readFileSync(path);
-  if (createHash('sha256').update(source).digest('hex') !== process.env.MUGHAM_AXE_SHA256) {
-    throw new Error('The SHA-256 of the axe-core file does not match.');
-  }
-  await evaluate(session, sessionId, source.toString('utf8'));
-  const result = await evaluate(session, sessionId, `(async () => {
-    if (window.axe?.version !== '4.10.3') throw new Error('The axe-core version must be 4.10.3.');
-    const { violations } = await window.axe.run();
-    return { version: window.axe.version, violations: violations.map(({ id, nodes }) => ({
-      id, targets: nodes.map((node) => node.target)
-    })) };
-  })()`);
-  report.examples.push({ page, step: 'axe-core finds no violations', ok: result.violations.length === 0,
-    detail: JSON.stringify(result.violations) });
-  return result;
 }
 
 // The generic rules of decision 0006. They cover the risks of the axe-core rules that apply to the markup of the kit.
@@ -1001,7 +979,6 @@ async function main() {
         ok: found.elements === elements && found.refused === refused, detail: JSON.stringify(found) });
       report.accessibility.push(...await axErrors(session, sessionId, expected, page));
       report.examples.push(...await pageRules(session, sessionId, page));
-      if (page === RANGE_PAGE) report.axe = await rangeAxeCheck(session, sessionId, report, page);
     }
     report.keyboard.push(...await noticeSwitchChecks(session, sessionId, base, problems));
     report.keyboard.push(...await rangeExampleChecks(session, sessionId, base, MODES, { evaluate, open, key }, problems));

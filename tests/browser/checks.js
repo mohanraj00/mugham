@@ -265,7 +265,7 @@ const reasonOf = (node) => {
 }
 
 {
-  const data = { label: 'Price range', minimum: -0.05, maximum: 0.26, step: 0.1, value: [0.05, 0.25], typed: true,
+  const data = { label: 'Price range', minimum: 0.05, maximum: 0.25, step: 0.1, value: [0.05, 0.25], typed: true,
     hint: 'Give two prices.' };
   const node = mount('range-field', data);
   const root = node.shadowRoot;
@@ -280,21 +280,32 @@ const reasonOf = (node) => {
   };
   let edits = 0;
   node.addEventListener('mu-edit', (event) => { if (event.detail.field === 'value') edits += 1; });
-  check('range-field: a pair has a named group, two sliders, two number boxes and the last value on a step',
+  check('range-field: a pair has a named group, two sliders and two number boxes',
     root.getElementById(group?.getAttribute('aria-labelledby'))?.textContent === 'Price range'
+    && sliders[0].labels[0]?.textContent === 'Price range'
     && read(sliders) === '[0.05,0.25]' && read(numbers) === read(sliders)
     && sliders[0].max === '0.25' && sliders[1].min === '0.05' && type.hidden);
+  const offStepMax = mount('range-field', { ...data, maximum: 0.26 });
+  const lastControls = [...offStepMax.shadowRoot.querySelectorAll('input[part="slider"], input[part="number"]')].slice(-2);
+  check('range-field: the controls stop at the last step when the maximum is off a step',
+    lastControls.length === 2 && lastControls.every((input) => input.max === '0.25' && input.valueAsNumber === 0.25));
   set(numbers[0], '0.15');
   check('range-field: a number box updates its slider and the other handle limit',
     read(numbers) === '[0.15,0.25]' && read(sliders) === read(numbers) && sliders[1].min === '0.15' && edits === 1);
   set(sliders[1], '0.17');
   check('range-field: a slider value goes to the nearest step and updates its number box',
     read(sliders) === '[0.15,0.15]' && read(numbers) === read(sliders) && sliders[0].max === '0.15' && edits === 2);
-  for (const [value, reason] of [['0.1', 'Step'], ['0.25', 'high'], ['0.35', 'range'], ['', 'number']]) {
+  for (const [value, reason] of [
+    ['0.1', 'Step size is 0.1. Start at 0.05.'],
+    ['0.25', 'The low value must be at most the high value.'],
+    ['0.35', 'The number is outside the range 0.05 to 0.25.'],
+    ['', 'Give a number.'],
+  ]) {
     set(numbers[0], value);
     numbers[0].dispatchEvent(new Event('change', { bubbles: true }));
     check('range-field: an invalid number box edit keeps the last value and shows the reason',
-      node.problem?.toLowerCase().includes(reason.toLowerCase()) && read(numbers) === '[0.15,0.15]' && edits === 2
+      node.problem === reason && read(numbers) === '[0.15,0.15]' && read(sliders) === read(numbers)
+      && JSON.stringify(node.value) === '[0.15,0.15]' && edits === 2
       && numbers[0].getAttribute('aria-invalid') === 'true' && root.querySelector('[part="problem"]').textContent === node.problem,
     node.problem);
   }
