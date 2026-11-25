@@ -105,7 +105,7 @@ class DataGridContractTest(unittest.TestCase):
         self.assertEqual(CATALOG['data-grid']['states'], ['default', 'empty', 'disabled', 'pending', 'error', 'refused'])
         self.assertEqual(CATALOG['data-grid']['accessibility'], {
             'role': 'group', 'name': {'field': 'label'},
-            'keyboard': ['Tab', 'Shift+Tab', 'Enter', 'Escape', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Home', 'End'],
+            'keyboard': ['Tab', 'Shift+Tab', 'Enter', 'Escape', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Home', 'End', 'Space'],
             'forced_colors': True, 'reduced_motion': True})
 
 
