@@ -142,6 +142,7 @@ for (const name of INPUTS) {
       && !control.checked && node.initial === false && node.value === false && !node.shadowRoot.querySelector('[part="state"]'));
     control.labels[0].click();
     check('toggle-field: the checkbox label changes the value to true', control.checked && node.value === true);
+    node.remove();
   }
   const node = mount('toggle-field', { label: 'Send a reminder', display: 'switch', value: true, typed: true,
     hint: 'Send the notice before the due date.', error: 'Check the notice settings.' });
@@ -344,6 +345,12 @@ check('no markup ran', window.muUnsafe === undefined);
 
 // The keyboard part of the check: the runner sends real key events to this target.
 const keyboard = document.getElementById('keyboard');
+// The label checks moved the focus. Set the start point of Tab before the keyboard targets.
+const top = document.createElement('span');
+top.tabIndex = -1;
+keyboard.before(top);
+top.focus();
+top.blur();
 const target = document.createElement('mu-button');
 target.fill = fill('button', { label: 'Keyboard target' });
 let presses = 0;
