@@ -103,7 +103,9 @@ function fieldSchema(field, reference) {
     case 'boolean': return { title, type };
     case 'number-or-pair': return { title, oneOf: [{ type: 'number' },
       { type: 'array', minItems: 2, maxItems: 2, items: { type: 'number' } }] };
-    case 'list': return { title, type: 'array', maxItems: field.max_items, items: fieldSchema(field.items, reference) };
+    case 'list': return { title, type: 'array', maxItems: field.max_items, items: fieldSchema(field.items, reference),
+      ...(field.min_items === undefined ? {} : { minItems: field.min_items }),
+      ...(field.unique_items === undefined ? {} : { uniqueItems: field.unique_items }) };
     case 'component': return field.names
       ? { title, oneOf: field.names.map(reference) }
       : { title, ...reference(field.name) };

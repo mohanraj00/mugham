@@ -81,7 +81,7 @@ class ExampleDocsTest(unittest.TestCase):
         self.assertIn('https://github.com/mohanraj00/mugham', (ROOT / 'README.md').read_text(encoding='utf-8'))
 
     def test_the_inputs_the_forms_the_table_and_the_grid_have_a_how_to_part(self):
-        for name in ('field', 'long-text-field', 'number-field', 'date-field', 'choice-field', 'toggle-field', 'range-field', 'select-field', 'editable-form', 'form-card',
+        for name in ('field', 'long-text-field', 'number-field', 'date-field', 'choice-field', 'toggle-field', 'range-field', 'select-field', 'multi-choice-field', 'editable-form', 'form-card',
                      'table', 'data-grid'):
             with self.subTest(component=name):
                 self.assertEqual([title for title, _ in DOCS['components'][name]['howto']], HOW_TO)

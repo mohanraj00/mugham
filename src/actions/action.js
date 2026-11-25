@@ -4,8 +4,8 @@
 // try has a new request id. A pending action with no receipt has an exit: a retry or a cancel. It never shows done.
 // docs/contracts/offline-queue.md gives the rules.
 import actionButton from '../../catalog/action-button.json' with { type: 'json' };
-import { receiptOf } from '../offline/queue.js';
-import { copyPair, isOrderedPair, sameValue } from '../render/range.js';
+import { copyArgs, copyValue, isTextList, receiptOf } from '../offline/queue.js';
+import { isOrderedPair, sameValue } from '../render/range.js';
 
 const TOOL = /^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)*$/;
 const MAX_MESSAGE = 200;
@@ -85,7 +85,9 @@ export function bindingErrors(binding) {
   if (typeof binding.tool !== 'string' || binding.tool.length > 80 || !TOOL.test(binding.tool)) errors.push('the tool name is not valid');
   const args = binding.arguments ?? {};
   if (args === null || typeof args !== 'object' || Array.isArray(args)) errors.push('the arguments must be an object');
-  else if (!Object.values(args).every(scalar)) errors.push('each argument must be a string, a number or true or false');
+  else if (!Object.values(args).every((value) => scalar(value) || isTextList(value))) {
+    errors.push('each bound argument must be text, a finite number, true or false, or a list of texts');
+  }
   // The application gives the label of the action, so a fill cannot show a different meaning for the tool.
   if (binding.label !== undefined && (typeof binding.label !== 'string' || binding.label.length === 0
     || longer(binding.label, MAX_LABEL))) errors.push('the label must be a text of 1 to 80 characters');
@@ -146,12 +148,16 @@ function editsOf(edits, binding, values) {
     const { field, type, old_value: old, time } = edit;
     if (!binding.typed.includes(field) || seen.has(field) || !Object.hasOwn(values, field)) return null;
     const next = values[field];
-    const pair = Array.isArray(old) || Array.isArray(next);
-    if (!EDIT_TYPES.has(type) || (pair ? !isOrderedPair(old) || !isOrderedPair(next) : !scalar(old))
-      || sameValue(old, next)) return null;
+    if (!EDIT_TYPES.has(type) || sameValue(old, next)) return null;
+    if (Array.isArray(old) || Array.isArray(next)) {
+      const pair = isOrderedPair(old) && isOrderedPair(next);
+      const texts = isTextList(old) && isTextList(next);
+      if (!pair && !texts) return null;
+      if (texts && old.length === next.length && next.every((value, index) => value === old[index])) return null;
+    } else if (!scalar(old)) return null;
     if (typeof time !== 'string' || !ISO_TIME.test(time) || Number.isNaN(Date.parse(time))) return null;
     seen.add(field);
-    result.push(Object.freeze({ field, type, old_value: pair ? copyPair(old) : old, new_value: next, actor: binding.editor, time }));
+    result.push(Object.freeze({ field, type, old_value: copyValue(old), new_value: next, actor: binding.editor, time }));
   }
   return Object.freeze(result);
 }
@@ -258,7 +264,7 @@ export class ActionState {
     if (errors.length) return errors;
     this.#binding = Object.freeze({ tool: binding.tool, label: binding.label ?? '', title: binding.title ?? '',
       description: binding.description ?? '', icon: binding.icon, display: binding.display,
-      arguments: Object.freeze({ ...(binding.arguments ?? {}) }),
+      arguments: copyArgs(binding.arguments ?? {}),
       editable: Object.freeze(Object.assign(Object.create(null), binding.editable ?? {})),
       typed: Object.freeze([...(binding.typed ?? [])]),
       editor: binding.editor ? Object.freeze({ type: binding.editor.type, id: binding.editor.id }) : null,
@@ -291,9 +297,8 @@ export class ActionState {
       return null;
     }
     if (Object.keys(extra).some((name) => !Object.hasOwn(this.#binding.editable, name))) return null;
-    const entries = Object.entries(extra);
-    if (entries.some(([, value]) => Array.isArray(value) && !isOrderedPair(value))) return null;
-    const values = Object.fromEntries(entries.map(([name, value]) => [name, Array.isArray(value) ? copyPair(value) : value]));
+    if (Object.values(extra).some((value) => Array.isArray(value) && !isOrderedPair(value) && !isTextList(value))) return null;
+    const values = copyArgs(extra);
     const typed = this.#binding.typed.length > 0;
     if (!typed && edits !== undefined && !(Array.isArray(edits) && edits.length === 0)) return null;
     const checked = typed ? editsOf(edits, this.#binding, values) : null;

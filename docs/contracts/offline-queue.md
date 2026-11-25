@@ -15,8 +15,8 @@ An action element makes a request for each try of an action.
 | `id` | The id of this try. Each try has a new id. |
 | `key` | The key of the action. It stays the same for each try of that action. It is the idempotency key. |
 | `tool` | The tool name that the application binds. |
-| `arguments` | The arguments of the tool. Each value is a text, a finite number, a pair of finite numbers in low to high order, `true` or `false`. |
-| `edits` | Optional. The typed edits of a form. |
+| `arguments` | The arguments of the tool. Each value is a text, a finite number, a pair of finite numbers in low to high order, `true` or `false`, or a list of up to 500 texts. Each text in a list has at most 80 characters. |
+| `edits` | Optional. The typed edits of a form. The old and new values can be text lists with the same limits as arguments. |
 
 A new action has a new key. A retry of an action has the same key and a new id. The service must do an action only one time for each key. For a key that it knows, the service gives the result of the first try again.
 

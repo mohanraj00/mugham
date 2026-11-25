@@ -16,6 +16,7 @@ Each element that refuses a fill shows a short reason and the next step. Open `T
 | `toggle-field.json` | `mu-toggle-field` | primitive | A labeled checkbox or switch for a yes or no value. |
 | `range-field.json` | `mu-range-field` | primitive | One or two sliders with a number box for each handle. |
 | `select-field.json` | `mu-select-field` | primitive | A combobox for one choice, with search for long lists. |
+| `multi-choice-field.json` | `mu-multi-choice-field` | primitive | Checkboxes or a searchable tag picker for multiple choices. |
 | `stack.json` | `mu-stack` | primitive | A labeled group in one column or one row. |
 | `grid.json` | `mu-grid` | primitive | A labeled group in columns. |
 | `fact.json` | in `mu-card` | component | A label and a value. |
@@ -154,7 +155,7 @@ A binding has these keys. Only `tool` is necessary.
 | Key | Content |
 |---|---|
 | `tool` | The tool name, for example `library.renew`. |
-| `arguments` | The fixed arguments. Each value is a string, a number, or `true` or `false`. |
+| `arguments` | The fixed arguments. Each value is text, a finite number, `true` or `false`, or a list of up to 500 texts. Each text in a list has at most 80 characters. |
 | `label` | The label of the action, 1 to 80 characters. |
 | `description` | The description of an action button, 1 to 200 characters. |
 | `icon` | The icon of an action button. Use `check`, `cross`, `edit`, `delete`, `send` or `retry`. |
@@ -256,7 +257,7 @@ A field that did not change has no edit. A disabled field has no edit, because t
 
 ### Input types
 
-An editable form accepts eight field contracts. Each one has the data fields `name`, `label`, `hint`, `error`, `disabled` and `typed`, and the same states. A typed edit works the same with each input type.
+An editable form accepts nine field contracts. Each one has the data fields `name`, `label`, `hint`, `error`, `disabled` and `typed`, and the same states. A typed edit works the same with each input type.
 
 | Contract | Value | Other data | The request sends |
 |---|---|---|---|
@@ -268,10 +269,17 @@ An editable form accepts eight field contracts. Each one has the data fields `na
 | `toggle-field` | A boolean. The default is `false`. | `display` can be `checkbox` (the default) or `switch`. | `true` or `false`. |
 | `range-field` | A number for one handle, or a pair of numbers for two handles. | `minimum`, `maximum` and a positive `step`, all required. | A number or a pair in low to high order. |
 | `select-field` | One of the choices. | `choices`: 1 to 500 unique texts. | The text of the choice, or empty text if there is no selection. |
+| `multi-choice-field` | A list of unique choices in choice order. The default is an empty list. | `choices` has 1 to 500 unique texts. The optional `min_items` and `max_items` limit the number of selections. | A list of texts in choice order. |
 
 Omit the value of a select field to start with no selection. Space, Enter, Up or Down opens the list. A list of more than seven choices has a search box that takes focus when the list opens. Search matches text in any part of a choice and ignores case. The field announces `No match` when the search has no result.
 
 Up, Down, Home and End move the active option. Enter selects the active option and closes the list. Escape closes the list and returns focus to the control. Tab, Shift+Tab and a click outside the field close the list. These exits keep the current value.
+
+A multi-choice field shows up to seven choices as native checkboxes in a group named by the label. Tab and Shift+Tab move between checkboxes. Space changes the focused checkbox. A longer list shows each selection as a tag with a button named `Remove <choice>`.
+
+The search box opens the list when a person types, clicks it or presses Enter, Up or Down. Search ignores case and matches text in any part of a choice. The field announces `No match` when the search has no result. Up, Down, Home and End move the active option. Enter changes its selection and keeps the list open. Space enters a space in the search text. Escape closes the list and keeps focus in the search box. Tab, Shift+Tab and a click outside close the list. A button press removes its tag and moves focus to the next tag. If the removed tag was last, focus goes to the last remaining tag or the search box when the list is empty.
+
+Give `min_items` and `max_items` as integers from 0 to 500. A fill with an unknown choice, a repeated choice, a different order or a count outside the limits is refused. An edit outside the count limits shows the problem and prevents submit until the count is valid.
 
 The form refuses a fill in which the data of a field do not agree. Examples are a minimum that is more than the maximum, a value outside the range, and a value that is not one of the choices. The refusal names the field, for example `data.fields[2].data.value: the number is outside the range`.
 

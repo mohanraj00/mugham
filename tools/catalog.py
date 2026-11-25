@@ -313,6 +313,8 @@ def contract_errors(contract, filename=None, catalog=None, invalid=()):
     for path, field in fields_of(contract):
         if field.get('min_length', 0) > field.get('max_length', math.inf):
             errors.append(path + ': min_length is more than max_length')
+        if field.get('min_items', 0) > field.get('max_items', math.inf):
+            errors.append(path + ': min_items is more than max_items')
         if field.get('minimum', -math.inf) > field.get('maximum', math.inf):
             errors.append(path + ': minimum is more than maximum')
     if contract['ai_content'] and not contract.get('slots', {}).get('authorship', {}).get('required'):
@@ -384,11 +386,15 @@ def value_errors(value, field, path, catalog, depth):
     if kind == 'list':
         if not isinstance(value, list):
             return [path + ': must be a list']
+        if len(value) < field.get('min_items', 0):
+            return ['%s: fewer than %d items' % (path, field['min_items'])]
         if len(value) > field['max_items']:
             return ['%s: more than %d items' % (path, field['max_items'])]
         errors = []
         for index, item in enumerate(value):
             errors += value_errors(item, field['items'], '%s[%d]' % (path, index), catalog, depth)
+        if not errors and field.get('unique_items') and len({canonical(item) for item in value}) != len(value):
+            errors.append(path + ': the items are not unique')
         return errors
     if kind == 'component':
         if isinstance(value, dict) and value.get('component') not in targets(field):
@@ -431,7 +437,31 @@ def fill_errors(fill, catalog, path='', depth=0):
             errors.append(prefix + 'data.choices: the choices must be unique')
         elif 'value' in data and data['value'] not in choices:
             errors.append(prefix + 'data.value: the value is not one of the choices')
+    if (not errors and fill['component'] == 'multi-choice-field' and isinstance(data.get('choices'), list)
+            and contract['data'].get('value', {}).get('type') == 'list'):
+        errors += multi_choice_errors(data, prefix + 'data.')
     return errors + slot_errors(fill, contract, prefix, depth)
+
+
+def multi_choice_errors(data, prefix):
+    value = data.get('value', [])
+    low, high = data.get('min_items', 0), data.get('max_items', 500)
+    if low > high:
+        return [prefix + 'min_items: must be at most max_items']
+    if len(value) < low:
+        return [prefix + 'value: fewer than %d items' % low]
+    if len(value) > high:
+        return [prefix + 'value: more than %d items' % high]
+    positions = {choice: index for index, choice in enumerate(data['choices'])}
+    previous = -1
+    for index, choice in enumerate(value):
+        if choice not in positions:
+            return [prefix + 'value[%d]: the value is not one of the choices' % index]
+        position = positions[choice]
+        if position <= previous:
+            return [prefix + 'value: use the order of the choices']
+        previous = position
+    return []
 
 
 def range_errors(data, prefix):

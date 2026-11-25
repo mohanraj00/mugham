@@ -3,6 +3,7 @@ import { test } from 'node:test';
 import { createKit, fill, validateFill } from '../src/kit.js';
 
 // The DOM calls used by the field and form. The browser checks cover focus order, layout and the accessibility tree.
+let focused;
 class TestNode extends EventTarget {
   children = [];
   attributes = new Map();
@@ -16,9 +17,10 @@ class TestNode extends EventTarget {
   getAttribute(name) { return this.attributes.get(name) ?? null; }
   removeAttribute(name) { this.attributes.delete(name); }
   get id() { return this.getAttribute('id'); }
-  get textContent() { return this.children.map((node) => node.textContent).join(''); }
+  get textContent() { return this.children.map((node) => typeof node === 'string' ? node : node.textContent).join(''); }
   set textContent(value) { this.replaceChildren({ textContent: String(value) }); }
-  focus() {}
+  focus() { focused = this; }
+  click() { this.dispatchEvent(new Event('click')); }
   scrollIntoView() {}
 }
 
@@ -30,7 +32,9 @@ globalThis.customElements = {
 globalThis.document = Object.assign(new EventTarget(), {
   createElement(tag) {
     const Element = elements.get(tag) ?? TestNode;
-    return Object.assign(new Element(), { tag });
+    const node = Object.assign(new Element(), { tag });
+    if (tag === 'input') node.value = '';
+    return node;
   },
   createTextNode: (textContent) => ({ textContent }),
 });
@@ -138,4 +142,102 @@ test('a short list uses the control for keyboard navigation and the form sends t
   find(form.shadowRoot, (node) => node.tag === 'form').dispatchEvent(new Event('submit', { cancelable: true }));
   assert.deepEqual(requests, [{ branch: 'East Annex' }]);
   assert.equal(form.dataset.state, 'done');
+});
+
+const PLANTS = { name: 'plants', label: 'Plants', value: ['Mist fern', 'Dune bell'],
+  choices: ['Mist fern', 'Rain bell', 'Dune bell', 'Pebble reed', 'Glass moss', 'Drift vine', 'Cloud leaf', 'Fog cup'] };
+
+test('a multi-choice fill rejects unknown, repeated, out-of-order and out-of-limit selections', () => {
+  const name = 'multi-choice-field';
+  assert.deepEqual(validateFill(fill(name, PLANTS)), []);
+  assert.deepEqual(validateFill(fill(name, { label: PLANTS.label, choices: PLANTS.choices })), []);
+  for (const [changes, reason] of [
+    [{ value: ['Other'] }, 'value[0]: the value is not one of the choices'],
+    [{ value: ['Mist fern', 'Mist fern'] }, 'value: the items are not unique'],
+    [{ value: ['Dune bell', 'Mist fern'] }, 'value: use the order of the choices'],
+    [{ value: Array(1) }, 'value[0]: must be a string'],
+    [{ min_items: 3 }, 'value: fewer than 3 items'],
+    [{ max_items: 1 }, 'value: more than 1 items'],
+    [{ value: undefined, min_items: 1 }, 'value: fewer than 1 items'],
+    [{ min_items: 3, max_items: 1 }, 'min_items: must be at most max_items'],
+  ]) {
+    const data = { ...PLANTS, ...changes };
+    if (data.value === undefined) delete data.value;
+    assert.deepEqual(validateFill(fill(name, data)), ['data.' + reason]);
+  }
+});
+
+test('a checkbox group submits a bounded list in choice order', () => {
+  const data = { ...PLANTS, choices: PLANTS.choices.slice(0, 7), value: [], min_items: 0, max_items: 2 };
+  const form = kit.mount('editable-form', { title: 'Garden bed', submit_label: 'Save', fields: [fill('multi-choice-field', data)] },
+    { action: { tool: 'garden.save', label: 'Save', title: 'Garden bed', editable: { plants: 'Plants' } } });
+  const field = find(form.shadowRoot, (node) => node.tag === 'mu-multi-choice-field');
+  const group = part(field.shadowRoot, 'group');
+  assert.equal(group.getAttribute('role'), 'group');
+  const label = part(field.shadowRoot, 'label');
+  assert.equal(group.getAttribute('aria-labelledby'), label.id);
+  assert.equal(label.textContent, 'Plants');
+  assert.equal(part(field.shadowRoot, 'search'), undefined);
+  const boxes = group.children.map((row) => part(row, 'checkbox'));
+  assert.equal(boxes.length, 7);
+  assert.ok(boxes.every((box) => box.tag === 'input' && box.getAttribute('type') === 'checkbox'));
+  const change = (index, checked) => {
+    boxes[index].checked = checked;
+    boxes[index].dispatchEvent(new Event('change'));
+  };
+  const requests = [];
+  form.addEventListener('mu-action', ({ detail }) => {
+    requests.push(detail.arguments);
+    form.receipt({ id: detail.id, ok: true });
+  });
+  const submit = () => find(form.shadowRoot, (node) => node.tag === 'form').dispatchEvent(new Event('submit', { cancelable: true }));
+  change(2, true);
+  change(1, true);
+  change(0, true);
+  submit();
+  assert.deepEqual(requests, []);
+  assert.equal(part(field.shadowRoot, 'problem').textContent, 'Select at most 2 choices.');
+  change(1, false);
+  assert.deepEqual(form.values(), { plants: ['Mist fern', 'Dune bell'] });
+  submit();
+  assert.deepEqual(requests, [{ plants: ['Mist fern', 'Dune bell'] }]);
+  assert.equal(form.dataset.state, 'done');
+  change(0, false);
+  change(2, false);
+  assert.equal(field.changed, false);
+});
+
+test('a tag picker toggles the active option and keeps the search open', () => {
+  const field = kit.mount('multi-choice-field', PLANTS);
+  const root = field.shadowRoot;
+  const search = part(root, 'search');
+  const list = part(root, 'listbox');
+  const tags = part(root, 'tags');
+  keys(search, 'ArrowDown');
+  assert.equal(search.getAttribute('aria-autocomplete'), 'list');
+  assert.equal(search.getAttribute('aria-expanded'), 'true');
+  assert.equal(search.getAttribute('aria-controls'), list.id);
+  assert.equal(list.getAttribute('aria-multiselectable'), 'true');
+  type(search, 'bELL');
+  assert.deepEqual(list.children.map((option) => option.textContent), ['Rain bell', 'Dune bell']);
+  keys(search, 'End', 'Enter');
+  assert.deepEqual(field.value, ['Mist fern']);
+  assert.equal(list.children[1].getAttribute('aria-selected'), 'false');
+  keys(search, 'Home', 'Enter');
+  assert.deepEqual(field.value, ['Mist fern', 'Rain bell']);
+  assert.equal(list.children[0].getAttribute('aria-selected'), 'true');
+  assert.equal(search.getAttribute('aria-expanded'), 'true');
+  keys(search, 'Escape');
+  assert.equal(search.getAttribute('aria-expanded'), 'false');
+  assert.equal(search.getAttribute('aria-activedescendant'), null);
+
+  // A native remove button sends click when a person presses Enter or Space.
+  const remove = () => part(tags.children[0], 'remove');
+  assert.equal(remove().getAttribute('aria-label'), 'Remove Mist fern');
+  remove().click();
+  assert.equal(remove().getAttribute('aria-label'), 'Remove Rain bell');
+  assert.equal(focused, remove());
+  remove().click();
+  assert.deepEqual(field.value, []);
+  assert.equal(focused, search);
 });

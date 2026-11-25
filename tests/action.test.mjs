@@ -4,11 +4,11 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { ActionState, bindingErrors, deliverReceipt } from '../src/actions/action.js';
 
-test('a binding needs a valid tool name and scalar arguments', () => {
+test('a binding needs a valid tool name and supported arguments', () => {
   assert.deepEqual(bindingErrors({ tool: 'library.renew', arguments: { loan_id: 'L-0001' } }), []);
   assert.deepEqual(bindingErrors({ tool: 'Run Anything' }), ['the tool name is not valid']);
   assert.deepEqual(bindingErrors({ tool: 'library.renew', arguments: { loan: { id: 1 } } }),
-    ['each argument must be a string, a number or true or false']);
+    ['each bound argument must be text, a finite number, true or false, or a list of texts']);
   assert.deepEqual(bindingErrors({ tool: 'library.renew', label: 'Renew' }), []);
   assert.deepEqual(bindingErrors({ tool: 'library.renew', label: '' }), ['the label must be a text of 1 to 80 characters']);
   assert.deepEqual(bindingErrors({ tool: 'library.renew', label: 'R'.repeat(81) }), ['the label must be a text of 1 to 80 characters']);
@@ -418,3 +418,26 @@ for (const field of ['message', 'reference']) {
     assert.equal(action.receipt({ id: request.id, ok: true }), true);
   });
 }
+
+test('an action keeps copies of bounded text lists and their typed edits', () => {
+  const fixed = ['North bed'];
+  const action = new ActionState();
+  assert.deepEqual(action.bind({ tool: 'garden.save', arguments: { beds: fixed }, editable: { plants: 'Plants' },
+    typed: ['plants'], editor: { type: 'human', id: 'gardener' } }), []);
+  fixed.push('South bed');
+  for (const value of [[1, 'plant'], Array(1), Array(501).fill('Plant'), ['x'.repeat(81)]]) {
+    assert.notDeepEqual(bindingErrors({ tool: 'garden.save', arguments: { plants: value } }), []);
+    assert.equal(action.start({ plants: value }), null);
+  }
+  const before = [];
+  const after = ['Mist fern', 'Dune bell'];
+  const edit = { field: 'plants', type: 'judgment', old_value: before, time: '2026-11-25T12:00:00.000Z' };
+  assert.equal(action.start({ plants: [] }, false, [edit]), null);
+  const request = action.start({ plants: after }, false, [edit]);
+  before.push('Other');
+  after.reverse();
+  assert.deepEqual(request.arguments, { beds: ['North bed'], plants: ['Mist fern', 'Dune bell'] });
+  assert.deepEqual(request.edits[0].old_value, []);
+  assert.equal(request.edits[0].new_value, request.arguments.plants);
+  assert.ok([request.arguments.beds, request.arguments.plants, request.edits[0].old_value].every(Object.isFrozen));
+});

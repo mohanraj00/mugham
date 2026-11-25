@@ -75,6 +75,34 @@ test('after the device reconnects, the queue sends each action one time, in orde
   queue.close();
 });
 
+test('the queue copies text lists and sends them after it opens again', async () => {
+  const net = device();
+  net.online = false;
+  const queue = await net.open();
+  for (const value of [[1, 'plant'], Array(1), Array(501).fill('Plant'), ['x'.repeat(81)]]) {
+    const receipt = await queue.perform(request('T-01', { arguments: { plants: value } }));
+    assert.deepEqual([receipt.ok, receipt.message], [false, 'The arguments are not valid.']);
+  }
+  const plants = ['Dune bell', 'Mist fern'];
+  const edits = [{ field: 'plants', type: 'judgment', old_value: [], new_value: plants,
+    actor: { type: 'human', id: 'gardener' }, time: '2026-11-25T12:00:00.000Z' }];
+  const saved = request('T-01', { arguments: { plants }, edits });
+  void queue.perform(saved);
+  await until(async () => (await net.store.all()).length === 1, 'stored action');
+  plants.reverse();
+  assert.deepEqual(queue.entries[0].arguments.plants, ['Dune bell', 'Mist fern']);
+  assert.ok(Object.isFrozen(queue.entries[0].arguments.plants));
+  queue.close();
+  const reopened = await net.open();
+  net.go(true);
+  await until(() => net.sent.length === 1, 'sent action');
+  assert.equal(net.sent[0].key, saved.key);
+  assert.deepEqual(net.sent[0].arguments.plants, ['Dune bell', 'Mist fern']);
+  assert.deepEqual(net.sent[0].edits[0].old_value, []);
+  assert.deepEqual(net.sent[0].edits[0].new_value, ['Dune bell', 'Mist fern']);
+  reopened.close();
+});
+
 test('the queue stores and sends a numeric pair and its edit', async () => {
   const net = device();
   net.online = false;

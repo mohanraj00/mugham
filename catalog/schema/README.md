@@ -39,10 +39,10 @@ A contract is one JSON file in `catalog/`, for example `catalog/card.json`. The 
 | `boolean` | `true` or `false`. | |
 | `date` | A calendar date as `YYYY-MM-DD`. | The date must exist. |
 | `enum` | One string from `values`. | |
-| `list` | An array of items. An item is a scalar field or a component field. | `max_items` is necessary. |
+| `list` | An array of items. An item is a scalar field or a component field. | `max_items` is necessary. Use `min_items` for a lower limit and `unique_items` to require distinct items. |
 | `component` | A fill of the named component. | `name` names one component. `names` names 2 to 12 components, and the fill can be of each of them. Each named component must be in the catalog. |
 
-A field with `editable: true` is a form input. A list field and a component field cannot be editable.
+A field with `editable: true` is a form input. A component field cannot be editable.
 
 ### Actions
 
@@ -76,7 +76,7 @@ A contract with `ai_content` set to `true` must declare the authorship slot with
 1. The `name` agrees with the file name.
 2. The states include `default`.
 3. A component with the role `none` has no accessible name. Each other role needs one. If the accessible name comes from a field, that field is a required text field.
-4. `min_length` is not more than `max_length`, and `minimum` is not more than `maximum`.
+4. Each lower limit is at most its upper limit. This applies to length, item count and number limits.
 5. Each component field names a contract in the catalog. A contract cannot contain itself, directly or through other contracts.
 6. If `ai_content` is `true`, the contract declares the authorship slot with `required` set to `true`.
 7. In the short form, each `size` names a size of the defaults file.

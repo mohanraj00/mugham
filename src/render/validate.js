@@ -182,6 +182,7 @@ export function contractErrors(contract, catalog) {
   }
   for (const [path, field] of fieldsOf(contract)) {
     if ((field.min_length ?? 0) > (field.max_length ?? Infinity)) errors.push(path + ': min_length is more than max_length');
+    if ((field.min_items ?? 0) > (field.max_items ?? Infinity)) errors.push(path + ': min_items is more than max_items');
     if ((field.minimum ?? -Infinity) > (field.maximum ?? Infinity)) errors.push(path + ': minimum is more than maximum');
   }
   if (contract.ai_content && !contract.slots?.authorship?.required) {
@@ -227,8 +228,16 @@ function valueErrors(value, field, path, catalog, depth) {
       return typeof value === 'string' && field.values.includes(value) ? [] : [`${path}: must be one of ${field.values.join(', ')}`];
     case 'list': {
       if (!Array.isArray(value)) return [`${path}: must be a list`];
+      if (value.length < (field.min_items ?? 0)) return [`${path}: fewer than ${field.min_items} items`];
       if (value.length > field.max_items) return [`${path}: more than ${field.max_items} items`];
-      return value.flatMap((item, index) => valueErrors(item, field.items, `${path}[${index}]`, catalog, depth));
+      const errors = [];
+      for (let index = 0; index < value.length; index += 1) {
+        errors.push(...valueErrors(own(value, index) ? value[index] : undefined, field.items, `${path}[${index}]`, catalog, depth));
+      }
+      if (!errors.length && field.unique_items && new Set(value.map(canonical)).size !== value.length) {
+        errors.push(`${path}: the items are not unique`);
+      }
+      return errors;
     }
     case 'component':
       if (isObject(value) && !targets(field).includes(value.component)) return [`${path}.component: must be ${targets(field).join(' or ')}`];
@@ -236,6 +245,27 @@ function valueErrors(value, field, path, catalog, depth) {
     default:
       throw new Error('unknown field type ' + field.type);
   }
+}
+
+export function multiChoiceCountLimit(count, { min_items = 0, max_items = 500 }) {
+  if (count < min_items) return 'min_items';
+  if (count > max_items) return 'max_items';
+  return null;
+}
+
+function multiChoiceErrors({ choices, value = [], ...limits }, prefix) {
+  if (limits.min_items > limits.max_items) return [prefix + 'min_items: must be at most max_items'];
+  const limit = multiChoiceCountLimit(value.length, limits);
+  if (limit) return [prefix + 'value: ' + (limit === 'min_items' ? 'fewer' : 'more') + ' than ' + limits[limit] + ' items'];
+  const positions = new Map(choices.map((choice, index) => [choice, index]));
+  let previous = -1;
+  for (const [index, choice] of value.entries()) {
+    const position = positions.get(choice);
+    if (position === undefined) return [prefix + `value[${index}]: the value is not one of the choices`];
+    if (position <= previous) return [prefix + 'value: use the order of the choices'];
+    previous = position;
+  }
+  return [];
 }
 
 // catalog maps a component name to its contract. CI validates each contract with tools/catalog.py.
@@ -263,6 +293,10 @@ export function fillErrors(fill, catalog, path = '', depth = 0) {
     if (data.choices.length === 0) errors.push(prefix + 'data.choices: give at least one choice');
     else if (new Set(data.choices).size !== data.choices.length) errors.push(prefix + 'data.choices: the choices must be unique');
     else if (own(data, 'value') && !data.choices.includes(data.value)) errors.push(prefix + 'data.value: the value is not one of the choices');
+  }
+  if (!errors.length && fill.component === 'multi-choice-field' && contract.data.value?.type === 'list'
+    && Array.isArray(data.choices)) {
+    errors.push(...multiChoiceErrors(data, prefix + 'data.'));
   }
   return [...errors, ...slotErrors(fill, contract, prefix, depth)];
 }

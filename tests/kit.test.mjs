@@ -232,7 +232,7 @@ const meta = { ...child, $defs: { schema: { type: 'object', additionalProperties
   description: { type: 'string' }, title: { type: 'string' }, properties: map, additionalProperties: { type: 'boolean' },
   required: { type: 'array', uniqueItems: true, items: { type: 'string' } }, const: {},
   enum: { type: 'array', minItems: 1, uniqueItems: true }, oneOf: { type: 'array', minItems: 1, items: child },
-  minLength: count, maxLength: count, minItems: count, maxItems: count, items: child,
+  minLength: count, maxLength: count, minItems: count, maxItems: count, uniqueItems: { type: 'boolean' }, items: child,
   minimum: { type: 'number' }, maximum: { type: 'number' },
   pattern: { type: 'string' }, format: { const: 'date' },
 } } } };
@@ -272,6 +272,7 @@ function sample(field) {
 }
 
 function sampleData(contract) {
+  if (contract.name === 'multi-choice-field') return { label: 'Plants', choices: ['Mist fern'], value: ['Mist fern'] };
   if (contract.name === 'range-field') return { label: 'Loan period in days', minimum: 7, maximum: 28, step: 7, value: 14 };
   return Object.fromEntries(Object.entries(contract.data).map(([key, field]) => [key, sample(field)]));
 }
@@ -379,6 +380,25 @@ test('the select tool schema gives up to 500 text choices, also in an editable f
   for (const [items, valid] of [[choices, true], [[...choices, 'Other'], false]]) {
     const field = fill('select-field', { name: 'branch', label: 'Pickup branch', choices: items, value: choices.at(-1) });
     const form = kit.outer('editable-form', { title: 'Pickup details', submit_label: 'Save', fields: [field] });
+    assert.equal(instanceErrors(field, schema).length === 0, valid);
+    assert.equal(instanceErrors(form, formSchema).length === 0, valid);
+    assert.equal(validateFill(form).length === 0, valid);
+  }
+});
+
+test('the multi-choice tool schema gives unique lists of text, also in an editable form', () => {
+  const name = 'multi-choice-field';
+  const schema = toolSchema(name);
+  const formSchema = toolSchema('editable-form');
+  const { choices, value, min_items, max_items } = schema.properties.data.properties;
+  assert.deepEqual([choices.minItems, choices.maxItems, choices.uniqueItems], [1, 500, true]);
+  assert.deepEqual([value.items.type, value.maxItems, value.uniqueItems], ['string', 500, true]);
+  for (const limit of [min_items, max_items]) assert.deepEqual([limit.type, limit.minimum, limit.maximum], ['integer', 0, 500]);
+  const kit = createKit({ actor: ACTOR });
+  const data = { name: 'plants', label: 'Plants', choices: ['Mist fern', 'Dune bell'] };
+  for (const [selection, valid] of [[[], true], [['Mist fern'], true], [['Mist fern', 'Mist fern'], false], [[1], false]]) {
+    const field = fill(name, { ...data, value: selection });
+    const form = kit.outer('editable-form', { title: 'Bed', submit_label: 'Save', fields: [field] });
     assert.equal(instanceErrors(field, schema).length === 0, valid);
     assert.equal(instanceErrors(form, formSchema).length === 0, valid);
     assert.equal(validateFill(form).length === 0, valid);
