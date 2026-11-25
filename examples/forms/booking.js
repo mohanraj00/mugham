@@ -5,7 +5,8 @@ define();
 
 const { mount } = createKit({ actor: { type: 'agent', id: 'agent-bookings', name: 'Booking helper' } });
 const editable = { dates: 'Booking dates', start_time: 'Start time', setup: 'Setup date and time' };
-const action = { tool: 'rooms.save_booking', label: 'Save booking', title: 'Room booking', editable };
+const action = { tool: 'rooms.save_booking', label: 'Save booking', title: 'Room booking', editable,
+  time_zones: { setup: 'Europe/Oslo' } };
 const form = mount('editable-form', { title: action.title, submit_label: action.label, fields: [
   fill('date-range-field', { name: 'dates', label: editable.dates, value: ['2028-04-10', '2028-04-11'],
     earliest: '2028-04-01', latest: '2028-04-30' }),

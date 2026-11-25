@@ -102,6 +102,19 @@ export async function bookingExampleChecks(session, sessionId, base, modes, { ev
         result.refused && JSON.stringify(result.args.dates) === '["2028-04-12","2028-04-12"]'
         && result.args.start_time === '10:15' && result.args.setup === '2028-04-12T09:30'
         && !Object.hasOwn(result.args, 'time_zone') && result.state === 'done', result);
+
+      const mismatch = await run(`(() => {
+        const booking = document.querySelector('mu-editable-form');
+        const original = booking.fill;
+        const fields = original.data.fields.map((field) => field.component === 'date-time-field'
+          ? { ...field, data: { ...field.data, time_zone: 'America/New_York' } } : field);
+        booking.fill = { ...original, data: { ...original.data, fields } };
+        return { state: booking.dataset.state, form: Boolean(${form}),
+          detail: booking.shadowRoot.querySelector('[part="details"] > div')?.textContent };
+      })()`);
+      check(mode, 'the form refuses a fill with a different time zone from the action binding',
+        mismatch.state === 'refused' && !mismatch.form
+        && mismatch.detail?.includes('data.fields: the time zone of the field setup is not the time zone of the application'), mismatch);
     }
   } finally {
     await session.send('Emulation.setEmulatedMedia', { features: modes.light }, sessionId);

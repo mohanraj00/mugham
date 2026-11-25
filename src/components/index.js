@@ -659,6 +659,18 @@ export class MuEditableForm extends ActionElement {
     if (other) return [`data.fields: the application does not accept the field ${other}`];
     const relabeled = data.fields.find((item) => item.data.label !== editable[item.data.name]);
     if (relabeled) return [`data.fields: the label of the field ${relabeled.data.name} is not the label of the application`];
+    // The application uses the bound zone to read the local date and time. The fill must show the same zone.
+    const timeZones = this.action.timeZones;
+    const dateTimes = new Set();
+    for (const { component, data: field } of data.fields) {
+      if (component !== 'date-time-field') continue;
+      if (field.time_zone !== timeZones[field.name]) {
+        return [`data.fields: the time zone of the field ${field.name} is not the time zone of the application`];
+      }
+      dateTimes.add(field.name);
+    }
+    const extraZone = Object.keys(timeZones).find((name) => !dateTimes.has(name));
+    if (extraZone) return [`data.fields: the time zone of the application for ${extraZone} needs a date and time field`];
     // The application gives the typed names, so a fill cannot remove the type of an edit or add one.
     const typed = this.action.typed;
     const retyped = data.fields.find((item) => Boolean(item.data.typed) !== typed.includes(item.data.name));

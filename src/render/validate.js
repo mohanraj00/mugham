@@ -241,8 +241,8 @@ export function isLocalDateTime(value) {
   return value.length === 16 && value[10] === 'T' && isDate(value.slice(0, 10)) && timeMinutes(value.slice(11)) !== null;
 }
 
-function isTimeZone(name) {
-  if (!TIME_ZONE.test(name)) return false;
+export function isTimeZone(name) {
+  if (typeof name !== 'string' || !TIME_ZONE.test(name)) return false;
   try {
     new Intl.DateTimeFormat(undefined, { timeZone: name });
     return true;
