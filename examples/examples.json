@@ -28,6 +28,7 @@
       "examples": [
         {"name": "Table", "path": "tables/table.html", "components": ["table"], "text": "A table of plots with keyboard sorting, row status text and an empty table."},
         {"name": "Data grid", "path": "tables/budget.html", "components": ["data-grid"], "text": "An editable grid with a budget, typed cells and a total row that the page computes."},
+        {"name": "Density presets", "path": "tables/density.html", "components": ["card-grid", "card", "data-grid"], "text": "A card grid and a data grid in the default and compact densities."},
         {"name": "Review queue", "path": "tables/review-queue.html", "components": ["table", "excerpt", "editable-form", "field", "number-field", "date-field", "action-button", "diff"], "text": "A reviewer accepts, corrects or rejects an extracted value next to its source excerpt, on a fixture API."},
         {"name": "Snapshots", "path": "tables/snapshots.html", "components": ["table", "diff"], "text": "A comparison of two snapshots of versioned records with a diff, on a fixture API."}
       ]

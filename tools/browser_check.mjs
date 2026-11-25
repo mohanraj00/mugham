@@ -308,10 +308,19 @@ export async function pageRules(session, sessionId, where) {
     check(document, 'document');
     return problems;
   })()`);
-  // Each touch target in a shadow root is 44 by 44 CSS pixels at the minimum (src/components/interaction.md).
+  const small = await touchTargetProblems(session, sessionId);
+  return [{ page: where, step: 'each control has a name', ok: unnamed.length === 0, detail: unnamed.join(' ') },
+    { page: where, step: 'each id is unique, each id reference finds its target, and each role and ARIA value is valid',
+      ok: markup.length === 0, detail: markup.slice(0, 10).join('; ') },
+    { page: where, step: 'each touch target in a shadow root is 44 by 44 CSS pixels at the minimum',
+      ok: small.length === 0, detail: small.slice(0, 10).join('; ') }];
+}
+
+async function touchTargetProblems(session, sessionId, includePage = false) {
+  // Each touch target is 44 by 44 CSS pixels at the minimum (src/components/interaction.md).
   // A radio or a checkbox and its label are one target. The cell of a data grid is the target of its editor.
   // A link in a sentence of a rich text and a point of a chart are not in this rule.
-  const small = await evaluate(session, sessionId, `(() => {
+  return evaluate(session, sessionId, `(() => {
     const problems = [];
     const join = (a, b) => ({ width: Math.max(a.right, b.right) - Math.min(a.left, b.left), height: Math.max(a.bottom, b.bottom) - Math.min(a.top, b.top) });
     const check = (root, label) => {
@@ -333,14 +342,10 @@ export async function pageRules(session, sessionId, where) {
         walk(node.shadowRoot);
       }
     };
+    if (${includePage}) check(document, 'document');
     walk(document);
     return problems;
   })()`);
-  return [{ page: where, step: 'each control has a name', ok: unnamed.length === 0, detail: unnamed.join(' ') },
-    { page: where, step: 'each id is unique, each id reference finds its target, and each role and ARIA value is valid',
-      ok: markup.length === 0, detail: markup.slice(0, 10).join('; ') },
-    { page: where, step: 'each touch target in a shadow root is 44 by 44 CSS pixels at the minimum',
-      ok: small.length === 0, detail: small.slice(0, 10).join('; ') }];
 }
 
 // Starts a Python server of tools/ on a free port. The server gives its URL on its first line of output.
@@ -581,7 +586,7 @@ async function main() {
   const base = `http://127.0.0.1:${server.address().port}`;
   const profile = mkdtempSync(join(tmpdir(), 'mugham-chrome-'));
   const report = { passed: false, chrome: '', pages: {}, accessibility: [], keyboard: [], examples: [], errors: [],
-    scope: 'Headless Chrome on this machine: the check pages in four media modes, the accessibility tree, the keyboard the example pages, and the example apps in the light theme, the dark theme and at the phone width. No screen reader.' };
+    scope: 'Headless Chrome on this machine: the check pages in four media modes, the accessibility tree, the keyboard, the example pages, and the example apps in the light theme, the dark theme and at the phone width. It also checks each example in compact density at 375 CSS pixels, in the light and dark themes. No screen reader.' };
   let chrome;
   try {
     const started = await startChrome(profile);
@@ -814,7 +819,7 @@ async function main() {
     report.examples.push(...guides.steps);
     report.accessibility.push(...guides.accessibility);
     // The index of the examples and the frame of each example page. tests/browser/examples-index.mjs gives the expected results.
-    report.examples.push(...await exampleIndexChecks(session, sessionId, base, { evaluate, open, sleep, pythonServer }));
+    report.examples.push(...await exampleIndexChecks(session, sessionId, base, { evaluate, open, sleep, pythonServer, key, touchTargetProblems }));
     report.examples.push(...await threadExample(session, sessionId, report));
     report.examples.push(...await offlineExample(session, sessionId, base));
     report.examples.push(...await membershipFlow(session, sessionId, base));

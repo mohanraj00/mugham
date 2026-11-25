@@ -47,10 +47,27 @@ class TokensTest(unittest.TestCase):
 
     def test_contrast(self):
         for theme in ('light', 'dark'):
-            for front, back, minimum in PAIRS + PAGE_PAIRS:
-                with self.subTest(theme=theme, front=front, back=back):
-                    ratio = tokens.contrast(self.data['tokens'][front][theme], self.data['tokens'][back][theme])
-                    self.assertGreaterEqual(ratio, minimum)
+            values = {name: value[theme] for name, value in self.data['tokens'].items()}
+            for density, palette in (('default', values), ('compact', values | self.data['compact'])):
+                for front, back, minimum in PAIRS + PAGE_PAIRS:
+                    with self.subTest(theme=theme, density=density, front=front, back=back):
+                        self.assertGreaterEqual(tokens.contrast(palette[front], palette[back]), minimum)
+
+    def test_compact_changes_only_spacing_body_type_and_column_sizes(self):
+        expected = {'space.1': '0.1875rem', 'space.2': '0.375rem', 'space.3': '0.5625rem', 'space.4': '0.75rem',
+                    'size.column-narrow': '10rem', 'size.column-medium': '12rem', 'size.column-wide': '18rem'}
+        for name, size in (('type.body', '0.875rem/1.45'), ('type.caption', '0.6875rem/1.4')):
+            weight, _, family = self.data['tokens'][name]['light'].split(' ', 2)
+            expected[name] = f'{weight} {size} {family}'
+        self.assertEqual(self.data['compact'], expected)
+        lines = ['[data-mu-density="compact"] {']
+        lines.extend(f'  {tokens.css_name(name)}: {value};' for name, value in sorted(expected.items()))
+        self.assertIn('\n'.join(lines + ['}']), tokens.css(self.data))
+
+    def test_invalid_compact_values_are_refused(self):
+        for compact in ([], {'space.7': '1rem'}, {'color.focus': '#ffffff'}, {'space.1': '0; color: red'}):
+            with self.subTest(compact=compact):
+                self.assertTrue(tokens.errors(self.data | {'compact': compact}))
 
     def test_the_kit_tokens_come_from_the_brand(self):
         brand = json.loads(BRAND.read_text(encoding='utf-8'))
