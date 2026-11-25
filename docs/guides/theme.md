@@ -26,6 +26,7 @@ Each token has a light value and a dark value. The table gives the CSS property,
 | `--mu-color-on-accent` | `#ffffff` | `#0b1a33` | The text on the accent. |
 | `--mu-color-focus` | `#1f5fbf` | `#8cb4f5` | The focus ring. |
 | `--mu-color-danger` | `#a3231a` | `#f4aba4` | A refusal, an error and `Not done`. |
+| `--mu-color-success` | `#1b7a45` | `#73d39f` | The edge and state text of a completed action. |
 | `--mu-type-body` | `400 0.9375rem/1.55` | same | The body text, as a `font` value with the font stack. |
 | `--mu-type-caption` | `400 0.75rem/1.5` | same | Captions and state text, as a `font` value with the font stack. |
 | `--mu-type-weight-strong` | `600` | same | A title and an actor name. |
@@ -51,9 +52,11 @@ The kit uses the dark values when the browser theme is dark. A page can select o
 
 Each element uses only the tokens, so the two themes need no other change.
 
+After a successful receipt, the action shows `Done` at full opacity. The action button and the form submit buttons use `--mu-color-success` for their edge and text. An action button with an icon display shows a check. The data grid uses this color in its receipt below the grid, and the upload uses it on each completed file. If you set this token, keep a text contrast of at least 4.5:1 against the surface and the page ground. The copy control uses the standard control edge and can wrap below the reference.
+
 ## Forced colors and reduced motion
 
-In forced colors, each element uses system colors: `ButtonText` and `ButtonFace` for a button, `CanvasText` for an edge and the state text, and `Highlight` for the focus ring. The tokens have no effect on these colors. A theme thus cannot make an element unreadable in forced colors.
+In forced colors, each element uses system colors: `ButtonText` and `ButtonFace` for a button, `CanvasText` for an edge and the state text, and `Highlight` for the focus ring. A completed button uses `ButtonText`. An unavailable action button uses `GrayText`. The tokens have no effect on these colors.
 
 In reduced motion, `tokens.css` sets `--mu-motion-fast` to `0ms`. Each shadow root also removes each transition and each animation with an `!important` rule. Thus a theme cannot turn motion on again in reduced motion.
 
@@ -206,7 +209,7 @@ The text limit parts are `read-more-content` and `read-more-toggle`. Keep the fu
 
 The rich text parts are `rich-text`, `code`, `link` and `target`. Keep the underline and the focus ring of the `link` part. Do not hide the `target` part, because it shows the address that a link opens.
 
-The data grid parts are `data-grid`, `title`, `scroll` and `cell`. Do not hide the `title` part, because it shows the title that the application gives. Do not hide the `changed` part of a cell or the `status` part below the grid. They show `Changed`, `Pending` and `Not done`, and the reason of a refused value. Keep the focus ring of a cell and of the `editor` part.
+The data grid parts are `data-grid`, `title`, `scroll` and `cell`. Do not hide the `title` part, because it shows the title that the application gives. Keep the `changed` part of a cell, the `status` part below the grid and the receipt reference visible. They show the state of an edit and the reason of a refused value. Keep the focus ring of a cell and of the `editor` part.
 
 The exit of a pending action is the part `exit`, with the buttons `retry` and `cancel`. Do not hide them, because they are the only exit of an action with no receipt. The parts of `mu-action-queue` are `queue`, `label`, `summary`, `actions`, `action`, `name`, `state`, `queued`, `retry`, `cancel` and `dismiss`. Do not hide the `state` part or a button of an action. They show `Pending` and `Not done` for each action of the offline queue, and they let a person retry, cancel or dismiss it.
 

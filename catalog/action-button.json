@@ -1,6 +1,6 @@
 {
   "name": "action-button",
-  "description": "A button that can ask for confirmation and shows done only after a receipt. A pending action with no receipt offers retry and cancel. The icon and display must match the binding. The button shows text by default or with no icon. In icon display the label shows on hover and focus.",
+  "description": "A button that can ask for confirmation. A pending action can offer retry and cancel. The icon and display must match the binding. The icon display shows the label on hover and focus. After a successful receipt, the button shows Done and uses a check in an icon display.",
   "ai_content": false,
   "data": {
     "label": {"type": "text", "required": true, "min_length": 1, "size": "short"},
@@ -10,7 +10,7 @@
   },
   "states": ["+disabled", "+confirm", "+pending", "+done", "+error"],
   "tokens": [
-    "color.accent", "color.on-accent", "color.surface", "color.text", "color.border", "color.text-muted", "color.danger", "color.focus", "space.1", "space.2",
+    "color.accent", "color.on-accent", "color.surface", "color.text", "color.border", "color.text-muted", "color.danger", "color.success", "color.focus", "space.1", "space.2",
     "space.3", "radius.2", "type.body", "type.caption", "motion.fast"
   ],
   "accessibility": {"role": "button", "name": {"field": "label"}, "keyboard": ["Tab", "Shift+Tab", "Enter", "Space", "Escape"]}

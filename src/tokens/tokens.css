@@ -7,6 +7,7 @@
   --mu-color-focus: #1f5fbf;
   --mu-color-on-accent: #ffffff;
   --mu-color-page: #f7f8fa;
+  --mu-color-success: #1b7a45;
   --mu-color-surface: #ffffff;
   --mu-color-text: #141a23;
   --mu-color-text-muted: #566170;
@@ -40,6 +41,7 @@
     --mu-color-focus: #8cb4f5;
     --mu-color-on-accent: #0b1a33;
     --mu-color-page: #0f1217;
+    --mu-color-success: #73d39f;
     --mu-color-surface: #171b21;
     --mu-color-text: #e6e9ee;
     --mu-color-text-muted: #9ba5b1;
@@ -53,6 +55,7 @@
   --mu-color-focus: #8cb4f5;
   --mu-color-on-accent: #0b1a33;
   --mu-color-page: #0f1217;
+  --mu-color-success: #73d39f;
   --mu-color-surface: #171b21;
   --mu-color-text: #e6e9ee;
   --mu-color-text-muted: #9ba5b1;

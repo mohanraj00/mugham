@@ -426,7 +426,8 @@ async function threadExample(session, sessionId, report) {
         actors: [...root.querySelectorAll('li.message .actor')].map((node) => node.textContent),
         refusals: [...root.querySelectorAll('.refusal')].map((node) => node.textContent),
         card: root.querySelector('mu-card')?.shadowRoot.textContent || '',
-        action: button?.dataset.state, status: button?.shadowRoot.querySelector('.status').textContent };
+        action: button?.dataset.state, status: button?.shadowRoot.querySelector('.status').textContent,
+        reference: button?.shadowRoot.querySelector('[part="reference"]')?.textContent };
     })()`);
     // The module can run after the load event, so the check waits for the element too.
     let value = await state();
@@ -453,7 +454,8 @@ async function threadExample(session, sessionId, report) {
       value = await state();
     }
     step('the action is pending before the receipt', pending.action === 'pending' && pending.status === 'Pending', pending);
-    step('the receipt of the API makes the action done', value.action === 'done' && /^Done: .*Reference: R-\d{4}$/.test(value.status), value);
+    step('the receipt of the API makes the action done', value.action === 'done' && value.status.startsWith('Done:')
+      && /^Reference: R-\d{4}$/.test(value.reference), value);
     report.accessibility.push(...await axErrors(session, sessionId, [['list', 'Thread'], ['article', 'Message from Robin, Person'],
       ['article', 'Message from Catalog agent, Agent'], ['article', 'Message from Renewal agent, Agent'], ['button', 'Renew']], page));
   } finally {

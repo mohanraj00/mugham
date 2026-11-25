@@ -236,7 +236,7 @@ async function browserChecks() {
     && at(quick, 'rent', 'jan').textContent === '900Changed' && quick.dataset.state === 'pending');
   answer(quick);
   check('quick changes: after the receipt the last saved value goes in the next request', quick.requests.length === 2
-    && last(quick).arguments.value === 900 && at(quick, 'rent', 'jan').textContent === '900Pending');
+    && last(quick).arguments.value === 900 && at(quick, 'rent', 'jan').textContent === '900Pending' && status(quick) === '');
   answer(quick);
   check('quick changes: the cell shows the last saved value', at(quick, 'rent', 'jan').textContent === '900' && quick.dataset.state === 'default'
     && quick.requests.length === 2);
@@ -567,6 +567,20 @@ async function browserChecks() {
   const probe = document.createElement('span');
   stage.append(probe);
   const resolved = (value) => { probe.style.color = value; return getComputedStyle(probe).color; };
+  const done = mount(budget());
+  edit(done, 'rent', 'jan', '901');
+  answer(done, true, { reference: 'R-0001' });
+  const doneStatus = root(done).querySelector('[part="status"]');
+  const doneStyle = getComputedStyle(doneStatus);
+  const doneColor = resolved(mode === 'forced-colors' ? 'CanvasText' : 'var(--mu-color-success)');
+  const reference = root(done).querySelector('[part="reference"]');
+  check('receipt: the done style, reference and copy control show below the grid',
+    doneStatus.textContent === 'Done: Rent, January.' && doneStatus.checkVisibility()
+    && doneStyle.color === doneColor && doneStyle.borderInlineStartColor === doneColor
+    && reference?.textContent === 'Reference: R-0001' && reference.checkVisibility()
+    && reference.parentElement.querySelector('[part="copy"]')?.checkVisibility());
+  edit(done, 'rent', 'jan', '902');
+  check('receipt: a new edit can go to the application after a receipt', done.requests.length === 2 && done.dataset.state === 'pending');
   // Each state in this mode: default, changed, pending, error, read-only and the open editor.
   const states = mount(budget());
   edit(states, 'rent', 'jan', '901');

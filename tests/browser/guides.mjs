@@ -20,7 +20,8 @@ const CONTRACTS = `(() => { ${WALK}
 const ASSEMBLE = `(() => {
   const thread = document.querySelector('mu-thread');
   const root = thread.shadowRoot;
-  const action = (node) => node && ({ state: node.dataset.state, status: node.shadowRoot.querySelector('.status').textContent });
+  const action = (node) => node && ({ state: node.dataset.state, status: node.shadowRoot.querySelector('.status').textContent,
+    reference: node.shadowRoot.querySelector('[part="reference"]')?.textContent });
   return { thread: thread.dataset.state,
     actors: [...root.querySelectorAll('li.message .actor')].map((node) => node.textContent),
     refusals: [...root.querySelectorAll('.refusal')].map((node) => node.textContent),
@@ -129,7 +130,8 @@ export async function guideChecks(session, sessionId, base, { evaluate, open, sl
   const top = await evaluate(session, sessionId, press(`document.querySelector('mu-action-button')`));
   step(page, 'a press shows Pending before the receipt', top.state === 'pending' && top.status === 'Pending', top);
   a = await until(ASSEMBLE, (value) => value.top.state !== 'pending');
-  step(page, 'the receipt makes the action done', a.top.state === 'done' && a.top.status === 'Done: The loan is renewed.Reference: R-0001', a.top);
+  step(page, 'the receipt makes the action done', a.top.state === 'done' && a.top.status === 'Done: The loan is renewed.'
+    && a.top.reference === 'Reference: R-0001', a.top);
   step(page, 'the thread reads the source to its end', a.thread === 'ended', a.thread);
   step(page, 'each message names its actor', JSON.stringify(a.actors) === JSON.stringify(['Robin Person', ...Array(4).fill('Loan helper Agent')]), a.actors);
   step(page, 'the thread refuses the undeclared component', a.refusals.length === 1 && a.refusals[0].includes('banner'), a.refusals);
@@ -138,7 +140,7 @@ export async function guideChecks(session, sessionId, base, { evaluate, open, sl
   step(page, 'the action in the thread shows Pending before the receipt', inThread.state === 'pending', inThread);
   a = await until(ASSEMBLE, (value) => value.inThread.state !== 'pending');
   step(page, 'perform gives the receipt to the action in the thread', a.inThread.state === 'done'
-    && a.inThread.status === 'Done: The loan is renewed.Reference: R-0002', a.inThread);
+    && a.inThread.status === 'Done: The loan is renewed.' && a.inThread.reference === 'Reference: R-0002', a.inThread);
   await named(page, [['group', 'Loans of Robin'], ['group', 'Current loans'], ['article', 'Field guide to moss'], ['list', 'Thread'],
     ['article', 'Message from Robin, Person'], ['article', 'Message from Loan helper, Agent'], ['button', 'Renew']]);
 
