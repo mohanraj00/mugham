@@ -64,11 +64,16 @@ class InteractionTest(unittest.TestCase):
                 # A state name, then what the person does next.
                 self.assertGreaterEqual(len([part for part in value.split('. ') if part]), 2)
 
-    def test_the_doc_gives_the_next_step_of_a_refusal(self):
-        value = re.search(r"export const REFUSED_NEXT = '([^']+)';", DOM).group(1)
-        self.assertIn(f'`{value}`', DOC)
+    def test_the_doc_gives_the_words_and_parts_of_a_refusal(self):
+        for name in ['REFUSED_REASON', 'REFUSED_NEXT']:
+            value = re.search(rf"export const {name} = '([^']+)';", DOM).group(1)
+            self.assertIn(f'`{value}`', DOC)
+        for part in ['reason', 'next', 'details']:
+            self.assertIn(f'`{part}`', DOC)
+        self.assertIn('`Technical details`', DOC)
         for path in ['src/primitives/base.js', 'src/thread/index.js']:
             self.assertIn('REFUSED_NEXT', text(ROOT / path))
+            self.assertIn('refusalDetails', text(ROOT / path))
 
     def test_each_icon_uses_a_fixed_path_from_the_kit(self):
         icons = re.search(r'const ICONS = Object\.freeze\(\{([^}]*)\}\);', DOM).group(1)

@@ -4,7 +4,7 @@
 import { createReader } from '../envelope/envelope.js';
 import { deliverReceipt } from '../actions/action.js';
 import { define as defineComponents } from '../components/index.js';
-import { BASE, EDGE, LIFT, REFUSED_NEXT, el, sheet } from '../render/dom.js';
+import { BASE, EDGE, LIFT, REFUSED_NEXT, REFUSED_REASON, el, refusalDetails, sheet } from '../render/dom.js';
 import { registeredTag } from '../render/registry.js';
 import { ReadMore, READ_MORE_CSS, READ_MORE_LABELS, clampErrors } from '../primitives/read-more.js';
 
@@ -26,7 +26,6 @@ const ACTIONS = new Set(['action-button', 'editable-form', 'form-card', 'data-gr
 const TYPES = Object.freeze({ human: 'Person', agent: 'Agent', system: 'System' });
 // The envelope reader accepts only a message with a valid actor, so the element accepts this actor.
 const actorOf = ({ actor }) => ({ type: actor.type, id: actor.id, ...(actor.name === undefined ? {} : { name: actor.name }) });
-const REFUSED_PART = 'Refused: the thread did not show this part. ';
 const SOURCE_FAILED = 'The source of events failed.';
 // The live region gives a short text of each message, so one long message cannot remove a later notice.
 const MAX_SUMMARY = 120;
@@ -60,8 +59,9 @@ const CSS = sheet(`
   }
 `);
 
-// A refused part: the reason, then what the person does next.
-const refusalOf = (reason) => el('p', { class: 'refusal' }, el('span', { part: 'reason' }, REFUSED_PART + reason), ' ', el('span', { part: 'next' }, REFUSED_NEXT));
+const refusalOf = (component, errors) => el('div', { class: 'refusal' },
+  el('span', { part: 'reason' }, REFUSED_REASON), ' ', el('span', { part: 'next' }, REFUSED_NEXT),
+  refusalDetails(component, errors));
 const nameOf = (actor) => actor.name ?? actor.id;
 const who = (actor) => `${nameOf(actor)}, ${TYPES[actor.type]}`;
 
@@ -317,14 +317,15 @@ export class MuThread extends HTMLElement {
   // Changes only the parts that changed. The key order of a fill is not a change.
   #parts(entry, message, said) {
     message.parts.forEach((part, index) => {
-      const key = stable(part);
+      const component = part.type === 'refusal' ? this.#reader.refusedComponent(message.messageId) : undefined;
+      const key = stable(part) + (component === undefined ? '' : JSON.stringify(component));
       const old = entry.nodes[index];
       if (old && entry.keys[index] === key) return;
       // A pending action stays until its receipt comes back. If not, a new snapshot could give a new
       // element in the default state, and a person could send the request a second time. An open
       // confirm step also stays, because a person decides in it.
       if (old && this.#busy(old)) return this.#wait(entry, old);
-      const node = this.#refill(old, part, message) ?? this.#part(part, message);
+      const node = this.#refill(old, part, message) ?? this.#part(part, message, component);
       if (node === old) {
         // The same element shows the new fill.
       } else if (old) {
@@ -396,13 +397,10 @@ export class MuThread extends HTMLElement {
     observer.observe(node, { attributes: true, attributeFilter: ['data-state'] });
   }
 
-  #part(part, message) {
+  #part(part, message, component) {
     if (part.type === 'text') return this.#textPart(el('p', { class: 'text' }, part.text));
     if (part.type === 'status') return el('p', { class: 'status error' }, 'Error: ' + part.text + (part.code ? ` (${part.code})` : ''));
-    if (part.type === 'refusal') {
-      const more = part.errors.length > 1 ? ` (${part.errors.length - 1} more)` : '';
-      return refusalOf(part.errors[0] + more);
-    }
+    if (part.type === 'refusal') return refusalOf(component, part.errors);
     if (part.type === 'component') return this.#component(part.fill, message);
     return el('p', { class: 'fallback' }, part.text);
   }
@@ -422,14 +420,14 @@ export class MuThread extends HTMLElement {
   // The element of the component validates the fill again. The application gives the binding of an action.
   #component(fill, message) {
     const tag = TAGS[fill.component] ?? registeredTag(fill.component);
-    if (!tag) return refusalOf(`${fill.component}: the kit has no element for this component`);
+    if (!tag) return refusalOf(fill.component, ['the kit has no element for this component']);
     const node = document.createElement(tag);
     const binding = this.#binding(fill, message);
     if (binding !== null) {
       try {
         node.action = binding;
       } catch (error) {
-        return refusalOf(String(error.message));
+        return refusalOf(fill.component, [String(error.message)]);
       }
     }
     this.#bindings.set(node, stable(binding));

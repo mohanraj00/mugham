@@ -39,6 +39,7 @@ const items = (thread) => [...thread.shadowRoot.querySelectorAll('li.message')];
 const item = (thread, index) => items(thread)[index];
 const header = (node) => node.querySelector('.actor')?.textContent ?? '';
 const live = (thread) => thread.shadowRoot.querySelector('[aria-live="polite"]');
+const refusedText = (node) => node.querySelector('.refusal [part="details"] > div')?.textContent;
 
 async function run() {
   // Two people and two agents in one thread. Each message shows its actor and the actor type.
@@ -141,14 +142,10 @@ async function run() {
   refused.push({ type: 'TEXT_MESSAGE_START', messageId: 'c2', role: 'user' });
   await settle();
   const refusal = item(refused, 0).querySelector('.refusal');
-  check('refused: an undeclared component shows a refusal notice',
-    refusal?.textContent.startsWith('Refused: the thread did not show this part.') && refusal.textContent.includes('component'),
+  check('refused: an undeclared component shows a plain reason and keeps the error in the disclosure',
+    refusal?.querySelector('[part="reason"]')?.textContent === 'This content did not show because it did not match the rules of the application.'
+    && refusedText(item(refused, 0)) === 'banner: component: no contract has the name banner',
     refusal?.textContent);
-  check('refused: the notice has the reason part and the next step part',
-    refusal?.querySelector('[part="reason"]')?.textContent.startsWith('Refused: the thread did not show this part.')
-    && refusal.querySelector('[part="reason"]').textContent.includes('component')
-    && refusal.textContent === `${refusal.querySelector('[part="reason"]').textContent} ${refusal.querySelector('[part="next"]')?.textContent}`,
-    refusal?.innerHTML);
   check('refused: the refused component makes no element', !refused.shadowRoot.querySelector('mu-banner'));
   check('refused: the refused part keeps the actor', header(item(refused, 0)) === 'Catalog agent Agent', header(item(refused, 0)));
   const noActor = item(refused, 1);
@@ -183,10 +180,10 @@ async function run() {
     && authorCard.shadowRoot.textContent.includes('Author: agent a-catalog'), authorCard?.shadowRoot.textContent);
   const spoofCard = item(authored, 1).querySelector('mu-card');
   check('author: a card of an agent that names a person as its author is refused', spoofCard?.dataset.state === 'refused'
-    && spoofCard.shadowRoot.textContent.includes('slots.authorship: the author is not the bound actor')
+    && spoofCard.shadowRoot.querySelector('[part="details"] > div')?.textContent.includes('slots.authorship: the author is not the bound actor')
     && !spoofCard.shadowRoot.textContent.includes('Author: human'), spoofCard?.shadowRoot.textContent);
   check('author: a card with no authorship is refused', !item(authored, 2).querySelector('mu-card')
-    && item(authored, 2).querySelector('.refusal')?.textContent.includes('slots.authorship: a required slot is missing'),
+    && refusedText(item(authored, 2)) === 'card: slots.authorship: a required slot is missing',
     item(authored, 2).textContent);
 
   // A citation part shows as its element, with the actor of the envelope as its author.
@@ -224,7 +221,7 @@ async function run() {
   const loosePart = mount();
   loosePart.push(snapshot('d2', CATALOG_AGENT, { format: 2, fill: fill('diff-part', { title: 'Loan', changes: [] }) }));
   await settle();
-  check('diff: a diff-part fill with no diff shows a refusal', item(loosePart, 0).querySelector('.refusal')?.textContent.includes('diff-part'),
+  check('diff: a diff-part fill with no diff shows a refusal', refusedText(item(loosePart, 0))?.startsWith('diff-part:'),
     item(loosePart, 0).textContent);
 
   // A fill of a component with no element shows a refusal.
@@ -232,7 +229,7 @@ async function run() {
   noElement.push(snapshot('f1', CATALOG_AGENT, { format: 2, fill: { ...fill('fact', { label: 'Shelf', value: 'B-14' }), slots: { authorship: CATALOG_AGENT_ID } } }));
   await settle();
   check('refused: a fill of a component with no element shows a refusal',
-    item(noElement, 0).querySelector('.refusal')?.textContent.includes('fact'), item(noElement, 0).textContent);
+    refusedText(item(noElement, 0)) === 'fact: the kit has no element for this component', item(noElement, 0).textContent);
 
   // Actions. The element shows pending until the receipt comes back. Done only after the receipt.
   const acting = mount();

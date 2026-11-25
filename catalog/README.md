@@ -2,6 +2,8 @@
 
 Each JSON file in this folder is the contract of one component. Each file has the short form: it states only the values that are not a default of [schema/defaults.json](schema/defaults.json). [schema/README.md](schema/README.md) gives the format, the defaults and the full form.
 
+Each element that refuses a fill shows a short reason and the next step. Open `Technical details` to read or copy the component name and the validation errors. [Interaction details](../src/components/interaction.md#empty-and-refused-states) gives the display rules.
+
 | Contract | Element | Kind | Content |
 |---|---|---|---|
 | `text.json` | `mu-text` | primitive | A run of text. |

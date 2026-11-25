@@ -32,6 +32,7 @@ async function fixtureApi() {
 const STATE = `(() => [...document.querySelectorAll('mu-card')].map((card) => ({
   state: card.dataset.state,
   text: card.shadowRoot.textContent,
+  details: card.shadowRoot.querySelector('[part="details"] > div')?.textContent,
   buttons: Object.fromEntries([...card.querySelectorAll('mu-action-button')].map((button) => [button.fill.data.label,
     { state: button.dataset.state, status: button.shadowRoot.querySelector('.status').textContent,
       reference: button.shadowRoot.querySelector('[part="reference"]')?.textContent }])),
@@ -120,7 +121,7 @@ async function main() {
     await open(session, sessionId, api.url);
     cards = await until((value) => value.length === 3);
     step('a missing or invalid author causes a refusal for each decision', cards.length === 3
-      && cards.slice(0, 2).every((card) => card.state === 'refused' && card.text.includes('Refused card: slots.authorship')
+      && cards.slice(0, 2).every((card) => card.state === 'refused' && card.details?.includes('slots.authorship')
         && Object.keys(card.buttons).length === 0), cards);
     step('the valid decision shows its actions after the refusals', cards.length === 3
       && cards[2].text.includes('Open the north branch') && cards[2].buttons['Approve D-0002']?.state === 'default', cards[2]);

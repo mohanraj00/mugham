@@ -2,9 +2,13 @@
 // tools/browser_check.mjs loads the page in each media mode, reads window.muChecks and then runs stateChecks,
 // which moves a real pointer and presses real keys.
 const WIDTHS = [375, 768, 1280];
+const REASON = 'This content did not show because it did not match the rules of the application.';
 const NEXT = 'Ask for this content again. If the refusal shows again, tell the owner of the application.';
+const MARKUP = '<img src=x onerror="window.muUnsafe=1">';
+const ERRORS = [`data.${MARKUP}: the contract does not declare this field`, 'data.title: must be a string'];
+const DETAILS = 'card: ' + ERRORS.join('\n');
 
-export async function stateChecks(session, sessionId, { evaluate, key, sleep }, page, mode) {
+export async function stateChecks(session, sessionId, { evaluate, key, pageRules, sleep }, page, mode) {
   const results = [];
   const check = (step, ok, detail) => results.push({ page, step: `${mode}: ${step}`, ok: Boolean(ok), detail: JSON.stringify(detail) });
   const mouse = (type, x, y, extra = {}) => session.send('Input.dispatchMouseEvent', { type, x, y, ...extra }, sessionId);
@@ -79,43 +83,73 @@ export async function stateChecks(session, sessionId, { evaluate, key, sleep }, 
     await session.send('Emulation.clearDeviceMetricsOverride', {}, sessionId);
     await waitForWidth(originalWidth);
   }
+
+  for (const kind of ['element', 'thread']) {
+    const state = () => evaluate(session, sessionId, `window.muRefusalState('${kind}')`);
+    await evaluate(session, sessionId, `window.muRefusalStart('${kind}')`);
+    await key(session, sessionId, 'Tab', 'Tab', 9);
+    const closed = await state();
+    await key(session, sessionId, 'Enter', 'Enter', 13, '\r');
+    const opened = await state();
+    const { nodes } = await session.send('Accessibility.getFullAXTree', {}, sessionId);
+    const exposed = (role, name) => nodes.some((node) => !node.ignored && node.role?.value === role && node.name?.value === name);
+    check(`refused ${kind}: Tab reaches the summary and Enter opens the details`,
+      closed.focus === 'Technical details' && closed.ring === 'solid' && !closed.open && !closed.visible
+      && opened.open && opened.visible, { closed, opened });
+    check(`refused ${kind}: a screen reader can reach the disclosure and the copy control`,
+      exposed('DisclosureTriangle', 'Technical details') && exposed('button', 'Copy technical details'), opened);
+    await key(session, sessionId, ' ', 'Space', 32, ' ');
+    const hidden = await state();
+    await key(session, sessionId, ' ', 'Space', 32, ' ');
+    await key(session, sessionId, 'Tab', 'Tab', 9);
+    const copy = await state();
+    check(`refused ${kind}: Tab reaches Copy and Space closes the summary`,
+      copy.focus === 'Copy technical details' && hidden.focus === 'Technical details' && !hidden.open && !hidden.visible, { copy, hidden });
+    await evaluate(session, sessionId, `window.muRefusalOpen('${kind}', false)`);
+  }
+  await evaluate(session, sessionId, "window.muRefusalOpen('element', true), window.muRefusalOpen('thread', true)");
+  results.push(...await pageRules(session, sessionId, `${page} ${mode} with open refusal details`));
+  await evaluate(session, sessionId, "window.muRefusalOpen('element', false), window.muRefusalOpen('thread', false)");
   if (mode !== 'light') return results;
 
   // The copy controls, with a real press. The clipboard gets the text, and Copied shows for a short time.
   const origin = await evaluate(session, sessionId, 'location.origin');
   await session.send('Browser.grantPermissions', { origin, permissions: ['clipboardReadWrite', 'clipboardSanitizedWrite'] });
   await session.send('Emulation.setFocusEmulationEnabled', { enabled: true }, sessionId);
-  for (const [name, expected] of [['code', 'tray check --all'], ['reference', 'R-0001']]) {
+  for (const [target, name, expected] of [['code', 'code', 'tray check --all'], ['reference', 'reference', 'R-0001'],
+    ['element', 'technical details', DETAILS], ['thread', 'technical details', DETAILS]]) {
+    if (target === 'element' || target === 'thread') await evaluate(session, sessionId, `window.muRefusalOpen('${target}', true)`);
     let before = null;
     for (let i = 0; i < 80; i += 1) {
-      before = await evaluate(session, sessionId, `window.muCopyState('${name}')`);
+      before = await evaluate(session, sessionId, `window.muCopyState('${target}')`);
       if (before.label === 'Copy') break;
       await sleep(50);
     }
-    const at = await evaluate(session, sessionId, `window.muCopyPoint('${name}')`);
+    const at = await evaluate(session, sessionId, `window.muCopyPoint('${target}')`);
     await mouse('mouseMoved', at.x, at.y);
     await mouse('mousePressed', at.x, at.y, down);
     await mouse('mouseReleased', at.x, at.y, { button: 'left', buttons: 0, clickCount: 1 });
     let state = null;
     for (let i = 0; i < 40; i += 1) {
-      state = await evaluate(session, sessionId, `window.muCopyState('${name}')`);
+      state = await evaluate(session, sessionId, `window.muCopyState('${target}')`);
       if (state.label !== 'Copy') break;
       await sleep(50);
     }
     const clipboard = await evaluate(session, sessionId, 'navigator.clipboard.readText()');
-    check(`the copy control of the ${name} copies the text and shows Copied`, before.label === 'Copy' && before.status === ''
+    check(`the copy control of the ${target} copies the text and shows Copied`, before.label === 'Copy' && before.status === ''
       && before.name === 'Copy ' + name && state.label === 'Copied' && state.status === 'Copied' && state.role === 'status'
       && state.name === 'Copy ' + name && clipboard === expected, { before, state, clipboard });
     const { nodes } = await session.send('Accessibility.getFullAXTree', {}, sessionId);
     const said = nodes.some((node) => !node.ignored && node.role?.value === 'status')
       && nodes.some((node) => !node.ignored && node.role?.value === 'StaticText' && node.name?.value === 'Copied');
-    check(`the screen reader gets Copied for the ${name}`, said, said);
+    check(`the screen reader gets Copied for the ${target}`, said, said);
     await mouse('mouseMoved', 1, 1);
     for (let i = 0; i < 80 && state.label !== 'Copy'; i += 1) {
       await sleep(50);
-      state = await evaluate(session, sessionId, `window.muCopyState('${name}')`);
+      state = await evaluate(session, sessionId, `window.muCopyState('${target}')`);
     }
-    check(`the copy control of the ${name} goes back to Copy`, state.label === 'Copy' && state.status === '', state);
+    check(`the copy control of the ${target} goes back to Copy`, state.label === 'Copy' && state.status === '', state);
+    if (target === 'element' || target === 'thread') await evaluate(session, sessionId, `window.muRefusalOpen('${target}', false)`);
   }
   await session.send('Emulation.setFocusEmulationEnabled', { enabled: false }, sessionId);
   await session.send('Browser.resetPermissions', {});
@@ -124,7 +158,7 @@ export async function stateChecks(session, sessionId, { evaluate, key, sleep }, 
   try {
     for (const width of WIDTHS) {
       await session.send('Emulation.setDeviceMetricsOverride', { width, height: 812, deviceScaleFactor: 1, mobile: width < 700 }, sessionId);
-      await sleep(100);
+      await waitForWidth(width);
       const gaps = await evaluate(session, sessionId, 'window.muGaps()');
       check(`${width}px: the grid controls have 8px above, 12px below and 8px between them`, gaps.width === width && gaps.above === 8
         && gaps.below === 12 && gaps.between >= 8 && gaps.scroll <= 0, gaps);
@@ -133,13 +167,14 @@ export async function stateChecks(session, sessionId, { evaluate, key, sleep }, 
     }
   } finally {
     await session.send('Emulation.clearDeviceMetricsOverride', {}, sessionId);
+    await waitForWidth(originalWidth);
   }
   return results;
 }
 
 async function browserChecks() {
-  const { define } = await import('../../src/components/index.js');
-  const { COPIED_TIME, REFUSED_NEXT } = await import('../../src/render/dom.js');
+  const { define } = await import('../../src/thread/index.js');
+  const { COPIED_TIME } = await import('../../src/render/dom.js');
   define();
   const results = [];
   const check = (name, ok, detail = '') => results.push({ name, ok: Boolean(ok), detail: typeof detail === 'string' ? detail : JSON.stringify(detail) });
@@ -224,7 +259,19 @@ async function browserChecks() {
     'source-status': mount('mu-source-status', fill('source-status', { label: 'Tool library', state: 'empty' })),
     diff: mount('mu-diff', fill('diff', { title: 'Loan L-0002', parts: [node('diff-part', { title: 'Loan', changes: [] })] }, SLOTS)),
   };
-  const refused = mount('mu-card', fill('banner', {}));
+  const refused = document.createElement('mu-card');
+  refused.actor = AUTHOR;
+  stage.append(refused);
+  let refusalEvent;
+  stage.addEventListener('mu-refused', (event) => { refusalEvent = event; }, { once: true });
+  const badFill = fill('card', { title: 7, [MARKUP]: '' }, SLOTS);
+  refused.fill = badFill;
+  const thread = document.createElement('mu-thread');
+  stage.append(thread);
+  await thread.read([{ type: 'ACTIVITY_SNAPSHOT', messageId: 'check', activityType: 'mugham.fill',
+    metadata: { mugham: { actor: AUTHOR } }, content: { format: 2, fill: badFill } }]);
+  const refusals = { element: refused, thread };
+  const detailsOf = (element) => root(element).querySelector('details[part="details"]');
 
   // The chevron of the card toggle.
   const toggle = (card) => root(card).querySelector('[part="toggle"]');
@@ -359,11 +406,27 @@ async function browserChecks() {
   }
   check('empty: a diff part with no change tells what to do next',
     root(changed).querySelector('details[data-state="empty"] [part="empty"]')?.textContent === 'No changes. You do not need to review this part.');
-  const status = root(refused).querySelector('[role="status"]');
-  check('refused: the status gives the reason and then what to do next', refused.dataset.state === 'refused' && REFUSED_NEXT === NEXT
-    && status.querySelector('[part="reason"]').textContent === 'Refused card: component: must be card'
-    && status.querySelector('[part="next"]').textContent === NEXT && status.textContent === `Refused card: component: must be card ${NEXT}`,
-  status.textContent);
+  for (const [kind, element] of Object.entries(refusals)) {
+    const details = detailsOf(element);
+    const next = root(element).querySelector('[part="next"]');
+    const reason = root(element).querySelector('[part="reason"]');
+    check(`refused ${kind}: the reason and next step come before the closed details`, reason?.textContent === REASON
+      && reason.nextElementSibling === next && next?.textContent === NEXT
+      && Boolean(next.compareDocumentPosition(details) & Node.DOCUMENT_POSITION_FOLLOWING)
+      && !details?.open && details?.firstElementChild.matches('summary') && details.firstElementChild.textContent === 'Technical details',
+    root(element).textContent);
+    const error = details?.querySelector('div');
+    check(`refused ${kind}: the errors stay text`, error?.textContent === DETAILS
+      && error.childNodes.length === 1 && error.firstChild.nodeType === Node.TEXT_NODE && !root(element).querySelector('img'), error?.textContent);
+    const style = getComputedStyle(details.firstElementChild);
+    const color = media('(forced-colors: active)') ? 'CanvasText' : style.getPropertyValue('--mu-color-danger').trim();
+    check(`refused ${kind}: the summary has the state color, a 44 pixel target and respects reduced motion`,
+      style.color === resolved(color) && details.firstElementChild.getBoundingClientRect().height >= 44
+      && (!media('(prefers-reduced-motion: reduce)') || style.transitionDuration === '0s'), style.color);
+  }
+  check('refused: the element keeps no fill and sends all the errors in mu-refused',
+    refused.dataset.state === 'refused' && refused.fill === null && refusalEvent?.target === refused && refusalEvent.bubbles && refusalEvent.composed
+    && JSON.stringify(refusalEvent.detail) === JSON.stringify({ errors: ERRORS }), refusalEvent?.detail);
 
   // A long table keeps its column headers in view.
   const area = root(long).querySelector('[part="table"]');
@@ -454,7 +517,19 @@ async function browserChecks() {
       outline: `${style.outlineStyle} ${style.outlineWidth} ${style.outlineColor} ${style.outlineOffset}` };
   };
   window.muBlur = () => { for (const item of controls) item.blur(); return true; };
-  const copies = { code: rich, reference: done.element };
+  const copies = { code: rich, reference: done.element, ...refusals };
+  window.muRefusalStart = (kind) => {
+    probe.tabIndex = -1;
+    refusals[kind].before(probe);
+    probe.focus();
+  };
+  window.muRefusalOpen = (kind, open) => { detailsOf(refusals[kind]).open = open; };
+  window.muRefusalState = (kind) => {
+    const details = detailsOf(refusals[kind]);
+    const focus = root(refusals[kind]).activeElement;
+    return { open: details.open, visible: details.querySelector('div').checkVisibility(),
+      focus: focus?.getAttribute('aria-label') ?? focus?.textContent, ring: focus && getComputedStyle(focus).outlineStyle };
+  };
   window.muReceiptLayout = () => {
     const reference = root(done.element).querySelector('[part="reference"]');
     const copy = root(done.element).querySelector('[part="copy"]');

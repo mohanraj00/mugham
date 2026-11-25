@@ -78,7 +78,7 @@ for (const [data, reason] of [
 ]) {
   const refused = mount(data);
   check(`table: refuses ${reason}`, refused.dataset.state === 'refused' && refused.fill === null
-    && refused.shadowRoot.querySelector('[role="status"]').textContent.includes(reason)
+    && refused.shadowRoot.querySelector('[part="details"] > div')?.textContent.includes(reason)
     && !refused.shadowRoot.querySelector('table'));
 }
 const unbound = document.createElement('mu-table');

@@ -130,7 +130,7 @@ async function browserChecks() {
   const stage = document.getElementById('stage');
   const root = (element) => element.shadowRoot;
   const part = (element, name) => root(element).querySelector(`[part="${name}"]`);
-  const refusal = (element) => (element.dataset.state === 'refused' ? root(element).querySelector('[role="status"] [part="reason"]')?.textContent : null);
+  const refusal = (element) => (element.dataset.state === 'refused' ? root(element).querySelector('[part="details"] > div')?.textContent : null);
   const thrown = (act) => { try { act(); return ''; } catch (error) { return `${error.name}: ${error.message}`; } };
   function mount(value = fill(), binding = BINDING, parent = stage) {
     const element = new MuUpload();
@@ -321,14 +321,14 @@ async function browserChecks() {
     [{ max_files: 21 }, 'data.max_files: more than the maximum 20'],
   ]) {
     const bad = mount(fill(data));
-    check(`fill: ${reason}`, refusal(bad) === 'Refused upload: ' + reason && !root(bad).querySelector('button, input') && bad.fill === null, root(bad).textContent);
+    check(`fill: ${reason}`, refusal(bad) === 'upload: ' + reason && !root(bad).querySelector('button:not([part="copy"]), input') && bad.fill === null, root(bad).textContent);
   }
   const same = mount(fill({ accept: ['.pdf', 'application/pdf'], max_size: 1000, max_files: 3 }));
   check('fill: a fill can repeat the limits of the page', same.dataset.state === 'default' && part(same, 'limits').textContent.startsWith('Accepted types: application/pdf, .pdf.'));
   const named = mount();
   check('fill: the label of the binding accepts the same label', named.dataset.state === 'default');
   named.fill = fill({ label: 'Send a photo' });
-  check('fill: a label that is not the label of the binding is refused', refusal(named) === 'Refused upload: data.label: the label is not the label of the application');
+  check('fill: a label that is not the label of the binding is refused', refusal(named) === 'upload: data.label: the label is not the label of the application');
 
   // The binding: page code gives the tool and the limits. With no binding, the control takes no file.
   const unbound = mount(fill(), null);

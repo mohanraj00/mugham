@@ -10,6 +10,8 @@ const NEXT = 'Ask for this content again. If the refusal shows again, tell the o
 const MARKUP = '<img src=x onerror="window.muUnsafe=1"><script>window.muUnsafe=1</script>';
 const results = [];
 const check = (name, ok, detail = '') => results.push({ name, ok: Boolean(ok), detail: String(detail) });
+const refusedText = (node) => node.shadowRoot.querySelector('[part="details"] > div')?.textContent ?? '';
+const refusalStatus = (node) => node.shadowRoot.querySelector('[role="status"]')?.textContent;
 const fill = (component, data) => ({ component, version: '0.1.0', data });
 // An outer fill. Only the outer fill has slots, and a contract with ai_content requires the authorship slot.
 const AUTHOR = { type: 'agent', id: 'agent-check', name: 'Checker' };
@@ -79,7 +81,7 @@ for (const name of Object.keys(TAGS)) {
   check(`${name}: renders a valid fill`, node.dataset.state !== 'refused' && node.fill !== null, node.dataset.state);
   node.fill = outer(name, { ...VALID[name], style: 'color: red' });
   check(`${name}: refuses an undeclared field`, node.dataset.state === 'refused'
-    && node.shadowRoot.textContent.includes('data.style: the contract does not declare this field'), node.shadowRoot.textContent);
+    && refusedText(node).includes('data.style: the contract does not declare this field'), node.shadowRoot.textContent);
   const required = Object.keys(VALID[name])[0];
   const missing = { ...VALID[name] };
   delete missing[required];
@@ -88,16 +90,16 @@ for (const name of Object.keys(TAGS)) {
 }
 const nested = mount('card-grid', { label: 'Loans', cards: [fill('card', { ...LOAN, facts: [fact('Shelf', 7)] })] });
 check('card-grid: refuses a bad nested fact', nested.dataset.state === 'refused'
-  && nested.shadowRoot.textContent.includes('data.cards[0].data.facts[0].data.value: must be a string'), nested.shadowRoot.textContent);
+  && refusedText(nested).includes('data.cards[0].data.facts[0].data.value: must be a string'), nested.shadowRoot.textContent);
 const unnamed = mount('editable-form', { ...FORM, fields: [fill('field', { label: 'Shelf code' })] });
 check('editable-form: refuses a field without a name', unnamed.dataset.state === 'refused', unnamed.shadowRoot.textContent);
 const blankSubmit = mount('editable-form', { ...FORM, submit_label: '' });
 check('editable-form: refuses a blank submit label', blankSubmit.dataset.state === 'refused'
-  && blankSubmit.shadowRoot.textContent.includes('data.submit_label: fewer than 1 characters'), blankSubmit.shadowRoot.textContent);
+  && refusedText(blankSubmit).includes('data.submit_label: fewer than 1 characters'), blankSubmit.shadowRoot.textContent);
 // A form with no field has no application label that tells what the request does.
 const noFields = mount('editable-form', { ...FORM, submit_label: 'View details', fields: [] });
 check('editable-form: refuses a form with no field', noFields.dataset.state === 'refused'
-  && noFields.shadowRoot.textContent.includes('data.fields: the form needs at least one field that a person can edit'), noFields.shadowRoot.textContent);
+  && refusedText(noFields).includes('data.fields: the form needs at least one field that a person can edit'), noFields.shadowRoot.textContent);
 // A form with only disabled fields sends no value that a person can edit. It is the same as a form with no field.
 const allLocked = mount('editable-form', { ...FORM, submit_label: 'View details',
   fields: [fill('field', { name: 'shelf', label: 'Shelf code', value: 'B-14', disabled: true })] });
@@ -186,7 +188,7 @@ check('card: an empty citation slot shows no source', authorOnly.includes('Autho
 for (const name of ['card', 'editable-form', 'card-grid']) {
   const node = slotted(name, VALID[name], undefined);
   check(`${name}: refuses a fill with no authorship slot`, node.dataset.state === 'refused'
-    && node.shadowRoot.textContent.includes('slots.authorship: a required slot is missing'), node.shadowRoot.textContent);
+    && refusedText(node).includes('slots.authorship: a required slot is missing'), node.shadowRoot.textContent);
 }
 const formText = deepText(slotted('editable-form', FORM, { authorship: AUTHOR }));
 check('editable-form: shows the authorship slot as text', formText.includes('Author: agent agent-check'), formText.slice(0, 200));
@@ -195,7 +197,7 @@ check('card-grid: each card takes the slots of the grid', gridCards.length === 2
   && gridCards.every((card) => deepText(card).includes('Author: agent agent-check (Checker)') && deepText(card).includes('Source: Synthetic loan rules')));
 const nestedSlots = slotted('card-grid', { label: 'Loans', cards: [{ ...fill('card', LOAN), slots: { authorship: AUTHOR } }] }, { authorship: AUTHOR });
 check('card-grid: refuses a nested card with its own slots', nestedSlots.dataset.state === 'refused'
-  && nestedSlots.shadowRoot.textContent.includes('data.cards[0].slots: a nested fill takes the slots of its outer fill'), nestedSlots.shadowRoot.textContent);
+  && refusedText(nestedSlots).includes('data.cards[0].slots: a nested fill takes the slots of its outer fill'), nestedSlots.shadowRoot.textContent);
 const markedSlots = slotted('card', LOAN, { authorship: { type: 'agent', id: MARKUP.slice(0, 128), name: MARKUP.slice(0, 80) },
   citation: { source: MARKUP.slice(0, 120), locator: 'https://example.org/a?q=<script>x</script>' } }, { type: 'agent', id: MARKUP.slice(0, 128), name: MARKUP.slice(0, 80) });
 const markedText = deepText(markedSlots);
@@ -203,23 +205,23 @@ check('card: markup in a slot shows as text', markedSlots.dataset.state !== 'ref
   && markedText.includes(MARKUP.slice(0, 40)) && markedText.includes('<script>x</script>') && !window.muUnsafe, markedText.slice(0, 200));
 const insecure = slotted('card', LOAN, { authorship: AUTHOR, citation: { source: 'Rules', locator: 'javascript:alert(1)' } });
 check('card: refuses a locator that is not https', insecure.dataset.state === 'refused'
-  && insecure.shadowRoot.textContent.includes('slots.citation.locator'), insecure.shadowRoot.textContent.slice(0, 120));
+  && refusedText(insecure).includes('slots.citation.locator'), insecure.shadowRoot.textContent.slice(0, 120));
 
 // The author in a fill is a claim. The element shows it only if it is the actor that the application gives.
 const PERSON = { type: 'human', id: 'person-check' };
 const unbound = slotted('card', LOAN, { authorship: AUTHOR }, null);
 check('card: refuses an authorship slot with no bound actor', unbound.dataset.state === 'refused'
-  && unbound.shadowRoot.textContent.includes('slots.authorship: no actor is bound'), unbound.shadowRoot.textContent);
+  && refusedText(unbound).includes('slots.authorship: no actor is bound'), unbound.shadowRoot.textContent);
 const posing = slotted('card', LOAN, { authorship: PERSON });
 check('card: refuses an agent fill that names a person as the author', posing.dataset.state === 'refused'
-  && posing.shadowRoot.textContent.includes('slots.authorship: the author is not the bound actor') && !deepText(posing).includes('person-check|'),
+  && refusedText(posing).includes('slots.authorship: the author is not the bound actor') && !deepText(posing).includes('person-check|'),
   posing.shadowRoot.textContent);
 const otherAgent = slotted('card', LOAN, { authorship: { type: 'agent', id: 'agent-other' } });
 check('card: refuses an author with a different id', otherAgent.dataset.state === 'refused', otherAgent.shadowRoot.textContent);
 // A fill cannot show a name that is not the name of the bound actor.
 const otherName = slotted('card', LOAN, { authorship: { ...AUTHOR, name: 'Robin' } });
 check('card: refuses an author with a different name', otherName.dataset.state === 'refused'
-  && otherName.shadowRoot.textContent.includes('slots.authorship: the author is not the bound actor')
+  && refusedText(otherName).includes('slots.authorship: the author is not the bound actor')
   && !deepText(otherName).includes('Robin'), otherName.shadowRoot.textContent);
 const boundName = slotted('card', LOAN, { authorship: { ...AUTHOR, name: 'Checker' } });
 check('card: shows the name of the bound actor', boundName.dataset.state === 'default' && boundName.actor.name === 'Checker'
@@ -278,17 +280,18 @@ stage.append(noLocator);
 noLocator.actor = AUTHOR;
 noLocator.fill = { ...fill('citation', {}), slots: { authorship: AUTHOR, citation: { source: 'Synthetic loan rules' } } };
 check('citation: a missing locator shows a clear refusal', noLocator.dataset.state === 'refused' && noLocator.fill === null
-  && noLocator.shadowRoot.textContent === 'Refused citation: the locator is missing. ' + NEXT
-  && noLocator.shadowRoot.querySelector('[role="status"]') !== null, noLocator.shadowRoot.textContent);
+  && refusalStatus(noLocator) === 'The source address is missing. ' + NEXT
+  && refusedText(noLocator) === 'citation: slots.citation: missing key locator', noLocator.shadowRoot.textContent);
 check('citation: the refusal event keeps the error of the validator', refusals.includes('slots.citation: missing key locator'), refusals.join('; '));
 for (const locator of ['http://example.org/rules', 'javascript:alert(1)', 'https://person@example.org/rules', 'https://example.org/‮gnp.exe']) {
   const bad = citation({ authorship: AUTHOR, citation: { source: 'Synthetic loan rules', locator } });
   check(`citation: refuses the locator ${JSON.stringify(locator)} with a clear text`, bad.dataset.state === 'refused' && bad.fill === null
-    && bad.shadowRoot.textContent === 'Refused citation: the locator is not a safe https: address. ' + NEXT, bad.shadowRoot.textContent);
+    && refusalStatus(bad) === 'The source address is invalid. ' + NEXT
+    && refusedText(bad).startsWith('citation: slots.citation.locator:'), bad.shadowRoot.textContent);
 }
 const unauthored = citation({ citation: CITED.citation });
 check('citation: refuses a fill with no authorship slot', unauthored.dataset.state === 'refused'
-  && unauthored.shadowRoot.textContent.includes('slots.authorship: a required slot is missing'), unauthored.shadowRoot.textContent);
+  && refusedText(unauthored).includes('slots.authorship: a required slot is missing'), unauthored.shadowRoot.textContent);
 const markedCitation = citation({ authorship: { type: 'agent', id: MARKUP.slice(0, 128), name: MARKUP.slice(0, 80) },
   citation: { source: MARKUP.slice(0, 120), locator: 'https://example.org/a?q=<script>x</script>' } }, { quote: MARKUP }, { type: 'agent', id: MARKUP.slice(0, 128), name: MARKUP.slice(0, 80) });
 const markedCitationText = deepText(markedCitation);
@@ -343,11 +346,11 @@ check('excerpt: span positions count code points', wide.dataset.state === 'defau
 const wideEnd = excerpt({ passage: 'Shelf 𝔸', span_start: 6, span_end: 7 });
 check('excerpt: a span to the last code point is in the passage', wideEnd.dataset.state === 'default', wideEnd.shadowRoot.textContent);
 for (const [data, error, words] of [
-  [{ passage: PASSAGE, span_start: 13, span_end: 48 }, 'data.span_end: outside the passage', 'the span is outside the passage.'],
-  [{ passage: 'Shelf 𝔸', span_start: 6, span_end: 8 }, 'data.span_end: outside the passage', 'the span is outside the passage.'],
-  [{ passage: PASSAGE, span_start: 47, span_end: 48 }, 'data.span_end: outside the passage', 'the span is outside the passage.'],
-  [{ passage: PASSAGE, span_start: 20, span_end: 20 }, 'data.span_start: must be less than span_end', 'the span is empty.'],
-  [{ passage: PASSAGE, span_start: 20, span_end: 10 }, 'data.span_start: must be less than span_end', 'the span is empty.'],
+  [{ passage: PASSAGE, span_start: 13, span_end: 48 }, 'data.span_end: outside the passage', 'The marked text is outside the passage.'],
+  [{ passage: 'Shelf 𝔸', span_start: 6, span_end: 8 }, 'data.span_end: outside the passage', 'The marked text is outside the passage.'],
+  [{ passage: PASSAGE, span_start: 47, span_end: 48 }, 'data.span_end: outside the passage', 'The marked text is outside the passage.'],
+  [{ passage: PASSAGE, span_start: 20, span_end: 20 }, 'data.span_start: must be less than span_end', 'The marked text is empty.'],
+  [{ passage: PASSAGE, span_start: 20, span_end: 10 }, 'data.span_start: must be less than span_end', 'The marked text is empty.'],
 ]) {
   const node = document.createElement('mu-excerpt');
   const errors = [];
@@ -357,18 +360,20 @@ for (const [data, error, words] of [
   node.fill = { ...fill('excerpt', data), slots: CITED };
   check(`excerpt: refuses the span ${data.span_start} to ${data.span_end} of ${JSON.stringify(data.passage.slice(0, 12))}`,
     node.dataset.state === 'refused' && node.fill === null && errors.includes(error)
-    && node.shadowRoot.textContent === `Refused excerpt: ${words} ${NEXT}` && node.shadowRoot.querySelector('[role="status"]') !== null
+    && refusalStatus(node) === `${words} ${NEXT}` && refusedText(node) === `excerpt: ${error}`
     && !node.shadowRoot.querySelector('mark'), `${errors.join('; ')} | ${node.shadowRoot.textContent}`);
 }
 const unlocated = excerpt({ passage: PASSAGE, span_start: 0, span_end: 7 }, { authorship: AUTHOR });
 check('excerpt: refuses a fill with no citation slot', unlocated.dataset.state === 'refused'
-  && unlocated.shadowRoot.textContent === 'Refused excerpt: the source and the locator are missing. ' + NEXT, unlocated.shadowRoot.textContent);
+  && refusalStatus(unlocated) === 'The source and its address are missing. ' + NEXT
+  && refusedText(unlocated) === 'excerpt: slots.citation: a required slot is missing', unlocated.shadowRoot.textContent);
 const badLocator = excerpt({ passage: PASSAGE, span_start: 0, span_end: 7 }, { authorship: AUTHOR, citation: { ...CITED.citation, locator: 'javascript:alert(1)' } });
 check('excerpt: refuses a locator that is not a safe https: address', badLocator.dataset.state === 'refused'
-  && badLocator.shadowRoot.textContent === 'Refused excerpt: the locator is not a safe https: address. ' + NEXT, badLocator.shadowRoot.textContent);
+  && refusalStatus(badLocator) === 'The source address is invalid. ' + NEXT
+  && refusedText(badLocator).startsWith('excerpt: slots.citation.locator:'), badLocator.shadowRoot.textContent);
 const unauthoredExcerpt = excerpt({ passage: PASSAGE, span_start: 0, span_end: 7 }, { citation: CITED.citation });
 check('excerpt: refuses a fill with no authorship slot', unauthoredExcerpt.dataset.state === 'refused'
-  && unauthoredExcerpt.shadowRoot.textContent.includes('slots.authorship: a required slot is missing'), unauthoredExcerpt.shadowRoot.textContent);
+  && refusedText(unauthoredExcerpt).includes('slots.authorship: a required slot is missing'), unauthoredExcerpt.shadowRoot.textContent);
 // Markup in the passage, in the span and around the span shows as text. No element of the markup appears.
 const marked = excerpt({ passage: `Before ${MARKUP} after.`, span_start: 7, span_end: 7 + [...MARKUP].length });
 check('excerpt: markup in the passage shows as text and makes no element', marked.dataset.state === 'default'
@@ -414,7 +419,7 @@ if (matchMedia('(forced-colors: active)').matches) {
     [{ state: 'offline', checked: CHECKED }, 'data.state: must be one of ready, stale, empty, error'],
   ]) {
     const node = mount('source-status', { label: 'Tool library', ...data });
-    check(`source-status: refuses ${JSON.stringify(data)}`, node.dataset.state === 'refused' && node.shadowRoot.textContent.includes(error),
+    check(`source-status: refuses ${JSON.stringify(data)}`, node.dataset.state === 'refused' && refusedText(node).includes(error),
       node.shadowRoot.textContent);
   }
   const sheets = mount('source-status', VALID['source-status']).shadowRoot.adoptedStyleSheets;
@@ -493,7 +498,7 @@ if (matchMedia('(forced-colors: active)').matches) {
     refused.fill = outer('diff', { ...DIFF, parts: [fill('diff-part', { title: 'Loan', changes: [item] })] });
     check(`diff: refuses ${item.data.change} with ${'before' in item.data ? 'before' : 'no before'} and ${'after' in item.data ? 'after' : 'no after'}`
       + (item.data.before === item.data.after ? ' the same' : ''), refused.dataset.state === 'refused' && errors.includes(error)
-      && refused.shadowRoot.textContent.includes(error) && !refused.shadowRoot.querySelector('details'), `${errors.join('; ')} | ${refused.shadowRoot.textContent}`);
+      && refusedText(refused).includes(error) && !refused.shadowRoot.querySelector('details[data-state]'), `${errors.join('; ')} | ${refusedText(refused)}`);
   }
   const sheets = node.shadowRoot.adoptedStyleSheets;
   check('diff: the styles have a forced colors rule', sheets.some((item) => [...item.cssRules].some((rule) => rule.cssText.includes('forced-colors'))));
@@ -734,7 +739,7 @@ check('action-button: a refused button sends no request', button.dataset.state =
     && !node.shadowRoot.querySelector('[part="actions"]'), node.shadowRoot.textContent);
   node.fill = fill('action-queue', { label: 'Pending actions', actions: [queued('K-1', 'Reserve Ladder', 'queued'), queued('K-1', 'Reserve Drill', 'queued')] });
   check('action-queue: two actions with the same key are refused', node.dataset.state === 'refused'
-    && node.shadowRoot.textContent.includes('data.actions: two actions have the same key'), node.shadowRoot.textContent);
+    && refusedText(node).includes('data.actions: two actions have the same key'), node.shadowRoot.textContent);
   node.fill = fill('action-queue', { label: 'Pending actions', actions: [queued('K-1', 'Reserve Ladder', 'done')] });
   check('action-queue: an action with the state done is refused', node.dataset.state === 'refused', node.shadowRoot.textContent);
   const sheets = mount('action-queue', VALID['action-queue']).shadowRoot.adoptedStyleSheets;
@@ -745,22 +750,22 @@ check('action-button: a refused button sends no request', button.dataset.state =
 const misnamed = mount('action-button', { label: 'View details' });
 misnamed.action = { tool: 'library.renew', label: 'Renew' };
 check('action-button: a label that is not the label of the application is refused', misnamed.dataset.state === 'refused'
-  && misnamed.shadowRoot.textContent.includes('data.label: the label is not the label of the application'), misnamed.shadowRoot.textContent);
+  && refusedText(misnamed).includes('data.label: the label is not the label of the application'), misnamed.shadowRoot.textContent);
 const nameless = mount('action-button', { label: 'Renew' });
 nameless.action = { tool: 'library.renew' };
 check('action-button: a binding with no label accepts no fill', nameless.dataset.state === 'refused'
-  && nameless.shadowRoot.textContent.includes('data.label: the label is not the label of the application'), nameless.shadowRoot.textContent);
+  && refusedText(nameless).includes('data.label: the label is not the label of the application'), nameless.shadowRoot.textContent);
 // The application gives the description of the action. A fill cannot describe a different target for the bound arguments.
 const BOUND = { tool: 'library.renew', label: 'Renew', arguments: { loan_id: 'L-0001' }, description: 'Renews Rivers and deltas.' };
 const redescribed = mount('action-button', { label: 'Renew', description: 'Renews Weather at sea.' });
 redescribed.action = BOUND;
 check('action-button: a description that is not the description of the application is refused', redescribed.dataset.state === 'refused'
-  && redescribed.shadowRoot.textContent.includes('data.description: the description is not the description of the application'),
+  && refusedText(redescribed).includes('data.description: the description is not the description of the application'),
   redescribed.shadowRoot.textContent);
 const undescribed = mount('action-button', { label: 'Renew', description: 'Renews Weather at sea.' });
 undescribed.action = { tool: 'library.renew', label: 'Renew', arguments: { loan_id: 'L-0001' } };
 check('action-button: a binding with no description accepts no fill with a description', undescribed.dataset.state === 'refused'
-  && undescribed.shadowRoot.textContent.includes('data.description: the description is not the description of the application'),
+  && refusedText(undescribed).includes('data.description: the description is not the description of the application'),
   undescribed.shadowRoot.textContent);
 const described = mount('action-button', { label: 'Renew', description: 'Renews Rivers and deltas.' });
 described.action = BOUND;
@@ -781,7 +786,7 @@ check('action-button: the description of the application shows', described.datas
     node.action = action;
     check(`action-button: ${name} is refused after binding`, node.dataset.state === 'refused'
       && !node.shadowRoot.querySelector('button')
-      && node.shadowRoot.textContent.includes(`data.${field}: the ${field} is not the ${field} of the application`), node.shadowRoot.textContent);
+      && refusedText(node).includes(`data.${field}: the ${field} is not the ${field} of the application`), node.shadowRoot.textContent);
   }
   const node = document.createElement('mu-action-button');
   node.action = binding;
@@ -792,13 +797,13 @@ check('action-button: the description of the application shows', described.datas
   node.fill = outer('action-button', { label, icon: 'check', display: 'both' });
   check('action-button: a new fill with a different display is refused', node.dataset.state === 'refused'
     && !node.shadowRoot.querySelector('button')
-    && node.shadowRoot.textContent.includes('data.display: the display is not the display of the application'), node.shadowRoot.textContent);
+    && refusedText(node).includes('data.display: the display is not the display of the application'), node.shadowRoot.textContent);
 }
 
 const misnamedForm = mount('editable-form', { ...FORM, submit_label: 'View details' });
 misnamedForm.action = { tool: 'library.update_loan', label: 'Save', title: 'Loan details', editable: EDITABLE };
 check('editable-form: a submit label that is not the label of the application is refused', misnamedForm.dataset.state === 'refused'
-  && misnamedForm.shadowRoot.textContent.includes('data.submit_label: the label is not the label of the application'),
+  && refusedText(misnamedForm).includes('data.submit_label: the label is not the label of the application'),
   misnamedForm.shadowRoot.textContent);
 for (const name of ['editable-form', 'form-card']) {
   const node = document.createElement(TAGS[name]);
@@ -813,7 +818,7 @@ for (const name of ['editable-form', 'form-card']) {
 const retitled = mount('editable-form', { ...FORM, title: 'Loan L-0002' });
 retitled.action = { tool: 'library.update_loan', label: 'Save', title: 'Loan details', arguments: { loan_id: 'L-0001' }, editable: EDITABLE };
 check('editable-form: a title that is not the title of the application is refused', retitled.dataset.state === 'refused'
-  && retitled.shadowRoot.textContent.includes('data.title: the title is not the title of the application'), retitled.shadowRoot.textContent);
+  && refusedText(retitled).includes('data.title: the title is not the title of the application'), retitled.shadowRoot.textContent);
 // The contract accepts a title of 120 characters. A bound form with such a title works.
 const longTitle = 'T'.repeat(120);
 const longForm = mount('editable-form', { ...FORM, title: longTitle });
@@ -823,7 +828,7 @@ check('editable-form: a bound form with a title of 120 characters is not refused
 const untitled = mount('editable-form', FORM);
 untitled.action = { tool: 'library.update_loan', label: 'Save', arguments: { loan_id: 'L-0001' }, editable: EDITABLE };
 check('editable-form: a binding with no title accepts no fill', untitled.dataset.state === 'refused'
-  && untitled.shadowRoot.textContent.includes('data.title: the title is not the title of the application'), untitled.shadowRoot.textContent);
+  && refusedText(untitled).includes('data.title: the title is not the title of the application'), untitled.shadowRoot.textContent);
 
 // The editable form submits the edited values as one action.
 const form = mount('editable-form', FORM);
@@ -889,7 +894,6 @@ check('editable-form: a refused second submit does not make the old receipt done
 
 // The application lists the field names that a request can carry. A fill cannot add a different argument.
 const SNEAKY = { ...FORM, fields: [...FORM.fields, field('approved', 'Shelf note', 'true')] };
-const refusedText = (node) => node.shadowRoot.textContent;
 const sneaky = mount('editable-form', SNEAKY);
 const sneakySubmits = [];
 sneaky.addEventListener('mu-action', (event) => sneakySubmits.push(event.detail));

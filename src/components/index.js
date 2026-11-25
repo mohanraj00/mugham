@@ -1110,9 +1110,9 @@ export class MuCitation extends MuElement {
   }
 
   refusal(errors) {
-    if (errors[0] === 'slots.citation: missing key locator') return 'the locator is missing.';
-    if (errors[0].startsWith('slots.citation.locator:')) return 'the locator is not a safe https: address.';
-    return errors[0];
+    if (errors[0] === 'slots.citation: missing key locator') return 'The source address is missing.';
+    if (errors[0].startsWith('slots.citation.locator:')) return 'The source address is invalid.';
+    return super.refusal();
   }
 
   render(data) {
@@ -1164,12 +1164,12 @@ export class MuExcerpt extends ReadMoreElement {
 
   refusal(errors) {
     const [error] = errors;
-    if (error === 'data.span_end: outside the passage') return 'the span is outside the passage.';
-    if (error === 'data.span_start: must be less than span_end') return 'the span is empty.';
-    if (error === 'slots.citation: a required slot is missing') return 'the source and the locator are missing.';
-    if (error === 'slots.citation: missing key locator') return 'the locator is missing.';
-    if (error.startsWith('slots.citation.locator:')) return 'the locator is not a safe https: address.';
-    return error;
+    if (error === 'data.span_end: outside the passage') return 'The marked text is outside the passage.';
+    if (error === 'data.span_start: must be less than span_end') return 'The marked text is empty.';
+    if (error === 'slots.citation: a required slot is missing') return 'The source and its address are missing.';
+    if (error === 'slots.citation: missing key locator') return 'The source address is missing.';
+    if (error.startsWith('slots.citation.locator:')) return 'The source address is invalid.';
+    return super.refusal();
   }
 
   render(data) {
@@ -1340,9 +1340,9 @@ export class MuDiff extends MuElement {
     p { margin: 0; overflow-wrap: anywhere; }
     .title { font-weight: var(--mu-type-weight-strong); }
     .muted { font: var(--mu-type-caption); color: var(--mu-color-text-muted); }
-    details { border-block-start: 1px solid ${EDGE}; padding-block-start: var(--mu-space-2); }
-    summary { cursor: pointer; min-height: 2.75rem; display: flex; flex-wrap: wrap; align-items: center; gap: var(--mu-space-1) var(--mu-space-2); }
-    summary .name { font-weight: var(--mu-type-weight-strong); }
+    details[data-state] { border-block-start: 1px solid ${EDGE}; padding-block-start: var(--mu-space-2); }
+    summary[part="summary"] { cursor: pointer; min-height: 2.75rem; display: flex; flex-wrap: wrap; align-items: center; gap: var(--mu-space-1) var(--mu-space-2); }
+    summary[part="summary"] .name { font-weight: var(--mu-type-weight-strong); }
     ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--mu-space-2); }
     li { display: flex; flex-direction: column; gap: var(--mu-space-1); padding-inline-start: var(--mu-space-2);
       border-inline-start: 3px solid var(--mu-color-border); }
@@ -1356,7 +1356,7 @@ export class MuDiff extends MuElement {
     ins { text-decoration: underline; }
     .provenance { display: flex; flex-direction: column; gap: var(--mu-space-1); }
     @media (forced-colors: active) {
-      .diff, details, li, li[data-state] { border-color: CanvasText; } .muted { color: CanvasText; }
+      .diff, details[data-state], li, li[data-state] { border-color: CanvasText; } .muted { color: CanvasText; }
     }
   `)];
 

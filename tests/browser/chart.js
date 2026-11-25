@@ -82,7 +82,7 @@ for (const [change, reason] of [
 ]) {
   const node = mount({ ...DATA, ...change });
   check(`chart refuses ${reason}`, node.dataset.state === 'refused' && node.fill === null
-    && node.shadowRoot.querySelector('[role="status"]').textContent.includes(reason)
+    && node.shadowRoot.querySelector('[part="details"] > div')?.textContent.includes(reason)
     && !node.shadowRoot.querySelector('svg, mu-table'));
 }
 for (const values of [[0, 0, 0], [-8, -4, -1], [-1e12, 1e12, 0], [Number.MIN_VALUE, 0, -Number.MIN_VALUE]]) {

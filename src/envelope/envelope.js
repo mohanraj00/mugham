@@ -367,7 +367,11 @@ export function createReader(catalog = CONTRACTS) {
       dataSize += size - before;
       if (entry) messages[entry.at] = message;
       else add(event.messageId, 'activity', message);
-      index.get(event.messageId).size = size;
+      const stored = index.get(event.messageId);
+      stored.size = size;
+      // Keep the name for the display of the refusal. It is not a field of the envelope.
+      const component = part?.type === 'refusal' ? event.content?.fill?.component : undefined;
+      stored.refusedComponent = typeof component === 'string' ? cut(component, MAX_ERROR) : undefined;
     },
   };
 
@@ -384,6 +388,9 @@ export function createReader(catalog = CONTRACTS) {
     },
     result() {
       return structuredClone({ runs, messages, ignored, errors });
+    },
+    refusedComponent(messageId) {
+      return index.get(messageId)?.refusedComponent;
     },
   };
 }

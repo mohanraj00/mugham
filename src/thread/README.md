@@ -56,10 +56,12 @@ A part shows as follows:
 | `text` | The text, as a text node. Line breaks stay. |
 | `component` | The element of the component, with the fill. A fill of a component with no element shows a refusal. |
 | `status` | `Error: <text>`, and the code if it has one. The message stays partial. |
-| `refusal` | `Refused: the thread did not show this part.` and the first error. |
+| `refusal` | `This content did not show because it did not match the rules of the application.` Then the next step and a closed `Technical details` disclosure. |
 | `fallback` | The fixed text of the fallback. |
 
 If a run ends with `RUN_ERROR` and no message of the run shows the error, the thread shows the error as a system notice. If the stream has errors, the thread shows their count and the first error.
+
+Each refused part shows its reason in `reason` and the next step in `next`. The `details` part contains the component name, if available, and the errors as plain text. Use the disclosure label to open it with a keyboard. Use its `Copy` button to copy that text. [Interaction details](../components/interaction.md#empty-and-refused-states) gives the display rules.
 
 ## Actions
 

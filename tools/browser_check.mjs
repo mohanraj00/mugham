@@ -424,7 +424,7 @@ async function threadExample(session, sessionId, report) {
       const button = root.querySelector('mu-action-button');
       return { state: thread.dataset.state,
         actors: [...root.querySelectorAll('li.message .actor')].map((node) => node.textContent),
-        refusals: [...root.querySelectorAll('.refusal')].map((node) => node.textContent),
+        refusals: [...root.querySelectorAll('.refusal [part="details"] > div')].map((node) => node.textContent),
         card: root.querySelector('mu-card')?.shadowRoot.textContent || '',
         action: button?.dataset.state, status: button?.shadowRoot.querySelector('.status').textContent,
         reference: button?.shadowRoot.querySelector('[part="reference"]')?.textContent };
@@ -682,7 +682,7 @@ async function main() {
         if (page === 'tests/browser/card.html' && checks) report.keyboard.push(...await cardKeyboardChecks(session, sessionId, { evaluate, key }, page));
         if (page === 'tests/browser/read-more.html' && checks) report.keyboard.push(...await readMoreKeyboardChecks(session, sessionId, { evaluate, key }, page));
         if (page === 'tests/browser/states.html' && checks && mode !== 'light') {
-          report.keyboard.push(...await stateChecks(session, sessionId, { evaluate, key, sleep }, page, mode));
+          report.keyboard.push(...await stateChecks(session, sessionId, { evaluate, key, pageRules, sleep }, page, mode));
         }
         if (page === 'tests/browser/components.html' && checks && mode !== 'light') {
           report.keyboard.push(...await actionIconChecks(session, sessionId, page, mode));
@@ -701,7 +701,7 @@ async function main() {
         report.keyboard.push({ page, step: 'Enter and Space press the button', ok: presses === 2, detail: presses });
         if (page === 'tests/browser/components.html') report.keyboard.push(...await actionIconChecks(session, sessionId, page, mode));
         if (page === 'tests/browser/rich-text.html') report.keyboard.push(...await richTextKeyboardChecks(session, sessionId, { evaluate, key }, page));
-        if (page === 'tests/browser/states.html') report.keyboard.push(...await stateChecks(session, sessionId, { evaluate, key, sleep }, page, mode));
+        if (page === 'tests/browser/states.html') report.keyboard.push(...await stateChecks(session, sessionId, { evaluate, key, pageRules, sleep }, page, mode));
         if (page === 'tests/browser/data-grid.html') report.keyboard.push(...await dataGridKeyboardChecks(session, sessionId, { evaluate, key }, page));
         if (page === 'tests/browser/upload.html') {
           report.keyboard.push(...await uploadKeyboardChecks(session, sessionId, { evaluate, key }, page, uploadFile('receipt-a.txt')));

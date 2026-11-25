@@ -14,6 +14,7 @@ defineThread();
 const MARKUP = '<img src=x onerror="window.muUnsafe=1"><script>window.muUnsafe=1</script>';
 const results = [];
 const check = (name, ok, detail = '') => results.push({ name, ok: Boolean(ok), detail: String(detail) });
+const refusedText = (node) => node.shadowRoot.querySelector('[part="details"] > div')?.textContent ?? '';
 const stage = document.getElementById('stage');
 const settle = () => new Promise((done) => requestAnimationFrame(() => setTimeout(done, 0)));
 const AGENT = { type: 'agent', id: 'a-garden', name: 'Garden agent' };
@@ -110,7 +111,7 @@ async function run() {
     && waiting.dataset.state === 'default' && waiting.shadowRoot.textContent.includes('Plot 3'), waiting.shadowRoot?.textContent);
   waiting.fill = { component: 'private-note', version: '0.1.0', data: { title: 'Plot 3', rows: 6 }, slots: { authorship: AGENT } };
   check('a fill before the upgrade: the check of the subclass runs', waiting.dataset.state === 'refused'
-    && waiting.shadowRoot.textContent.includes('more than 4 for this application'), waiting.shadowRoot.textContent);
+    && refusedText(waiting).includes('more than 4 for this application'), waiting.shadowRoot.textContent);
 
   // A class field with the name fill or actor cannot replace the validated accessors.
   const fieldContract = { ...structuredClone(CONTRACT), name: 'field-note' };
@@ -179,13 +180,13 @@ async function run() {
   check('a valid fill: renders', node.dataset.state === 'default' && node.shadowRoot.textContent.includes('Rows: 6'), node.shadowRoot.textContent);
   node.fill = note({ title: 'Plot 4', rows: 40 });
   check('an invalid fill: refused', node.dataset.state === 'refused' && node.fill === null
-    && node.shadowRoot.textContent.includes('data.rows: more than the maximum 12'), node.shadowRoot.textContent);
+    && refusedText(node).includes('data.rows: more than the maximum 12'), node.shadowRoot.textContent);
   node.fill = note({ title: 'Plot 4', rows: 6, script: 'x' });
   check('an undeclared field: refused', node.dataset.state === 'refused'
-    && node.shadowRoot.textContent.includes('data.script: the contract does not declare this field'), node.shadowRoot.textContent);
+    && refusedText(node).includes('data.script: the contract does not declare this field'), node.shadowRoot.textContent);
   node.fill = { component: 'plot-note', version: '0.1.0', data: { title: 'Plot 4', rows: 6 } };
   check('a fill with no authorship: refused', node.dataset.state === 'refused'
-    && node.shadowRoot.textContent.includes('slots.authorship: a required slot is missing'), node.shadowRoot.textContent);
+    && refusedText(node).includes('slots.authorship: a required slot is missing'), node.shadowRoot.textContent);
   node.fill = { component: 'banner', version: '0.1.0', data: {} };
   check('an undeclared component: refused', node.dataset.state === 'refused', node.shadowRoot.textContent);
   node.fill = note({ title: 'Plot 4', rows: 6, body: MARKUP.slice(0, 200) });
@@ -211,9 +212,9 @@ async function run() {
     && shown.shadowRoot.textContent.includes('Plot 7') && shown.actor?.id === AGENT.id, messages[0]?.textContent);
   check('thread: a markup string stays text', shown?.shadowRoot.querySelector('[part="body"]')?.textContent === MARKUP.slice(0, 120)
     && !shown?.shadowRoot.querySelector('img, script'));
-  check('thread: an invalid registered fill is refused', messages[1]?.querySelector('.refusal')?.textContent.includes('data.rows: more than the maximum 12')
+  check('thread: an invalid registered fill is refused', messages[1]?.querySelector('.refusal [part="details"] > div')?.textContent.includes('data.rows: more than the maximum 12')
     && !messages[1]?.querySelector('mu-app-plot-note'), messages[1]?.textContent);
-  check('thread: an undeclared component is refused', messages[2]?.querySelector('.refusal')?.textContent.includes('component: no contract has the name banner'),
+  check('thread: an undeclared component is refused', messages[2]?.querySelector('.refusal [part="details"] > div')?.textContent.includes('component: no contract has the name banner'),
     messages[2]?.textContent);
   check('no markup ran', window.muUnsafe === undefined);
   return new URLSearchParams(location.search).get('mode') || 'light';

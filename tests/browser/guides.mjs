@@ -7,12 +7,15 @@ const WALK = `const all = []; const walk = (root) => { for (const node of root.q
   if (node.tagName.startsWith('MU-')) all.push(node); if (node.shadowRoot) walk(node.shadowRoot); } }; walk(document);`;
 
 // What each refused state tells the person to do next (src/components/interaction.md).
+const REASON = 'This content did not show because it did not match the rules of the application.';
 const NEXT = 'Ask for this content again. If the refusal shows again, tell the owner of the application.';
 
 const CONTRACTS = `(() => { ${WALK}
   const cards = [...document.querySelectorAll('mu-card')];
   const counts = [...document.querySelectorAll('mu-app-bird-count')];
-  const view = (node) => ({ state: node.dataset.state, text: node.shadowRoot.textContent, bold: Boolean(node.shadowRoot.querySelector('b')) });
+  const view = (node) => ({ state: node.dataset.state, text: node.shadowRoot.textContent, bold: Boolean(node.shadowRoot.querySelector('b')),
+    reason: node.shadowRoot.querySelector('[part="reason"]')?.textContent, next: node.shadowRoot.querySelector('[part="next"]')?.textContent,
+    details: node.shadowRoot.querySelector('[part="details"] > div')?.textContent });
   return { elements: all.length, errors: [...document.querySelectorAll('#errors li')].map((node) => node.textContent),
     cards: cards.map(view), counts: counts.map(view) };
 })()`;
@@ -24,7 +27,7 @@ const ASSEMBLE = `(() => {
     reference: node.shadowRoot.querySelector('[part="reference"]')?.textContent });
   return { thread: thread.dataset.state,
     actors: [...root.querySelectorAll('li.message .actor')].map((node) => node.textContent),
-    refusals: [...root.querySelectorAll('.refusal')].map((node) => node.textContent),
+    refusals: [...root.querySelectorAll('.refusal [part="details"] > div')].map((node) => node.textContent),
     card: root.querySelector('mu-card')?.shadowRoot.textContent || '',
     top: action(document.querySelector('mu-action-button')), inThread: action(root.querySelector('mu-action-button')),
     stack: document.querySelector('mu-stack')?.dataset.state, cards: document.querySelectorAll('mu-grid > mu-card').length };
@@ -114,10 +117,11 @@ export async function guideChecks(session, sessionId, base, { evaluate, open, sl
     && tide.text.includes('https://example.org/tides#page-2'), tide);
   step(page, 'markup in a text field shows as text', markup?.state === 'default' && markup.text.includes('<b>Bold tide</b>') && !markup.bold, markup);
   step(page, 'an author that is not the bound actor is refused', claim?.state === 'refused'
-    && claim.text === 'Refused card: slots.authorship: the author is not the bound actor ' + NEXT, claim);
+    && claim.reason === REASON && claim.next === NEXT && claim.details === 'card: slots.authorship: the author is not the bound actor', claim);
   step(page, 'the application element renders a valid fill', c.counts[0]?.state === 'default' && c.counts[0].text.includes('42 birds on 2026-11-02'), c.counts[0]);
   step(page, 'the application element refuses a value out of the contract', c.counts[1]?.state === 'refused'
-    && c.counts[1].text === 'Refused bird-count: data.count: more than the maximum 300 ' + NEXT, c.counts[1]);
+    && c.counts[1].reason === REASON && c.counts[1].next === NEXT
+    && c.counts[1].details === 'bird-count: data.count: more than the maximum 300', c.counts[1]);
   step(page, '5 kit elements', c.elements === 5, c.elements);
   await named(page, [['article', 'Tide table for the north pier'], ['button', 'Open source: Synthetic tide notes, page 2'], ['article', 'East marsh']]);
 
@@ -152,7 +156,8 @@ export async function guideChecks(session, sessionId, base, { evaluate, open, sl
     const label = form.shadowRoot.querySelector('button[type=submit]').textContent;
     const draft = form.values().reply;
     form.fill = { ...original, data: { ...original.data, submit_label: 'Send Reply' } };
-    const refused = form.dataset.state === 'refused' && form.shadowRoot.textContent.includes('data.submit_label: the label is not the label of the application');
+    const refused = form.dataset.state === 'refused' && form.shadowRoot.querySelector('[part="details"] > div')?.textContent
+      .includes('data.submit_label: the label is not the label of the application');
     form.fill = original;
     return { state, label, draft, refused };
   })()`);
