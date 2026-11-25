@@ -173,7 +173,8 @@ async function run() {
   // A card by the message actor keeps the full author in the accessibility tree.
   // A different author needs a binding from the application.
   const authored = mount();
-  authored.bindCardAuthor = (_fill, message) => message.messageId === 'p4' ? RENEW_AGENT.mugham.actor : undefined;
+  const ROBIN_AUTHOR = { type: 'human', id: 'u-robin', name: 'Robin' };
+  authored.bindCardAuthor = (_fill, message) => ({ p4: RENEW_AGENT.mugham.actor, p7: ROBIN_AUTHOR })[message.messageId];
   authored.push(snapshot('p1', CATALOG_AGENT, { format: 2, fill: card('Weather at sea', CATALOG_AGENT_ID) }));
   authored.push(snapshot('p2', CATALOG_AGENT, { format: 2, fill: card('Weather at sea', { type: 'human', id: 'u-robin' }) }));
   authored.push(snapshot('p3', CATALOG_AGENT, { format: 2, fill: fill('card', { title: 'Weather at sea' }) }));
@@ -183,12 +184,14 @@ async function run() {
     slots: { authorship: CATALOG_AGENT_ID },
   } }));
   authored.push(snapshot('p6', actor('agent', 'a-catalog'), { format: 2, fill: card('Sea levels', CATALOG_AGENT_ID) }));
+  authored.push(snapshot('p7', CATALOG_AGENT, { format: 2, fill: card('Tide notes', { type: 'human', id: 'u-robin' }) }));
   await settle();
   const authorCard = item(authored, 0).querySelector('mu-card');
   const authorLine = (node) => node?.shadowRoot.querySelector('[part="authorship"]');
   const shortLine = (node) => authorLine(node)?.querySelector('[aria-hidden="true"]')?.textContent;
   const cardArticle = authorCard.shadowRoot.querySelector('[part="card"]');
   check('author: a card by the message actor shows the short line', authorCard.dataset.state === 'default'
+    && authorCard.actor?.type === 'agent' && authorCard.actor.id === 'a-catalog'
     && shortLine(authorCard) === 'Author: same as the message', authorLine(authorCard)?.textContent);
   check('thread card: the article keeps its label', cardArticle.getAttribute('aria-label') === 'Weather at sea');
   if (matchMedia('(forced-colors: active)').matches) {
@@ -213,6 +216,10 @@ async function run() {
   check('author: a card in a thread grid also shortens a repeat author', shortLine(gridCard) === 'Author: same as the message');
   const unnamedCard = item(authored, 5).querySelector('mu-card');
   check('author: the short line also shows when the message actor has no name', shortLine(unnamedCard) === 'Author: same as the message');
+  check('author: a binding that gives a person as the author of a card in an agent message is refused',
+    !item(authored, 6).querySelector('mu-card')
+    && refusedText(item(authored, 6)) === 'card: the application bound a person as the author of a card in an agent message',
+    item(authored, 6).textContent);
 
   // A citation part shows as its element, with the actor of the envelope as its author.
   const cited = mount();

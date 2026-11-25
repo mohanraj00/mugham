@@ -438,11 +438,17 @@ export class MuThread extends HTMLElement {
     const author = fill.slots?.authorship;
     if (fill.component === 'card' && this.bindCardAuthor && author
       && (author.type !== messageActor.type || author.id !== messageActor.id)) {
+      let bound;
       try {
-        node.actor = this.bindCardAuthor(structuredClone(fill), structuredClone(message)) ?? messageActor;
+        bound = this.bindCardAuthor(structuredClone(fill), structuredClone(message)) ?? messageActor;
       } catch {
         return refusalOf(fill.component, ['the application could not bind the card author']);
       }
+      // The content of an agent never shows as the content of a person.
+      if (bound?.type === 'human' && messageActor.type !== 'human') {
+        return refusalOf(fill.component, ['the application bound a person as the author of a card in an agent message']);
+      }
+      node.actor = bound;
     } else {
       node.actor = messageActor;
     }
