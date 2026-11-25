@@ -96,6 +96,25 @@ VALID = {
 
 
 class CatalogContractTest(unittest.TestCase):
+    def test_action_button_schema_accepts_each_icon_and_display(self):
+        name = 'action-button'
+        contract = CATALOG[name]
+        enums = {'icon': ['check', 'cross', 'edit', 'delete', 'send', 'retry'], 'display': ['text', 'icon', 'both']}
+        self.assertEqual(catalog.contract_errors(contract, name + '.json'), [])
+        self.assertEqual(contract['accessibility']['name'], {'field': 'label'})
+        data = VALID[name]
+        self.assertEqual(catalog.fill_errors(outer(name, data), CATALOG), [])
+        for key, values in enums.items():
+            field = contract['data'][key]
+            self.assertEqual((field['type'], field['required'], field['values']), ('enum', False, values))
+            for value in values:
+                with self.subTest(key=key, value=value):
+                    self.assertEqual(catalog.fill_errors(outer(name, {**data, key: value}), CATALOG), [])
+            self.assertEqual(catalog.fill_errors(outer(name, {**data, key: 'unknown'}), CATALOG),
+                             ['data.%s: must be one of %s' % (key, ', '.join(values))])
+        self.assertEqual(catalog.fill_errors(outer(name, {'icon': 'check', 'display': 'icon'}), CATALOG),
+                         ['data.label: a required field is missing'])
+
     def test_card_collapse_keys_are_optional_and_typed(self):
         self.assertEqual(catalog.fill_errors(outer('card', CARD['data']), CATALOG), [])
         for collapsed in [False, True]:

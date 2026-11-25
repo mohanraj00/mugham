@@ -459,6 +459,7 @@ async function browserChecks() {
   const ROWS = 'rows must map each editable row key to its label';
   const COLUMN_RULE = 'columns must map each editable column key to its label and its type, with the choices of a choice column';
   for (const [name, binding, reason] of [['a label', { ...BINDING, label: 'Save' }, KEYS],
+    ['an icon', { ...BINDING, icon: 'check' }, KEYS], ['a display', { ...BINDING, display: 'icon' }, KEYS],
     ['a confirm step', { ...BINDING, confirm: { message: 'Save?', label: 'Yes' } }, KEYS], ['editable names', { ...BINDING, editable: { value: 'Value' } }, KEYS],
     ['a bound row argument', { ...BINDING, arguments: { row: 'rent' } }, 'a bound argument cannot be editable: row'],
     ['no tool', { ...BINDING, tool: undefined }, 'the tool name is not valid'], ['a text', 'budget.set_cell', 'the action must be an object'],

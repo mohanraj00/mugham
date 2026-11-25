@@ -548,6 +548,67 @@ const before = events.length;
 button.send();
 check('action-button: a refused button sends no request', button.dataset.state === 'refused' && events.length === before);
 
+{
+  const icons = ['check', 'cross', 'edit', 'delete', 'send', 'retry'];
+  const paths = new Set();
+  for (const name of icons) {
+    const label = 'Test icon ' + name;
+    const node = mount('action-button', { label, icon: name, display: 'icon' });
+    node.action = { tool: 'request.test', label, icon: name, display: 'icon' };
+    const control = node.shadowRoot.querySelector('button');
+    const svg = control.querySelector('svg[part="icon"]');
+    check(`action-button: ${name} shows one decorative SVG and the label names the button`,
+      control.getAttribute('aria-label') === label && control.textContent === ''
+      && svg?.namespaceURI === 'http://www.w3.org/2000/svg' && svg.getAttribute('aria-hidden') === 'true'
+      && svg.children.length === 1 && svg.firstElementChild.localName === 'path' && !svg.querySelector('[href]'));
+    paths.add(svg?.firstElementChild?.getAttribute('d'));
+  }
+  check('action-button: each icon has its own path', paths.size === icons.length && !paths.has(undefined) && !paths.has(null));
+
+  for (const [fields, label, showsIcon] of [
+    [{}, 'Default display', false],
+    [{ icon: 'check' }, 'Default display with icon set', false],
+    [{ display: 'text', icon: 'check' }, 'Text display', false],
+    [{ display: 'both', icon: 'check' }, 'Text and icon display', true],
+    [{ display: 'icon' }, 'Text when icon is missing', false],
+    [{ display: 'both' }, 'Text when both needs an icon', false],
+  ]) {
+    const node = mount('action-button', { label, ...fields });
+    node.action = { tool: 'request.test', label, ...fields };
+    const control = node.shadowRoot.querySelector('button');
+    check(`action-button: ${label} shows the label and the correct icon part`, control.textContent === label
+      && Boolean(control.querySelector('[part="icon"]')) === showsIcon && !node.shadowRoot.querySelector('[part="tooltip"]'));
+  }
+
+  for (const fields of [{ icon: 'unknown' }, { icon: '<svg/>' }, { icon: 'https://example.org/icon.svg' }, { display: 'unknown' }]) {
+    const node = mount('action-button', { label: 'Approve request 42', ...fields });
+    check('action-button: refuses an unknown ' + Object.keys(fields)[0], node.dataset.state === 'refused'
+      && !node.shadowRoot.querySelector('button, svg'));
+  }
+
+  const label = MARKUP.slice(0, 40);
+  const marked = mount('action-button', { label, icon: 'edit', display: 'icon' });
+  check('action-button: the icon label shows as text', marked.shadowRoot.querySelector('button').getAttribute('aria-label') === label
+    && marked.shadowRoot.querySelector('[part="tooltip"]')?.textContent === label && !marked.shadowRoot.querySelector('img, script'));
+  marked.remove();
+
+  const node = mount('action-button', { label: 'Approve request 42', icon: 'check', display: 'icon' });
+  node.action = { tool: 'request.approve', label: 'Approve request 42', icon: 'check', display: 'icon' };
+  let request;
+  node.addEventListener('mu-action', (event) => { request = event.detail; });
+  const control = node.shadowRoot.querySelector('button');
+  const status = node.shadowRoot.querySelector('[part="status"]');
+  const visibleText = (part, words) => part?.checkVisibility() && part.innerText === words;
+  control.click();
+  check('action-button: icon display shows Pending', visibleText(status, 'Pending'));
+  node.receipt({ id: request?.id, ok: false });
+  check('action-button: icon display shows Not done', visibleText(status, 'Not done'));
+  control.click();
+  node.receipt({ id: request?.id, ok: true, reference: 'R-42' });
+  check('action-button: icon display shows Done and its receipt reference', status.checkVisibility() && status.innerText.startsWith('Done')
+    && visibleText(status.querySelector('[part="reference"]'), 'Reference: R-42'));
+}
+
 // The exits of a pending action (docs/contracts/offline-queue.md). An action has one key for all its tries. A pending
 // action with no receipt offers a retry and a cancel, and it never shows done without a receipt.
 {
@@ -701,11 +762,49 @@ const described = mount('action-button', { label: 'Renew', description: 'Renews 
 described.action = BOUND;
 check('action-button: the description of the application shows', described.dataset.state === 'default'
   && described.shadowRoot.textContent.includes('Renews Rivers and deltas.'), `${described.dataset.state} ${described.shadowRoot.textContent}`);
+
+{
+  const label = 'Return loan';
+  const binding = { tool: 'library.return_loan', label, icon: 'check', display: 'icon' };
+  for (const [name, data, action, field] of [
+    ['a different icon', { icon: 'cross', display: 'icon' }, binding, 'icon'],
+    ['an icon with no icon in the binding', { icon: 'check', display: 'icon' }, { tool: binding.tool, label, display: 'icon' }, 'icon'],
+    ['icon display with no display in the binding', { icon: 'check', display: 'icon' }, { tool: binding.tool, label, icon: 'check' }, 'display'],
+    ['no display with text display in the binding', { icon: 'check' }, { ...binding, display: 'text' }, 'display'],
+  ]) {
+    const node = mount('action-button', { label, ...data });
+    check(`action-button: ${name} shows before binding`, node.dataset.state === 'disabled' && node.shadowRoot.querySelector('button'));
+    node.action = action;
+    check(`action-button: ${name} is refused after binding`, node.dataset.state === 'refused'
+      && !node.shadowRoot.querySelector('button')
+      && node.shadowRoot.textContent.includes(`data.${field}: the ${field} is not the ${field} of the application`), node.shadowRoot.textContent);
+  }
+  const node = document.createElement('mu-action-button');
+  node.action = binding;
+  node.fill = outer('action-button', { label, icon: 'check', display: 'icon' });
+  const control = node.shadowRoot.querySelector('button');
+  check('action-button: the icon and display of the application show', node.dataset.state === 'default'
+    && control?.getAttribute('aria-label') === label && control.querySelector('[part="icon"]'));
+  node.fill = outer('action-button', { label, icon: 'check', display: 'both' });
+  check('action-button: a new fill with a different display is refused', node.dataset.state === 'refused'
+    && !node.shadowRoot.querySelector('button')
+    && node.shadowRoot.textContent.includes('data.display: the display is not the display of the application'), node.shadowRoot.textContent);
+}
+
 const misnamedForm = mount('editable-form', { ...FORM, submit_label: 'View details' });
 misnamedForm.action = { tool: 'library.update_loan', label: 'Save', title: 'Loan details', editable: EDITABLE };
 check('editable-form: a submit label that is not the label of the application is refused', misnamedForm.dataset.state === 'refused'
   && misnamedForm.shadowRoot.textContent.includes('data.submit_label: the label is not the label of the application'),
   misnamedForm.shadowRoot.textContent);
+for (const name of ['editable-form', 'form-card']) {
+  const node = document.createElement(TAGS[name]);
+  for (const fields of [{ icon: 'check' }, { display: 'icon' }]) {
+    let reason = '';
+    try { node.action = { tool: 'library.update_loan', label: 'Save', ...fields }; } catch (error) { reason = error.message; }
+    check(`${name}: a binding with ${Object.keys(fields)[0]} is refused`,
+      reason === 'action: only an action button accepts icon and display' && node.action.state === 'disabled', reason);
+  }
+}
 // The application gives the title of the form. A fill cannot show a different target for the bound arguments.
 const retitled = mount('editable-form', { ...FORM, title: 'Loan L-0002' });
 retitled.action = { tool: 'library.update_loan', label: 'Save', title: 'Loan details', arguments: { loan_id: 'L-0001' }, editable: EDITABLE };
@@ -1537,6 +1636,48 @@ target.action = { tool: 'library.renew', label: 'Keyboard target' };
 let presses = 0;
 target.addEventListener('mu-action', (event) => { presses += 1; target.receipt({ id: event.detail.id, ok: false }); });
 keyboard.append(target);
+const iconTarget = document.createElement('mu-action-button');
+iconTarget.fill = outer('action-button', { label: 'Icon keyboard target', icon: 'check', display: 'icon' });
+iconTarget.action = { tool: 'request.test', label: 'Icon keyboard target', icon: 'check', display: 'icon' };
+const iconRow = document.createElement('div');
+iconRow.append(iconTarget);
+keyboard.append(iconRow);
+window.muFocusBeforeIcon = () => { target.shadowRoot.querySelector('button').focus(); return true; };
+window.muActionIcon = async (waitForTransitions = false) => {
+  const control = iconTarget.shadowRoot.querySelector('button');
+  if (waitForTransitions) {
+    const transitions = control.getAnimations().filter((animation) => animation instanceof CSSTransition);
+    await Promise.allSettled(transitions.map((transition) => transition.finished));
+  }
+  const svg = control.querySelector('svg');
+  const tooltip = iconTarget.shadowRoot.querySelector('[part="tooltip"]');
+  const box = control.getBoundingClientRect();
+  const style = getComputedStyle(control);
+  const tooltipStyle = getComputedStyle(tooltip);
+  const forcedColorsActive = matchMedia('(forced-colors: active)').matches;
+  const buttonText = resolved('ButtonText');
+  const canvasText = resolved('CanvasText');
+  const colors = {
+    buttonColor: { actual: style.color, expected: buttonText },
+    buttonBorder: { actual: style.borderTopColor, expected: buttonText },
+    buttonOutline: { actual: style.outlineColor, expected: resolved('Highlight') },
+    tooltipColor: { actual: tooltipStyle.color, expected: canvasText },
+    tooltipBackground: { actual: tooltipStyle.backgroundColor, expected: resolved('Canvas') },
+    tooltipBorder: { actual: tooltipStyle.borderTopColor, expected: canvasText },
+  };
+  const noMotion = (node) => ['transitionDuration', 'animationDuration'].every((property) =>
+    getComputedStyle(node)[property].split(',').every((value) => parseFloat(value) === 0));
+  return {
+    x: box.x + box.width / 2, y: box.y + box.height / 2, width: box.width, height: box.height,
+    hovered: control.matches(':hover'), focused: iconTarget.shadowRoot.activeElement === control,
+    tooltip: tooltip.checkVisibility() ? tooltip.innerText : '',
+    focusRing: control.matches(':focus-visible') && style.outlineStyle === 'solid' && style.outlineWidth === '2px',
+    iconColor: getComputedStyle(svg).stroke === style.color,
+    forcedColorsActive, colors,
+    forcedColors: forcedColorsActive && Object.values(colors).every(({ actual, expected }) => actual === expected),
+    noMotion: [control, svg, tooltip].every(noMotion),
+  };
+};
 // The runner presses Enter in a field of this form. The form must submit one time.
 const enterForm = document.createElement('mu-editable-form');
 enterForm.actor = AUTHOR;

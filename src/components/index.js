@@ -73,6 +73,17 @@ const ACTION_CSS = sheet(`
     border-radius: var(--mu-radius-2); border: 1px solid var(--mu-color-accent);
     background: var(--mu-color-accent); color: var(--mu-color-on-accent); cursor: pointer;
   }
+  .with-icon { display: inline-flex; align-items: center; justify-content: center; gap: var(--mu-space-2); }
+  .icon-control { display: flex; flex-direction: column; align-items: flex-start; gap: var(--mu-space-1); }
+  .icon-control button {
+    min-inline-size: max(44px, 2.75rem); min-block-size: max(44px, 2.75rem); padding: var(--mu-space-2);
+  }
+  .action-tooltip {
+    max-inline-size: 100%; overflow-wrap: anywhere; padding: var(--mu-space-1) var(--mu-space-2);
+    font: var(--mu-type-caption); color: var(--mu-color-text); background: var(--mu-color-surface);
+    border: 1px solid var(--mu-color-border); border-radius: var(--mu-radius-2);
+  }
+  .action-tooltip[hidden] { display: none !important; }
   .status { font: var(--mu-type-caption); color: var(--mu-color-text-muted); min-height: 1lh; }
   .status.error { color: var(--mu-color-danger); }
   .reference { display: block; }
@@ -84,6 +95,7 @@ const ACTION_CSS = sheet(`
   @media (forced-colors: active) {
     button { background: ButtonFace; color: ButtonText; border-color: ButtonText; forced-color-adjust: none; }
     .status, .status.error { color: CanvasText; }
+    .action-tooltip { background: Canvas; color: CanvasText; border-color: CanvasText; }
   }
 `);
 
@@ -149,6 +161,9 @@ class ActionElement extends MuElement {
   }
 
   set action(binding) {
+    if (this.constructor.component !== 'action-button' && binding && (Object.hasOwn(binding, 'icon') || Object.hasOwn(binding, 'display'))) {
+      throw new TypeError('action: only an action button accepts icon and display');
+    }
     const errors = this.#action.bind(binding);
     if (errors.length) throw new TypeError('action: ' + errors.join('; '));
     this.#close();
@@ -390,24 +405,55 @@ export class MuActionButton extends ActionElement {
   static focus = true;
   static styles = [ACTION_CSS];
 
-  // The description can name the target of the bound arguments. Thus the application gives it, and a fill
-  // with a different description is refused. A binding with no description accepts no fill with a description.
+  // The application gives the description, icon and display of the bound action. The fill must agree with the binding.
   check(data) {
     const errors = super.check(data);
     if (errors.length) return errors;
-    const description = this.action.description;
-    if (description !== null && (data.description ?? '') !== description) {
+    const { description, icon, display } = this.action;
+    if (description === null) return [];
+    if ((data.description ?? '') !== description) {
       return ['data.description: the description is not the description of the application'];
     }
+    if (data.icon !== icon) return ['data.icon: the icon is not the icon of the application'];
+    if (data.display !== display) return ['data.display: the display is not the display of the application'];
     return [];
   }
 
   render(data) {
     const status = el('span', { class: 'status', role: 'status', 'aria-live': 'polite', part: 'status' });
-    const button = el('button', { type: 'button', part: 'button' }, data.label);
+    const display = data.icon ? data.display ?? 'text' : 'text';
+    const iconOnly = display === 'icon';
+    const graphic = display === 'text' ? null : icon(data.icon);
+    const button = el('button', { type: 'button', part: 'button', class: graphic ? 'with-icon' : null,
+      'aria-label': iconOnly ? data.label : null }, graphic, iconOnly ? null : data.label);
     button.addEventListener('click', () => this.send());
     const area = this.attach(button, status);
-    return [button, data.description ? el('span', { class: 'muted' }, data.description) : null, area, status];
+    return [iconOnly ? this.#withTooltip(button, data.label) : button,
+      data.description ? el('span', { class: 'muted' }, data.description) : null, area, status];
+  }
+
+  #withTooltip(button, label) {
+    // The button already has this name. The tooltip gives the same text to a person who can see it.
+    const tooltip = el('span', { class: 'action-tooltip', part: 'tooltip', 'aria-hidden': 'true' }, label);
+    tooltip.hidden = true;
+    const control = el('div', { class: 'icon-control' }, button, tooltip);
+    const shown = { hover: false, focus: false };
+    const show = (source, value) => {
+      shown[source] = value;
+      tooltip.hidden = !(shown.hover || shown.focus);
+    };
+    control.addEventListener('pointerenter', () => show('hover', true));
+    control.addEventListener('pointerleave', () => show('hover', false));
+    button.addEventListener('focus', () => show('focus', true));
+    button.addEventListener('blur', () => show('focus', false));
+    button.addEventListener('keydown', (event) => {
+      if (event.key !== 'Escape' || tooltip.hidden) return;
+      event.preventDefault();
+      event.stopPropagation();
+      shown.hover = false;
+      show('focus', false);
+    });
+    return control;
   }
 }
 

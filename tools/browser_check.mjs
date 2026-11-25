@@ -58,14 +58,16 @@ const PAGES = {
   'tests/browser/primitives.html': [['button', 'Keyboard target'], ['textbox', 'Shelf code']],
   'tests/browser/components.html': [['button', 'Keyboard target'], ['article', 'Field guide to moss'], ['list', 'Loans'],
     ['form', 'Loan details'], ['textbox', 'Branch'], ['group', 'Citation'], ['button', 'Open source: Keyboard source'],
-    ['group', 'Source excerpt'], ['button', 'Open source: Keyboard excerpt source'], ['group', 'Keyboard diff']],
+    ['group', 'Source excerpt'], ['button', 'Open source: Keyboard excerpt source'], ['group', 'Keyboard diff'],
+    ['button', 'Icon keyboard target'], ['button', 'Text display'], ['button', 'Text and icon display'],
+    ...['check', 'cross', 'edit', 'delete', 'send', 'retry'].map((name) => ['button', 'Test icon ' + name])],
   'tests/browser/thread.html': [['button', 'Keyboard target'], ['list', 'Thread'], ['article', 'Message from Robin, Person'],
     ['article', 'Message from Renewal agent, Agent']],
   'tests/browser/register.html': [['button', 'Keyboard target'], ['article', 'Plot 4'], ['article', 'Plot 7']],
   'tests/browser/states.html': [['button', 'Keyboard target'], ['button', 'Collapse Field guide to moss'], ['button', 'Expand Rivers and deltas'],
     ['button', 'Expand all'], ['button', 'Copy code'], ['button', 'Copy reference'], ['radio', 'South'], ['columnheader', 'Plot']],
 };
-// Each example page, the number of kit elements, the number of refused elements and the roles and names.
+// Each example page, its element counts, its roles and names, and a selector to wait for if it reads a fixture.
 const EXAMPLES = {
   'examples/media/chart.html': [6, 0, [['group', 'Synthetic weekly tickets'], ['group', 'Synthetic weekly visits'], ['group', 'Synthetic weekly tasks'], ['button', 'Show data table']]],
   'examples/evidence/narration.html': [2, 0, [['article', 'Tray A1'], ['heading', 'Matching narration'], ['heading', 'Different narration']]],
@@ -76,10 +78,11 @@ const EXAMPLES = {
     ['button', 'synthetic planting guide'], ['article', 'Tray B2']]],
   'examples/tables/budget.html': [1, 0, [['group', 'Synthetic budget 2027'], ['grid', 'Synthetic budget 2027'], ['columnheader', 'January'], ['rowheader', 'Total'],
     ['gridcell', '1575']]],
-  'examples/tables/review-queue.html': [1, 0, [['table', 'Open review tasks'], ['columnheader', 'Extracted value'], ['cell', 'R-101'], ['list', 'Tasks to review'], ['button', 'Review R-101']]],
-  'examples/tables/snapshots.html': [1, 0, [['table', 'Collections'], ['columnheader', 'Snapshots'], ['cell', 'Ingredients'], ['list', 'Collections to open'], ['button', 'Open Ingredients']]],
+  'examples/tables/review-queue.html': [1, 0, [['table', 'Open review tasks'], ['columnheader', 'Extracted value'], ['cell', 'R-101'], ['list', 'Tasks to review'], ['button', 'Review R-101']], '#queue-title'],
+  'examples/tables/snapshots.html': [1, 0, [['table', 'Collections'], ['columnheader', 'Snapshots'], ['cell', 'Ingredients'], ['list', 'Collections to open'], ['button', 'Open Ingredients']], '#collections mu-table'],
   'examples/cards/primitives.html': [16, 1, [['button', 'Renew'], ['group', 'Loan details'], ['group', 'Reading list'], ['textbox', 'Shelf code']]],
   'examples/cards/loans.html': [9, 0, [['article', 'Field guide to moss'], ['button', 'Renew'], ['list', 'Current loans'], ['form', 'Change a loan']]],
+  'examples/cards/approval-icons.html': [3, 0, [['article', 'Request 42'], ['button', 'Approve request 42'], ['button', 'Reject request 42']]],
   'examples/evidence/citation.html': [3, 1, [['group', 'Citation'], ['button', 'Open source: Synthetic weather notes, page 3'], ['article', 'Message from agent-weather']]],
   'examples/evidence/diff.html': [2, 0, [['group', 'Hall booking B-0042'], ['group', 'Weekly timetable'], ['article', 'Message from Bookings agent']]],
   'examples/cards/offline.html': [5, 0, [['status', 'Tool library'], ['list', 'Tools'], ['button', 'Go offline']]],
@@ -174,6 +177,7 @@ class Session {
 export async function startChrome(profile) {
   const chrome = spawn(CHROME, ['--headless=new', '--remote-debugging-port=0', '--user-data-dir=' + profile,
     '--no-first-run', '--no-default-browser-check', '--disable-extensions', '--disable-background-networking',
+    '--disable-background-timer-throttling', '--disable-backgrounding-occluded-windows', '--disable-renderer-backgrounding',
     '--disable-sync', '--disable-component-update', '--metrics-recording-only', 'about:blank'],
   { stdio: ['ignore', 'ignore', 'pipe'] });
   // Keep the start of the Chrome errors, where the cause is. If Chrome does not start, the report gives them.
@@ -198,6 +202,39 @@ async function key(session, sessionId, name, code, keyCode, text) {
   const base = { key: name, code, windowsVirtualKeyCode: keyCode, nativeVirtualKeyCode: keyCode };
   await session.send('Input.dispatchKeyEvent', { type: 'keyDown', ...base, ...(text ? { text } : {}) }, sessionId);
   await session.send('Input.dispatchKeyEvent', { type: 'keyUp', ...base }, sessionId);
+}
+
+async function actionIconChecks(session, sessionId, page, mode) {
+  const results = [];
+  const check = (step, ok, detail) => results.push({ page, step: `${mode}: ${step}`, ok, detail: JSON.stringify(detail) });
+  const read = (waitForTransitions = false) => evaluate(session, sessionId, `window.muActionIcon(${waitForTransitions})`);
+  const move = (x, y) => session.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x, y }, sessionId);
+  await evaluate(session, sessionId, 'window.muFocusBeforeIcon()');
+  await move(0, 0);
+  const idle = await read();
+  check('The icon button has a 44 by 44 CSS pixel target', idle.width >= 44 && idle.height >= 44, idle);
+  check('The icon takes the button text color', idle.iconColor, idle);
+  check('The tooltip is hidden at rest', idle.tooltip === '', idle);
+  await move(idle.x, idle.y);
+  const hover = await read();
+  check('Hover shows the tooltip', hover.hovered && !hover.focused && hover.tooltip === 'Icon keyboard target', hover);
+  await move(0, 0);
+  const away = await read();
+  check('Moving away hides the tooltip', away.tooltip === '', away);
+  await key(session, sessionId, 'Tab', 'Tab', 9);
+  const focus = await read();
+  check('Tab shows the focus ring and the tooltip', focus.focused && focus.focusRing && focus.tooltip === 'Icon keyboard target', focus);
+  if (mode === 'forced-colors') {
+    // The border can still be in transition after the pointer leaves the button.
+    const settled = await read(true);
+    check('The icon button and tooltip use system colors', settled.forcedColors && settled.iconColor
+      && settled.focused && settled.tooltip === 'Icon keyboard target', settled);
+  }
+  if (mode === 'reduced-motion') check('The icon button and tooltip have no motion', focus.noMotion, focus);
+  await key(session, sessionId, 'Escape', 'Escape', 27);
+  const dismissed = await read();
+  check('Escape hides the tooltip and keeps focus', dismissed.focused && dismissed.tooltip === '', dismissed);
+  return results;
 }
 
 export async function evaluate(session, sessionId, expression) {
@@ -623,6 +660,7 @@ async function main() {
       if (message.method === 'Log.entryAdded' && message.params.entry.level === 'error') problems.push(message.params.entry.text);
     });
     for (const method of ['Page.enable', 'Runtime.enable', 'Log.enable', 'Accessibility.enable']) await session.send(method, {}, sessionId);
+    await session.send('Page.bringToFront', {}, sessionId);
 
     for (const [page, expected] of Object.entries(PAGES)) {
       report.pages[page] = {};
@@ -644,6 +682,9 @@ async function main() {
         if (page === 'tests/browser/states.html' && checks && mode !== 'light') {
           report.keyboard.push(...await stateChecks(session, sessionId, { evaluate, key, sleep }, page, mode));
         }
+        if (page === 'tests/browser/components.html' && checks && mode !== 'light') {
+          report.keyboard.push(...await actionIconChecks(session, sessionId, page, mode));
+        }
         if (mode !== 'light' || !checks) continue;
         report.accessibility.push(...await axErrors(session, sessionId, expected, page));
         report.examples.push(...await pageRules(session, sessionId, page));
@@ -656,6 +697,7 @@ async function main() {
         await key(session, sessionId, ' ', 'Space', 32, ' ');
         const presses = await evaluate(session, sessionId, 'window.muPresses()');
         report.keyboard.push({ page, step: 'Enter and Space press the button', ok: presses === 2, detail: presses });
+        if (page === 'tests/browser/components.html') report.keyboard.push(...await actionIconChecks(session, sessionId, page, mode));
         if (page === 'tests/browser/rich-text.html') report.keyboard.push(...await richTextKeyboardChecks(session, sessionId, { evaluate, key }, page));
         if (page === 'tests/browser/states.html') report.keyboard.push(...await stateChecks(session, sessionId, { evaluate, key, sleep }, page, mode));
         if (page === 'tests/browser/data-grid.html') report.keyboard.push(...await dataGridKeyboardChecks(session, sessionId, { evaluate, key }, page));
@@ -807,9 +849,14 @@ async function main() {
 
     // Each example page loads with no error, shows its kit elements and refuses only the planned fills.
     await session.send('Emulation.setEmulatedMedia', { features: MODES.light }, sessionId);
-    for (const [page, [elements, refused, expected]] of Object.entries(EXAMPLES)) {
+    for (const [page, [elements, refused, expected, ready]] of Object.entries(EXAMPLES)) {
       await open(session, sessionId, `${base}/${page}`, problems);
-      await sleep(200);
+      if (ready) {
+        for (let i = 0; i < 100; i += 1) {
+          if (await evaluate(session, sessionId, `Boolean(document.querySelector(${JSON.stringify(ready)}))`)) break;
+          await sleep(50);
+        }
+      } else await sleep(200);
       const found = await evaluate(session, sessionId, `(() => {
         const all = [];
         const walk = (root) => { for (const node of root.querySelectorAll('*')) {

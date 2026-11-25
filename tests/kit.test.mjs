@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { ActionState } from '../src/actions/action.js';
+import { ActionState, bindingErrors } from '../src/actions/action.js';
 import { createKit, describe, fill, mount, onAction, queueActions, toolSchema, validateFill } from '../src/kit.js';
 import { CATALOG } from '../src/render/catalog.js';
 import { BRAND, register } from '../src/render/registry.js';
@@ -299,6 +299,47 @@ test('schema exports refuse unknown field types', (t) => {
   field.type = 'future-type';
   for (const schema of [describe, toolSchema]) {
     assert.throws(() => schema('button'), { name: 'TypeError', message: /future-type/ });
+  }
+});
+
+test('the action button tool schema gives optional icon and display enums', () => {
+  const name = 'action-button';
+  const schema = toolSchema(name);
+  const data = schema.properties.data;
+  const icons = ['check', 'cross', 'edit', 'delete', 'send', 'retry'];
+  const displays = ['text', 'icon', 'both'];
+  assert.deepEqual(data.required, ['label']);
+  assert.deepEqual(data.properties.icon, { title: 'Icon', type: 'string', enum: icons });
+  assert.deepEqual(data.properties.display, { title: 'Display', type: 'string', enum: displays });
+  const base = fill(name, { label: 'Approve request 42' });
+  assert.deepEqual(instanceErrors(base, schema), []);
+  for (const icon of icons) {
+    for (const display of displays) {
+      const value = { ...base, data: { ...base.data, icon, display } };
+      assert.deepEqual(instanceErrors(value, schema), []);
+      assert.deepEqual(validateFill(value), []);
+    }
+  }
+  for (const fields of [{ icon: 'unknown' }, { icon: '<svg/>' }, { icon: 'https://example.org/icon.svg' }, { display: 'unknown' }]) {
+    const value = { ...base, data: { ...base.data, ...fields } };
+    const [key] = Object.keys(fields);
+    assert.notDeepEqual(instanceErrors(value, schema), []);
+    assert.match(validateFill(value)[0], new RegExp(`^data\\.${key}: must be one of`));
+  }
+});
+
+test('an action button binding accepts only icons and displays from the contract', () => {
+  const binding = { tool: 'request.approve', label: 'Approve request 42' };
+  const { icon, display } = CATALOG['action-button'].data;
+  for (const name of icon.values) {
+    for (const mode of display.values) {
+      assert.deepEqual(bindingErrors({ ...binding, icon: name, display: mode }), []);
+    }
+  }
+  for (const value of ['unknown', '', null, 7]) {
+    assert.deepEqual(bindingErrors({ ...binding, icon: value }),
+      ['the icon must be one of check, cross, edit, delete, send, retry']);
+    assert.deepEqual(bindingErrors({ ...binding, display: value }), ['the display must be one of text, icon, both']);
   }
 });
 
