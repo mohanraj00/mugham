@@ -9,11 +9,12 @@
 - `render/resolve.js`: the resolver of the short form of a contract. It gives the same full form as `tools/catalog.py` for each case in `tests/vectors/short.json`.
 - `render/registry.js`: the registration call for an application contract and its element. [catalog/README.md](../catalog/README.md#application-contracts) gives the rules.
 - `primitives/`: the custom elements `mu-text`, `mu-button`, `mu-stack` and `mu-grid`. `primitives/fields.js` has the input fields `mu-field`, `mu-long-text-field`, `mu-number-field`, `mu-date-field` and `mu-choice-field`.
-- `components/`: the custom elements `mu-card`, `mu-action-button`, `mu-editable-form`, `mu-form-card`, `mu-card-grid`, `mu-citation`, `mu-excerpt`, `mu-diff` and `mu-source-status`.
+- `components/`: the custom elements `mu-card`, `mu-action-button`, `mu-editable-form`, `mu-form-card`, `mu-card-grid`, `mu-citation`, `mu-excerpt`, `mu-diff`, `mu-source-status` and `mu-action-queue`.
 - `envelope/envelope.js`: the message envelope and the reader of an AG-UI 1.0 stream. [docs/contracts/envelope.md](../docs/contracts/envelope.md) gives the rules. A component part goes to `render/validate.js`.
 - `thread/index.js`: the custom element `mu-thread`. It reads AG-UI 1.0 events through `envelope/` and shows each message with its actor. [thread/README.md](thread/README.md) is its contract.
 - `offline/source.js`: the kit side of the offline data source interface. It checks each request and each result of a source. [docs/contracts/data-source.md](../docs/contracts/data-source.md) gives the rules.
-- `actions/action.js`: the action path. A request stays pending until a receipt with the same id comes back.
+- `offline/queue.js`: the offline queue of pending actions. It keeps each action on the device, shows it as pending and sends the queue in order after the device reconnects. `offline/worker.js` is the service worker part: it keeps the files that the application lists, so a page loads offline. [docs/contracts/offline-queue.md](../docs/contracts/offline-queue.md) gives the rules.
+- `actions/action.js`: the action path. A request stays pending until a receipt of the action comes back. An action has one key for all its tries, and a pending action with no receipt offers a retry and a cancel.
 
 ## Use
 

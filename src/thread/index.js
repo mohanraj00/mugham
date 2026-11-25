@@ -451,7 +451,8 @@ export class MuThread extends HTMLElement {
     const message = this.messages.find((item) => item.messageId === messageId);
     let receipt;
     try {
-      receipt = await this.perform(request, message);
+      // The element is the third argument, so an offline queue can give it the detail of the pending state.
+      receipt = await this.perform(request, message, element);
     } catch {
       element.receipt({ id: request.id, ok: false, message: FAILED });
       return;

@@ -12,7 +12,7 @@ import { define } from './src/thread/index.js';
 define();
 const thread = document.querySelector('mu-thread');
 thread.bind = (fill, message) => (fill.component === 'action-button' ? { tool: 'library.renew', label: 'Renew', arguments: { loan_id: 'L-0001' } } : undefined);
-thread.perform = async (request, message) => postToTheApi(request);
+thread.perform = async (request, message, element) => postToTheApi(request);
 await thread.read(events);
 ```
 
@@ -21,7 +21,7 @@ await thread.read(events);
 | `push(event)` | Gives one AG-UI 1.0 event to the reader. |
 | `read(source)` | Reads each event of an async source, or of any iterable, in order. The promise resolves when the source ends. If the source fails, the thread shows a notice and the promise resolves. |
 | `bind` | Optional. A function `(fill, message)` that gives the action binding of an `action-button`, an `editable-form`, a `form-card`, a `data-grid` or an `upload` part. A `data-grid` binding has `tool`, `arguments`, `title`, `rows` and `columns`. An `upload` binding has `tool`, `arguments`, `label`, `accept`, `max_size` and `max_files`. [The catalog README](../../catalog/README.md#actions) gives the binding. If it gives no binding, the element shows as disabled and sends no action. If the fill does not agree with the binding, the element refuses the fill. |
-| `perform` | Optional. An async function `(request, message)` that sends the request to the API of the application and gives its receipt. The request of an upload also has `file`, and `perform` sends that file. If it is not set, the `mu-action` event or the `mu-upload` event goes up to the page, and the page calls `receipt()` of the element. |
+| `perform` | Optional. An async function `(request, message, element)` that sends the request to the API of the application and gives its receipt. With an offline queue, give `(request, message, element) => queue.perform(request, element)`, so the element shows the detail of its pending state. The request of an upload also has `file`, and `perform` sends that file. If it is not set, the `mu-action` event or the `mu-upload` event goes up to the page, and the page calls `receipt()` of the element. |
 | `messages` | A copy of the envelopes, in the order of the thread. |
 | `state` | `idle`, `reading`, `ended` or `failed`. The element also sets `data-state` to this value. |
 | `clamp` | Optional page policy for plain text parts. `null` shows full text. An integer from 1 to 20 adds a visual line limit and a Read more button. |
@@ -66,7 +66,7 @@ If a run ends with `RUN_ERROR` and no message of the run shows the error, the th
 An action in a component goes to `perform`, through the `mu-action` event of the element. The thread uses the action path of the element. It does not copy it.
 
 1. The element shows `Pending`.
-2. The thread calls `perform(request, message)`.
+2. The thread calls `perform(request, message, element)`.
 3. The thread gives the receipt to `receipt()` of the element, with the id of the request. Only then does the element show `Done` or `Not done`.
 4. If `perform` fails, the thread gives a receipt with `ok` equal to `false` and the message `The request failed.`
 5. If the element refuses the receipt, for example because its message is too long, the thread gives a receipt with `ok` equal to `false` and the message `The thread refused the receipt.`

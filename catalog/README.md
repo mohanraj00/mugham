@@ -27,6 +27,8 @@ Each JSON file in this folder is the contract of one component. Each file has th
 | `diff.json` | `mu-diff` | component | The difference between two versions of a text or a list of fields, in up to 20 parts. |
 | `excerpt.json` | `mu-excerpt` | component | A passage as text with a marked span, the source name, the locator as text and an open button. |
 | `source-status.json` | `mu-source-status` | component | The state of an offline data source as text, with the time of the last confirmed read and the reason. |
+| `action-queue.json` | `mu-action-queue` | component | The actions of the offline queue, each with its state as text and its exits. The application fills it from its queue. [Offline queue](../docs/contracts/offline-queue.md) gives the rules. |
+| `queued-action.json` | in `mu-action-queue` | component | One action of the offline queue: a key, a label, the state and an optional message. |
 | `table.json` | `mu-table` | component | Text headers and rows, keyboard sorting and optional row status text. See [Table](../docs/table.md). |
 | `table-row.json` | in `mu-table` | component | Text cells and optional status text. |
 | `status.json` | `mu-status` | component | One state with short text, a fixed label and a border style. |
@@ -170,7 +172,9 @@ The fill keeps the label and the description, and the element compares them with
 
 ### The request and the receipt
 
-A fill gives only data, so a model cannot select a tool. On a press, the element sends a `mu-action` event with an id, the tool and the arguments, and shows `Pending`. The application sends the request to its API. The response of that API is the receipt. The receipt does not come through the stream of the thread. When the receipt comes back, the application calls `element.receipt({ id, ok, message, reference })`. Only then does the element show `Done` or `Not done`. The element ignores a receipt with a different id.
+A fill gives only data, so a model cannot select a tool. On a press, the element sends a `mu-action` event with an id, a key, the tool and the arguments, and shows `Pending`. The key stays the same for each try of the action, and each try has a new id. Use the key as the idempotency key of the API. The application sends the request to its API. The response of that API is the receipt. The receipt does not come through the stream of the thread. When the receipt comes back, the application calls `element.receipt({ id, ok, message, reference })`. Only then does the element show `Done` or `Not done`. The element ignores a receipt with a different id. A receipt can also name the action with `key`. Then the key must be the key of the pending action, and the id can be the id of each try.
+
+A pending action has an exit. If no receipt comes back in 30 seconds, the element shows `Pending: No receipt came back.` with the buttons `Retry` and `Cancel`. It stays pending, and a later receipt is still valid. `Retry` sends a `mu-action` event with the same key and a new id. `Cancel` sends a `mu-action-cancel` event that a listener can prevent. The element never shows `Done` without a receipt. [Offline queue](../docs/contracts/offline-queue.md) gives these rules and the queue that keeps an action while the device is offline.
 
 | Key | Content |
 |---|---|

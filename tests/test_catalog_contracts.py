@@ -28,6 +28,9 @@ PARAGRAPH = fill('rich-paragraph', {'content': [SPAN]})
 COLUMN = fill('data-grid-column', {'key': 'jan', 'label': 'January', 'type': 'number'})
 ROW = fill('data-grid-row', {'key': 'rent', 'label': 'Rent', 'cells': [fill('number-cell', {'value': 900})]})
 
+QUEUED = fill('queued-action', {'key': 'a1b2c3d4-0000-4000-8000-000000000001', 'label': 'Reserve Ladder', 'state': 'stalled',
+                                'tries': 1, 'message': 'No receipt came back.', 'queued': '2026-11-24T10:00:00.000Z'})
+
 
 def outer(name, data):
     """An outer fill. It fills the authorship slot if the contract declares one."""
@@ -60,6 +63,8 @@ VALID = {
     'form-card': {'title': 'Membership form', 'submit_label': 'Send changes', 'sections': [SECTION]},
     'citation': {'quote': 'A short loan can get one renewal.'},
     'source-status': {'label': 'Tool library', 'state': 'stale', 'checked': '2026-11-15T09:30:00.000Z', 'reason': 'The device is offline.'},
+    'queued-action': QUEUED['data'],
+    'action-queue': {'label': 'Pending actions', 'actions': [QUEUED]},
     'excerpt': {'passage': 'A short loan can get one renewal of seven days.', 'span_start': 13, 'span_end': 32},
     'diff-change': CHANGE['data'],
     'diff-part': PART['data'],

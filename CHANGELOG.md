@@ -4,6 +4,16 @@ Each release has an entry. The newest entry is first.
 
 ## Unreleased
 
+- The offline mode with a queue of pending actions (#12). `openQueue` in `src/offline/queue.js` keeps each action on the device, in IndexedDB, and sends the queue in order after the device reconnects. A queued action shows as pending, never as done. The application gives the send function and adds its credentials there, so the queue stores no secret and no token. The application also names the principal of the queue, and a queue sends only the records of its principal. A closed queue sends nothing. A cancel is complete only after the device removed the action, so a canceled action does not go out after a reload. `queueActions` in `src/kit.js` connects the action elements to a queue. [docs/contracts/offline-queue.md](docs/contracts/offline-queue.md) gives the rules.
+- A request has a `key` that stays the same for each try of its action, and each try has a new `id`. Use the key as the idempotency key of the API. A receipt can name its action with `key`.
+- A pending action has an exit. `mu-action-button`, `mu-editable-form` and `mu-form-card` show `Retry` and `Cancel` if no receipt comes back in `element.patience` milliseconds (the default is 30000), and `Cancel` while an action waits for a connection. The element sends the new event `mu-action-cancel`. The action stays pending until a receipt or a cancel.
+- The new component `mu-action-queue` shows the actions of a queue with their states and their exits, also after a reload.
+- `src/offline/worker.js` is the service worker part of the offline mode. It keeps the files that the application lists, so a page loads offline. It keeps no API response and no action. The worker reads each file with no credentials, so the cache never holds an answer for one signed-in person. Each registration scope has its own cache, so two applications on one origin do not remove the cache of each other.
+- `thread.perform` gets the element as its third argument.
+- The example `examples/cards/queue.html` on the fixture API `tools/queue_server.py` shows the offline mode with synthetic data.
+
+Upgrade from 0.4: an application that uses 0.4.0 needs no code change. A request has the new key `key`. A pending action now shows `Retry` and `Cancel` after 30 seconds with no receipt. An API that does not use the key can get the same action two times after a retry of a person, so use the key as the idempotency key.
+
 ## 0.4.0, 2026-11-19
 
 Upgrade from 0.3: an application that uses 0.3.0 needs no code change. The changes are new optional keys, a short contract form, new helpers and a new default style. The contract format of a fill stays `2`. A contract in the full form stays valid. The offline mode (#12) and its security review (#15) are in v0.5.

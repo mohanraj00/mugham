@@ -1,6 +1,6 @@
 {
   "name": "editable-form",
-  "description": "A form with up to 20 fields of text, long text, numbers, dates and choices. A person edits the values and submits them as one action, with the type of each edit of a typed field.",
+  "description": "A form with up to 20 fields of text, long text, numbers, dates and choices. A person edits the values and submits them as one action, with the type of each edit of a typed field. A pending action with no receipt offers a retry and a cancel.",
   "data": {
     "title": {"type": "text", "required": true, "min_length": 1, "size": "title"},
     "fields": {

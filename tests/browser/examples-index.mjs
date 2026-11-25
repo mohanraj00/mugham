@@ -10,7 +10,7 @@ const LIST = JSON.parse(readFileSync(new URL('../../examples/examples.json', imp
 const EXAMPLES = LIST.groups.flatMap((group) => group.examples.map((example) => ({ ...example, group: group.title })));
 // The arguments of each fixture API that an example needs. Each one also serves the example files.
 const SERVERS = { 'thread_server.py': ['--port', '0', '--no-delay'], 'approval_server.py': ['--port', '0'],
-  'upload_server.py': ['--port', '0'], 'apps_server.py': ['--port', '0'] };
+  'upload_server.py': ['--port', '0'], 'apps_server.py': ['--port', '0'], 'queue_server.py': ['--port', '0'] };
 const serverOf = (example) => example.needs?.match(/tools\/([a-z_]+\.py)/)?.[1];
 
 const INDEX = `(() => {

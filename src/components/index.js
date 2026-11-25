@@ -120,6 +120,8 @@ function openLocator(source, locator) {
 }
 
 const STALE = 'Saved the values from before your last edit. Save again to send the edit.';
+// The time that a try waits for its receipt before the element offers a retry and a cancel.
+const PATIENCE = 30000;
 
 // The text of each state. A pending action never shows as done.
 const STATUS = { default: '', disabled: '', confirm: '', pending: 'Pending', done: 'Done', error: 'Not done' };
@@ -136,6 +138,10 @@ class ActionElement extends MuElement {
   // The reference that the copy control copies, and the area of the control.
   #reference = '';
   #copy = null;
+  // The exits of a pending action that shows now: queued or stalled. The timer of a try with no receipt.
+  #exit = '';
+  #timer = null;
+  #patience = PATIENCE;
 
   // The state of the action can only be read. Only bind(), start() and receipt() change it.
   get action() {
@@ -158,6 +164,39 @@ class ActionElement extends MuElement {
     if (accepted) this.#update();
     return accepted;
   }
+
+  // The time in milliseconds that a try waits for its receipt. After that time the action is stalled, and the
+  // element offers a retry and a cancel. The action stays pending, and a later receipt is still valid.
+  get patience() {
+    return this.#patience;
+  }
+
+  set patience(value) {
+    if (!(Number.isFinite(value) && value >= 1 && value <= 3600000)) throw new TypeError('patience: a number of milliseconds from 1 to 3600000');
+    this.#patience = value;
+  }
+
+  // Sets the detail of the pending action: { key, wait, tries, message }, where wait is sent, queued or stalled
+  // (docs/contracts/offline-queue.md). The offline queue calls it. The state stays pending.
+  hold(update) {
+    const before = this.#action.wait + this.#action.message;
+    const accepted = this.#action.hold(update);
+    // The same detail again changes nothing, so the status does not say its text a second time.
+    if (accepted && this.#action.wait + this.#action.message !== before) this.#update();
+    return accepted;
+  }
+
+  // Cancels the pending action with this key, if it waits for a connection or got no receipt. The owner of the
+  // request calls it, for example the offline queue. Returns true if the action is not pending now.
+  cancel(key) {
+    if (!key || key !== this.#action.key || !this.#action.cancel()) return false;
+    this.canceled();
+    this.#update();
+    return true;
+  }
+
+  // A subclass can forget the values of the canceled request.
+  canceled() {}
 
   // The name of the data field that shows the label of the action.
   static labelField = 'label';
@@ -203,6 +242,7 @@ class ActionElement extends MuElement {
     this.#copy = el('span', { class: 'copy-area' });
     this.#copy.hidden = true;
     this.#area = el('div', { class: 'confirm-area' });
+    this.#exit = '';
     this.#update();
     return this.#area;
   }
@@ -262,10 +302,68 @@ class ActionElement extends MuElement {
     this.dispatchEvent(new CustomEvent('mu-action', { bubbles: true, composed: true, detail: request }));
   }
 
+  // A new try of a stalled action: the same key and a new id.
+  #retry() {
+    const request = this.#action.retry();
+    if (!request) return;
+    this.#update();
+    this.dispatchEvent(new CustomEvent('mu-action', { bubbles: true, composed: true, detail: request }));
+  }
+
+  // A listener that owns the request, for example the offline queue, cancels the action itself or prevents the
+  // event. With no such listener, the element cancels the action.
+  #cancel() {
+    const key = this.#action.key;
+    if (!key) return;
+    const event = new CustomEvent('mu-action-cancel', { bubbles: true, composed: true, cancelable: true, detail: Object.freeze({ key }) });
+    if (this.dispatchEvent(event)) this.cancel(key);
+  }
+
+  // The exits of a pending action: a cancel while it waits for a connection, a retry and a cancel after a try
+  // with no receipt. The group stays the same node while the detail stays the same, so the focus stays.
+  #exits(wait) {
+    const kind = wait === 'queued' || wait === 'stalled' ? wait : '';
+    if (kind === this.#exit) return;
+    const focused = Boolean(this.#exit) && this.#area.contains(this.shadowRoot.activeElement);
+    this.#exit = kind;
+    if (this.#asking) return;
+    if (!kind) {
+      this.#area.replaceChildren();
+      if (focused) this.#control.focus();
+      return;
+    }
+    const name = this.fill.data[this.constructor.labelField];
+    const retry = kind === 'stalled' ? el('button', { type: 'button', part: 'retry', 'aria-label': `Retry ${name}` }, 'Retry') : null;
+    const cancel = el('button', { type: 'button', part: 'cancel', 'aria-label': `Cancel ${name}` }, 'Cancel');
+    retry?.addEventListener('click', () => this.#retry());
+    cancel.addEventListener('click', () => this.#cancel());
+    this.#area.replaceChildren(el('div', { class: 'step', role: 'group', 'aria-label': `Pending: ${name}`, part: 'exit' }, retry, cancel));
+    if (focused) (retry ?? cancel).focus();
+  }
+
+  // A try that gets no receipt in the patience time is stalled. The timer runs only while a try is in flight.
+  #watch(wait) {
+    if (wait !== 'sent') {
+      clearTimeout(this.#timer);
+      this.#timer = null;
+    } else if (this.#timer === null) {
+      this.#timer = setTimeout(() => {
+        this.#timer = null;
+        this.hold({ key: this.#action.key, wait: 'stalled' });
+      }, this.#patience);
+    }
+  }
+
   #update() {
     if (!this.fill || !this.#control) return;
     const state = this.#asking ? 'confirm' : this.#action.state;
     this.dataset.state = state;
+    // The detail of a pending action: sent, queued or stalled. A stalled or queued action has an exit.
+    const wait = this.#action.wait;
+    if (wait) this.dataset.wait = wait;
+    else delete this.dataset.wait;
+    this.#exits(wait);
+    this.#watch(wait);
     this.#control.setAttribute('aria-disabled', state === 'default' || state === 'error' ? 'false' : 'true');
     // A pending action is busy until its receipt comes back. The control accepts no second press.
     if (state === 'pending') this.#control.setAttribute('aria-busy', 'true');
@@ -734,6 +832,12 @@ export class MuFormCard extends ActionElement {
     return true;
   }
 
+  // A canceled request confirms no value. The changes stay, so a person can send them again.
+  canceled() {
+    this.#pending = null;
+    for (const [name, line] of this.#lines) if (!line.editor) this.#show(name);
+  }
+
   // The application gives new computed values of read-only fields, as { name: value }. The card checks each
   // value against the contract of its field and shows the values only if all of them are valid. Returns the errors.
   computed(values) {
@@ -1079,6 +1183,96 @@ export class MuSourceStatus extends MuElement {
   }
 }
 
+// The words of each state of an action in the offline queue. No state shows as done.
+const QUEUE_STATES = Object.freeze({ queued: 'Pending', sent: 'Pending', stalled: 'Pending', rejected: 'Not done' });
+const QUEUE_NOTES = Object.freeze({ queued: 'Waiting for a connection.', sent: '', stalled: 'No receipt came back.', rejected: 'The service rejected the action.' });
+// The steps that a person can do for each state, with the word of each button.
+const QUEUE_STEPS = Object.freeze({ queued: [['cancel', 'Cancel']], sent: [], stalled: [['retry', 'Retry'], ['cancel', 'Cancel']], rejected: [['dismiss', 'Dismiss']] });
+
+// The actions of the offline queue of the application (docs/contracts/offline-queue.md). The application fills it
+// with queueFill in src/offline/queue.js after each change of its queue. The thread does not show it. A button
+// sends a mu-queue-step event, and the queue does the step.
+export class MuActionQueue extends MuElement {
+  static component = 'action-queue';
+  static styles = [sheet(`
+    :host { display: block; }
+    .queue {
+      color: var(--mu-color-text); font: var(--mu-type-body); padding: var(--mu-space-2) var(--mu-space-3);
+      border: 1px solid var(--mu-color-border); border-radius: var(--mu-radius-2);
+      display: flex; flex-direction: column; gap: var(--mu-space-2);
+    }
+    p, ul { margin: 0; padding: 0; }
+    ul { list-style: none; display: flex; flex-direction: column; gap: var(--mu-space-2); }
+    li { display: flex; flex-wrap: wrap; align-items: center; gap: var(--mu-space-1) var(--mu-space-2); overflow-wrap: anywhere; }
+    .name { font-weight: var(--mu-type-weight-strong); }
+    .muted { font: var(--mu-type-caption); color: var(--mu-color-text-muted); }
+    li[data-state="rejected"] .state { color: var(--mu-color-danger); }
+    button {
+      font: var(--mu-type-body); min-height: 2.75rem; min-width: 2.75rem; padding: var(--mu-space-1) var(--mu-space-3);
+      border-radius: var(--mu-radius-2); border: 1px solid var(--mu-color-accent); background: transparent;
+      color: var(--mu-color-accent); cursor: pointer;
+    }
+    @media (forced-colors: active) {
+      .queue { border-color: CanvasText; }
+      .muted, li[data-state="rejected"] .state { color: CanvasText; }
+      button { background: ButtonFace; color: ButtonText; border-color: ButtonText; forced-color-adjust: none; }
+    }
+  `)];
+
+  // The step that had the focus before a new fill, as [key, step].
+  #focused = null;
+
+  // Each action has a different key, so a step names one action.
+  check(data) {
+    const keys = data.actions.map((item) => item.data.key);
+    return new Set(keys).size === keys.length ? [] : ['data.actions: two actions have the same key'];
+  }
+
+  state(data) {
+    const states = data.actions.map((item) => item.data.state);
+    if (states.includes('rejected')) return 'error';
+    return states.length ? 'pending' : 'empty';
+  }
+
+  render(data) {
+    // The nodes of the fill before this one are still in the shadow root.
+    const active = this.shadowRoot.activeElement;
+    this.#focused = active?.dataset.step ? [active.dataset.key, active.dataset.step] : null;
+    const waiting = data.actions.filter((item) => item.data.state !== 'rejected').length;
+    const rejected = data.actions.length - waiting;
+    const summary = data.actions.length === 0 ? 'No pending actions.'
+      : [waiting ? `${waiting} pending` : '', rejected ? `${rejected} not done` : ''].filter(Boolean).join(', ') + '.';
+    const items = data.actions.map(({ data: action }) => {
+      const note = action.message ?? QUEUE_NOTES[action.state];
+      const buttons = QUEUE_STEPS[action.state].map(([step, word]) => {
+        const button = el('button', { type: 'button', part: step, 'aria-label': `${word} ${action.label}` }, word);
+        button.dataset.key = action.key;
+        button.dataset.step = step;
+        button.addEventListener('click', () => this.dispatchEvent(new CustomEvent('mu-queue-step',
+          { bubbles: true, composed: true, detail: Object.freeze({ key: action.key, step }) })));
+        return button;
+      });
+      return el('li', { part: 'action', 'data-state': action.state },
+        el('span', { class: 'name', part: 'name' }, action.label),
+        el('span', { class: 'state', part: 'state' }, [QUEUE_STATES[action.state], note].filter(Boolean).join(': ')),
+        action.queued ? el('span', { class: 'muted', part: 'queued' }, `Queued: ${action.queued}`) : null, ...buttons);
+    });
+    return [el('div', { class: 'queue', role: 'group', 'aria-label': data.label, part: 'queue' },
+      el('p', { class: 'muted', part: 'label' }, data.label),
+      el('p', { part: 'summary', role: 'status', tabindex: '-1' }, summary),
+      items.length ? el('ul', { part: 'actions', 'aria-label': 'Actions' }, ...items) : null)];
+  }
+
+  // A new fill makes new nodes. The focus goes back to the same step, or to the summary if the step is not there now.
+  rendered() {
+    const focused = this.#focused;
+    this.#focused = null;
+    if (!focused || !this.fill) return;
+    const same = [...this.shadowRoot.querySelectorAll('button')].find((button) => button.dataset.key === focused[0] && button.dataset.step === focused[1]);
+    (same ?? this.shadowRoot.querySelector('[part="summary"]'))?.focus();
+  }
+}
+
 // The words of each kind of change. The kind shows as text, so it does not depend on color.
 const KINDS = Object.freeze({ added: 'Added', removed: 'Removed', changed: 'Changed', unchanged: 'Unchanged' });
 // A diff with more changes than this starts with each part closed.
@@ -1200,7 +1394,7 @@ export function define(registry = customElements) {
   definePrimitives(registry);
   for (const [name, element] of [['mu-action-button', MuActionButton], ['mu-card', MuCard],
     ['mu-card-grid', MuCardGrid], ['mu-editable-form', MuEditableForm], ['mu-form-card', MuFormCard], ['mu-citation', MuCitation], ['mu-diff', MuDiff],
-    ['mu-excerpt', MuExcerpt], ['mu-table', MuTable], ['mu-status', MuStatus], ['mu-source-status', MuSourceStatus], ['mu-image', MuImage], ['mu-chart', MuChart],
+    ['mu-excerpt', MuExcerpt], ['mu-table', MuTable], ['mu-status', MuStatus], ['mu-source-status', MuSourceStatus], ['mu-action-queue', MuActionQueue], ['mu-image', MuImage], ['mu-chart', MuChart],
     ['mu-rich-text', MuRichText], ['mu-data-grid', MuDataGrid], ['mu-upload', MuUpload]]) {
     if (!registry.get(name)) registry.define(name, element);
   }
