@@ -235,6 +235,8 @@ Each release has the archive `mugham.tar` and its `mugham.tar.sha256` file as re
 
 Run the project checks with `make check`. The checks need Python 3, Node.js and Chrome.
 
+The browser check also runs the long thread bench. [Long thread bench](src/thread/README.md#long-thread-bench) gives the command, the 16 ms target and the 16 ms CI margin.
+
 ## Limits
 
 ### Server side rendering
