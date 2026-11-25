@@ -1,0 +1,24 @@
+.appearance {
+  padding: var(--mu-space-5);
+  background: var(--mu-color-surface-subtle);
+  border: 1px solid var(--mu-color-border-subtle);
+  border-radius: var(--mu-radius-3);
+  box-shadow: var(--mu-elevation-1);
+}
+.appearance-controls {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 12rem);
+  gap: var(--mu-space-2) var(--mu-space-3);
+  align-items: center;
+}
+.samples { margin-block-start: var(--mu-space-6); }
+.samples h2 {
+  padding-block-end: var(--mu-space-2);
+  border-block-end: 1px solid var(--mu-color-border-subtle);
+}
+.samples > mu-status + mu-status { margin-block-start: var(--mu-space-2); }
+
+@media (forced-colors: active) {
+  .appearance, .samples h2 { border-color: CanvasText; }
+  .appearance { background: Canvas; box-shadow: none; }
+}

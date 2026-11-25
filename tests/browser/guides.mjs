@@ -1,6 +1,8 @@
 // The browser check of the guide pages in examples/guides/. tools/browser_check.mjs runs it.
 // Each expected result is a statement of a guide in docs/guides/. If a guide and the kit do not agree,
 // this check fails, so a guide cannot drift from the kit.
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 // The kit elements in the document and in each shadow root.
 const WALK = `const all = []; const walk = (root) => { for (const node of root.querySelectorAll('*')) {
@@ -80,7 +82,7 @@ const THEME_MODES = {
     test: (v) => zero(v.kit.transition) && zero(v.forest.transition) },
 };
 
-export async function guideChecks(session, sessionId, base, { evaluate, open, sleep }) {
+export async function guideChecks(session, sessionId, base, { evaluate, open, sleep, pageRules }) {
   const steps = [];
   const accessibility = [];
   const step = (page, name, ok, detail) => steps.push({ page, step: name, ok: Boolean(ok), detail: JSON.stringify(detail) });
@@ -175,5 +177,140 @@ export async function guideChecks(session, sessionId, base, { evaluate, open, sl
     if (mode === 'light') await named(page, [['article', 'Forest: field guide to moss'], ['textbox', 'Forest shelf code'], ['region', 'Forest theme']]);
   }
   await session.send('Emulation.setEmulatedMedia', { features: light }, sessionId);
-  return { steps, accessibility };
+  const screenshots = await galleryChecks(session, sessionId, base, { evaluate, open, sleep, pageRules }, step);
+  return { steps, accessibility, screenshots };
+}
+
+// Issue 126. Check the component fills and the rendered gallery at the phone width.
+async function galleryView() {
+  const { CATALOG } = await import('/src/render/catalog.js');
+  const names = new Set();
+  const refused = [];
+  const readFill = (value) => {
+    if (value === null || typeof value !== 'object') return;
+    if (value.component && Object.hasOwn(CATALOG, value.component)) names.add(value.component);
+    for (const item of Object.values(value)) readFill(item);
+  };
+  const walk = (root) => {
+    for (const node of root.querySelectorAll('*')) {
+      if (node.tagName.startsWith('MU-')) {
+        readFill(node.fill);
+        if (node.dataset.state === 'refused') refused.push(node.tagName.toLowerCase());
+      }
+      if (node.shadowRoot) walk(node.shadowRoot);
+    }
+  };
+  const main = document.querySelector('main');
+  walk(main);
+  const root = document.documentElement;
+  const css = getComputedStyle(root);
+  return {
+    missing: Object.keys(CATALOG).filter((name) => !names.has(name)), refused,
+    messages: main.querySelector('mu-thread')?.shadowRoot.querySelectorAll('li.message').length,
+    image: main.querySelector('mu-image')?.dataset.state,
+    width: innerWidth, scrollWidth: root.scrollWidth,
+    preset: root.dataset.muTheme, mode: root.dataset.muMode, colorScheme: css.colorScheme,
+    text: css.getPropertyValue('--mu-color-text').trim(), spacing: css.getPropertyValue('--mu-space-4').trim(),
+  };
+}
+
+function pickAppearance(preset, mode) {
+  for (const [id, value] of [['preset', preset], ['mode', mode]]) {
+    const select = document.getElementById(id);
+    select.value = value;
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+}
+
+function galleryMedia() {
+  const probe = document.createElement('span');
+  document.body.append(probe);
+  const system = (value) => { probe.style.color = value; return getComputedStyle(probe).color; };
+  const page = getComputedStyle(document.body);
+  const select = getComputedStyle(document.getElementById('preset'));
+  const label = document.querySelector('mu-status').shadowRoot.querySelector('[part="label"]');
+  const status = getComputedStyle(label);
+  const button = getComputedStyle(document.querySelector('mu-action-button').shadowRoot.querySelector('button'));
+  const result = {
+    forced: page.backgroundColor === system('Canvas') && page.color === system('CanvasText')
+      && select.color === system('ButtonText') && status.color === system('CanvasText') && label.textContent === 'Passed',
+    reduced: [select, button].every((style) => zero(style.transitionDuration)),
+  };
+  probe.remove();
+  return result;
+}
+
+async function galleryScreenshot(session, sessionId, evaluate, folder, name) {
+  const file = join(folder, name + '.png');
+  try {
+    mkdirSync(folder, { recursive: true });
+    // Capture the gallery and its header. The docs panel continues below the gallery.
+    const height = await evaluate(session, sessionId, 'Math.ceil(document.querySelector("main").getBoundingClientRect().bottom + scrollY)');
+    const clip = { x: 0, y: 0, width: 375, height, scale: 1 };
+    const { data } = await session.send('Page.captureScreenshot', { format: 'png', clip, captureBeyondViewport: true }, sessionId);
+    writeFileSync(file, Buffer.from(data, 'base64'));
+    return { file };
+  } catch (error) {
+    return { file, error: error.message };
+  }
+}
+
+async function galleryChecks(session, sessionId, base, { evaluate, open, sleep, pageRules }, step) {
+  const page = 'examples/guides/gallery.html';
+  const folder = process.env.MUGHAM_GALLERY_SHOTS;
+  const screenshots = [];
+  const presets = {
+    neutral: { light: '#141a23', dark: '#e6e9ee', spacing: '1rem' },
+    'high-contrast': { light: '#000000', dark: '#ffffff', spacing: '1rem' },
+    compact: { light: '#141a23', dark: '#e6e9ee', spacing: '0.75rem' },
+  };
+  const media = (...features) => session.send('Emulation.setEmulatedMedia', { features }, sessionId);
+  const scheme = (mode) => ({ name: 'prefers-color-scheme', value: mode });
+  const read = () => evaluate(session, sessionId, `(${galleryView})()`);
+  const pick = (preset, mode) => evaluate(session, sessionId, `(${pickAppearance})(${JSON.stringify(preset)}, ${JSON.stringify(mode)})`);
+  await session.send('Emulation.setDeviceMetricsOverride', { width: 375, height: 812, deviceScaleFactor: 1, mobile: false }, sessionId);
+  try {
+    await open(session, sessionId, `${base}/${page}`);
+    for (let i = 0; i < 100; i += 1) {
+      if (await evaluate(session, sessionId, `document.querySelector('body > aside.example-docs')
+        && document.querySelector('mu-image')?.dataset.state === 'default'
+        && document.querySelector('mu-thread')?.shadowRoot.querySelectorAll('li.message').length === 2`)) break;
+      await sleep(50);
+    }
+    for (const [preset, expected] of Object.entries(presets)) {
+      for (const mode of ['light', 'dark']) {
+        // The native controls override an opposite system preference.
+        await media(scheme(mode === 'light' ? 'dark' : 'light'));
+        await pick(preset, mode);
+        const view = await read();
+        const name = `${preset} ${mode}`;
+        step(page, `${name}: the controls select the expected values`,
+          view.preset === preset && view.mode === mode && view.colorScheme === mode
+          && view.text === expected[mode] && view.spacing === expected.spacing, view);
+        step(page, `${name}: the gallery fits at 375 CSS pixels`, view.width === 375 && view.scrollWidth === 375, view);
+        step(page, `${name}: each catalog fill renders`, view.missing.length === 0 && view.refused.length === 0
+          && view.image === 'default' && view.messages === 2, view);
+        for (const rule of await pageRules(session, sessionId, page)) {
+          step(page, `${name}: ${rule.step}`, rule.ok, rule.detail);
+        }
+        if (folder) screenshots.push(await galleryScreenshot(session, sessionId, evaluate, folder, `${preset}-${mode}`));
+      }
+      await media(scheme('dark'));
+      await pick(preset, '');
+      const system = await read();
+      step(page, `${preset}: System follows the dark preference`, system.mode === undefined
+        && system.colorScheme === 'dark' && system.text === expected.dark, system);
+
+      await media(scheme('light'), { name: 'forced-colors', value: 'active' });
+      const forced = await evaluate(session, sessionId, `(${galleryMedia})()`);
+      step(page, `${preset}: forced colors uses system colors and keeps state text`, forced.forced, forced);
+      await media(scheme('light'), { name: 'prefers-reduced-motion', value: 'reduce' });
+      const reduced = await evaluate(session, sessionId, `(${galleryMedia})()`);
+      step(page, `${preset}: reduced motion removes transitions`, reduced.reduced, reduced);
+    }
+  } finally {
+    await media(scheme('light'));
+    await session.send('Emulation.clearDeviceMetricsOverride', {}, sessionId);
+  }
+  return screenshots;
 }

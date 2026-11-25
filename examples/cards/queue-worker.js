@@ -34,5 +34,5 @@ const CATALOG = [
   'text-cell.json', 'text.json', 'time-field.json', 'toggle-field.json', 'upload.json',
 ];
 
-mughamOffline.serve(self, { version: 'queue-example-8', files: [...PAGE, ...EXAMPLES.map((name) => '../' + name),
+mughamOffline.serve(self, { version: 'queue-example-9', files: [...PAGE, ...EXAMPLES.map((name) => '../' + name),
   ...SRC.map((name) => '../../src/' + name), ...CATALOG.map((name) => '../../catalog/' + name)] });

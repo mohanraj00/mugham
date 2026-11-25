@@ -82,7 +82,19 @@
       "examples": [
         {"name": "Contracts guide", "path": "guides/contracts.html", "components": ["card", "bird-count"], "text": "The page of the contracts guide: a valid fill, refused fills and an application contract."},
         {"name": "Assemble guide", "path": "guides/assemble.html", "components": ["stack", "grid", "card", "action-button", "editable-form", "field", "thread"], "text": "The assembly guide shows a thread, a card with an action and a form with a draft reply."},
-        {"name": "Theme guide", "path": "guides/theme.html", "components": ["card", "action-button", "field"], "text": "The page of the theme guide: the kit theme and a second theme."}
+        {"name": "Theme guide", "path": "guides/theme.html", "components": ["card", "action-button", "field"], "text": "The page of the theme guide: the kit theme and a second theme."},
+        {
+          "name": "Component gallery",
+          "path": "guides/gallery.html",
+          "components": [
+            "action-button", "action-queue", "button", "card", "card-grid", "chart", "choice-field", "citation",
+            "data-grid", "date-field", "date-range-field", "date-time-field", "diff", "editable-form", "excerpt",
+            "field", "form-card", "grid", "image", "long-text-field", "multi-choice-field", "number-field",
+            "range-field", "rich-text", "select-field", "source-status", "stack", "status", "table", "text",
+            "time-field", "toggle-field", "upload", "thread"
+          ],
+          "text": "Compare each catalog component in the three presets and in light and dark modes."
+        }
       ]
     }
   ]

@@ -4,6 +4,7 @@ Each release has an entry. The newest entry is first.
 
 ## Unreleased
 
+- The kit adds new color, elevation, radius and easing tokens, with neutral, high contrast and compact presets in light and dark modes (#126). The component gallery shows each preset.
 - Each catalog contract declares its style parts and the parts that a page must keep visible (#135). A card grid exports the title, state text and collapse control of each nested card.
 - An editable form accepts native fields for a date range, a time and a local date and time with a fixed time zone label (#124). The form refuses a date and time field if its time zone is absent from the action binding or differs from the binding.
 

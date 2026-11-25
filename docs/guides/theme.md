@@ -1,6 +1,6 @@
 # Theme the kit
 
-This guide gives each design token that a page can set, the light and dark themes, forced colors and reduced motion. It also gives the parts that a page must not change. The example page [examples/guides/theme.html](../../examples/guides/theme.html) shows the kit theme and a second theme, `forest`, on one page.
+Set a preset on the page, then change individual tokens in a style sheet if necessary. The [component gallery](../../examples/guides/gallery.html) shows all three presets in light and dark mode.
 
 ## How a theme works
 
@@ -17,6 +17,7 @@ Each token has a light value and a dark value. The table gives the CSS property,
 | CSS property | Light | Dark | Use |
 |---|---|---|---|
 | `--mu-color-surface` | `#ffffff` | `#171b21` | The ground of a card, a form, a message and a secondary button. |
+| `--mu-color-surface-subtle` | `#f0f3f7` | `#222831` | The ground of a nested group. Use the text and muted text tokens on it. |
 | `--mu-color-page` | `#f7f8fa` | `#0f1217` | The ground of a page in the default page style. |
 | `--mu-color-text` | `#141a23` | `#e6e9ee` | The text on the surface. |
 | `--mu-color-text-muted` | `#566170` | `#9ba5b1` | Captions, labels of facts, the actor type and the state text. |
@@ -27,6 +28,11 @@ Each token has a light value and a dark value. The table gives the CSS property,
 | `--mu-color-focus` | `#1f5fbf` | `#8cb4f5` | The focus ring. |
 | `--mu-color-danger` | `#a3231a` | `#f4aba4` | A refusal, an error and `Not done`. |
 | `--mu-color-success` | `#1b7a45` | `#73d39f` | The edge and state text of a completed action. |
+| `--mu-color-on-success` | `#ffffff` | `#082519` | Text on a success label. |
+| `--mu-color-warning`, `--mu-color-on-warning` | `#774a00`, `#ffffff` | `#ffca76`, `#2c1900` | The ground and text of a warning label. |
+| `--mu-color-info`, `--mu-color-on-info` | `#215d85`, `#ffffff` | `#9bd7ff`, `#0c2336` | The ground and text of an information label. |
+| `--mu-color-hover`, `--mu-color-on-hover` | `#eef2f7`, `#141a23` | `#252d39`, `#e6e9ee` | The ground and text of a control under the pointer. |
+| `--mu-color-selected`, `--mu-color-on-selected` | `#e2ecfb`, `#102b55` | `#293c58`, `#ecf3ff` | The ground and text of a selected control. |
 | `--mu-type-body` | `400 0.9375rem/1.55` | same | The body text, as a `font` value with the font stack. |
 | `--mu-type-caption` | `400 0.75rem/1.5` | same | Captions and state text, as a `font` value with the font stack. |
 | `--mu-type-weight-strong` | `600` | same | A title and an actor name. |
@@ -35,24 +41,35 @@ Each token has a light value and a dark value. The table gives the CSS property,
 | `--mu-space-1`, `--mu-space-2`, `--mu-space-3`, `--mu-space-4` | `0.25rem`, `0.5rem`, `0.75rem`, `1rem` | same | The gaps and the padding. |
 | `--mu-space-5`, `--mu-space-6` | `1.5rem`, `2rem` | same | The larger spaces of the default page style. |
 | `--mu-radius-1`, `--mu-radius-2` | `0.375rem`, `0.625rem` | same | The corners. |
+| `--mu-radius-3`, `--mu-radius-pill` | `1rem`, `9999px` | same | A large corner and a fully rounded end. |
+| `--mu-elevation-1` | `0 1px 3px #141a2326` | `0 1px 3px #00000080` | The shadow of a group. |
+| `--mu-elevation-2` | `0 4px 12px #141a2333` | `0 4px 12px #00000099` | The shadow of a raised surface. |
 | `--mu-motion-fast` | `120ms` | same | The time of a transition. It is `0ms` in reduced motion. |
+| `--mu-easing-standard`, `--mu-easing-enter` | `cubic-bezier(0.2, 0, 0, 1)`, `cubic-bezier(0, 0, 0.2, 1)` | same | The curves of a standard transition and a transition that shows new content. |
 | `--mu-size-column-narrow`, `--mu-size-column-medium`, `--mu-size-column-wide` | `12rem`, `16rem`, `22rem` | same | The minimum column width of a grid. |
 | `--mu-size-page` | `64rem` | same | The maximum width of the content in the default page style. |
 
-The font stack of the body, caption and heading tokens is `Instrument Sans, system-ui, -apple-system, Segoe UI, sans-serif`. The font stack of the code token is `Geist Mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace`. The kit loads no font. If the page does not supply the first font of a stack, the browser uses the next font of the stack. [docs/brand/](../brand/README.md) gives the source of each value.
+The font stack of the body, caption and heading tokens is `Instrument Sans, system-ui, -apple-system, Segoe UI, sans-serif`. The font stack of the code token is `Geist Mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace`. The kit loads no font. If the page does not supply the first font of a stack, the browser uses the next font of the stack. [docs/brand/](../brand/README.md) gives the base colors, spacing and type.
 
 Each contract lists the tokens of its component in its `tokens` key. `tests/test_tokens.py` checks that each of them exists.
 
-## Light and dark
+## Presets and color mode
 
-The kit uses the dark values when the browser theme is dark. A page can select one theme with the `data-mu-theme` attribute on the root element:
+Set `data-mu-theme` on `<html>` to select a preset.
 
-- `data-mu-theme="light"` keeps the light values in a dark browser theme.
-- `data-mu-theme="dark"` gives the dark values in a light browser theme.
+| Value | Effect |
+|---|---|
+| `neutral` | The default colors, type and spacing. The page also uses this preset when the attribute is absent. |
+| `high-contrast` | Stronger contrast for text, control edges and focus rings. |
+| `compact` | The neutral colors with the type sizes, spacing and column widths of [compact density](#compact-density-and-full-width). |
 
-Each element uses only the tokens, so the two themes need no other change.
+Each preset has light and dark values. Set `data-mu-mode="light"` or `data-mu-mode="dark"` on `<html>` to select a mode. For example, use `<html lang="en" data-mu-theme="high-contrast" data-mu-mode="dark">`. Without a mode attribute, the kit follows the browser preference. Existing pages can continue to use `data-mu-theme="light"` or `data-mu-theme="dark"` for the neutral preset.
+
+To change a few tokens of a preset, load a page style sheet after `tokens.css`. For example, use `:root[data-mu-theme="compact"]` and set `--mu-radius-2` to `0.5rem` and `--mu-space-5` to `1.25rem`. The rule applies in both modes. To change a color, also set the matching foreground or ground and [check the contrast](#the-contrast-of-a-theme) in each mode.
 
 After a successful receipt, the action shows `Done` at full opacity. The action button and the form submit buttons use `--mu-color-success` for their edge and text. An action button with an icon display shows a check. The data grid uses this color in its receipt below the grid, and the upload uses it on each completed file. If you set this token, keep a text contrast of at least 4.5:1 against the surface and the page ground. The copy control uses the standard control edge and can wrap below the reference.
+
+`mu-status` uses success colors for `Passed` and warning colors for `Pending`. The label text and border pattern show the state in each preset and in forced colors.
 
 ## Forced colors and reduced motion
 
@@ -102,7 +119,7 @@ To change only some rules, link your style sheet after `page.css`. The block spa
 
 Set `data-mu-density="compact"` on `<html>` to use compact density on the full page. To use it in one part of a page, set the attribute on the container of that part. The elements in the container use the compact tokens, also in their shadow roots.
 
-Compact density reduces the first four space tokens, the body and caption type sizes, and the minimum widths of grid columns. Use these tokens for gaps, content padding and text. The preset uses the same colors in each theme as the default density.
+Compact density reduces the first four space tokens, the body and caption type sizes, and the minimum widths of grid columns. Use these tokens for gaps, content padding and text. The `compact` theme preset uses these density values on the full page. Use the density attribute to apply the same spacing to a container or to use compact density with high contrast.
 
 Keep each control target at least 44 by 44 CSS pixels (`2.75rem` with a root size of 16px). Keep the root font size and the control minimum sizes. A radio or checkbox and its label make one target. Keep the 2px focus ring and the contrast ratios for text, control edges and focus rings.
 
@@ -110,7 +127,7 @@ With `page.css`, set `data-mu-page="full"` on `<html>` to set `--mu-size-page` t
 
 The [density example](../../examples/tables/density.html) uses full width. It shows the same synthetic card grid and data grid in both densities, side by side on a wide screen.
 
-## A second theme
+## A custom theme
 
 [examples/guides/theme.css](../../examples/guides/theme.css) sets the `forest` theme on each element in a `.theme-forest` container. It gives a light value and a dark value for each color, and it changes one corner radius:
 
@@ -128,10 +145,10 @@ The [density example](../../examples/tables/density.html) uses full width. It sh
   --mu-radius-2: 0.25rem;
 }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-mu-theme="light"]) .theme-forest {
+  :root:where(:not([data-mu-mode="light"], [data-mu-theme="light"]:not([data-mu-mode]))) .theme-forest {
 ```
 
-The dark values come in two rules, the same as in `tokens.css`: one rule for a dark browser theme, and one rule for `data-mu-theme="dark"`. A theme on `:root` needs the same two dark rules, with selectors at least as specific as the rules of `tokens.css`. The page puts the elements in the container:
+The dark values come in two rules, the same as in `tokens.css`. One rule follows a dark browser preference and the other follows an explicit dark mode. A custom theme on `:root` needs selectors at least as specific as the rules of `tokens.css`. The page puts the elements in the container.
 
 <!-- source: examples/guides/theme.html -->
 ```html
@@ -163,6 +180,12 @@ A theme must keep these contrast ratios (WCAG 2.2, 1.4.3 and 1.4.11) in the ligh
 | `--mu-color-danger` | `--mu-color-surface` | 4.5:1 |
 | `--mu-color-border` | `--mu-color-surface` | 3:1 |
 | `--mu-color-focus` | `--mu-color-surface` | 3:1 |
+| `--mu-color-on-success`, `--mu-color-on-warning`, `--mu-color-on-info` | The respective success, warning or info token | 4.5:1 |
+| `--mu-color-on-hover`, `--mu-color-on-selected` | The respective hover or selected token | 4.5:1 |
+| `--mu-color-text`, `--mu-color-text-muted` | `--mu-color-surface-subtle` | 4.5:1 |
+| `--mu-color-success`, `--mu-color-warning`, `--mu-color-info` | `--mu-color-surface` or `--mu-color-page` | 4.5:1 |
+| `--mu-color-on-hover`, `--mu-color-on-selected` as an edge | `--mu-color-surface` or `--mu-color-page` | 3:1 |
+| `--mu-color-focus` | `--mu-color-hover` or `--mu-color-selected` | 3:1 |
 
 A page with the default page style also has text, links and controls on the page ground. Then a theme must also keep these ratios:
 
@@ -180,6 +203,8 @@ The edge of a card, a form and a message is a mix of `--mu-color-border` at 45% 
 Use `#rrggbb` values. Then `tools/tokens.py` can compute each ratio with its `contrast` function. If the ground of the page is not `--mu-color-surface`, check the danger color against that ground too. Each message of the thread sits on the surface, but the thread element has no ground of its own. Its notices of a stream error and of a failed source sit on the ground of the page.
 
 Load the theme style sheet after `tokens.css`. A theme on `:root` has the same specificity as the light rule of `tokens.css`, so the later style sheet wins.
+
+The browser check opens the gallery at 375 CSS pixels in each preset and mode. Set `MUGHAM_GALLERY_SHOTS` to an output folder before you run `node tools/browser_check.mjs` to save six PNG images for review. The images are optional and do not affect the check result.
 
 ## Declared parts
 

@@ -755,7 +755,7 @@ async function main() {
   const base = `http://127.0.0.1:${server.address().port}`;
   const profile = mkdtempSync(join(tmpdir(), 'mugham-chrome-'));
   const report = { passed: false, chrome: '', pages: {}, accessibility: [], keyboard: [], examples: [], errors: [],
-    scope: 'Headless Chrome on this machine: the check pages in four media modes, the accessibility tree, the keyboard, the example pages, and the example apps in the light theme, the dark theme and at the phone width. It also checks each example in compact density at 375 CSS pixels, in the light and dark themes. No screen reader.' };
+    scope: 'Headless Chrome on this machine: the check pages in four media modes, the accessibility tree, the keyboard, the example pages, and the example apps in the light theme, the dark theme and at the phone width. It also checks each example in compact density and the gallery in each preset at 375 CSS pixels, in the light and dark themes. No screen reader.' };
   let chrome;
   try {
     const started = await startChrome(profile);
@@ -1007,9 +1007,10 @@ async function main() {
         && !targets.ok && targets.detail === 'div: button Go is 20 by 20',
       detail: `${names.detail} | ${markup.detail} | ${targets.detail}` });
     // The guide pages of docs/guides/. tests/browser/guides.mjs gives the expected results.
-    const guides = await guideChecks(session, sessionId, base, { evaluate, open, sleep });
+    const guides = await guideChecks(session, sessionId, base, { evaluate, open, sleep, pageRules });
     report.examples.push(...guides.steps);
     report.accessibility.push(...guides.accessibility);
+    if (process.env.MUGHAM_GALLERY_SHOTS) report.galleryScreenshots = guides.screenshots;
     // The index of the examples and the frame of each example page. tests/browser/examples-index.mjs gives the expected results.
     report.examples.push(...await exampleIndexChecks(session, sessionId, base, { evaluate, open, sleep, pythonServer, key, touchTargetProblems }));
     report.examples.push(...await threadExample(session, sessionId, report));
