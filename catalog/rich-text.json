@@ -1,6 +1,21 @@
 {
   "name": "rich-text",
   "description": "Rich text as a tree of typed nodes: paragraphs, headings, lists, code blocks and quotes. A fill gives data only, never markup. The kit makes each element from a fixed list. Page code sets the link schemes and the first heading level.",
+  "parts": [
+    {"name": "authorship", "description": "Type and ID of the author, with a name when available.", "guardrail": true},
+    {"name": "code", "description": "Block of code.", "guardrail": false},
+    {"name": "copy", "description": "Button that copies text.", "guardrail": true},
+    {"name": "copy-status", "description": "Result of the copy operation.", "guardrail": true},
+    {"name": "details", "description": "Control and technical details of a refusal.", "guardrail": true},
+    {"name": "empty", "description": "Message that shows when there are no items.", "guardrail": false},
+    {"name": "link", "description": "Link to a page.", "guardrail": true},
+    {"name": "next", "description": "Next step after a refusal.", "guardrail": true},
+    {"name": "read-more-content", "description": "Full text with a limit on its initial height.", "guardrail": true},
+    {"name": "read-more-toggle", "description": "Button that shows more or less text.", "guardrail": true},
+    {"name": "reason", "description": "Reason for a refusal or an edit error.", "guardrail": true},
+    {"name": "rich-text", "description": "Group that contains the rich text.", "guardrail": false},
+    {"name": "target", "description": "Address of a link.", "guardrail": true}
+  ],
   "data": {
     "blocks": {
       "type": "list",

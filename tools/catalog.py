@@ -255,7 +255,8 @@ def resolve(contract, defaults=None):
     if errors:
         return None, errors
     # The result is a copy, so a change to it does not change the defaults.
-    return copy.deepcopy({key: values[key] for key in CONTRACT_SCHEMA['properties'] if key != 'slots' or values['slots']}), []
+    return copy.deepcopy({key: values[key] for key in CONTRACT_SCHEMA['properties']
+                          if key in values and (key != 'slots' or values['slots'])}), []
 
 
 def defaults_errors(defaults=None):
@@ -299,6 +300,11 @@ def contract_errors(contract, filename=None, catalog=None, invalid=()):
         return errors
     if filename is not None and contract['name'] + '.json' != filename:
         errors.append('name: must agree with the file name ' + filename)
+    part_names = set()
+    for index, part in enumerate(contract.get('parts', [])):
+        if part['name'] in part_names:
+            errors.append(f'parts[{index}].name: the part name is not unique')
+        part_names.add(part['name'])
     states = set(contract['states'])
     if 'default' not in states:
         errors.append('states: must include default')

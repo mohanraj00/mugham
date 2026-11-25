@@ -23,10 +23,21 @@ A contract is one JSON file in `catalog/`, for example `catalog/card.json`. The 
 | `description` | One sentence about the component. |
 | `ai_content` | `true` if the component can show content from a model. Then the contract must declare a required authorship slot. |
 | `slots` | Optional. The provenance slots: `authorship`, `citation` or the two. Each slot has the `required` key. See "Slots". |
+| `parts` | Optional. The part names that a page can use in `::part()` rules. See "Parts". |
 | `data` | The data fields. Each field has a type, a label and the `required` key. |
 | `states` | The states of the component: `default`, `empty`, `loading`, `disabled`, `confirm`, `pending`, `done`, `error`, `refused`, `expanded` or `collapsed`. A component shows `confirm` while a person decides on a confirm step. A collapsible card uses `expanded` and `collapsed`. |
 | `tokens` | The design tokens that the component uses. |
 | `accessibility` | The role, the accessible name (not for the role `none`), the keys, and support for forced colors and reduced motion. |
+
+### Parts
+
+Each item in `parts` has three keys.
+
+- `name` gives one name from a `part` attribute or a name that the component exports from a nested element. Use only lower-case letters, digits and hyphens. Use each name only once in a contract.
+- `description` gives the use of the part in 1 to 300 characters.
+- `guardrail` is `true` if a page must keep the part visible when the component shows it. Use `false` for other parts.
+
+The short form copies the list to the full form. A contract can omit the key or use an empty list. A fill has no `parts` key. The [theme guide](../../docs/guides/theme.md#declared-parts) lists the parts and the rules for page styles.
 
 ### Field types
 
@@ -81,6 +92,7 @@ A contract with `ai_content` set to `true` must declare the authorship slot with
 6. If `ai_content` is `true`, the contract declares the authorship slot with `required` set to `true`.
 7. In the short form, each `size` names a size of the defaults file.
 8. In the short form, a list of `states` or `tokens` has the `+` mark on each item or on no item.
+9. Each part name occurs only once in a contract.
 
 ## Short form (format 3)
 

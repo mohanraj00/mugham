@@ -594,6 +594,7 @@ export class MuCardGrid extends MuElement {
     // A nested card takes the slots and the actor of the grid, so each card shows them.
     for (const item of data.cards) {
       const card = document.createElement('mu-card');
+      card.setAttribute('exportparts', 'title: card-title, status: card-status, toggle: card-toggle');
       card.actor = this.actor;
       card.fill = this.fill.slots ? { ...item, slots: this.fill.slots } : item;
       list.append(el('li', {}, card));
@@ -1212,14 +1213,18 @@ export class MuSourceStatus extends MuElement {
 // The words of each state of an action in the offline queue. No state shows as done.
 const QUEUE_STATES = Object.freeze({ queued: 'Pending', sent: 'Pending', stalled: 'Pending', rejected: 'Not done' });
 const QUEUE_NOTES = Object.freeze({ queued: 'Waiting for a connection.', sent: '', stalled: 'No receipt came back.', rejected: 'The service rejected the action.' });
-// The steps that a person can do for each state, with the word of each button.
-const QUEUE_STEPS = Object.freeze({ queued: [['cancel', 'Cancel']], sent: [], stalled: [['retry', 'Retry'], ['cancel', 'Cancel']], rejected: [['dismiss', 'Dismiss']] });
-
 // The actions of the offline queue of the application (docs/contracts/offline-queue.md). The application fills it
 // with queueFill in src/offline/queue.js after each change of its queue. The thread does not show it. A button
 // sends a mu-queue-step event, and the queue does the step.
 export class MuActionQueue extends MuElement {
   static component = 'action-queue';
+  // The steps that a person can do for each state, with the word of each button.
+  static #steps = Object.freeze({
+    queued: [[{ part: 'cancel' }, 'Cancel']],
+    sent: [],
+    stalled: [[{ part: 'retry' }, 'Retry'], [{ part: 'cancel' }, 'Cancel']],
+    rejected: [[{ part: 'dismiss' }, 'Dismiss']],
+  });
   static styles = [sheet(`
     :host { display: block; }
     .queue {
@@ -1270,8 +1275,9 @@ export class MuActionQueue extends MuElement {
       : [waiting ? `${waiting} pending` : '', rejected ? `${rejected} not done` : ''].filter(Boolean).join(', ') + '.';
     const items = data.actions.map(({ data: action }) => {
       const note = action.message ?? QUEUE_NOTES[action.state];
-      const buttons = QUEUE_STEPS[action.state].map(([step, word]) => {
-        const button = el('button', { type: 'button', part: step, 'aria-label': `${word} ${action.label}` }, word);
+      const buttons = MuActionQueue.#steps[action.state].map(([attributes, word]) => {
+        const step = attributes.part;
+        const button = el('button', { type: 'button', ...attributes, 'aria-label': `${word} ${action.label}` }, word);
         button.dataset.key = action.key;
         button.dataset.step = step;
         button.addEventListener('click', () => this.dispatchEvent(new CustomEvent('mu-queue-step',

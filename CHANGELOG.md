@@ -4,6 +4,7 @@ Each release has an entry. The newest entry is first.
 
 ## Unreleased
 
+- Each catalog contract declares its style parts and the parts that a page must keep visible (#135). A card grid exports the title, state text and collapse control of each nested card.
 - An editable form accepts native fields for a date range, a time and a local date and time with a fixed time zone label (#124).
 
 - An editable form accepts multiple choices as checkboxes or a searchable tag picker and sends the selected texts as a list (#121).

@@ -52,7 +52,8 @@ const SVG = 'http://www.w3.org/2000/svg';
 export function icon(name) {
   if (!Object.hasOwn(ICONS, name)) throw new Error('icon not known: ' + name);
   const node = document.createElementNS(SVG, 'svg');
-  for (const [key, value] of [['class', 'icon'], ['part', 'icon'], ['viewBox', '0 0 16 16'], ['aria-hidden', 'true'], ['focusable', 'false']]) {
+  node.setAttribute('part', 'icon');
+  for (const [key, value] of [['class', 'icon'], ['viewBox', '0 0 16 16'], ['aria-hidden', 'true'], ['focusable', 'false']]) {
     node.setAttribute(key, value);
   }
   const path = document.createElementNS(SVG, 'path');

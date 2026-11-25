@@ -12,8 +12,8 @@ const DATE_TIME_CSS = sheet(`
 `);
 const STYLES = [...FieldElement.styles, DATE_TIME_CSS];
 
-function nativeInput(field, id, type, part, value, data) {
-  const input = el('input', { id, type, part });
+function nativeInput(field, id, type, value, data) {
+  const input = el('input', { id, type });
   input.value = value;
   input.required = true;
   if (data.earliest !== undefined) input.min = data.earliest;
@@ -37,11 +37,10 @@ class NativeDateTimeField extends FieldElement {
   }
 
   control(data, id) {
-    const input = nativeInput(this, id, this.constructor.inputType, 'input', data.value, data);
+    const input = nativeInput(this, id, this.constructor.inputType, data.value, data);
+    input.setAttribute('part', 'input');
     this.#input = input;
-    if (data.time_zone === undefined) return { node: input, targets: [input] };
-    const zone = el('span', { id: id + '-zone', class: 'hint', part: 'time-zone' }, 'Time zone ' + data.time_zone);
-    return { node: el('div', { class: 'with-zone' }, input, zone), targets: [input], descriptionIds: [zone.id] };
+    return { node: input, targets: [input] };
   }
 }
 
@@ -70,8 +69,10 @@ export class MuDateRangeField extends FieldElement {
   }
 
   control(data, id) {
-    const start = nativeInput(this, id + '-start', 'date', 'start', data.value[0], data);
-    const end = nativeInput(this, id + '-end', 'date', 'end', data.value[1], data);
+    const start = nativeInput(this, id + '-start', 'date', data.value[0], data);
+    const end = nativeInput(this, id + '-end', 'date', data.value[1], data);
+    start.setAttribute('part', 'start');
+    end.setAttribute('part', 'end');
     this.#inputs = [start, end];
     const label = el('span', { id: id + '-label', part: 'label' }, data.label);
     const group = el('div', { class: 'box dates', role: 'group', 'aria-labelledby': label.id, part: 'group' },
@@ -99,6 +100,12 @@ export class MuTimeField extends NativeDateTimeField {
 export class MuDateTimeField extends NativeDateTimeField {
   static component = 'date-time-field';
   static inputType = 'datetime-local';
+
+  control(data, id) {
+    const { node: input, targets } = super.control(data, id);
+    const zone = el('span', { id: id + '-zone', class: 'hint', part: 'time-zone' }, 'Time zone ' + data.time_zone);
+    return { node: el('div', { class: 'with-zone' }, input, zone), targets, descriptionIds: [zone.id] };
+  }
 
   reason(value) {
     return isLocalDateTime(value) ? null : 'Give a date and time that exist.';

@@ -3,6 +3,20 @@
   "kind": "primitive",
   "description": "Two native date inputs in a named group. The required value is a pair of dates as YYYY-MM-DD, start then end. Both dates must exist and stay within the optional limits. The end date can equal the start date or come after it.",
   "ai_content": false,
+  "parts": [
+    {"name": "copy", "description": "Button that copies text.", "guardrail": true},
+    {"name": "copy-status", "description": "Result of the copy operation.", "guardrail": true},
+    {"name": "date-label", "description": "Label of the start or end date.", "guardrail": true},
+    {"name": "details", "description": "Control and technical details of a refusal.", "guardrail": true},
+    {"name": "edit-type", "description": "Choices for the type of edit.", "guardrail": true},
+    {"name": "end", "description": "Input for the end date.", "guardrail": true},
+    {"name": "group", "description": "Group that contains the date inputs.", "guardrail": true},
+    {"name": "label", "description": "Label of the field.", "guardrail": true},
+    {"name": "next", "description": "Next step after a refusal.", "guardrail": true},
+    {"name": "problem", "description": "Reason that a field value is invalid.", "guardrail": true},
+    {"name": "reason", "description": "Reason for a refusal or an edit error.", "guardrail": true},
+    {"name": "start", "description": "Input for the start date.", "guardrail": true}
+  ],
   "data": {
     "name": {"type": "text", "size": "short"},
     "label": {"type": "text", "required": true, "min_length": 1, "size": "line"},

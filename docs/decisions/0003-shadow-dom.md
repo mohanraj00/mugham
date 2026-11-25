@@ -59,6 +59,14 @@ Option A. The kit uses open shadow roots. The owner accepts this record with the
 - The catalog does not declare the parts. The custom properties are the only style interface that a contract declares. Thus the part names are not stable in v0.2. Declaring the parts in the contract format is a separate change, and it needs a change of the contract schema first.
 - The kit has no `<slot>`. The fill is data, so an application cannot put markup inside a component. This keeps principle 1.
 
+## Amendment for issue 135
+
+The contract of each kit component declares its style parts. The optional `parts` list in formats 2 and 3 gives each name, its use and its guardrail flag. When the kit shows a guardrail part, a page must keep it visible.
+
+A component can use `exportparts` to give a page access to selected parts of a nested element. The outer contract declares each exported name with a prefix from the inner element, for example `card-title` on `mu-card-grid`. An exported part keeps the guardrail flag of the inner part.
+
+A test scans the render source and compares each component's direct and exported part names with its contract in both directions. The [theme guide](../guides/theme.md#declared-parts) lists the names and the visibility rules for page styles.
+
 ## Effects
 
 - A script that reads the page text with `document.body.innerText` or `textContent` of the page sees no component content. A scraper must cross the roots, or use the accessibility tree.
