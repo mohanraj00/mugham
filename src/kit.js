@@ -72,6 +72,8 @@ export function onAction(root, handler) {
       const message = error instanceof Error ? error.message : typeof error === 'string' ? error : '';
       receipt = { ok: false, message: message.slice(0, 200) || FAILED };
     }
+    // A cancel or an earlier receipt ended the action during the wait. Then this result has no action.
+    if (typeof element.action?.state === 'string' && element.action.state !== 'pending') return;
     if (receipt && typeof receipt === 'object' && !Array.isArray(receipt) && !Object.hasOwn(receipt, 'id')) {
       receipt = { ...receipt, id };
     }
@@ -82,6 +84,18 @@ export function onAction(root, handler) {
   };
   root.addEventListener('mu-action', listen);
   return () => root.removeEventListener('mu-action', listen);
+}
+
+// Connects the action elements below root to an offline queue (docs/contracts/offline-queue.md). Each action goes
+// through the queue, online and offline. The queue gives the pending detail and the receipt to the element.
+// Returns a function that removes the listeners.
+export function queueActions(root, queue) {
+  const stopActions = onAction(root, (tool, args, id, request, element) => queue.perform(request, element));
+  const stopSteps = queue.listen(root);
+  return () => {
+    stopActions();
+    stopSteps();
+  };
 }
 
 export function validateFill(value) {

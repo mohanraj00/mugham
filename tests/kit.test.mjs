@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { ActionState } from '../src/actions/action.js';
-import { createKit, describe, fill, mount, onAction, toolSchema, validateFill } from '../src/kit.js';
+import { createKit, describe, fill, mount, onAction, queueActions, toolSchema, validateFill } from '../src/kit.js';
 import { CATALOG } from '../src/render/catalog.js';
 import { BRAND, register } from '../src/render/registry.js';
 import { schemaErrors } from '../src/render/validate.js';
@@ -320,4 +320,50 @@ test('schemas give resolved limits, enums and nested fill rules', () => {
   for (const item of invalid) assert.notDeepEqual(instanceErrors(item, schema), []);
   schema.$defs.card.properties.data.properties.title.maxLength = 1;
   assert.deepEqual(instanceErrors(value, toolSchema('card-grid')), []);
+});
+
+test('onAction gives no receipt for an action that a cancel ended during the wait', async (t) => {
+  const root = new EventTarget();
+  const source = new ActionState();
+  source.bind({ tool: 'tool.reserve' });
+  const request = source.start();
+  const { promise, resolve } = Promise.withResolvers();
+  const errors = t.mock.method(console, 'error', () => {});
+  onAction(root, () => promise);
+  const event = new CustomEvent('mu-action', { detail: request });
+  event.composedPath = () => [{ action: source, receipt: (value) => source.receipt(value) }, root];
+  root.dispatchEvent(event);
+  source.hold({ key: request.key, wait: 'queued', tries: 0 });
+  source.cancel();
+  resolve(null);
+  await promise;
+  await Promise.resolve();
+  assert.equal(source.state, 'default');
+  assert.equal(errors.mock.callCount(), 0);
+});
+
+test('queueActions sends each action through the queue and connects its listeners', async () => {
+  const root = new EventTarget();
+  const source = new ActionState();
+  source.bind({ tool: 'tool.reserve', arguments: { tool_id: 'T-01' } });
+  const element = { action: source, receipt: (value) => source.receipt(value) };
+  const calls = [];
+  const { promise, resolve } = Promise.withResolvers();
+  const queue = {
+    perform: (...args) => { calls.push(args); return promise; },
+    listen: (target) => { calls.push(['listen', target]); return () => calls.push(['stop']); },
+  };
+  const stop = queueActions(root, queue);
+  const request = source.start();
+  const event = new CustomEvent('mu-action', { detail: request });
+  event.composedPath = () => [element, root];
+  root.dispatchEvent(event);
+  assert.deepEqual(calls, [['listen', root], [request, element]]);
+  // The receipt of the queue has the key of the action and the id of a try that the queue made.
+  resolve({ id: 'a-try-of-the-queue', key: request.key, ok: true, reference: 'B-0001' });
+  await promise;
+  await Promise.resolve();
+  assert.deepEqual([source.state, source.reference], ['done', 'B-0001']);
+  stop();
+  assert.deepEqual(calls.at(-1), ['stop']);
 });

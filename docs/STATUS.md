@@ -1,6 +1,10 @@
 # Status
 
-2026-11-19. Release 0.4.0 is ready for the owner to tag. The v0.4 scope is complete. The kit has contract format 2, the tokens, the primitives, the catalog components, the message envelope and the thread for people and agents. An application can register its own contract and element. The kit has no workbench shell and no panels. [Decision 0001](decisions/0001-build-tools.md) gives the build tools and the dependency rule.
+2026-11-25. Release 0.4.0 is the newest release. The v0.5 scope is in work: the offline mode (#12) is on `main`, and its security review (#15) is next. The v0.4 scope is complete. The kit has contract format 2, the tokens, the primitives, the catalog components, the message envelope and the thread for people and agents. An application can register its own contract and element. The kit has no workbench shell and no panels. [Decision 0001](decisions/0001-build-tools.md) gives the build tools and the dependency rule.
+
+## On main for release 0.5.0
+
+- The offline mode (#12): a queue of pending actions with one key for each action, a service worker part for the page files, the exits of a pending action (retry and cancel) and `mu-action-queue`. [docs/contracts/offline-queue.md](contracts/offline-queue.md) gives the rules.
 
 ## In release 0.4.0
 
@@ -34,6 +38,6 @@ The GitHub milestones hold the issues of each release.
 
 ## Next
 
-1. The owner tags release 0.4.0 after this PR merges. A release needs the owner approval for the tag.
-2. Build the v0.5 scope: the offline mode with a queue of pending actions (#12), then the security review of the renderer, the action path and the offline queue (#15).
+1. Do the security review of the renderer, the action path and the offline queue (#15).
+2. Complete the other issues of the v0.5 milestone. A release needs the owner approval for the tag.
 3. Make the envelope and the catalog contract stable for v1.0 (#17).

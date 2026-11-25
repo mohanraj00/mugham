@@ -28,6 +28,10 @@ const DIFF_LOAN = fill('diff-part', { title: 'Loan', changes: [change('Shelf', '
   change('Branch', 'unchanged', 'North', 'North'), change('Note', 'added', undefined, 'Keep dry.'), change('Fine', 'removed', '0.50')] });
 const DIFF_RULES = fill('diff-part', { title: 'Rules', changes: [change('Line 1', 'unchanged', 'A loan lasts two weeks.', 'A loan lasts two weeks.')] });
 const DIFF = { title: 'Loan L-0001', before_label: 'Version 3', after_label: 'Version 4', parts: [DIFF_LOAN, DIFF_RULES] };
+// The actions of an offline queue (docs/contracts/offline-queue.md), with synthetic keys.
+function queued(key, label, state, more = {}) {
+  return fill('queued-action', { key, label, state, tries: state === 'queued' ? 0 : 1, queued: '2026-11-24T10:00:00.000Z', ...more });
+}
 const VALID = {
   card: LOAN,
   'action-button': { label: 'Renew' },
@@ -37,10 +41,11 @@ const VALID = {
     lines: [fill('form-line', { line: '1.1', field: field('member_name', 'Name', 'Robin Vale') })] })] },
   diff: DIFF,
   'source-status': { label: 'Tool library', state: 'ready', checked: '2026-11-15T09:30:00.000Z' },
+  'action-queue': { label: 'Pending actions', actions: [queued('K-1', 'Reserve Ladder', 'queued'), queued('K-2', 'Reserve Drill', 'stalled')] },
 };
 const TAGS = { card: 'mu-card', 'action-button': 'mu-action-button', 'editable-form': 'mu-editable-form', 'card-grid': 'mu-card-grid',
   'form-card': 'mu-form-card', diff: 'mu-diff',
-  'source-status': 'mu-source-status' };
+  'source-status': 'mu-source-status', 'action-queue': 'mu-action-queue' };
 
 function mount(name, data) {
   const node = document.createElement(TAGS[name]);
@@ -133,6 +138,7 @@ const MARKED = {
   diff: { title: MARKUP, before_label: MARKUP.slice(0, 40), after_label: MARKUP.slice(0, 40), parts: [fill('diff-part', { title: MARKUP.slice(0, 80),
     changes: [change(MARKUP, 'changed', MARKUP, `${MARKUP}!`), change(MARKUP, 'added', undefined, MARKUP), change(MARKUP, 'unchanged', MARKUP, MARKUP)] })] },
   'source-status': { label: MARKUP.slice(0, 80), state: 'error', checked: MARKUP.slice(0, 40), reason: MARKUP.slice(0, 200) },
+  'action-queue': { label: MARKUP.slice(0, 80), actions: [queued(MARKUP, MARKUP, 'rejected', { message: MARKUP, queued: MARKUP.slice(0, 40) })] },
 };
 for (const [name, data] of Object.entries(MARKED)) {
   const node = mount(name, data);
@@ -541,6 +547,134 @@ button.fill = outer('action-button', { label: 'Renew', style: 'x' });
 const before = events.length;
 button.send();
 check('action-button: a refused button sends no request', button.dataset.state === 'refused' && events.length === before);
+
+// The exits of a pending action (docs/contracts/offline-queue.md). An action has one key for all its tries. A pending
+// action with no receipt offers a retry and a cancel, and it never shows done without a receipt.
+{
+  const node = mount('action-button', { label: 'Reserve' });
+  node.action = { tool: 'tool.reserve', label: 'Reserve', arguments: { tool_id: 'T-01' } };
+  const tries = [];
+  const cancels = [];
+  let prevent = false;
+  node.addEventListener('mu-action', (event) => tries.push(event.detail));
+  node.addEventListener('mu-action-cancel', (event) => { cancels.push(event); if (prevent) event.preventDefault(); });
+  const press = node.shadowRoot.querySelector('[part="button"]');
+  const words = () => node.shadowRoot.querySelector('[role="status"]').textContent;
+  const exits = () => [...node.shadowRoot.querySelectorAll('[part="exit"] button')];
+  const names = () => exits().map((item) => item.textContent).join(',');
+  press.click();
+  const { key } = tries[0];
+  check('exit: a request has a key and an id, and a try in flight has no exit', typeof key === 'string' && key.length > 0 && key !== tries[0].id
+    && node.dataset.state === 'pending' && node.dataset.wait === 'sent' && words() === 'Pending' && exits().length === 0, JSON.stringify(tries[0]));
+  check('exit: a detail with a different key does nothing', !node.hold({ key: 'other', wait: 'queued' }) && !node.hold({ key, wait: 'done' })
+    && node.dataset.wait === 'sent');
+  check('exit: a queued action is pending with a cancel, never done', node.hold({ key, wait: 'queued', tries: 0 }) && node.dataset.state === 'pending'
+    && node.dataset.wait === 'queued' && words() === 'Pending: Waiting for a connection.' && names() === 'Cancel'
+    && press.getAttribute('aria-busy') === 'true' && press.getAttribute('aria-disabled') === 'true', `${words()} ${names()}`);
+  press.click();
+  check('exit: a queued action accepts no second press', tries.length === 1);
+  const group = node.shadowRoot.querySelector('[part="exit"]');
+  check('exit: a stalled action is pending with a retry and a cancel', node.hold({ key, wait: 'stalled', tries: 1 }) && node.dataset.state === 'pending'
+    && node.dataset.wait === 'stalled' && words() === 'Pending: No receipt came back.' && names() === 'Retry,Cancel', `${words()} ${names()}`);
+  const exit = node.shadowRoot.querySelector('[part="exit"]');
+  check('exit: the group and its buttons have names', exit !== group && exit.getAttribute('role') === 'group' && exit.getAttribute('aria-label') === 'Pending: Reserve'
+    && exits().map((item) => item.getAttribute('aria-label')).join(',') === 'Retry Reserve,Cancel Reserve', exit.getAttribute('aria-label'));
+  check('exit: the same detail again keeps the same nodes', node.hold({ key, wait: 'stalled', tries: 1 }) && node.shadowRoot.querySelector('[part="exit"]') === exit);
+  exits()[0].focus();
+  exits()[0].click();
+  check('exit: a retry sends a new try with the same key and a new id', tries.length === 2 && tries[1].key === key && tries[1].id !== tries[0].id
+    && tries[1].tool === 'tool.reserve' && tries[1].arguments.tool_id === 'T-01' && node.dataset.wait === 'sent' && words() === 'Pending' && exits().length === 0,
+  JSON.stringify(tries));
+  check('exit: the focus goes back to the action control when the exit closes', node.shadowRoot.activeElement === press);
+  node.hold({ key, wait: 'stalled', tries: 2 });
+  prevent = true;
+  exits()[1].click();
+  check('exit: a prevented cancel event keeps the action pending', cancels.length === 1 && cancels[0].cancelable && cancels[0].detail.key === key
+    && node.dataset.state === 'pending' && names() === 'Retry,Cancel', node.dataset.state);
+  prevent = false;
+  exits()[1].click();
+  check('exit: a cancel after a try goes back to the start state and says that the result is not known', cancels.length === 2 && node.dataset.state === 'default'
+    && node.dataset.wait === undefined && exits().length === 0 && press.getAttribute('aria-disabled') === 'false'
+    && words() === 'Canceled. No receipt came back, so it is possible that the service did the action.', words());
+  check('exit: a receipt after the cancel does nothing', !node.receipt({ id: tries[1].id, ok: true }) && !node.receipt({ key, ok: true }) && node.dataset.state === 'default');
+  press.click();
+  const second = tries[2].key;
+  check('exit: a new action has a new key', tries.length === 3 && second !== key);
+  node.hold({ key: second, wait: 'queued', tries: 0 });
+  check('exit: the owner of the request cancels with the key', !node.cancel(key) && node.cancel(second) && node.dataset.state === 'default'
+    && words() === 'Canceled. The request did not leave this device.', words());
+  press.click();
+  node.hold({ key: tries[3].key, wait: 'stalled', tries: 1 });
+  check('exit: a receipt of the first try is valid after a stall', node.receipt({ id: tries[3].id, ok: true }) && node.dataset.state === 'done' && words() === 'Done'
+    && exits().length === 0 && node.dataset.wait === undefined, words());
+  const keyed = mount('action-button', { label: 'Reserve' });
+  keyed.action = { tool: 'tool.reserve', label: 'Reserve' };
+  let request = null;
+  keyed.addEventListener('mu-action', (event) => { request = event.detail; });
+  keyed.shadowRoot.querySelector('[part="button"]').click();
+  check('exit: a receipt with the key of the action and the id of a try of the queue is valid', !keyed.receipt({ id: 'try-of-the-queue', ok: true })
+    && !keyed.receipt({ id: request.id, key: 'other', ok: true }) && keyed.receipt({ id: 'try-of-the-queue', key: request.key, ok: false, message: 'The tool is reserved.' })
+    && keyed.dataset.state === 'error' && keyed.shadowRoot.querySelector('[role="status"]').textContent === 'Not done: The tool is reserved.');
+  // With no queue, the element finds a try with no receipt by itself, after its patience time.
+  const slow = mount('action-button', { label: 'Reserve' });
+  slow.action = { tool: 'tool.reserve', label: 'Reserve' };
+  let slowRequest = null;
+  slow.addEventListener('mu-action', (event) => { slowRequest = event.detail; });
+  let refusedPatience = false;
+  try { slow.patience = 0; } catch { refusedPatience = true; }
+  slow.patience = 30;
+  slow.shadowRoot.querySelector('[part="button"]').click();
+  const early = slow.dataset.wait;
+  await new Promise((done) => setTimeout(done, 150));
+  check('exit: with no receipt in the patience time, the action is stalled and stays pending', refusedPatience && early === 'sent' && slow.dataset.state === 'pending'
+    && slow.dataset.wait === 'stalled' && [...slow.shadowRoot.querySelectorAll('[part="exit"] button')].map((item) => item.textContent).join(',') === 'Retry,Cancel'
+    && slow.shadowRoot.querySelector('[role="status"]').textContent === 'Pending: No receipt came back.', `${slow.dataset.state} ${slow.dataset.wait}`);
+  check('exit: a late receipt of a stalled action is still valid', slow.receipt({ id: slowRequest.id, ok: true, reference: 'R-1' }) && slow.dataset.state === 'done');
+  // The generic keyboard check starts with no focus in the page.
+  press.blur();
+}
+
+// The queue component (catalog/action-queue.json). Each action shows its state as text, and no state is done.
+{
+  const steps = [];
+  stage.addEventListener('mu-queue-step', (event) => steps.push(`${event.detail.step}:${event.detail.key}`));
+  const node = mount('action-queue', { label: 'Pending actions', actions: [queued('K-1', 'Reserve Ladder', 'queued'), queued('K-2', 'Reserve Drill', 'sent'),
+    queued('K-3', 'Reserve Garden fork', 'stalled'), queued('K-4', 'Reserve Hand saw', 'queued', { message: 'Waiting for an earlier action.' })] });
+  const rows = () => [...node.shadowRoot.querySelectorAll('[part="action"]')];
+  const row = (item) => `${item.querySelector('[part="name"]').textContent}|${item.querySelector('[part="state"]').textContent}|${[...item.querySelectorAll('button')].map((button) => button.textContent).join(',')}`;
+  check('action-queue: each waiting action shows as pending with its exits', node.dataset.state === 'pending' && rows().map(row).join(';')
+    === 'Reserve Ladder|Pending: Waiting for a connection.|Cancel;Reserve Drill|Pending|;Reserve Garden fork|Pending: No receipt came back.|Retry,Cancel;Reserve Hand saw|Pending: Waiting for an earlier action.|Cancel',
+  rows().map(row).join(';'));
+  const box = node.shadowRoot.querySelector('[part="queue"]');
+  check('action-queue: a named group with a summary and named buttons', box.getAttribute('role') === 'group' && box.getAttribute('aria-label') === 'Pending actions'
+    && node.shadowRoot.querySelector('[part="summary"]').textContent === '4 pending.' && node.shadowRoot.querySelector('[part="summary"]').getAttribute('role') === 'status'
+    && [...node.shadowRoot.querySelectorAll('button')].map((button) => button.getAttribute('aria-label')).join(',')
+      === 'Cancel Reserve Ladder,Retry Reserve Garden fork,Cancel Reserve Garden fork,Cancel Reserve Hand saw', node.shadowRoot.querySelector('[part="summary"]').textContent);
+  check('action-queue: no state shows as done', !deepText(node).includes('Done'), deepText(node));
+  const retry = node.shadowRoot.querySelector('[part="retry"]');
+  retry.focus();
+  retry.click();
+  node.shadowRoot.querySelector('[part="cancel"]').click();
+  check('action-queue: a button sends its step with the key of its action', steps.join(',') === 'retry:K-3,cancel:K-1', steps.join(','));
+  node.fill = fill('action-queue', { label: 'Pending actions', actions: [queued('K-3', 'Reserve Garden fork', 'stalled')] });
+  check('action-queue: a new fill keeps the focus on the same step', node.shadowRoot.activeElement === node.shadowRoot.querySelector('[part="retry"]'));
+  node.fill = fill('action-queue', { label: 'Pending actions', actions: [queued('K-3', 'Reserve Garden fork', 'rejected', { message: 'The tool T-03 is already reserved.' })] });
+  check('action-queue: a rejected action shows the rejection and a dismiss', node.dataset.state === 'error' && rows().map(row).join(';')
+    === 'Reserve Garden fork|Not done: The tool T-03 is already reserved.|Dismiss' && node.shadowRoot.querySelector('[part="summary"]').textContent === '1 not done.'
+    && node.shadowRoot.activeElement === node.shadowRoot.querySelector('[part="summary"]'), rows().map(row).join(';'));
+  node.shadowRoot.querySelector('[part="dismiss"]').click();
+  check('action-queue: a dismiss sends its step', steps.at(-1) === 'dismiss:K-3', steps.join(','));
+  node.fill = fill('action-queue', { label: 'Pending actions', actions: [] });
+  check('action-queue: an empty queue says so', node.dataset.state === 'empty' && node.shadowRoot.querySelector('[part="summary"]').textContent === 'No pending actions.'
+    && !node.shadowRoot.querySelector('[part="actions"]'), node.shadowRoot.textContent);
+  node.fill = fill('action-queue', { label: 'Pending actions', actions: [queued('K-1', 'Reserve Ladder', 'queued'), queued('K-1', 'Reserve Drill', 'queued')] });
+  check('action-queue: two actions with the same key are refused', node.dataset.state === 'refused'
+    && node.shadowRoot.textContent.includes('data.actions: two actions have the same key'), node.shadowRoot.textContent);
+  node.fill = fill('action-queue', { label: 'Pending actions', actions: [queued('K-1', 'Reserve Ladder', 'done')] });
+  check('action-queue: an action with the state done is refused', node.dataset.state === 'refused', node.shadowRoot.textContent);
+  const sheets = mount('action-queue', VALID['action-queue']).shadowRoot.adoptedStyleSheets;
+  check('action-queue: the styles have a forced colors rule', sheets.some((item) => [...item.cssRules].some((rule) => rule.cssText.includes('forced-colors'))));
+}
 
 // The application gives the label of the action. A fill cannot show a different meaning for the bound tool.
 const misnamed = mount('action-button', { label: 'View details' });
@@ -1332,6 +1466,28 @@ if (mode === 'reduced-motion') {
 }
 // The form card: the value buttons and the section line in each mode. These checks move no focus, because the
 // keyboard steps of the runner start from the last focus.
+// A cancel of a pending form card keeps the changes, so a person can send them again with a new key.
+{
+  const { node, sent } = formCard();
+  lineOf(node, 'children').value.click();
+  typeIn(lineOf(node, 'children').root.querySelector('input'), '2');
+  lineOf(node, 'children').save.click();
+  cardSubmit(node);
+  const first = sent[0];
+  node.hold({ key: first.key, wait: 'stalled', tries: 1 });
+  check('form card: a stalled request offers a retry and a cancel', node.dataset.state === 'pending' && node.dataset.wait === 'stalled'
+    && [...node.shadowRoot.querySelectorAll('[part="exit"] button')].map((item) => item.getAttribute('aria-label')).join(',') === 'Retry Send changes,Cancel Send changes',
+  node.shadowRoot.querySelector('[part="exit"]')?.textContent);
+  node.shadowRoot.querySelector('[part="exit"] [part="cancel"]').click();
+  check('form card: a cancel keeps the change and opens the card again', node.dataset.state === 'default' && lineOf(node, 'children').value.textContent === '2'
+    && Boolean(lineOf(node, 'children').changed) && lineOf(node, 'children').value.getAttribute('aria-disabled') === 'false', lineOf(node, 'children').row.textContent);
+  cardSubmit(node);
+  check('form card: the next request has a new key and the same values', sent.length === 2 && sent[1].key !== first.key && sent[1].arguments.children === 2,
+    JSON.stringify(sent[1]));
+  // Save moved the focus to the value. Move the start point of Tab to the top of the page again.
+  top.focus();
+  top.blur();
+}
 const modeCard = formCard();
 const modeValue = getComputedStyle(lineOf(modeCard.node, 'children').value);
 const modeSection = getComputedStyle(modeCard.node.shadowRoot.querySelector('[part="section"]'));

@@ -1,6 +1,8 @@
 // The action path of the kit. An action is a tool name and its arguments. The application binds them in code.
 // A fill never selects the tool. If the binding has a confirm step, the action starts only after a person confirms.
-// The state is pending until a receipt with the same id comes back.
+// The state is pending until a receipt of the action comes back. An action has one key for all its tries, and each
+// try has a new request id. A pending action with no receipt has an exit: a retry or a cancel. It never shows done.
+// docs/contracts/offline-queue.md gives the rules.
 const TOOL = /^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)*$/;
 const MAX_MESSAGE = 200;
 const FIELD_NAME = /^[a-z][a-z0-9]*(_[a-z0-9]+)*$/;
@@ -19,6 +21,10 @@ const MAX_REFERENCE = 80;
 // The edit types of a typed field (catalog/README.md, "Typed edits"). An actor id has 128 characters at most.
 const EDIT_TYPES = new Set(['judgment', 'correction', 'override']);
 const MAX_ACTOR_ID = 128;
+// The detail of a pending action: a try is in flight, the action waits for a connection, or a try got no receipt.
+const WAITS = Object.freeze({ sent: '', queued: 'Waiting for a connection.', stalled: 'No receipt came back.' });
+const CANCELED = 'Canceled. The request did not leave this device.';
+const CANCELED_UNKNOWN = 'Canceled. No receipt came back, so it is possible that the service did the action.';
 const ISO_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
 
 // Returns true if the text has more than max characters. The loop stops at max + 1, so a very long text
@@ -126,6 +132,11 @@ export class ActionState {
   #state = 'disabled';
   #message = '';
   #reference = '';
+  // The detail of the pending state, the ids of the tries of the pending action and the number of tries that
+  // left the device.
+  #wait = '';
+  #ids = new Set();
+  #tries = 0;
 
   get state() {
     return this.#state;
@@ -133,6 +144,16 @@ export class ActionState {
 
   get message() {
     return this.#message;
+  }
+
+  // The detail of a pending action: sent, queued or stalled. If the action is not pending, the value is an empty text.
+  get wait() {
+    return this.#state === 'pending' ? this.#wait : '';
+  }
+
+  // The key of the pending action. It stays the same for each try. If the action is not pending, the value is an empty text.
+  get key() {
+    return this.#state === 'pending' && this.#request ? this.#request.key : '';
   }
 
   // The reference of the last receipt, for example a record id. The element shows it only as text.
@@ -188,7 +209,7 @@ export class ActionState {
   bind(binding) {
     if (binding === null) {
       this.#binding = null;
-      this.#request = null;
+      this.#clear();
       this.#state = 'disabled';
       this.#message = '';
       this.#reference = '';
@@ -201,14 +222,21 @@ export class ActionState {
       typed: Object.freeze([...(binding.typed ?? [])]),
       editor: binding.editor ? Object.freeze({ type: binding.editor.type, id: binding.editor.id }) : null,
       confirm: binding.confirm ? Object.freeze({ message: binding.confirm.message, label: binding.confirm.label }) : null });
-    this.#request = null;
+    this.#clear();
     this.#state = 'default';
     this.#message = '';
     this.#reference = '';
     return [];
   }
 
-  // Returns a request, or null if the action cannot start now. The extra values come from a fill,
+  #clear() {
+    this.#request = null;
+    this.#wait = '';
+    this.#ids.clear();
+    this.#tries = 0;
+  }
+
+  // Returns a request, or null if the action cannot start now. The request has a new key and a new id. The extra values come from a fill,
   // so they cannot change an argument that the application binds: the bound arguments come last.
   // Each extra value needs a name that the binding gives as editable. If the binding has a confirm step,
   // the action starts only when confirmed is true, after a person confirms. If the binding has typed names,
@@ -221,12 +249,55 @@ export class ActionState {
     if (!typed && edits !== undefined && !(Array.isArray(edits) && edits.length === 0)) return null;
     const checked = typed ? editsOf(edits, this.#binding, extra) : null;
     if (typed && !checked) return null;
-    this.#request = Object.freeze({ id: crypto.randomUUID(), tool: this.#binding.tool,
+    this.#clear();
+    this.#request = Object.freeze({ id: crypto.randomUUID(), key: crypto.randomUUID(), tool: this.#binding.tool,
       arguments: Object.freeze({ ...extra, ...this.#binding.arguments }), ...(typed ? { edits: checked } : {}) });
+    this.#ids.add(this.#request.id);
     this.#state = 'pending';
+    this.#wait = 'sent';
+    this.#tries = 1;
     this.#message = '';
     this.#reference = '';
     return this.#request;
+  }
+
+  // Sets the detail of the pending action: { key, wait, tries, message }. The key must be the key of the pending
+  // action, and wait is sent, queued or stalled. tries is the number of tries that left the device. Returns true
+  // if the detail changed the state. The state stays pending.
+  hold(update) {
+    if (this.#state !== 'pending' || update === null || typeof update !== 'object') return false;
+    const { key, wait, tries, message } = update;
+    if (key !== this.#request.key || !Object.hasOwn(WAITS, wait)) return false;
+    if (tries !== undefined && !(Number.isInteger(tries) && tries >= 0)) return false;
+    if (message !== undefined && typeof message !== 'string') return false;
+    this.#wait = wait;
+    if (tries !== undefined) this.#tries = tries;
+    this.#message = message ? first(message, MAX_MESSAGE) : WAITS[wait];
+    return true;
+  }
+
+  // Returns the request of a new try of a stalled action, or null. The key stays the same, and the id is new.
+  retry() {
+    if (this.#state !== 'pending' || this.#wait !== 'stalled') return null;
+    this.#request = Object.freeze({ ...this.#request, id: crypto.randomUUID() });
+    this.#ids.add(this.#request.id);
+    this.#wait = 'sent';
+    this.#tries += 1;
+    this.#message = '';
+    return this.#request;
+  }
+
+  // Cancels a pending action that waits for a connection or that got no receipt. An action with a try in flight
+  // cannot cancel. The action can start again. After a try, the kit does not know if the service did the action,
+  // and the message says so.
+  cancel() {
+    if (this.#state !== 'pending' || (this.#wait !== 'queued' && this.#wait !== 'stalled')) return false;
+    const sent = this.#tries > 0;
+    this.#clear();
+    this.#state = 'default';
+    this.#message = sent ? CANCELED_UNKNOWN : CANCELED;
+    this.#reference = '';
+    return true;
   }
 
   // After done or error, the action can start again. The message says why. A pending action cannot reopen,
@@ -239,10 +310,12 @@ export class ActionState {
     return true;
   }
 
-  // Returns true if the receipt belongs to the pending request. Only a valid receipt changes the state.
+  // Returns true if the receipt belongs to the pending action. Only a valid receipt changes the state. A receipt
+  // with a key must have the key of the action. A receipt with no key must have the id of one of its tries.
   receipt(value) {
     if (!this.#request || this.#state !== 'pending' || value === null || typeof value !== 'object') return false;
-    if (value.id !== this.#request.id || typeof value.ok !== 'boolean') return false;
+    const mine = value.key === undefined ? this.#ids.has(value.id) : value.key === this.#request.key;
+    if (!mine || typeof value.ok !== 'boolean') return false;
     const message = value.message ?? '';
     if (typeof message !== 'string' || longer(message, MAX_MESSAGE)) return false;
     const reference = value.reference ?? '';
@@ -250,7 +323,7 @@ export class ActionState {
     this.#state = value.ok ? 'done' : 'error';
     this.#message = message;
     this.#reference = reference;
-    this.#request = null;
+    this.#clear();
     return true;
   }
 }

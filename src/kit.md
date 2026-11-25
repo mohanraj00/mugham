@@ -36,10 +36,19 @@ const renew = mount('action-button', { label: 'Renew' }, {
 
 Listen for `mu-action` on an element or a root that contains it. The first helper listener that receives an action event calls its handler. The handler gets `(tool, args, id, request, element)`. The full request includes any typed edits. The handler can return a receipt or a promise that gives a receipt. Give `ok` as a boolean and add `message` or `reference` if necessary. A message can have up to 200 characters. The helper adds the request id if the receipt has no `id`.
 
-If the handler throws, the helper sends a receipt with `ok` set to `false`. If the element refuses a receipt, the helper sends a failure receipt with the request id and the message `The request failed.` If the element also refuses the failure receipt, the helper reports the refusal in the console. A button shows `Done` only after it accepts a receipt with `ok` set to `true`. Call the returned function to remove the listener.
+If the handler throws, the helper sends a receipt with `ok` set to `false`. If the element refuses a receipt, the helper sends a failure receipt with the request id and the message `The request failed.` If the element also refuses the failure receipt, the helper reports the refusal in the console. If a cancel or an earlier receipt ended the action during the wait, the helper sends no receipt. A button shows `Done` only after it accepts a receipt with `ok` set to `true`. Call the returned function to remove the listener.
 
 ```js
 const stop = onAction(renew, (tool, args, id, request) => sendToApi(request));
+```
+
+## `queueActions(root, queue)`
+
+Connect the action elements below `root` to an offline queue of `src/offline/queue.js`. Each action goes through the queue, online and offline. The helper is `onAction` with `queue.perform`, and `queue.listen(root)` for the cancel events and for the steps of `mu-action-queue`. The queue gives the pending detail and the receipt to each element. Call the returned function to remove the listeners. [Offline queue](../docs/contracts/offline-queue.md) gives the rules.
+
+```js
+const queue = await openQueue({ send: (request, { signal }) => sendToApi(request, signal) });
+const stop = queueActions(document.body, queue);
 ```
 
 ## `describe(name)`

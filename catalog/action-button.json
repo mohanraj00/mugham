@@ -1,6 +1,6 @@
 {
   "name": "action-button",
-  "description": "A button for one action. The application binds the tool. The button can ask a person to confirm. It shows done only after the receipt comes back.",
+  "description": "A button for one action. The application binds the tool. The button can ask a person to confirm. It shows done only after the receipt comes back. A pending action with no receipt offers a retry and a cancel.",
   "ai_content": false,
   "data": {
     "label": {"type": "text", "required": true, "min_length": 1, "size": "short"},

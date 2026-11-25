@@ -18,6 +18,7 @@ import { budgetExampleChecks, dataGridKeyboardChecks } from '../tests/browser/da
 import { reviewQueueChecks } from '../tests/browser/review-queue.js';
 import { snapshotChecks } from '../tests/browser/snapshots.js';
 import { UPLOAD_FILES, uploadExampleChecks, uploadKeyboardChecks } from '../tests/browser/upload.js';
+import { plannedErrors, queueExampleChecks } from '../tests/browser/queue.js';
 
 export const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
 // The upload checks give synthetic files to a file input. The files are in a temporary folder, not in the checkout.
@@ -530,6 +531,26 @@ async function uploadExample(session, sessionId, report) {
   }
 }
 
+// The offline queue example against its fixture API, tools/queue_server.py (issue 12): an action made offline shows
+// as pending, and it goes through after the device reconnects. The flow makes network errors on purpose. Each
+// other page error stays a failure.
+export async function queueExample(session, sessionId, report, problems) {
+  const page = 'examples/cards/queue.html';
+  const { server, url } = await pythonServer('queue_server.py', ['--port', '0']);
+  const start = problems.length;
+  try {
+    const steps = await queueExampleChecks(session, sessionId, url.slice(0, url.indexOf('/examples/')), { evaluate, open, sleep });
+    report.accessibility.push(...await axErrors(session, sessionId, [['heading', 'Tool library'], ['status', 'Tool library'], ['group', 'Pending actions'],
+      ['list', 'Tools'], ['article', 'Ladder'], ['button', 'Reserve Ladder'], ['button', 'Go offline']], page));
+    steps.push(...await pageRules(session, sessionId, page));
+    const other = plannedErrors(problems, start);
+    steps.push({ page, step: 'the flow makes only the planned network errors', ok: other.length === 0, detail: JSON.stringify(other) });
+    return steps;
+  } finally {
+    server.kill();
+  }
+}
+
 // The example apps in each theme and at the phone width: the page loads with no error, shows its kit elements with no
 // refusal, has the roles and names, has no horizontal scroll, and its body text has a contrast of 4.5 or more.
 async function appPages(session, sessionId, report) {
@@ -827,6 +848,7 @@ async function main() {
     report.examples.push(...await reviewQueueChecks(session, sessionId, base, { evaluate, open, sleep }));
     report.examples.push(...await snapshotChecks(session, sessionId, base, { evaluate, open, sleep }));
     report.examples.push(...await uploadExample(session, sessionId, report));
+    report.examples.push(...await queueExample(session, sessionId, report, problems));
     report.examples.push(...await appPages(session, sessionId, report));
     report.examples.push(...await coverSteps(session, sessionId));
     for (const item of report.accessibility) if (!item.ok) report.errors.push(`accessibility: ${item.where}: no ${item.role} named ${item.name}`);

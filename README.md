@@ -16,7 +16,7 @@ Start with the [quickstart](#quickstart) or the [guides](docs/guides/README.md).
 
 Agents and LLMs: read [CONSTITUTION.md](CONSTITUTION.md) and [AGENTS.md](AGENTS.md) first.
 
-Status: release `v0.4.0` is the newest. It has the contract format 2, the design tokens, the primitives, the catalog components, the message envelope and the thread for people and agents. It also has the evidence components, typed form edits, the chat controls, the data grid, rich text, the upload control, the offline data source interface two examples on a fixture API, the helper functions, the short contract form, the default page style and one entry point for the examples. The offline mode is planned for v0.5. A reader of a local bundle, a cache or a database belongs to the application. The plan is in [docs/STATUS.md](docs/STATUS.md) and in the GitHub milestones.
+Status: release `v0.4.0` is the newest. It has the contract format 2, the design tokens, the primitives, the catalog components, the message envelope and the thread for people and agents. It also has the evidence components, typed form edits, the chat controls, the data grid, rich text, the upload control, the offline data source interface, two examples on a fixture API, the helper functions, the short contract form, the default page style and one entry point for the examples. The offline mode with a queue of pending actions is on `main` for v0.5: [docs/contracts/offline-queue.md](docs/contracts/offline-queue.md). A reader of a local bundle, a cache or a database belongs to the application. The plan is in [docs/STATUS.md](docs/STATUS.md) and in the GitHub milestones.
 
 ## Docs
 
@@ -122,6 +122,7 @@ Each component has a contract file in [catalog/](catalog/README.md). The contrac
 | `mu-data-grid` | An editable grid with column headers, row headers and typed cells. Each saved change goes to the application as one action, and the cell shows a marker until the receipt comes back. | [data-grid.json](catalog/data-grid.json) |
 | `mu-upload` | A control that takes files with a file picker or a drop. Page code binds the tool, the accepted types, the size limit and the file count. Done shows only after the receipt. | [upload.json](catalog/upload.json) |
 | `mu-source-status` | The state of an offline data source as text: ready, stale, empty or error, with the time of the last confirmed read. The application fills it, not a model. | [source-status.json](catalog/source-status.json) |
+| `mu-action-queue` | The actions of the offline queue, each with its state as text and its exits: retry, cancel or dismiss. A waiting action shows as pending, never as done. The application fills it, not a model. | [action-queue.json](catalog/action-queue.json) |
 
 The first five components are primitives. The other components use them.
 
@@ -217,6 +218,14 @@ python3 -B tools/approval_server.py
 ```
 
    A person approves or rejects synthetic decisions as cards with their evidence. The API decides, and each button shows `Done` only after the receipt.
+
+9. For the offline queue example, start its fixture API. It prints the URL of the example. The default port is 8769.
+
+```sh
+python3 -B tools/queue_server.py
+```
+
+   A person reserves a synthetic tool. Go offline with the button of the page, reserve a tool, then go online. The action shows `Pending` while it waits in the queue, and `Done` only after the receipt. The service worker of the page keeps its files, so the page loads offline.
 
 To use the kit in your own page, serve `src/` and `catalog/` from one origin, load `src/tokens/tokens.css`, then import `define` from `src/components/index.js` and call it. [src/README.md](src/README.md) gives the steps. For a page style with no CSS of your own, also load `src/styles/page.css`. [Theme the kit](docs/guides/theme.md#the-default-page-style) gives its rules.
 

@@ -293,3 +293,80 @@ test('the typed names and the editor come from the binding', () => {
   assert.deepEqual([...action.typed], []);
   assert.equal(action.editor, null);
 });
+
+// The expected results of the tests below come from "The request" and "The action elements" in
+// docs/contracts/offline-queue.md.
+const pendingAction = () => {
+  const action = new ActionState();
+  action.bind({ tool: 'tool.reserve', arguments: { tool_id: 'T-01' } });
+  return { action, request: action.start() };
+};
+
+test('an action has one key for all its tries, and each try has a new id', () => {
+  const { action, request } = pendingAction();
+  assert.ok(typeof request.key === 'string' && request.key.length > 0 && request.key !== request.id);
+  assert.deepEqual([action.state, action.wait, action.key], ['pending', 'sent', request.key]);
+  // A try in flight has no retry and no cancel.
+  assert.equal(action.retry(), null);
+  assert.equal(action.cancel(), false);
+  assert.equal(action.hold({ key: request.key, wait: 'stalled' }), true);
+  assert.deepEqual([action.state, action.wait, action.message], ['pending', 'stalled', 'No receipt came back.']);
+  const again = action.retry();
+  assert.deepEqual([again.key, again.tool, again.arguments], [request.key, request.tool, request.arguments]);
+  assert.notEqual(again.id, request.id);
+  assert.ok(Object.isFrozen(again));
+  assert.deepEqual([action.state, action.wait, action.message], ['pending', 'sent', '']);
+  // A new action after the receipt has a new key.
+  assert.equal(action.receipt({ id: again.id, ok: false }), true);
+  assert.deepEqual([action.wait, action.key], ['', '']);
+  assert.notEqual(action.start().key, request.key);
+});
+
+test('a detail of the pending state needs the key of the action and never changes the state to done', () => {
+  const { action, request } = pendingAction();
+  for (const update of [null, 'queued', { wait: 'queued' }, { key: 'other', wait: 'queued' }, { key: request.key, wait: 'done' },
+    { key: request.key, wait: 'queued', tries: -1 }, { key: request.key, wait: 'queued', message: 7 }]) {
+    assert.equal(action.hold(update), false, JSON.stringify(update));
+  }
+  assert.deepEqual([action.state, action.wait, action.message], ['pending', 'sent', '']);
+  assert.equal(action.hold({ key: request.key, wait: 'queued', tries: 0 }), true);
+  assert.deepEqual([action.state, action.wait, action.message], ['pending', 'queued', 'Waiting for a connection.']);
+  assert.equal(action.hold({ key: request.key, wait: 'queued', message: 'Waiting for an earlier action.' }), true);
+  assert.equal(action.message, 'Waiting for an earlier action.');
+  assert.equal(action.hold({ key: request.key, wait: 'sent', tries: 1 }), true);
+  assert.deepEqual([action.state, action.wait, action.message], ['pending', 'sent', '']);
+  const idle = new ActionState();
+  assert.equal(idle.hold({ key: request.key, wait: 'queued' }), false);
+});
+
+test('a cancel of a waiting action goes back to the start state and says if a try left the device', () => {
+  const unsent = pendingAction();
+  unsent.action.hold({ key: unsent.request.key, wait: 'queued', tries: 0 });
+  assert.equal(unsent.action.cancel(), true);
+  assert.deepEqual([unsent.action.state, unsent.action.message], ['default', 'Canceled. The request did not leave this device.']);
+  const sent = pendingAction();
+  sent.action.hold({ key: sent.request.key, wait: 'stalled' });
+  assert.equal(sent.action.cancel(), true);
+  assert.deepEqual([sent.action.state, sent.action.message],
+    ['default', 'Canceled. No receipt came back, so it is possible that the service did the action.']);
+  // A receipt after the cancel does nothing. The action never shows done without a pending request.
+  assert.equal(sent.action.receipt({ id: sent.request.id, ok: true }), false);
+  assert.equal(sent.action.receipt({ key: sent.request.key, ok: true }), false);
+  assert.equal(sent.action.state, 'default');
+  assert.equal(sent.action.cancel(), false);
+});
+
+test('a receipt is valid with the key of the action, or with the id of one of its tries', () => {
+  const first = pendingAction();
+  first.action.hold({ key: first.request.key, wait: 'stalled' });
+  const second = first.action.retry();
+  // The receipt of the first try comes back after the retry.
+  assert.equal(first.action.receipt({ id: 'other', ok: true }), false);
+  assert.equal(first.action.receipt({ id: first.request.id, ok: true, reference: 'B-0001' }), true);
+  assert.deepEqual([first.action.state, first.action.reference], ['done', 'B-0001']);
+  assert.equal(first.action.receipt({ id: second.id, ok: false }), false);
+  const keyed = pendingAction();
+  assert.equal(keyed.action.receipt({ id: keyed.request.id, key: 'other', ok: true }), false);
+  assert.equal(keyed.action.receipt({ id: 'a-try-of-the-queue', key: keyed.request.key, ok: false, message: 'The tool is reserved.' }), true);
+  assert.deepEqual([keyed.action.state, keyed.action.message], ['error', 'The tool is reserved.']);
+});

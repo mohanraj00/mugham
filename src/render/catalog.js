@@ -2,6 +2,7 @@
 // A contract file has the short form. resolveContract gives its full form (catalog/schema/README.md).
 import { resolveContract } from './resolve.js';
 import actionButton from '../../catalog/action-button.json' with { type: 'json' };
+import actionQueue from '../../catalog/action-queue.json' with { type: 'json' };
 import button from '../../catalog/button.json' with { type: 'json' };
 import card from '../../catalog/card.json' with { type: 'json' };
 import cardGrid from '../../catalog/card-grid.json' with { type: 'json' };
@@ -46,9 +47,10 @@ import numberCell from '../../catalog/number-cell.json' with { type: 'json' };
 import dateCell from '../../catalog/date-cell.json' with { type: 'json' };
 import choiceCell from '../../catalog/choice-cell.json' with { type: 'json' };
 import upload from '../../catalog/upload.json' with { type: 'json' };
+import queuedAction from '../../catalog/queued-action.json' with { type: 'json' };
 
 const FILES = {
-  'action-button': actionButton, button, card, 'card-grid': cardGrid, 'choice-field': choiceField, citation, 'date-field': dateField,
+  'action-button': actionButton, 'action-queue': actionQueue, 'queued-action': queuedAction, button, card, 'card-grid': cardGrid, 'choice-field': choiceField, citation, 'date-field': dateField,
   diff, 'diff-change': diffChange, 'diff-part': diffPart, 'editable-form': editableForm, excerpt, fact, field,
   'form-card': formCard, 'form-line': formLine, 'form-section': formSection, grid, image,
   'long-text-field': longTextField, 'number-field': numberField, 'source-status': sourceStatus, stack, status, text, table, 'table-row': tableRow,
