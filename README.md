@@ -167,7 +167,8 @@ python3 tools/serve.py
    - `http://localhost:8000/examples/cards/primitives.html`: each primitive.
    - `http://localhost:8000/examples/cards/loans.html`: a card, an action button, a card grid and a form.
    - `http://localhost:8000/examples/cards/approval-icons.html`: a request card with buttons to approve or reject the request.
-   - `http://localhost:8000/examples/forms/inputs.html`: a form with each input type, and a typed edit of a number and a date.
+   - `http://localhost:8000/examples/forms/inputs.html`: a form with text, long text, a number, a date and a choice.
+   - `http://localhost:8000/examples/forms/notices.html`: a library notice form with two switches.
    - `http://localhost:8000/examples/forms/membership.html`: a form card with 3 sections and 25 fields in a thread, with read-only fields that the service computes.
    - `http://localhost:8000/examples/evidence/citation.html`: a citation in a message, a citation with no source and a refused citation.
    - `http://localhost:8000/examples/evidence/diff.html`: a diff of two versions of a synthetic hall booking, and a large diff that starts closed.

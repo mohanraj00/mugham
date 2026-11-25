@@ -55,7 +55,7 @@ const PAGES = {
     ['rowheader', 'Rent'], ['gridcell', 'Paid by transfer'], ['gridcell', 'Late Changed']],
   'tests/browser/upload.html': [['button', 'Keyboard target'], ['group', 'Attach a note'], ['group', 'Attach receipts'], ['button', 'Choose files'],
     ['list', 'Files'], ['button', 'Remove pending.pdf'], ['button', 'Upload']],
-  'tests/browser/primitives.html': [['button', 'Keyboard target'], ['textbox', 'Shelf code']],
+  'tests/browser/primitives.html': [['button', 'Keyboard target'], ['textbox', 'Shelf code'], ['checkbox', 'Keyboard checkbox']],
   'tests/browser/components.html': [['button', 'Keyboard target'], ['article', 'Field guide to moss'], ['list', 'Loans'],
     ['form', 'Loan details'], ['textbox', 'Branch'], ['group', 'Citation'], ['button', 'Open source: Keyboard source'],
     ['group', 'Source excerpt'], ['button', 'Open source: Keyboard excerpt source'], ['group', 'Keyboard diff'],
@@ -90,6 +90,8 @@ const EXAMPLES = {
   'examples/evidence/provenance.html': [2, 1, [['article', 'Renewal rule for short loans'], ['button', 'Open source: Synthetic library rules, section 4']]],
   'examples/forms/inputs.html': [6, 0, [['form', 'Loan details'], ['textbox', 'Shelf code'], ['textbox', 'Note'], ['textbox', 'Copies'],
     ['textbox', 'Due date'], ['group', 'Branch'], ['radio', 'Harbor']]],
+  'examples/forms/notices.html': [3, 0, [['heading', 'Library notices'], ['form', 'Member M-001'],
+    ['switch', 'Send due date reminders'], ['switch', 'Send pickup notices']]],
   'examples/forms/membership.html': [2, 0, [['list', 'Thread'], ['article', 'Message from Forms agent, Agent'], ['form', 'Membership form'],
     ['group', 'Household'], ['button', 'Edit Children: 1'], ['button', 'Send changes']]],
   'examples/cards/register.html': [4, 1, [['article', 'Tray A1'], ['list', 'Thread'], ['article', 'Message from Garden helper, Agent'], ['article', 'Tray B2']]],
@@ -202,6 +204,99 @@ async function key(session, sessionId, name, code, keyCode, text) {
   const base = { key: name, code, windowsVirtualKeyCode: keyCode, nativeVirtualKeyCode: keyCode };
   await session.send('Input.dispatchKeyEvent', { type: 'keyDown', ...base, ...(text ? { text } : {}) }, sessionId);
   await session.send('Input.dispatchKeyEvent', { type: 'keyUp', ...base }, sessionId);
+}
+
+// The library notice example uses two switches in a form. Check each media mode at phone width.
+async function noticeSwitchChecks(session, sessionId, base, problems) {
+  const page = 'examples/forms/notices.html';
+  const results = [];
+  const check = (mode, step, ok, detail) => results.push({ page, step: `${mode}: ${step}`, ok, detail: JSON.stringify(detail) });
+  const waitForWidth = (width) => evaluate(session, sessionId, `new Promise((done, fail) => {
+    let frames = 0;
+    function checkWidth() {
+      frames = innerWidth === ${width} ? frames + 1 : 0;
+      if (frames === 2) done(true);
+      else if (performance.now() < end) requestAnimationFrame(checkWidth);
+      else fail(new Error('The viewport did not settle at ${width} CSS pixels.'));
+    }
+    const end = performance.now() + 5000;
+    requestAnimationFrame(checkWidth);
+  })`);
+  const read = () => evaluate(session, sessionId, `(() => {
+    const form = document.querySelector('mu-editable-form').shadowRoot;
+    const switches = [...form.querySelectorAll('mu-toggle-field')].map(({ shadowRoot }) => {
+      const control = shadowRoot.querySelector('input');
+      const style = getComputedStyle(control);
+      const target = control.labels[0].getBoundingClientRect();
+      return { checked: control.checked, text: shadowRoot.querySelector('[part="state"]').textContent,
+        width: target.width, height: target.height, focused: shadowRoot.activeElement === control,
+        ring: [style.outlineStyle, style.outlineWidth, style.outlineOffset, style.outlineColor],
+        border: style.borderTopStyle, background: style.backgroundColor,
+        noMotion: style.transitionDuration.split(',').every((time) => parseFloat(time) === 0) };
+    });
+    const probe = document.createElement('span');
+    document.body.append(probe);
+    probe.style.color = matchMedia('(forced-colors: active)').matches ? 'Highlight' : 'var(--mu-color-focus)';
+    const focusColor = getComputedStyle(probe).color;
+    probe.remove();
+    return { width: innerWidth, scrollWidth: document.documentElement.scrollWidth, switches, focusColor };
+  })()`);
+  const originalWidth = await evaluate(session, sessionId, 'innerWidth');
+  try {
+    await session.send('Emulation.setDeviceMetricsOverride', { width: 375, height: 812, deviceScaleFactor: 1, mobile: true }, sessionId);
+    for (const [mode, features] of Object.entries(MODES)) {
+      await session.send('Emulation.setEmulatedMedia', { features }, sessionId);
+      await open(session, sessionId, `${base}/${page}`, problems);
+      for (let i = 0; i < 100 && !await evaluate(session, sessionId, 'Boolean(document.querySelector("mu-editable-form"))'); i += 1) await sleep(50);
+      await waitForWidth(375);
+      const start = await read();
+      const [first, second] = start.switches;
+      check(mode, 'the page has no horizontal scroll and each switch has a 44 by 44 CSS pixel target',
+        start.width === 375 && start.scrollWidth === 375 && start.switches.length === 2
+        && start.switches.every(({ width, height }) => width >= 44 && height >= 44), start);
+      check(mode, 'the two switch states have visible borders and different grounds',
+        first.checked && first.text === 'On' && !second.checked && second.text === 'Off'
+        && first.border === 'solid' && second.border === 'solid' && first.background !== second.background, start.switches);
+      if (mode === 'light' || mode === 'dark') {
+        const accent = mode === 'light' ? 'rgb(31, 95, 191)' : 'rgb(140, 180, 245)';
+        check(mode, 'the checked switch uses the theme accent', first.background === accent, first.background);
+      }
+      // Start Tab at the form.
+      await evaluate(session, sessionId, `(() => {
+        const form = document.querySelector('mu-editable-form').shadowRoot.querySelector('form');
+        form.tabIndex = -1;
+        form.focus({ preventScroll: true });
+      })()`);
+      await key(session, sessionId, 'Tab', 'Tab', 9);
+      const focused = await read();
+      const [active] = focused.switches;
+      check(mode, 'Tab focuses the first switch and shows a 2px focus ring', active.focused && active.ring[0] === 'solid'
+        && active.ring[1] === '2px' && active.ring[2] === '2px' && active.ring[3] === focused.focusColor, active);
+      if (mode === 'reduced-motion') check(mode, 'the switches have no motion', focused.switches.every(({ noMotion }) => noMotion), focused.switches);
+      if (mode === 'light') {
+        await key(session, sessionId, ' ', 'Space', 32, ' ');
+        await key(session, sessionId, 'Enter', 'Enter', 13, '\r');
+        const changed = (await read()).switches[0];
+        const { nodes } = await session.send('Accessibility.getFullAXTree', {}, sessionId);
+        const ax = nodes.find((node) => !node.ignored && node.role?.value === 'switch' && node.name?.value === 'Send due date reminders');
+        const checked = ax?.properties?.find((property) => property.name === 'checked')?.value?.value;
+        const request = await evaluate(session, sessionId, 'document.querySelector("#main pre").textContent');
+        check(mode, 'Space changes the state and Enter keeps it without submitting',
+          changed.focused && !changed.checked && changed.text === 'Off' && String(checked) === 'false' && request === '', { changed, checked, request });
+        await key(session, sessionId, 'Tab', 'Tab', 9);
+        await key(session, sessionId, ' ', 'Space', 32, ' ');
+        await key(session, sessionId, 'Tab', 'Tab', 9);
+        await key(session, sessionId, ' ', 'Space', 32, ' ');
+        const saved = await evaluate(session, sessionId, 'JSON.parse(document.querySelector("#main pre").textContent || "{}")');
+        check(mode, 'the switches submit their boolean values', saved.reminders === false && saved.pickup === true, saved);
+      }
+    }
+  } finally {
+    await session.send('Emulation.setEmulatedMedia', { features: MODES.light }, sessionId);
+    await session.send('Emulation.clearDeviceMetricsOverride', {}, sessionId);
+    await waitForWidth(originalWidth);
+  }
+  return results;
 }
 
 async function actionIconChecks(session, sessionId, page, mode) {
@@ -321,7 +416,7 @@ export async function pageRules(session, sessionId, where) {
     .map((node) => node.role.value);
   const markup = await evaluate(session, sessionId, `(() => {
     const ROLES = new Set(['alert', 'article', 'button', 'checkbox', 'dialog', 'form', 'grid', 'group', 'heading', 'img', 'link', 'list',
-      'listitem', 'log', 'main', 'navigation', 'none', 'presentation', 'radio', 'radiogroup', 'region', 'status', 'textbox']);
+      'listitem', 'log', 'main', 'navigation', 'none', 'presentation', 'radio', 'radiogroup', 'region', 'status', 'switch', 'textbox']);
     const VALUES = { 'aria-invalid': ['true', 'false'], 'aria-live': ['off', 'polite', 'assertive'], 'aria-disabled': ['true', 'false'], tabindex: ['-1', '0'] };
     const problems = [];
     const check = (root, label) => {
@@ -699,6 +794,14 @@ async function main() {
         await key(session, sessionId, ' ', 'Space', 32, ' ');
         const presses = await evaluate(session, sessionId, 'window.muPresses()');
         report.keyboard.push({ page, step: 'Enter and Space press the button', ok: presses === 2, detail: presses });
+        if (page === 'tests/browser/primitives.html') {
+          await key(session, sessionId, 'Tab', 'Tab', 9);
+          const before = await evaluate(session, sessionId, 'window.muKeyboardCheckbox()');
+          await key(session, sessionId, ' ', 'Space', 32, ' ');
+          const after = await evaluate(session, sessionId, 'window.muKeyboardCheckbox()');
+          report.keyboard.push({ page, step: 'Tab focuses the checkbox and Space checks it',
+            ok: before.focused && before.ring && !before.checked && after.focused && after.checked, detail: JSON.stringify({ before, after }) });
+        }
         if (page === 'tests/browser/components.html') report.keyboard.push(...await actionIconChecks(session, sessionId, page, mode));
         if (page === 'tests/browser/rich-text.html') report.keyboard.push(...await richTextKeyboardChecks(session, sessionId, { evaluate, key }, page));
         if (page === 'tests/browser/states.html') report.keyboard.push(...await stateChecks(session, sessionId, { evaluate, key, pageRules, sleep }, page, mode));
@@ -781,7 +884,7 @@ async function main() {
             detail: JSON.stringify(choice) });
           report.accessibility.push(...await axErrors(session, sessionId, [['form', 'Input form'], ['textbox', 'Note'],
             ['textbox', 'Copies'], ['textbox', 'Due date'], ['group', 'Branch'], ['radio', 'North'], ['radio', 'South'],
-            ['radio', 'Harbor']], page + ' input types'));
+            ['radio', 'Harbor'], ['checkbox', 'Send a reminder'], ['switch', 'Send a notice']], page + ' input types'));
         }
         // A form card: Enter opens the editor of a value, Escape cancels, Enter in the field saves, and Space on Save saves.
         // The focus goes back to the value after each step.
@@ -873,6 +976,7 @@ async function main() {
       report.accessibility.push(...await axErrors(session, sessionId, expected, page));
       report.examples.push(...await pageRules(session, sessionId, page));
     }
+    report.keyboard.push(...await noticeSwitchChecks(session, sessionId, base, problems));
     // The fixture of decision 0006 has one defect of each kind. The generic rules must find each one.
     await open(session, sessionId, `${base}/tests/browser/rules.html`);
     for (let i = 0; i < 100 && !await evaluate(session, sessionId, 'window.muRulesReady === true'); i += 1) await sleep(50);

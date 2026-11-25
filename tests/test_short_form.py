@@ -49,6 +49,21 @@ def without(contract, path):
 
 
 class ShortFormTest(unittest.TestCase):
+    def test_both_contract_forms_accept_checkbox_and_switch_roles(self):
+        for role in ('checkbox', 'switch'):
+            with self.subTest(role=role):
+                short = {
+                    'name': 'notice-toggle',
+                    'description': 'A yes or no control for a notice.',
+                    'data': {'label': {'type': 'text', 'required': True, 'min_length': 1, 'size': 'line'}},
+                    'accessibility': {'role': role, 'name': {'field': 'label'}},
+                }
+                full, errors = catalog.resolve(short)
+                self.assertEqual(errors, [])
+                self.assertEqual(catalog.contract_errors(full), [])
+                self.assertEqual(full['accessibility']['role'], role)
+                self.assertEqual(full['accessibility']['name'], {'field': 'label'})
+
     def test_each_shared_case(self):
         for case in SHORT['cases']:
             with self.subTest(case=case['name']):

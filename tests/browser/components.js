@@ -1077,10 +1077,14 @@ const INPUT_FORM = { title: 'Loan details', submit_label: 'Save', fields: [
   fill('number-field', { name: 'copies', label: 'Copies', value: 3, minimum: 1, maximum: 12, typed: true }),
   fill('date-field', { name: 'due', label: 'Due date', value: '2026-12-01', earliest: '2026-11-01', typed: true }),
   fill('choice-field', { name: 'branch', label: 'Branch', value: 'North', choices: ['North', 'South', 'Harbor'] }),
+  fill('toggle-field', { name: 'reminder', label: 'Send a reminder', value: false, typed: true }),
+  fill('toggle-field', { name: 'notice', label: 'Send a notice', value: true, display: 'switch' }),
+  fill('toggle-field', { name: 'digest', label: 'Send a digest', value: true, disabled: true }),
 ] };
-const INPUT_EDITABLE = { shelf: 'Shelf code', note: 'Note', copies: 'Copies', due: 'Due date', branch: 'Branch' };
+const INPUT_EDITABLE = { shelf: 'Shelf code', note: 'Note', copies: 'Copies', due: 'Due date', branch: 'Branch',
+  reminder: 'Send a reminder', notice: 'Send a notice', digest: 'Send a digest' };
 const INPUT_BINDING = { tool: 'library.update_loan', label: 'Save', title: 'Loan details', editable: INPUT_EDITABLE,
-  typed: ['copies', 'due'], editor: EDITOR };
+  typed: ['copies', 'due', 'reminder'], editor: EDITOR };
 const inputOf = (node, name) => {
   const inner = [...node.shadowRoot.querySelectorAll('[data-state]')].find((item) => item.fill?.data.name === name);
   return { node: inner, root: inner.shadowRoot, input: inner.shadowRoot.querySelector('input:not([type="radio"]), textarea'),
@@ -1090,11 +1094,13 @@ const inputOf = (node, name) => {
 {
   const { node, sent } = typedForm(INPUT_BINDING, INPUT_FORM);
   check('input form: a form with each input type renders', node.dataset.state === 'default'
-    && ['mu-field', 'mu-long-text-field', 'mu-number-field', 'mu-date-field', 'mu-choice-field'].every((tag) => node.shadowRoot.querySelector(tag)),
+    && ['mu-field', 'mu-long-text-field', 'mu-number-field', 'mu-date-field', 'mu-choice-field', 'mu-toggle-field']
+      .every((tag) => node.shadowRoot.querySelector(tag)),
   `${node.dataset.state} ${node.shadowRoot.textContent.slice(0, 200)}`);
   node.shadowRoot.querySelector('form').requestSubmit();
   check('input form: the values have the type of each contract', sent.length === 1 && sent[0].arguments.copies === 3
     && sent[0].arguments.due === '2026-12-01' && sent[0].arguments.branch === 'North' && sent[0].arguments.note === 'Keep dry.'
+    && sent[0].arguments.reminder === false && sent[0].arguments.notice === true && !Object.hasOwn(sent[0].arguments, 'digest')
     && sent[0].edits.length === 0, JSON.stringify(sent));
   node.receipt({ id: sent[0].id, ok: true });
   // A number that is not valid sends no action. The field tells why and takes the focus.
@@ -1125,12 +1131,21 @@ const inputOf = (node, name) => {
   inputOf(node, 'branch').radios[1].click();
   const note = inputOf(node, 'note');
   typeIn(note.input, 'Keep dry.\nNo sun.');
+  const reminder = inputOf(node, 'reminder');
+  reminder.input.click();
+  inputOf(node, 'notice').input.click();
+  node.shadowRoot.querySelector('form').requestSubmit();
+  check('input form: a typed checkbox with no edit type sends no action', sent.length === 1
+    && reminder.root.querySelector('[part="reason"]').textContent === 'Choose an edit type.', reminder.root.textContent);
+  reminder.types[0].click();
   node.shadowRoot.querySelector('form').requestSubmit();
   const edits = Object.fromEntries((sent[1]?.edits ?? []).map((item) => [item.field, item]));
-  check('input form: a typed edit of a number and of a date has the values of the contract types', sent.length === 2
+  check('input form: typed edits have the values of the contract types', sent.length === 2
     && edits.copies?.type === 'correction' && edits.copies.old_value === 3 && edits.copies.new_value === 4
     && edits.due?.type === 'override' && edits.due.old_value === '2026-12-01' && edits.due.new_value === '2026-12-08'
-    && sent[1].arguments.branch === 'South' && sent[1].arguments.note === 'Keep dry.\nNo sun.' && Object.keys(edits).length === 2,
+    && edits.reminder?.type === 'judgment' && edits.reminder.old_value === false && edits.reminder.new_value === true
+    && sent[1].arguments.reminder === true && sent[1].arguments.notice === false && !Object.hasOwn(sent[1].arguments, 'digest')
+    && sent[1].arguments.branch === 'South' && sent[1].arguments.note === 'Keep dry.\nNo sun.' && Object.keys(edits).length === 3,
   JSON.stringify(sent[1]));
 }
 {
@@ -1144,7 +1159,7 @@ const inputOf = (node, name) => {
     && refusedText(choice).includes('data.fields[0].data.value: the value is not one of the choices'), refusedText(choice));
   const other = mount('editable-form', { ...INPUT_FORM, fields: [fill('button', { label: 'Shelf code' })] });
   check('input form: refuses a component that the form does not name', other.dataset.state === 'refused'
-    && refusedText(other).includes('data.fields[0].component: must be field or long-text-field or number-field or date-field or choice-field'),
+    && refusedText(other).includes('data.fields[0].component: must be field or long-text-field or number-field or date-field or choice-field or toggle-field'),
   refusedText(other));
 }
 

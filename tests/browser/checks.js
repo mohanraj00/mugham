@@ -18,12 +18,14 @@ const VALID = {
   'number-field': { label: 'Copies', value: 3, minimum: 1, maximum: 12, hint: 'From 1 to 12.' },
   'date-field': { label: 'Due date', value: '2026-12-01', earliest: '2026-11-01', latest: '2027-01-31' },
   'choice-field': { label: 'Branch', value: 'North', choices: ['North', 'South', 'Harbor'] },
+  'toggle-field': { label: 'Email notices', value: true },
   stack: { label: 'Loan details' },
   grid: { label: 'Reading list' },
 };
 const TAGS = { text: 'mu-text', button: 'mu-button', field: 'mu-field', 'long-text-field': 'mu-long-text-field',
-  'number-field': 'mu-number-field', 'date-field': 'mu-date-field', 'choice-field': 'mu-choice-field', stack: 'mu-stack', grid: 'mu-grid' };
-const INPUTS = ['field', 'long-text-field', 'number-field', 'date-field', 'choice-field'];
+  'number-field': 'mu-number-field', 'date-field': 'mu-date-field', 'choice-field': 'mu-choice-field',
+  'toggle-field': 'mu-toggle-field', stack: 'mu-stack', grid: 'mu-grid' };
+const INPUTS = ['field', 'long-text-field', 'number-field', 'date-field', 'choice-field', 'toggle-field'];
 const media = (query) => matchMedia(query).matches;
 const stage = document.getElementById('stage');
 
@@ -123,13 +125,53 @@ check('field: the old value again clears the type', typedGroup.hidden && typed.e
     && radio.labels[0].textContent === MARKUP.slice(0, 80) && radio.value === MARKUP.slice(0, 80), radio.labels[0]?.textContent);
 }
 
-// Each input type has a visible label that names its control (catalog/*-field.json, accessibility.name).
+// Each input type has a visible label that names its control.
 for (const name of INPUTS) {
   const node = mount(name, VALID[name]);
   const root = node.shadowRoot;
   const named = name === 'choice-field' ? root.querySelector('fieldset legend')?.textContent
     : root.querySelector('input, textarea').labels[0]?.textContent;
   check(`${name}: the label names the control`, named === VALID[name].label, named);
+}
+
+{
+  for (const data of [{}, { display: 'checkbox' }]) {
+    const node = mount('toggle-field', { label: 'Send a reminder', ...data });
+    const control = node.shadowRoot.querySelector('input[type="checkbox"]');
+    check('toggle-field: the checkbox starts unchecked if the fill gives no value', control && !control.hasAttribute('role')
+      && !control.checked && node.initial === false && node.value === false && !node.shadowRoot.querySelector('[part="state"]'));
+    control.labels[0].click();
+    check('toggle-field: the checkbox label changes the value to true', control.checked && node.value === true);
+    node.remove();
+  }
+  const node = mount('toggle-field', { label: 'Send a reminder', display: 'switch', value: true, typed: true,
+    hint: 'Send the notice before the due date.', error: 'Check the notice settings.' });
+  const root = node.shadowRoot;
+  const control = root.querySelector('input[type="checkbox"]');
+  const state = root.querySelector('[part="state"]');
+  const group = root.querySelector('[part="edit-type"]');
+  const edits = [];
+  node.addEventListener('mu-edit', (event) => edits.push(event.detail));
+  check('toggle-field: the switch starts on and a screen reader gets its state from the control', control.getAttribute('role') === 'switch'
+    && control.checked && node.value === true && state.textContent === 'On' && state.getAttribute('aria-hidden') === 'true' && group.hidden);
+  const description = control.getAttribute('aria-describedby').split(' ').map((id) => root.getElementById(id)?.textContent);
+  check('toggle-field: the hint and error describe the switch', description.join('|') === 'Send the notice before the due date.|Check the notice settings.'
+    && control.getAttribute('aria-invalid') === 'true' && node.dataset.state === 'error');
+  control.click();
+  check('toggle-field: a switch edit updates the state text and sends one boolean event', !control.checked && state.textContent === 'Off'
+    && node.value === false && !group.hidden && JSON.stringify(edits) === '[{"field":"value","value":false}]');
+  group.querySelector('input').click();
+  control.click();
+  check('toggle-field: the initial value clears the edit type', node.value === true && state.textContent === 'On'
+    && !node.changed && group.hidden && node.editType === null);
+
+  const disabled = mount('toggle-field', { label: 'Send a reminder', display: 'switch', value: false, disabled: true, typed: true });
+  disabled.shadowRoot.querySelector('label').click();
+  check('toggle-field: a disabled switch keeps its value and has no edit type', disabled.dataset.state === 'disabled'
+    && disabled.shadowRoot.querySelector('input').disabled && disabled.value === false && !disabled.shadowRoot.querySelector('[part="edit-type"]'));
+  const refused = mount('toggle-field', { label: 'Send a reminder', value: 'false' });
+  check('toggle-field: refuses a value that is not a boolean', refused.dataset.state === 'refused' && refused.value === null
+    && refusedText(refused).includes('data.value: must be true or false'), refusedText(refused));
 }
 
 const edit = (node, text) => {
@@ -303,10 +345,25 @@ check('no markup ran', window.muUnsafe === undefined);
 
 // The keyboard part of the check: the runner sends real key events to this target.
 const keyboard = document.getElementById('keyboard');
+// The label checks moved the focus. Set the start point of Tab before the keyboard targets.
+const top = document.createElement('span');
+top.tabIndex = -1;
+keyboard.before(top);
+top.focus();
+top.blur();
 const target = document.createElement('mu-button');
 target.fill = fill('button', { label: 'Keyboard target' });
 let presses = 0;
 target.addEventListener('mu-press', () => { presses += 1; });
 keyboard.append(target);
+const checkbox = document.createElement('mu-toggle-field');
+checkbox.fill = fill('toggle-field', { label: 'Keyboard checkbox' });
+keyboard.append(checkbox);
 window.muPresses = () => presses;
+window.muKeyboardCheckbox = () => {
+  const control = checkbox.shadowRoot.querySelector('input');
+  const style = getComputedStyle(control);
+  return { focused: checkbox.shadowRoot.activeElement === control, checked: control.checked,
+    ring: control.matches(':focus-visible') && style.outlineStyle === 'solid' && style.outlineWidth === '2px' };
+};
 window.muChecks = { mode, results };

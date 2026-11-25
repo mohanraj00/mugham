@@ -28,8 +28,8 @@ const CATALOG = [
   'rich-link.json', 'rich-list.json', 'rich-paragraph.json', 'rich-quote.json', 'rich-span.json',
   'rich-text.json', 'schema/contract.schema.json', 'schema/defaults.json', 'schema/fill.schema.json',
   'schema/short.schema.json', 'source-status.json', 'stack.json', 'status.json', 'table-row.json', 'table.json',
-  'text-cell.json', 'text.json', 'upload.json',
+  'text-cell.json', 'text.json', 'toggle-field.json', 'upload.json',
 ];
 
-mughamOffline.serve(self, { version: 'queue-example-2', files: [...PAGE, ...EXAMPLES.map((name) => '../' + name),
+mughamOffline.serve(self, { version: 'queue-example-3', files: [...PAGE, ...EXAMPLES.map((name) => '../' + name),
   ...SRC.map((name) => '../../src/' + name), ...CATALOG.map((name) => '../../catalog/' + name)] });

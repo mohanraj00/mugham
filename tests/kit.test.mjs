@@ -301,6 +301,29 @@ test('schema exports refuse unknown field types', (t) => {
   }
 });
 
+test('the toggle tool schema gives a boolean and two displays, also in an editable form', () => {
+  const kit = createKit({ actor: ACTOR });
+  const schema = toolSchema('toggle-field');
+  const formSchema = toolSchema('editable-form');
+  const { properties, required } = schema.properties.data;
+  assert.deepEqual(required, ['label']);
+  assert.deepEqual(properties.value, { title: 'Value', type: 'boolean' });
+  assert.deepEqual(properties.display, { title: 'Display', type: 'string', enum: ['checkbox', 'switch'] });
+  const nested = (field) => kit.outer('editable-form', { title: 'Library notices', submit_label: 'Save', fields: [field] });
+  for (const data of [{}, { value: false, display: 'checkbox' }, { value: true, display: 'switch' }]) {
+    const field = fill('toggle-field', { name: 'reminder', label: 'Send a reminder', ...data });
+    assert.deepEqual(instanceErrors(field, schema), []);
+    assert.deepEqual(instanceErrors(nested(field), formSchema), []);
+    assert.deepEqual(validateFill(nested(field)), []);
+  }
+  for (const value of ['false', 0, null]) {
+    const field = fill('toggle-field', { name: 'reminder', label: 'Send a reminder', value });
+    assert.notDeepEqual(instanceErrors(field, schema), []);
+    assert.notDeepEqual(instanceErrors(nested(field), formSchema), []);
+    assert.deepEqual(validateFill(field), ['data.value: must be true or false']);
+  }
+});
+
 test('the action button tool schema gives optional icon and display enums', () => {
   const name = 'action-button';
   const schema = toolSchema(name);
