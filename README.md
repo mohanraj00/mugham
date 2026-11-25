@@ -16,7 +16,7 @@ Start with the [quickstart](#quickstart) or the [guides](docs/guides/README.md).
 
 Agents and LLMs: read [CONSTITUTION.md](CONSTITUTION.md) and [AGENTS.md](AGENTS.md) first.
 
-Status: release `v0.4.0` is the newest. It has the contract format 2, the design tokens, the primitives, the catalog components, the message envelope and the thread for people and agents. It also has the evidence components, typed form edits, the chat controls, the data grid, rich text, the upload control, the offline data source interface, two examples on a fixture API, the helper functions, the short contract form, the default page style and one entry point for the examples. The offline mode with a queue of pending actions is on `main` for v0.5: [docs/contracts/offline-queue.md](docs/contracts/offline-queue.md). A reader of a local bundle, a cache or a database belongs to the application. The plan is in [docs/STATUS.md](docs/STATUS.md) and in the GitHub milestones.
+The newest release is `v0.5.0`. It adds the offline mode with a queue of pending actions, an icon display for the action button and a compact density preset. It has contract format 2, the design tokens, the primitives, the catalog components, the message envelope and the thread for people and agents. It also has the evidence components, typed form edits, the chat controls, the data grid, rich text, the upload control, the offline data source interface, two examples on a fixture API, the helper functions, the short contract form, the default page style and one entry point for the examples. A reader of a local bundle, a cache or a database belongs to the application. [Offline queue contract](docs/contracts/offline-queue.md) gives the queue rules. [docs/STATUS.md](docs/STATUS.md) gives the release plan.
 
 ## Docs
 
