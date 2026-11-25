@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // The accessibility and rendering check of the kit in headless Chrome, through the Chrome DevTools Protocol.
-// See docs/decisions/0001-build-tools.md and docs/decisions/0008-select-field-axe.md.
+// It uses only Node.js and Chrome. See docs/decisions/0001-build-tools.md, Option A.
 import { spawn } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync, existsSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:http';
@@ -984,12 +984,6 @@ async function main() {
         ok: found.elements === elements && found.refused === refused, detail: JSON.stringify(found) });
       report.accessibility.push(...await axErrors(session, sessionId, expected, page));
       report.examples.push(...await pageRules(session, sessionId, page));
-      if (page === SELECT_PAGE && process.env.MUGHAM_AXE_CORE) {
-        await evaluate(session, sessionId, readFileSync(process.env.MUGHAM_AXE_CORE, 'utf8') + '\n;void 0');
-        const violations = await evaluate(session, sessionId, `axe.run().then(({ violations }) =>
-          violations.map(({ id, nodes }) => ({ id, targets: nodes.map(({ target }) => target) })))`);
-        report.examples.push({ page, step: 'axe-core finds no violation', ok: violations.length === 0, detail: JSON.stringify(violations) });
-      }
     }
     report.keyboard.push(...await noticeSwitchChecks(session, sessionId, base, problems));
     report.keyboard.push(...await rangeExampleChecks(session, sessionId, base, MODES, { evaluate, open, key }, problems));
