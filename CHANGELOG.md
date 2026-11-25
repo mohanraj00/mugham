@@ -4,6 +4,8 @@ Each release has an entry. The newest entry is first.
 
 ## Unreleased
 
+- An editable form accepts a yes or no field as a checkbox or a switch (#122). The switch shows `On` or `Off`. The form sends `true` or `false`.
+
 - A refused element or thread part shows a short reason and the next step (#132). Open `Technical details` to read or copy the component name and the validation errors. The `mu-refused` event still gives all the errors.
 - A successful receipt shows `Done` at full opacity with a success color for its edge and state text (#133). Action buttons with an icon display show a check. The copy control sits next to the reference and wraps when the row is too narrow. This applies to action buttons, both forms, data grids and uploads.
 

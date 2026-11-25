@@ -13,12 +13,13 @@ Each element that refuses a fill shows a short reason and the next step. Open `T
 | `number-field.json` | `mu-number-field` | primitive | A labeled input for a number, with an optional range. |
 | `date-field.json` | `mu-date-field` | primitive | A labeled input for a date as `YYYY-MM-DD`, with an optional range. |
 | `choice-field.json` | `mu-choice-field` | primitive | A labeled radio group with 1 to 20 choices. |
+| `toggle-field.json` | `mu-toggle-field` | primitive | A labeled checkbox or switch for a yes or no value. |
 | `stack.json` | `mu-stack` | primitive | A labeled group in one column or one row. |
 | `grid.json` | `mu-grid` | primitive | A labeled group in columns. |
 | `fact.json` | in `mu-card` | component | A label and a value. |
 | `card.json` | `mu-card` | component | A title, a summary, a date and up to six facts, with optional collapse. See [Card rules](../src/components/card.md). |
 | `action-button.json` | `mu-action-button` | component | A button for one action. |
-| `editable-form.json` | `mu-editable-form` | component | Up to 20 fields of the five input types, submitted as one action. |
+| `editable-form.json` | `mu-editable-form` | component | Up to 20 fields, submitted as one action. |
 | `form-line.json` | in `mu-form-card` | component | One field of a form card, with an optional line number and a read-only flag. |
 | `form-section.json` | in `mu-form-card` | component | A titled group of up to 40 form lines. |
 | `form-card.json` | `mu-form-card` | component | Up to 10 sections of form lines. A person reads the values and edits one field in place. The changes go as one action. |
@@ -253,7 +254,7 @@ A field that did not change has no edit. A disabled field has no edit, because t
 
 ### Input types
 
-An editable form accepts five field contracts. Each one has the data fields `name`, `label`, `hint`, `error`, `disabled` and `typed`, and the same states. A typed edit works the same with each input type.
+An editable form accepts six field contracts. Each one has the data fields `name`, `label`, `hint`, `error`, `disabled` and `typed`, and the same states. A typed edit works the same with each input type.
 
 | Contract | Value | Other data | The request sends |
 |---|---|---|---|
@@ -262,12 +263,15 @@ An editable form accepts five field contracts. Each one has the data fields `nam
 | `number-field` | A number. | `minimum` and `maximum`, both optional. | A number, for example `12.5`. |
 | `date-field` | A date as `YYYY-MM-DD`. | `earliest` and `latest`, both optional. | A string, for example `2026-12-01`. |
 | `choice-field` | One of the choices. | `choices`: 1 to 20 unique texts. | The text of the choice. |
+| `toggle-field` | A boolean. The default is `false`. | `display` can be `checkbox` (the default) or `switch`. | `true` or `false`. |
 
 The form refuses a fill in which the data of a field do not agree. Examples are a minimum that is more than the maximum, a value outside the range, and a value that is not one of the choices. The refusal names the field, for example `data.fields[2].data.value: the number is outside the range`.
 
 A person can type a value that the field does not accept, for example a text that is not a number, a date that does not exist, or a value outside the range. Then a submit sends no action. The field shows the reason as text, for example `Give a number from 1 to 12.`, and the focus goes to the field. The reason also shows when the focus leaves the field.
 
 Enter in a one-line field submits the form. Enter in long text adds a line. In a choice, the arrow keys select the next or the previous choice.
+
+Tab and Shift+Tab move the focus to or from a checkbox or switch. Space changes its checked state. The switch uses the `switch` role and shows `On` or `Off`. The label stays the same when the state changes.
 
 The date field is a text input, not the date picker of the browser. Thus it has the same role, the same text and the same keyboard in each browser.
 

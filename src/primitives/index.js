@@ -4,7 +4,7 @@ import { ReadMoreElement, READ_MORE_CSS } from './read-more.js';
 import { el, sheet } from '../render/dom.js';
 import { FIELDS } from './fields.js';
 
-export { FieldElement, FIELDS, MuChoiceField, MuDateField, MuField, MuLongTextField, MuNumberField } from './fields.js';
+export { FieldElement, FIELDS, MuChoiceField, MuDateField, MuField, MuLongTextField, MuNumberField, MuToggleField } from './fields.js';
 
 const GAPS = { small: 'var(--mu-space-1)', medium: 'var(--mu-space-2)', large: 'var(--mu-space-4)' };
 const COLUMNS = { narrow: 'var(--mu-size-column-narrow)', medium: 'var(--mu-size-column-medium)', wide: 'var(--mu-size-column-wide)' };

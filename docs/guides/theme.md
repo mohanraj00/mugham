@@ -205,6 +205,8 @@ The card parts include `toggle`, `icon`, `body` and `collapsed-summary`. Keep th
 
 The action button uses the `icon` part in `icon` and `both` displays. Keep the icon visible and let its stroke take the button text color. In `icon` display, the `tooltip` part shows the button label on hover and focus. Keep its text and border visible in forced colors. Keep the `button` part at least 44 by 44 CSS pixels and keep its focus ring. The `status` and `reference` parts keep their text in each display.
 
+The toggle field parts are `target`, `input`, `label` and `state`. Keep the `target` at least 44 by 44 CSS pixels. Keep the `input`, its focus ring and the `label` visible. In switch display, keep the switch border visible in forced colors and the `On` or `Off` text in the `state` part visible in each theme.
+
 The text limit parts are `read-more-content` and `read-more-toggle`. Keep the full text in the content part. Keep the compact toggle, its underline and its focus ring visible when the text exceeds the limit. Keep its border visible in forced colors. Do not add a fade or a height animation.
 
 The rich text parts are `rich-text`, `code`, `link` and `target`. Keep the underline and the focus ring of the `link` part. Do not hide the `target` part, because it shows the address that a link opens.

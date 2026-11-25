@@ -1,4 +1,4 @@
-// An example page with each input type of a form: text, long text, a number, a date and a choice.
+// An example form with text, long text, a number, a date and a choice.
 // The number and the date are typed fields, so a person gives an edit type for each change.
 // The page acts as the application. A synthetic service gives each receipt after a short delay.
 import { define } from '../../src/components/index.js';

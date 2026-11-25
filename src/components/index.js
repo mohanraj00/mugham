@@ -729,8 +729,7 @@ export class MuEditableForm extends ActionElement {
       this.send(values, () => { this.#sent = snapshot; }, edits);
     });
     // Each input is in the shadow root of its field, so the browser does not connect it to this form.
-    // Thus Enter in a field submits the form here, as Enter does in a plain form. Enter in long text adds a
-    // line, and Enter in a choice does not submit.
+    // Thus Enter in a single-line text, number or date field submits the form here, as it does in a plain form.
     form.addEventListener('keydown', (event) => {
       if (event.key !== 'Enter' || event.isComposing || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
       if (!this.#fields.includes(event.target) || !event.target.constructor.submitOnEnter) return;

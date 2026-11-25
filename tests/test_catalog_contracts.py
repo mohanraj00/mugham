@@ -51,6 +51,7 @@ VALID = {
     'number-field': {'name': 'copies', 'label': 'Copies', 'value': 3, 'minimum': 1, 'maximum': 12, 'typed': True},
     'date-field': {'name': 'due', 'label': 'Due date', 'value': '2026-12-01', 'earliest': '2026-11-01', 'latest': '2027-02-28'},
     'choice-field': {'name': 'branch', 'label': 'Branch', 'value': 'North', 'choices': ['North', 'South', 'Harbor']},
+    'toggle-field': {'name': 'reminder', 'label': 'Send a reminder', 'value': False},
     'stack': {'label': 'Loan details', 'direction': 'row', 'gap': 'small'},
     'grid': {'label': 'Reading list', 'min_column': 'wide'},
     'fact': FACT['data'],
@@ -135,12 +136,27 @@ class CatalogContractTest(unittest.TestCase):
                          ['data.collapse_controls: must be true or false'])
 
     def test_a_form_accepts_each_input_type_and_no_other_component(self):
-        inputs = ['field', 'long-text-field', 'number-field', 'date-field', 'choice-field']
+        inputs = ['field', 'long-text-field', 'number-field', 'date-field', 'choice-field', 'toggle-field']
         form = {'title': 'Loan details', 'submit_label': 'Save', 'fields': [fill(name, VALID[name]) for name in inputs]}
         self.assertEqual(catalog.fill_errors(outer('editable-form', form), CATALOG), [])
         other = {**form, 'fields': [fill('button', VALID['button'])]}
         self.assertEqual(catalog.fill_errors(outer('editable-form', other), CATALOG),
                          ['data.fields[0].component: must be ' + ' or '.join(inputs)])
+
+    def test_the_toggle_schema_accepts_two_displays_and_only_boolean_values(self):
+        name = 'toggle-field'
+        contract = CATALOG[name]
+        self.assertEqual(catalog.contract_errors(contract, name + '.json'), [])
+        self.assertTrue(contract['data']['value']['editable'])
+        for display in ('checkbox', 'switch'):
+            for value in (False, True):
+                data = {**VALID[name], 'display': display, 'value': value}
+                self.assertEqual(catalog.fill_errors(outer(name, data), CATALOG), [])
+        for value in ('false', 0, None):
+            self.assertEqual(catalog.fill_errors(outer(name, {**VALID[name], 'value': value}), CATALOG),
+                             ['data.value: must be true or false'])
+        self.assertEqual(catalog.fill_errors(outer(name, {**VALID[name], 'display': 'button'}), CATALOG),
+                         ['data.display: must be one of checkbox, switch'])
 
     def test_a_form_card_permits_more_than_20_fields(self):
         lines = [fill('form-line', {'field': fill('field', {'name': 'line_%d' % i, 'label': 'Line %d' % i})}) for i in range(25)]

@@ -1,0 +1,22 @@
+{
+  "name": "toggle-field",
+  "kind": "primitive",
+  "description": "A labeled yes or no field. The default display is a checkbox. The switch display shows On or Off. The value is false if the fill does not give it.",
+  "ai_content": false,
+  "data": {
+    "name": {"type": "text", "size": "short"},
+    "label": {"type": "text", "required": true, "min_length": 1, "size": "line"},
+    "value": {"type": "boolean", "editable": true},
+    "hint": {"type": "text", "size": "summary"},
+    "error": {"type": "text", "size": "summary"},
+    "disabled": {"type": "boolean"},
+    "typed": {"type": "boolean"},
+    "display": {"type": "enum", "values": ["checkbox", "switch"]}
+  },
+  "states": ["+disabled", "+error"],
+  "tokens": [
+    "+color.surface", "+color.text-muted", "+color.accent", "+color.on-accent", "+color.focus", "+color.danger",
+    "+space.1", "+space.2", "+radius.1", "+type.caption", "+motion.fast"
+  ],
+  "accessibility": {"keyboard": ["Tab", "Shift+Tab", "Space"]}
+}
