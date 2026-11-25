@@ -6,6 +6,7 @@ contract. Each other function reads only the full form.
 """
 import copy
 import datetime
+from fractions import Fraction
 import json
 import math
 from pathlib import Path
@@ -363,6 +364,11 @@ def value_errors(value, field, path, catalog, depth):
         return []
     if kind == 'boolean':
         return [] if isinstance(value, bool) else [path + ': must be true or false']
+    if kind == 'number-or-pair':
+        if is_type(value, 'number') or (isinstance(value, list) and len(value) == 2
+                                        and all(is_type(item, 'number') for item in value)):
+            return []
+        return [path + ': must be a number or a pair of numbers']
     if kind == 'date':
         try:
             if isinstance(value, str) and DATE.fullmatch(value):
@@ -413,7 +419,29 @@ def fill_errors(fill, catalog, path='', depth=0):
             errors += value_errors(data[key], field, '%sdata.%s' % (prefix, key), catalog, depth)
         elif field['required']:
             errors.append('%sdata.%s: a required field is missing' % (prefix, key))
+    if (not errors and fill['component'] == 'range-field' and contract['data'].get('value', {}).get('type') == 'number-or-pair'
+            and all(is_type(data.get(key), 'number') for key in ('minimum', 'maximum', 'step')) and 'value' in data):
+        errors += range_errors(data, prefix + 'data.')
     return errors + slot_errors(fill, contract, prefix, depth)
+
+
+def range_errors(data, prefix):
+    minimum, maximum, step, value = (data[key] for key in ('minimum', 'maximum', 'step', 'value'))
+    if maximum < minimum:
+        return [prefix + 'maximum: must be at least the minimum']
+    if step <= 0:
+        return [prefix + 'step: must be more than zero']
+    start, stride = Fraction(str(minimum)), Fraction(str(step))
+    pair = isinstance(value, list)
+    for index, number in enumerate(value if pair else [value]):
+        path = prefix + ('value[%d]' % index if pair else 'value')
+        if number < minimum or number > maximum:
+            return [path + ': the number is outside the range']
+        if (Fraction(str(number)) - start) % stride:
+            return [path + ': the number is off a step']
+    if pair and value[0] > value[1]:
+        return [prefix + 'value: the low value is more than the high value']
+    return []
 
 
 def slot_errors(fill, contract, prefix, depth):

@@ -75,6 +75,27 @@ test('after the device reconnects, the queue sends each action one time, in orde
   queue.close();
 });
 
+test('the queue stores and sends a numeric pair and its edit', async () => {
+  const net = device();
+  net.online = false;
+  const queue = await net.open();
+  const arguments_ = { price: [15, 30] };
+  const edits = [{ field: 'price', type: 'correction', old_value: [10, 30], new_value: [15, 30],
+    actor: { type: 'human', id: 'editor' }, time: '2026-11-25T12:00:00.000Z' }];
+  const outcome = queue.perform(request('T-01', { arguments: arguments_, edits }));
+  await until(() => queue.entries.length === 1, 'the entry');
+  assert.deepEqual(queue.entries[0].arguments.price, [15, 30]);
+  assert.ok(Object.isFrozen(queue.entries[0].arguments.price));
+  assert.deepEqual((await net.store.all())[0].edits, edits);
+  arguments_.price[0] = 30;
+  edits[0].old_value[0] = 30;
+  net.go(true);
+  assert.equal((await outcome).ok, true);
+  assert.deepEqual(net.sent[0].arguments.price, [15, 30]);
+  assert.deepEqual(net.sent[0].edits[0].old_value, [10, 30]);
+  queue.close();
+});
+
 test('the queue sends one action at a time', async () => {
   let flying = 0;
   let most = 0;

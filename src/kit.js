@@ -101,6 +101,8 @@ function fieldSchema(field, reference) {
     case 'number':
     case 'integer': return { title, type, ...(minimum === undefined ? {} : { minimum }), ...(maximum === undefined ? {} : { maximum }) };
     case 'boolean': return { title, type };
+    case 'number-or-pair': return { title, oneOf: [{ type: 'number' },
+      { type: 'array', minItems: 2, maxItems: 2, items: { type: 'number' } }] };
     case 'list': return { title, type: 'array', maxItems: field.max_items, items: fieldSchema(field.items, reference) };
     case 'component': return field.names
       ? { title, oneOf: field.names.map(reference) }

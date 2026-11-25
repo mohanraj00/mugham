@@ -4,6 +4,7 @@ Each release has an entry. The newest entry is first.
 
 ## Unreleased
 
+- An editable form accepts a range field with one or two slider handles and a number box for each handle (#123). The form sends a number or a pair of numbers.
 - The contract schemas accept the `checkbox` and `switch` roles (#150). The toggle field declares `checkbox` and uses its label as its accessible name.
 - Data grids and uploads offer `Retry` and `Cancel` after a try with no receipt (#138). A queued grid change also offers `Cancel`. Cancel keeps the grid edit as `Changed`. Each retry keeps the same key and uses a new id. The offline queue refuses requests with files.
 - An editable form accepts a yes or no field as a checkbox or a switch (#122). The switch shows `On` or `Off`. The form sends `true` or `false`.

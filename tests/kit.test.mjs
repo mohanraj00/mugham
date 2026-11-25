@@ -4,6 +4,7 @@ import { ActionState, bindingErrors } from '../src/actions/action.js';
 import { createKit, describe, fill, mount, onAction, queueActions, toolSchema, validateFill } from '../src/kit.js';
 import { memoryStore, openQueue } from '../src/offline/queue.js';
 import { CATALOG } from '../src/render/catalog.js';
+import { stepGrid } from '../src/render/range.js';
 import { BRAND, register } from '../src/render/registry.js';
 import { schemaErrors } from '../src/render/validate.js';
 
@@ -231,7 +232,7 @@ const meta = { ...child, $defs: { schema: { type: 'object', additionalProperties
   description: { type: 'string' }, title: { type: 'string' }, properties: map, additionalProperties: { type: 'boolean' },
   required: { type: 'array', uniqueItems: true, items: { type: 'string' } }, const: {},
   enum: { type: 'array', minItems: 1, uniqueItems: true }, oneOf: { type: 'array', minItems: 1, items: child },
-  minLength: count, maxLength: count, maxItems: count, items: child,
+  minLength: count, maxLength: count, minItems: count, maxItems: count, items: child,
   minimum: { type: 'number' }, maximum: { type: 'number' },
   pattern: { type: 'string' }, format: { const: 'date' },
 } } } };
@@ -271,6 +272,7 @@ function sample(field) {
 }
 
 function sampleData(contract) {
+  if (contract.name === 'range-field') return { label: 'Loan period in days', minimum: 7, maximum: 28, step: 7, value: 14 };
   return Object.fromEntries(Object.entries(contract.data).map(([key, field]) => [key, sample(field)]));
 }
 
@@ -322,6 +324,56 @@ test('the toggle tool schema gives a boolean and two displays, also in an editab
     assert.notDeepEqual(instanceErrors(nested(field), formSchema), []);
     assert.deepEqual(validateFill(field), ['data.value: must be true or false']);
   }
+});
+
+test('the range tool schema gives a number and an exact pair, also in an editable form', () => {
+  const kit = createKit({ actor: ACTOR });
+  const schema = toolSchema('range-field');
+  const formSchema = toolSchema('editable-form');
+  const data = schema.properties.data;
+  assert.deepEqual(data.required, ['label', 'value', 'minimum', 'maximum', 'step']);
+  assert.deepEqual(data.properties.value.oneOf, [
+    { type: 'number' }, { type: 'array', minItems: 2, maxItems: 2, items: { type: 'number' } },
+  ]);
+  for (const [value, valid] of [[14, true], [[7, 28], true], [[21, 21], true],
+    [[14], false], [[7, 14, 21], false], [[7, '28'], false], [false, false]]) {
+    const field = fill('range-field', { ...sampleData(CATALOG['range-field']), name: 'days', value });
+    const form = kit.outer('editable-form', { title: 'Loan', submit_label: 'Save', fields: [field] });
+    assert.equal(instanceErrors(field, schema).length === 0, valid);
+    assert.equal(instanceErrors(form, formSchema).length === 0, valid);
+  }
+});
+
+test('the range fill refuses values outside the range, off a step or in reverse order', () => {
+  const base = { label: 'Price range', minimum: -0.05, maximum: 0.26, step: 0.1 };
+  for (const value of [-0.05, 0.25, [0.05, 0.25], [0.15, 0.15]]) {
+    assert.deepEqual(validateFill(fill('range-field', { ...base, value })), []);
+  }
+  for (const [data, reason] of [
+    [{ value: [0.05, 0.3] }, 'value[1]: the number is outside the range'],
+    [{ value: 0.05000000000000001 }, 'value: the number is off a step'],
+    [{ value: [0.1, 0.25] }, 'value[0]: the number is off a step'],
+    [{ value: [0.15, 0.05] }, 'value: the low value is more than the high value'],
+    [{ value: 0.15, step: -0.1 }, 'step: must be more than zero'],
+    [{ value: 0.15, maximum: -1 }, 'maximum: must be at least the minimum'],
+    [{ value: Array(2) }, 'value: must be a number or a pair of numbers'],
+  ]) {
+    assert.deepEqual(validateFill(fill('range-field', { ...base, ...data })), ['data.' + reason]);
+  }
+  const kit = createKit({ actor: ACTOR });
+  const form = kit.outer('editable-form', { title: 'Loan', submit_label: 'Save', fields: [
+    fill('range-field', { ...base, name: 'price', value: 0.12 }),
+  ] });
+  assert.deepEqual(validateFill(form), ['data.fields[0].data.value: the number is off a step']);
+});
+
+test('the step grid rounds to a step and moves within the available limits', () => {
+  const grid = stepGrid({ minimum: -0.05, maximum: 0.26, step: 0.1 });
+  assert.equal(grid.last, 0.25);
+  assert.equal(grid.move(0.1, 0n), 0.15);
+  assert.equal(grid.move(0.15, -1n), 0.05);
+  assert.equal(grid.move(0.15, 10n), 0.25);
+  assert.equal(grid.move(0.15, -10n), -0.05);
 });
 
 test('the action button tool schema gives optional icon and display enums', () => {

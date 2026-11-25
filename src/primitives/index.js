@@ -2,9 +2,20 @@
 import { MuElement } from './base.js';
 import { ReadMoreElement, READ_MORE_CSS } from './read-more.js';
 import { el, sheet } from '../render/dom.js';
-import { FIELDS } from './fields.js';
+import { FieldElement, MuChoiceField, MuDateField, MuField, MuLongTextField, MuNumberField, MuToggleField } from './fields.js';
+import { MuRangeField } from './range-field.js';
 
-export { FieldElement, FIELDS, MuChoiceField, MuDateField, MuField, MuLongTextField, MuNumberField, MuToggleField } from './fields.js';
+export { FieldElement, MuChoiceField, MuDateField, MuField, MuLongTextField, MuNumberField, MuRangeField, MuToggleField };
+
+export const FIELDS = Object.freeze({
+  field: ['mu-field', MuField],
+  'long-text-field': ['mu-long-text-field', MuLongTextField],
+  'number-field': ['mu-number-field', MuNumberField],
+  'date-field': ['mu-date-field', MuDateField],
+  'choice-field': ['mu-choice-field', MuChoiceField],
+  'toggle-field': ['mu-toggle-field', MuToggleField],
+  'range-field': ['mu-range-field', MuRangeField],
+});
 
 const GAPS = { small: 'var(--mu-space-1)', medium: 'var(--mu-space-2)', large: 'var(--mu-space-4)' };
 const COLUMNS = { narrow: 'var(--mu-size-column-narrow)', medium: 'var(--mu-size-column-medium)', wide: 'var(--mu-size-column-wide)' };

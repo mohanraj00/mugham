@@ -1,0 +1,28 @@
+{
+  "name": "range-field",
+  "kind": "primitive",
+  "description": "A labeled slider with a number box for each handle. A number gives one handle. A pair gives two handles in a named group. Values use steps from the minimum, stay in range, and keep the low value at or below the high value.",
+  "ai_content": false,
+  "data": {
+    "name": {"type": "text", "size": "short"},
+    "label": {"type": "text", "required": true, "min_length": 1, "size": "line"},
+    "value": {"type": "number-or-pair", "required": true, "editable": true},
+    "minimum": {"type": "number", "required": true},
+    "maximum": {"type": "number", "required": true},
+    "step": {"type": "number", "required": true},
+    "hint": {"type": "text", "size": "summary"},
+    "error": {"type": "text", "size": "summary"},
+    "disabled": {"type": "boolean"},
+    "typed": {"type": "boolean"}
+  },
+  "states": ["+disabled", "+error"],
+  "tokens": [
+    "+color.surface", "+color.text-muted", "+color.accent", "+color.focus", "+color.danger",
+    "+space.1", "+space.2", "+radius.1", "+type.caption"
+  ],
+  "accessibility": {
+    "role": "slider",
+    "name": {"field": "label"},
+    "keyboard": ["Tab", "Shift+Tab", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Home", "End", "PageUp", "PageDown"]
+  }
+}

@@ -35,6 +35,9 @@ const UNSENT = Symbol('unsent');
 const isPlain = (value) => value !== null && typeof value === 'object' && !Array.isArray(value)
   && [Object.prototype, null].includes(Object.getPrototypeOf(value));
 const isScalar = (value) => typeof value === 'string' || typeof value === 'boolean' || (typeof value === 'number' && Number.isFinite(value));
+const isOrderedPair = (value) => Array.isArray(value) && value.length === 2 && Object.hasOwn(value, 0) && Object.hasOwn(value, 1)
+  && Number.isFinite(value[0]) && Number.isFinite(value[1]) && value[0] <= value[1];
+const copyPair = (value) => Object.freeze([value[0], value[1]]);
 const isCount = (value) => Number.isSafeInteger(value) && value >= 0;
 const isPrincipal = (value) => typeof value === 'string' && value.length >= 1 && value.length <= MAX_PRINCIPAL;
 const shortText = (value, max) => typeof value === 'string' && value.length <= max * 2 && [...value].length <= max;
@@ -66,7 +69,13 @@ export function receiptOf(value, request, ids) {
   return receipt;
 }
 
-// A deep copy of the typed edits of a request, or null. An edit has only scalar values and one actor object.
+// Copy each pair so that the page cannot change the arguments that wait in the queue.
+function copyArgs(args) {
+  return Object.freeze(Object.fromEntries(Object.entries(args)
+    .map(([name, value]) => [name, Array.isArray(value) ? copyPair(value) : value])));
+}
+
+// A deep copy of the typed edits of a request, or null.
 function editsOf(edits) {
   if (!Array.isArray(edits) || edits.length > 400) return null;
   const copy = [];
@@ -75,6 +84,7 @@ function editsOf(edits) {
     const item = {};
     for (const [name, value] of Object.entries(edit)) {
       if (isScalar(value)) item[name] = value;
+      else if ((name === 'old_value' || name === 'new_value') && isOrderedPair(value)) item[name] = copyPair(value);
       else if (isPlain(value) && Object.values(value).every(isScalar)) item[name] = { ...value };
       else return null;
     }
@@ -91,7 +101,9 @@ function recordError(record) {
   const { key, principal, owner, order, tool, arguments: args, label, queued, tries, state, message } = record;
   if (typeof key !== 'string' || !ID.test(key)) return 'The request has no valid key.';
   if (typeof tool !== 'string' || tool.length > 80 || !TOOL.test(tool)) return 'The tool name is not valid.';
-  if (!isPlain(args) || !Object.values(args).every(isScalar)) return 'The arguments are not valid.';
+  if (!isPlain(args) || !Object.values(args).every((value) => isScalar(value) || isOrderedPair(value))) {
+    return 'The arguments are not valid.';
+  }
   const secret = Object.keys(args).find((name) => CREDENTIAL.test(name));
   if (secret !== undefined) return `The queue does not keep the argument ${secret.slice(0, 40)}. Its name looks like a credential.`;
   if (Object.hasOwn(record, 'edits') && editsOf(record.edits) === null) return 'The edits are not valid.';
@@ -113,7 +125,7 @@ function recordOf(request, label, { principal, owner, order, queued }) {
     queued, tries: 0, state: 'queued', message: '', ...(edits === undefined ? {} : { edits }) };
   const error = recordError(record);
   if (error) return { error };
-  record.arguments = { ...args };
+  record.arguments = copyArgs(args);
   if (edits !== undefined) record.edits = editsOf(edits);
   return { record };
 }
@@ -239,7 +251,7 @@ export class ActionQueue {
   // The actions of the queue, in order. No state of the queue is done.
   get entries() {
     return Object.freeze(this.#list.map((record) => Object.freeze({ key: record.key, tool: record.tool, label: record.label,
-      arguments: Object.freeze({ ...record.arguments }), queued: record.queued, tries: record.tries, ...this.#shown(record) })));
+      arguments: copyArgs(record.arguments), queued: record.queued, tries: record.tries, ...this.#shown(record) })));
   }
 
   // Calls the listener with the entries after each change. A receipt gives { key, receipt } as the second argument.
@@ -557,7 +569,7 @@ export class ActionQueue {
       // The store knows about the try before the request leaves the device.
       await this.#keep(record);
       const request = Object.freeze({ id: crypto.randomUUID(), key: record.key, tool: record.tool,
-        arguments: Object.freeze({ ...record.arguments }), ...(record.edits ? { edits: Object.freeze(editsOf(record.edits)) } : {}) });
+        arguments: copyArgs(record.arguments), ...(record.edits ? { edits: Object.freeze(editsOf(record.edits)) } : {}) });
       const receipt = await this.#try(request);
       if (receipt === UNSENT) {
         // The queue closed before the request left the device, for example at a sign-out. The record stays for

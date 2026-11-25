@@ -2,6 +2,7 @@
 // The accessibility and rendering check of the kit in headless Chrome, through the Chrome DevTools Protocol.
 // It uses only Node.js and Chrome. See docs/decisions/0001-build-tools.md, Option A.
 import { spawn } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { mkdtempSync, readFileSync, rmSync, existsSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
@@ -19,6 +20,7 @@ import { reviewQueueChecks } from '../tests/browser/review-queue.js';
 import { snapshotChecks } from '../tests/browser/snapshots.js';
 import { UPLOAD_FILES, uploadExampleChecks, uploadKeyboardChecks } from '../tests/browser/upload.js';
 import { plannedErrors, queueExampleChecks } from '../tests/browser/queue.js';
+import { RANGE_PAGE, rangeExampleChecks } from '../tests/browser/range-field.js';
 
 export const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
 // The upload checks give synthetic files to a file input. The files are in a temporary folder, not in the checkout.
@@ -92,6 +94,9 @@ const EXAMPLES = {
     ['textbox', 'Due date'], ['group', 'Branch'], ['radio', 'Harbor']]],
   'examples/forms/notices.html': [3, 0, [['heading', 'Library notices'], ['form', 'Member M-001'],
     ['switch', 'Send due date reminders'], ['switch', 'Send pickup notices']]],
+  [RANGE_PAGE]: [3, 0, [['form', 'Loan limits'], ['slider', 'Loan period in days'], ['spinbutton', 'Loan period in days number'],
+    ['group', 'Price range'], ['slider', 'Price range Minimum'], ['spinbutton', 'Price range Minimum number'],
+    ['slider', 'Price range Maximum'], ['spinbutton', 'Price range Maximum number']]],
   'examples/forms/membership.html': [2, 0, [['list', 'Thread'], ['article', 'Message from Forms agent, Agent'], ['form', 'Membership form'],
     ['group', 'Household'], ['button', 'Edit Children: 1'], ['button', 'Send changes']]],
   'examples/cards/register.html': [4, 1, [['article', 'Tray A1'], ['list', 'Thread'], ['article', 'Message from Garden helper, Agent'], ['article', 'Tray B2']]],
@@ -405,6 +410,27 @@ async function axErrors(session, sessionId, expected, where) {
   return expected.map(([role, name]) => ({ where, role, name, ok: named.some(([r, n]) => r === role && n === name) }));
 }
 
+// Decision 0008 uses a local copy of axe-core for this example only.
+async function rangeAxeCheck(session, sessionId, report, page) {
+  const path = process.env.MUGHAM_AXE_PATH;
+  if (!path) return { skipped: 'Set MUGHAM_AXE_PATH and MUGHAM_AXE_SHA256 to run axe-core.' };
+  const source = readFileSync(path);
+  if (createHash('sha256').update(source).digest('hex') !== process.env.MUGHAM_AXE_SHA256) {
+    throw new Error('The SHA-256 of the axe-core file does not match.');
+  }
+  await evaluate(session, sessionId, source.toString('utf8'));
+  const result = await evaluate(session, sessionId, `(async () => {
+    if (window.axe?.version !== '4.10.3') throw new Error('The axe-core version must be 4.10.3.');
+    const { violations } = await window.axe.run();
+    return { version: window.axe.version, violations: violations.map(({ id, nodes }) => ({
+      id, targets: nodes.map((node) => node.target)
+    })) };
+  })()`);
+  report.examples.push({ page, step: 'axe-core finds no violations', ok: result.violations.length === 0,
+    detail: JSON.stringify(result.violations) });
+  return result;
+}
+
 // The generic rules of decision 0006. They cover the risks of the axe-core rules that apply to the markup of the kit.
 // Each control in the accessibility tree has a name. In each root, an id is unique and each id reference finds its
 // target. Each role, each value of an ARIA attribute and each tabindex is valid. A tabindex above 0 changes the focus order.
@@ -416,7 +442,7 @@ export async function pageRules(session, sessionId, where) {
     .map((node) => node.role.value);
   const markup = await evaluate(session, sessionId, `(() => {
     const ROLES = new Set(['alert', 'article', 'button', 'checkbox', 'dialog', 'form', 'grid', 'group', 'heading', 'img', 'link', 'list',
-      'listitem', 'log', 'main', 'navigation', 'none', 'presentation', 'radio', 'radiogroup', 'region', 'status', 'switch', 'textbox']);
+      'listitem', 'log', 'main', 'navigation', 'none', 'presentation', 'radio', 'radiogroup', 'region', 'slider', 'status', 'switch', 'textbox']);
     const VALUES = { 'aria-invalid': ['true', 'false'], 'aria-live': ['off', 'polite', 'assertive'], 'aria-disabled': ['true', 'false'], tabindex: ['-1', '0'] };
     const problems = [];
     const check = (root, label) => {
@@ -975,8 +1001,10 @@ async function main() {
         ok: found.elements === elements && found.refused === refused, detail: JSON.stringify(found) });
       report.accessibility.push(...await axErrors(session, sessionId, expected, page));
       report.examples.push(...await pageRules(session, sessionId, page));
+      if (page === RANGE_PAGE) report.axe = await rangeAxeCheck(session, sessionId, report, page);
     }
     report.keyboard.push(...await noticeSwitchChecks(session, sessionId, base, problems));
+    report.keyboard.push(...await rangeExampleChecks(session, sessionId, base, MODES, { evaluate, open, key }, problems));
     // The fixture of decision 0006 has one defect of each kind. The generic rules must find each one.
     await open(session, sessionId, `${base}/tests/browser/rules.html`);
     for (let i = 0; i < 100 && !await evaluate(session, sessionId, 'window.muRulesReady === true'); i += 1) await sleep(50);

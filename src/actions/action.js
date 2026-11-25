@@ -5,6 +5,7 @@
 // docs/contracts/offline-queue.md gives the rules.
 import actionButton from '../../catalog/action-button.json' with { type: 'json' };
 import { receiptOf } from '../offline/queue.js';
+import { copyPair, isOrderedPair, sameValue } from '../render/range.js';
 
 const TOOL = /^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)*$/;
 const MAX_MESSAGE = 200;
@@ -144,10 +145,13 @@ function editsOf(edits, binding, values) {
     if (!Object.keys(edit).every((key) => ['field', 'type', 'old_value', 'time'].includes(key))) return null;
     const { field, type, old_value: old, time } = edit;
     if (!binding.typed.includes(field) || seen.has(field) || !Object.hasOwn(values, field)) return null;
-    if (!EDIT_TYPES.has(type) || !scalar(old) || old === values[field]) return null;
+    const next = values[field];
+    const pair = Array.isArray(old) || Array.isArray(next);
+    if (!EDIT_TYPES.has(type) || (pair ? !isOrderedPair(old) || !isOrderedPair(next) : !scalar(old))
+      || sameValue(old, next)) return null;
     if (typeof time !== 'string' || !ISO_TIME.test(time) || Number.isNaN(Date.parse(time))) return null;
     seen.add(field);
-    result.push(Object.freeze({ field, type, old_value: old, new_value: values[field], actor: binding.editor, time }));
+    result.push(Object.freeze({ field, type, old_value: pair ? copyPair(old) : old, new_value: next, actor: binding.editor, time }));
   }
   return Object.freeze(result);
 }
@@ -287,13 +291,16 @@ export class ActionState {
       return null;
     }
     if (Object.keys(extra).some((name) => !Object.hasOwn(this.#binding.editable, name))) return null;
+    const entries = Object.entries(extra);
+    if (entries.some(([, value]) => Array.isArray(value) && !isOrderedPair(value))) return null;
+    const values = Object.fromEntries(entries.map(([name, value]) => [name, Array.isArray(value) ? copyPair(value) : value]));
     const typed = this.#binding.typed.length > 0;
     if (!typed && edits !== undefined && !(Array.isArray(edits) && edits.length === 0)) return null;
-    const checked = typed ? editsOf(edits, this.#binding, extra) : null;
+    const checked = typed ? editsOf(edits, this.#binding, values) : null;
     if (typed && !checked) return null;
     this.#clear();
     this.#request = Object.freeze({ id: crypto.randomUUID(), key: crypto.randomUUID(), tool: this.#binding.tool,
-      arguments: Object.freeze({ ...extra, ...this.#binding.arguments }), ...(typed ? { edits: checked } : {}) });
+      arguments: Object.freeze({ ...values, ...this.#binding.arguments }), ...(typed ? { edits: checked } : {}) });
     this.#ids.add(this.#request.id);
     this.#state = 'pending';
     this.#wait = 'sent';
