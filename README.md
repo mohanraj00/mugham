@@ -43,7 +43,7 @@ These four frames come from [examples/thread/thread.html](examples/thread/thread
 
    <picture>
      <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/thread-2-refused-dark.png">
-     <img src="docs/screenshots/thread-2-refused-light.png" alt="A message from Catalog agent, Agent, with the text: Refused: the thread did not show this part. component: no contract has the name banner" width="520">
+     <img src="docs/screenshots/thread-2-refused-light.png" alt="A message from Catalog agent, Agent, with the text: This content did not show because it did not match the rules of the application. Ask for this content again. If the refusal shows again, tell the owner of the application. A closed Technical details control follows." width="520">
    </picture>
 
 3. **The action is pending.** The renewal agent proposes the Renew action. The page binds the tool `library.renew` in code. A person presses the button, and it shows `Pending` while the request goes to the API.
@@ -57,7 +57,7 @@ These four frames come from [examples/thread/thread.html](examples/thread/thread
 
    <picture>
      <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/thread-4-done-dark.png">
-     <img src="docs/screenshots/thread-4-done-light.png" alt="The Renew button with the status Done: The loan is renewed to 2026-12-08. Reference: R-0001" width="520">
+     <img src="docs/screenshots/thread-4-done-light.png" alt="The Renew button in the done style, with the status Done: The loan is renewed to 2026-12-08. Below it, the text Reference: R-0001 and a Copy button." width="520">
    </picture>
 
 `make screenshots` makes these images again from the example and its synthetic data. It uses Node.js, Python 3 and Chrome. If Chrome is not at its usual path, set `CHROME` to the path of the Chrome executable. The images are not in the package.
