@@ -47,7 +47,7 @@ const stop = onAction(renew, (tool, args, id, request) => sendToApi(request));
 Connect the action elements below `root` to an offline queue of `src/offline/queue.js`. Each action goes through the queue, online and offline. The helper is `onAction` with `queue.perform`, and `queue.listen(root)` for the cancel events and for the steps of `mu-action-queue`. The queue gives the pending detail and the receipt to each element. Call the returned function to remove the listeners. [Offline queue](../docs/contracts/offline-queue.md) gives the rules.
 
 ```js
-const queue = await openQueue({ send: (request, { signal }) => sendToApi(request, signal) });
+const queue = await openQueue({ principal: memberId, send: (request, { signal }) => sendToApi(request, signal) });
 const stop = queueActions(document.body, queue);
 ```
 

@@ -5,7 +5,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { ActionQueue, indexedDbStore, memoryStore, openQueue, queueFill } from '../src/offline/queue.js';
 
-const RECORD_KEYS = ['arguments', 'key', 'label', 'message', 'order', 'owner', 'queued', 'state', 'tool', 'tries'];
+const RECORD_KEYS = ['arguments', 'key', 'label', 'message', 'order', 'owner', 'principal', 'queued', 'state', 'tool', 'tries'];
 const sleep = (ms = 0) => new Promise((done) => setTimeout(done, ms));
 async function until(condition, what) {
   for (let i = 0; i < 200; i += 1) {
@@ -33,7 +33,7 @@ function device({ answer, ...options } = {}) {
     net.sent.push(value);
     return (answer ?? (() => ({ ok: true, reference: 'R-' + net.sent.length })))(value, context, net.sent.length);
   };
-  net.open = (more = {}) => openQueue({ send: net.send, store: net.store, online: () => net.online, events: net.events,
+  net.open = (more = {}) => openQueue({ send: net.send, principal: 'member-1', store: net.store, online: () => net.online, events: net.events,
     locks: null, timeout: 200, ...options, ...more });
   return net;
 }
@@ -337,11 +337,128 @@ test('if the store cannot keep an action, the action is not done and the queue d
 
 test('if the store cannot give its records, the queue does not open', async () => {
   const store = { all: async () => { throw new Error('The database is blocked.'); }, put: async () => {}, remove: async () => {} };
-  await assert.rejects(openQueue({ send: async () => ({ ok: true }), store, locks: null, events: null }), /blocked/);
-  assert.throws(() => new ActionQueue({ store }), /send/);
-  assert.throws(() => new ActionQueue({ send: async () => null, store: {} }), /store/);
-  assert.throws(() => new ActionQueue({ send: async () => null, store, name: 'Not Valid' }), /name/);
+  await assert.rejects(openQueue({ send: async () => ({ ok: true }), principal: 'member-1', store, locks: null, events: null }), /blocked/);
+  assert.throws(() => new ActionQueue({ store, principal: 'member-1' }), /send/);
+  assert.throws(() => new ActionQueue({ send: async () => null, principal: 'member-1', store: {} }), /store/);
+  assert.throws(() => new ActionQueue({ send: async () => null, principal: 'member-1', store, name: 'Not Valid' }), /name/);
+  // The application must name the principal. The queue has no default.
+  for (const principal of [undefined, '', 7, 'p'.repeat(129)]) {
+    assert.throws(() => new ActionQueue({ send: async () => null, store, principal }), /principal/);
+  }
   assert.throws(() => indexedDbStore('actions', null), /IndexedDB/);
+});
+
+test('a queue takes and sends only the records of its principal', async () => {
+  const net = device();
+  net.online = false;
+  const first = await net.open({ principal: 'member-1' });
+  const mine = request('T-01');
+  first.perform(mine, element());
+  await until(() => first.entries.length === 1, 'the entry');
+  assert.equal((await net.store.all())[0].principal, 'member-1');
+  first.close();
+  // A different person signs in on the same device. The send function now adds the credentials of that person.
+  const second = await net.open({ principal: 'member-2' });
+  assert.deepEqual(second.entries, []);
+  const other = request('T-03');
+  const receipt = second.perform(other, element());
+  net.go(true);
+  assert.equal((await receipt).ok, true);
+  await second.flush();
+  assert.deepEqual(net.sent.map((item) => item.key), [other.key]);
+  // The record of the first person stays in the store, and no queue of a different person sends it.
+  assert.deepEqual((await net.store.all()).map((record) => [record.key, record.principal]), [[mine.key, 'member-1']]);
+  second.close();
+  // The first person signs in again. Then the queue sends the action of that person.
+  const again = await net.open({ principal: 'member-1' });
+  await until(() => net.sent.length === 2, 'the try of the first person');
+  await again.flush();
+  assert.deepEqual(net.sent.map((item) => item.key), [other.key, mine.key]);
+  assert.deepEqual(await net.store.all(), []);
+  again.close();
+});
+
+test('a record with no principal, or with a principal that is not valid, is not sent', async () => {
+  const net = device();
+  net.online = false;
+  const before = await net.open();
+  const first = request('T-01');
+  before.perform(first, element());
+  await until(() => before.entries.length === 1, 'the entry');
+  before.close();
+  const [record] = await net.store.all();
+  for (const principal of [undefined, '', 7]) {
+    const changed = { ...record, principal };
+    if (principal === undefined) delete changed.principal;
+    await net.store.put(changed);
+    net.online = true;
+    const queue = await net.open();
+    await queue.flush();
+    assert.deepEqual(queue.entries, []);
+    assert.equal(net.sent.length, 0);
+    queue.close();
+  }
+});
+
+test('after a cancel of the stalled first action, the queue sends the next action', async () => {
+  const net = device({ answer: (value) => {
+    if (value.arguments.tool_id === 'T-01') throw new Error('The connection closed.');
+    return { ok: true };
+  } });
+  const queue = await net.open();
+  const first = request('T-01');
+  const second = request('T-02');
+  const stalled = queue.perform(first, element());
+  await until(() => queue.entries[0]?.state === 'stalled', 'the stalled state');
+  const button = element('Reserve Drill');
+  const waiting = queue.perform(second, button);
+  await until(() => queue.entries.length === 2 && net.sent.length >= 2, 'the second entry and the second try');
+  await queue.flush();
+  // The first action stopped the queue again. The second action waits behind it and shows no try in flight.
+  assert.deepEqual(queue.entries.map((entry) => [entry.key, entry.state, entry.message]),
+    [[first.key, 'stalled', 'No receipt came back.'], [second.key, 'queued', 'Waiting for an earlier action.']]);
+  assert.equal(queue.cancel(first.key), true);
+  assert.equal(await stalled, null);
+  assert.equal((await waiting).ok, true);
+  assert.deepEqual(net.sent.at(-1).key, second.key);
+  assert.deepEqual(queue.entries, []);
+  queue.close();
+});
+
+test('the first action shows a try in flight only while a flush runs', async () => {
+  const net = device();
+  net.online = false;
+  const queue = await net.open();
+  const first = request('T-01');
+  queue.perform(first, element());
+  await until(() => queue.entries.length === 1, 'the entry');
+  // The device is online again, but the queue got no online event. No try is in flight, so the action still waits.
+  net.online = true;
+  assert.deepEqual(queue.entries.map((entry) => [entry.state, entry.message]), [['queued', 'Waiting for a connection.']]);
+  assert.equal(queue.retry(first.key), true);
+  await queue.flush();
+  assert.equal(net.sent.length, 1);
+  queue.close();
+});
+
+test('clear removes each action with no try in flight, for a sign-out', async () => {
+  let release;
+  const net = device({ answer: () => new Promise((done) => { release = () => done({ ok: true }); }) });
+  const queue = await net.open();
+  const buttons = [element(), element('Reserve Drill'), element('Reserve Garden fork')];
+  const requests = [request('T-01'), request('T-02'), request('T-03')];
+  const receipts = requests.map((item, index) => queue.perform(item, buttons[index]));
+  await until(() => queue.entries.length === 3 && net.sent.length === 1, 'three entries and the first try');
+  assert.equal(queue.clear(), 2);
+  assert.deepEqual(queue.entries.map((entry) => [entry.key, entry.state]), [[requests[0].key, 'sent']]);
+  assert.deepEqual([await receipts[1], await receipts[2]], [null, null]);
+  assert.deepEqual([buttons[1].canceled, buttons[2].canceled], [[requests[1].key], [requests[2].key]]);
+  release();
+  assert.equal((await receipts[0]).ok, true);
+  await queue.flush();
+  assert.equal(net.sent.length, 1);
+  await until(async () => (await net.store.all()).length === 0, 'the empty store');
+  queue.close();
 });
 
 // A small model of the Web Locks API: request holds a name until its callback settles, and query lists the held names.

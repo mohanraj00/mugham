@@ -2,6 +2,8 @@
 // The queue keeps each action on the device and sends the actions in order, one at a time. Each try of an action
 // has the same key and a new id. The application gives the send function, and it adds its credentials there.
 // The queue keeps no header, no cookie and no credential. It never shows an action as done: only a receipt does.
+// Each record belongs to one principal, the signed-in person that the application names. A queue takes and sends
+// only the records of its principal, so an action of one person never goes out with the credentials of a different one.
 const TOOL = /^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)*$/;
 const ID = /^[A-Za-z0-9._:-]{1,128}$/;
 const NAME = /^[a-z0-9_-]{1,64}$/;
@@ -11,6 +13,7 @@ const STATES = ['queued', 'sent', 'stalled', 'rejected'];
 const MAX_ACTIONS = 100;
 const MAX_RECORD = 200000;
 const MAX_LABEL = 120;
+const MAX_PRINCIPAL = 128;
 const MAX_MESSAGE = 200;
 const MAX_REFERENCE = 80;
 const TIMEOUT = 10000;
@@ -26,6 +29,7 @@ const isPlain = (value) => value !== null && typeof value === 'object' && !Array
   && [Object.prototype, null].includes(Object.getPrototypeOf(value));
 const isScalar = (value) => typeof value === 'string' || typeof value === 'boolean' || (typeof value === 'number' && Number.isFinite(value));
 const isCount = (value) => Number.isInteger(value) && value >= 0;
+const isPrincipal = (value) => typeof value === 'string' && value.length >= 1 && value.length <= MAX_PRINCIPAL;
 const refusal = (message) => Object.freeze({ ok: false, message });
 
 // A deep copy of the typed edits of a request, or null. An edit has only scalar values and one actor object.
@@ -47,7 +51,7 @@ function editsOf(edits) {
 
 // Makes the record of a request. The result is { record } or { error }. The record has only the keys of the
 // contract, so nothing else of the request goes into the store.
-function recordOf(request, label, owner, order, queued) {
+function recordOf(request, label, { principal, owner, order, queued }) {
   if (!isPlain(request)) return { error: 'The request is not valid.' };
   const { id, key, tool, arguments: args = {} } = request;
   if (typeof id !== 'string' || !ID.test(id)) return { error: 'The request has no valid id.' };
@@ -56,7 +60,7 @@ function recordOf(request, label, owner, order, queued) {
   if (!isPlain(args) || !Object.values(args).every(isScalar)) return { error: 'The arguments are not valid.' };
   const secret = Object.keys(args).find((name) => CREDENTIAL.test(name));
   if (secret !== undefined) return { error: `The queue does not keep the argument ${secret.slice(0, 40)}. Its name looks like a credential.` };
-  const record = { key, owner, order, tool, arguments: { ...args }, label: (typeof label === 'string' && label ? label : tool).slice(0, MAX_LABEL),
+  const record = { key, principal, owner, order, tool, arguments: { ...args }, label: (typeof label === 'string' && label ? label : tool).slice(0, MAX_LABEL),
     queued, tries: 0, state: 'queued', message: '' };
   if (request.edits !== undefined) {
     record.edits = editsOf(request.edits);
@@ -68,7 +72,8 @@ function recordOf(request, label, owner, order, queued) {
 
 // Returns true if a record of the store has the form of the contract. The queue does not send other records.
 function isRecord(record) {
-  return isPlain(record) && typeof record.key === 'string' && ID.test(record.key) && typeof record.owner === 'string'
+  return isPlain(record) && typeof record.key === 'string' && ID.test(record.key) && isPrincipal(record.principal)
+    && typeof record.owner === 'string'
     && typeof record.order === 'number' && typeof record.tool === 'string' && TOOL.test(record.tool)
     && isPlain(record.arguments) && Object.values(record.arguments).every(isScalar)
     && !Object.keys(record.arguments).some((name) => CREDENTIAL.test(name))
@@ -137,6 +142,7 @@ export class ActionQueue {
   #send;
   #store;
   #name;
+  #principal;
   #timeout;
   #online;
   #events;
@@ -160,11 +166,15 @@ export class ActionQueue {
   #reconnect = () => { this.flush(); };
   #disconnect = () => { this.#changed(); };
 
-  constructor({ send, name = 'actions', store, timeout = TIMEOUT, online, events, locks, now } = {}) {
+  constructor({ send, principal, name = 'actions', store, timeout = TIMEOUT, online, events, locks, now } = {}) {
     if (typeof send !== 'function') throw new TypeError('send: a function is necessary');
+    // The application names the person whose credentials the send function uses. An application with no sign-in
+    // gives one fixed text.
+    if (!isPrincipal(principal)) throw new TypeError('principal: a text of 1 to 128 characters is necessary');
     if (typeof name !== 'string' || !NAME.test(name)) throw new TypeError('name: 1 to 64 characters of a-z, 0-9, - and _');
     if (!(Number.isFinite(timeout) && timeout > 0)) throw new TypeError('timeout: a number of milliseconds above 0');
     this.#send = send;
+    this.#principal = principal;
     this.#name = name;
     this.#store = store ?? indexedDbStore(name);
     for (const method of ['all', 'put', 'remove']) {
@@ -189,8 +199,8 @@ export class ActionQueue {
       }
       this.#events?.addEventListener('online', this.#reconnect);
       this.#events?.addEventListener('offline', this.#disconnect);
-      this.#changed();
       this.flush();
+      this.#changed();
     })();
     return this.#loaded;
   }
@@ -225,7 +235,8 @@ export class ActionQueue {
       if (this.#list.length >= MAX_ACTIONS) return FULL;
       this.#order = Math.max(this.#order + 1, this.#now());
       const label = element?.action?.label || element?.action?.title || '';
-      const { record, error } = recordOf(request, label, this.#owner, this.#order, new Date(this.#now()).toISOString());
+      const { record, error } = recordOf(request, label, { principal: this.#principal, owner: this.#owner, order: this.#order,
+        queued: new Date(this.#now()).toISOString() });
       if (error) return error;
       try {
         await this.#store.put({ ...record });
@@ -283,13 +294,20 @@ export class ActionQueue {
     // The queue cancels only an action that shows a cancel: not a try in flight, and not the action that it sends next.
     const shown = record ? this.#shown(record).state : '';
     if (shown !== 'queued' && shown !== 'stalled') return false;
-    this.#drop(record);
-    const waiter = this.#waiters.get(key);
-    this.#waiters.delete(key);
-    waiter?.element?.cancel?.(key);
-    waiter?.resolve(null);
+    this.#remove(record);
+    // The canceled action can be the action that stopped the queue. The queue continues with the next action.
+    this.flush();
     this.#changed();
     return true;
+  }
+
+  // Removes each action with no try in flight, for example when a person signs out. An action with a try in
+  // flight stays until its receipt comes back. Returns the number of removed actions.
+  clear() {
+    const waiting = this.#list.filter((record) => record.state !== 'sent');
+    for (const record of waiting) this.#remove(record);
+    if (waiting.length) this.#changed();
+    return waiting.length;
   }
 
   // Removes a rejected action after a person read the rejection.
@@ -336,6 +354,15 @@ export class ActionQueue {
     return this.#list.find((record) => record.key === key);
   }
 
+  // Removes a record and ends the wait of its page part: the element cancels, and the promise gives null.
+  #remove(record) {
+    this.#drop(record);
+    const waiter = this.#waiters.get(record.key);
+    this.#waiters.delete(record.key);
+    waiter?.element?.cancel?.(record.key);
+    waiter?.resolve(null);
+  }
+
   #drop(record) {
     this.#list = this.#list.filter((item) => item !== record);
     this.#gone.add(record.key);
@@ -343,14 +370,15 @@ export class ActionQueue {
   }
 
   // The state and the message that the page shows for a record. Offline, an action waits for a connection. Online,
-  // the queue sends the first action next, and each other action waits for the action before it.
+  // a running flush sends the first action next, and each other action waits for the action before it. With no
+  // running flush, the first action waits too, so the page never shows a try that is not in flight.
   #shown(record) {
     if (record.state === 'rejected') return { state: 'rejected', message: record.message };
     if (record.state === 'sent') return { state: 'sent', message: '' };
     if (!this.#online()) return { state: 'queued', message: NO_CONNECTION };
     if (record.state === 'stalled') return { state: 'stalled', message: NO_RECEIPT };
-    const first = this.#list.find((item) => item.state !== 'rejected') === record;
-    return first ? { state: 'sent', message: '' } : { state: 'queued', message: EARLIER };
+    if (this.#list.find((item) => item.state !== 'rejected') !== record) return { state: 'queued', message: EARLIER };
+    return this.#running && !this.#closed ? { state: 'sent', message: '' } : { state: 'queued', message: NO_CONNECTION };
   }
 
   // A failed write does not stop the queue. The key of the action protects against a second send after a reload.
@@ -399,13 +427,15 @@ export class ActionQueue {
     });
   }
 
-  // Takes each record of the store whose owner holds no lock, for example after a reload. With no Web Locks API,
-  // the queue takes each record. The lock of the queue name lets only one queue take records at a time.
+  // Takes each record of its principal whose owner holds no lock, for example after a reload. With no Web Locks API,
+  // the queue takes each record of its principal. The lock of the queue name lets only one queue take records at a time.
   async #adopt() {
     const take = async () => {
       const held = this.#locks ? new Set(((await this.#locks.query()).held ?? []).map((lock) => lock.name)) : null;
       for (const record of await this.#store.all()) {
         if (!isRecord(record) || this.#find(record.key) || this.#gone.has(record.key)) continue;
+        // A record of a different principal stays in the store. This queue does not show it and does not send it.
+        if (record.principal !== this.#principal) continue;
         // A record of this owner that is not in the list is in the middle of perform. perform adds it to the list.
         if (record.owner === this.#owner || held?.has(`mugham-queue:${this.#name}:${record.owner}`)) continue;
         // A try that was in flight has no receipt now. The record waits, and the next try has the same key.

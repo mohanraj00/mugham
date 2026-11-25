@@ -41,6 +41,7 @@ Do not throw an error for a decision of the service. An error means that no rece
 | Option | Value |
 |---|---|
 | `send` | Necessary. The send function. |
+| `principal` | Necessary. A text of 1 to 128 characters that names the person whose credentials the send function uses, for example the id of the signed-in person with the id of the tenant. See "The principal". |
 | `name` | The name of the queue, 1 to 64 characters of `a-z`, `0-9`, `-` and `_`. The default is `actions`. |
 | `store` | The store of the queue. The default is `indexedDbStore(name)`. |
 | `timeout` | The time limit of one try in milliseconds. The default is 10000. |
@@ -58,7 +59,7 @@ If the store cannot give its records, the promise rejects. Then the application 
 - A receipt with `ok: true` removes the action from the queue. The promise gives the receipt, and the element shows `Done`.
 - A receipt with `ok: false` removes the action from the queue. The promise gives the receipt, and the element shows `Not done` with the message. If the page has no element for the action, for example after a reload, the action stays in the queue as `rejected` until a person dismisses it.
 - If no receipt comes back, the action stays in the queue, and the queue stops. The state is `queued` if the device is offline, and `stalled` if it is online. The queue sends the action again, with the same key, after an `online` event, after a retry of a person, or when the next action comes in.
-- A cancel removes an action that is `queued` or `stalled`. The promise gives `null`. The queue refuses a cancel of an action that is in flight.
+- A cancel removes an action that is `queued` or `stalled`. The promise gives `null`. The queue refuses a cancel of an action that is in flight. After a cancel, the queue continues with the next action.
 - The queue refuses a request that is not valid, and a request when it holds 100 actions. Then the promise gives a receipt with `ok: false` and the reason, and the queue keeps nothing.
 - If the store cannot keep an action, the promise gives a receipt with `ok: false`, and the queue does not send the action.
 
@@ -71,15 +72,15 @@ The states of an action in the queue are:
 | `stalled` | A try got no receipt. | `Pending: No receipt came back.` | Retry, cancel |
 | `rejected` | The service rejected the action, and the page has no element for it. | `Not done`, with the message | Dismiss |
 
-Offline, each waiting action shows as `queued`. Online, the queue sends the first action next, so that action shows as `sent`.
+Offline, each waiting action shows as `queued`. Online, a running flush sends the first action next, so that action shows as `sent`. With no running flush, the first action shows as `queued`, so the page never shows a try that is not in flight.
 
-No state of the queue shows as done. `queue.entries` gives a frozen list of the actions with `key`, `tool`, `label`, `arguments`, `queued`, `tries`, `state` and `message`. `queue.watch(listener)` calls the listener after each change. `queue.retry(key)`, `queue.cancel(key)` and `queue.dismiss(key)` do the exits. A retry sends the queue again from its first action, because the order stays the same. `queue.flush()` sends the queue now. `queue.close()` stops the queue.
+No state of the queue shows as done. `queue.entries` gives a frozen list of the actions with `key`, `tool`, `label`, `arguments`, `queued`, `tries`, `state` and `message`. `queue.watch(listener)` calls the listener after each change. `queue.retry(key)`, `queue.cancel(key)` and `queue.dismiss(key)` do the exits. A retry sends the queue again from its first action, because the order stays the same. `queue.flush()` sends the queue now. `queue.clear()` removes each action with no try in flight. `queue.close()` stops the queue.
 
 `queueActions(root, queue)` in `src/kit.js` connects the action elements below `root` to the queue. It is `onAction` with `queue.perform`, and `queue.listen(root)` for the cancel events and for the steps of `mu-action-queue`.
 
 ## What the queue stores
 
-The store holds one record for each action: `key`, `owner`, `order`, `tool`, `arguments`, `edits`, `label`, `queued`, `tries`, `state` and `message`. The queue makes each record from a request that it checked. It copies only these keys.
+The store holds one record for each action: `key`, `principal`, `owner`, `order`, `tool`, `arguments`, `edits`, `label`, `queued`, `tries`, `state` and `message`. The queue makes each record from a request that it checked. It copies only these keys.
 
 The queue stores no secret and no token:
 
@@ -88,6 +89,18 @@ The queue stores no secret and no token:
 - A record is 200000 characters maximum as JSON.
 
 The service worker does not keep an action and does not send one. It keeps only the files that the application lists.
+
+## The principal
+
+A device can have more than one person. An action that one person made must not go out with the credentials of a different person. Thus each record has the principal of its queue, and these rules apply:
+
+- The application gives `principal` to `openQueue`. It names the person whose credentials the send function uses. If the application has tenants, the text also names the tenant. An application with no sign-in gives one fixed text.
+- A queue takes, shows and sends only the records of its principal. A record of a different principal, and a record with no valid principal, stays in the store. No queue of a different principal sends it.
+- After a sign-out, close the queue. After the next sign-in, open a new queue with the new principal.
+- If the same person signs in again, the queue of that person takes the records and sends them.
+- To remove the waiting actions of a person at sign-out, call `queue.clear()` before `queue.close()`. Then the store keeps no action of that person, but an action with a try in flight stays until its receipt comes back.
+
+The principal is an id, not a credential. Do not give a token as the principal.
 
 ## The store
 
@@ -105,7 +118,7 @@ If a write fails after the queue accepted an action, the queue continues with th
 
 ## More than one page
 
-Each queue has an owner id. A queue sends only its own records. With the Web Locks API, the queue holds a lock for its owner id while its page is open. When a queue loads or flushes, it takes each record whose owner holds no lock, for example after a reload. Thus two pages do not send the same record at the same time. On a device with no Web Locks API, the queue takes each record of the store, so use one page for each queue name.
+Each queue has an owner id. A queue sends only its own records. With the Web Locks API, the queue holds a lock for its owner id while its page is open. When a queue loads or flushes, it takes each record of its principal whose owner holds no lock, for example after a reload. Thus two pages do not send the same record at the same time. On a device with no Web Locks API, the queue takes each record of its principal, so use one page for each queue name.
 
 ## The action elements
 

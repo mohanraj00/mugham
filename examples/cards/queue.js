@@ -142,7 +142,9 @@ async function load() {
   main.append(title, note, controls, status, pending, kept, list);
 
   // The queue keeps the actions in IndexedDB. If the device cannot open it, the page tells the person.
-  const options = { name: 'tool-library', send, online, events: network.events, timeout: 4000 };
+  // The principal names the person whose credentials the send function uses. This page has one synthetic member.
+  // A real application gives the id of the signed-in person, so the queue never sends the action of a different person.
+  const options = { name: 'tool-library', principal: 'member-1', send, online, events: network.events, timeout: 4000 };
   let queue;
   try {
     queue = await openQueue(options);
