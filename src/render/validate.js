@@ -259,6 +259,11 @@ export function fillErrors(fill, catalog, path = '', depth = 0) {
     && [data.minimum, data.maximum, data.step].every(Number.isFinite) && own(data, 'value')) {
     errors.push(...rangeErrors(data, prefix + 'data.'));
   }
+  if (!errors.length && fill.component === 'select-field' && contract.data.choices?.items?.type === 'text' && Array.isArray(data.choices)) {
+    if (data.choices.length === 0) errors.push(prefix + 'data.choices: give at least one choice');
+    else if (new Set(data.choices).size !== data.choices.length) errors.push(prefix + 'data.choices: the choices must be unique');
+    else if (own(data, 'value') && !data.choices.includes(data.value)) errors.push(prefix + 'data.value: the value is not one of the choices');
+  }
   return [...errors, ...slotErrors(fill, contract, prefix, depth)];
 }
 

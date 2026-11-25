@@ -1081,9 +1081,10 @@ const INPUT_FORM = { title: 'Loan details', submit_label: 'Save', fields: [
   fill('toggle-field', { name: 'notice', label: 'Send a notice', value: true, display: 'switch' }),
   fill('toggle-field', { name: 'digest', label: 'Send a digest', value: true, disabled: true }),
   fill('range-field', { name: 'price', label: 'Price range', minimum: 0, maximum: 40, step: 5, value: [10, 30], typed: true }),
+  fill('select-field', { name: 'pickup', label: 'Pickup point', choices: ['Central', 'Harbor'], value: 'Central' }),
 ] };
 const INPUT_EDITABLE = { shelf: 'Shelf code', note: 'Note', copies: 'Copies', due: 'Due date', branch: 'Branch',
-  reminder: 'Send a reminder', notice: 'Send a notice', digest: 'Send a digest', price: 'Price range' };
+  reminder: 'Send a reminder', notice: 'Send a notice', digest: 'Send a digest', price: 'Price range', pickup: 'Pickup point' };
 const INPUT_BINDING = { tool: 'library.update_loan', label: 'Save', title: 'Loan details', editable: INPUT_EDITABLE,
   typed: ['copies', 'due', 'reminder', 'price'], editor: EDITOR };
 const inputOf = (node, name) => {
@@ -1095,14 +1096,15 @@ const inputOf = (node, name) => {
 {
   const { node, sent } = typedForm(INPUT_BINDING, INPUT_FORM);
   check('input form: a form with each input type renders', node.dataset.state === 'default'
-    && ['mu-field', 'mu-long-text-field', 'mu-number-field', 'mu-date-field', 'mu-choice-field', 'mu-toggle-field', 'mu-range-field']
+    && ['mu-field', 'mu-long-text-field', 'mu-number-field', 'mu-date-field', 'mu-choice-field', 'mu-toggle-field', 'mu-range-field', 'mu-select-field']
       .every((tag) => node.shadowRoot.querySelector(tag)),
   `${node.dataset.state} ${node.shadowRoot.textContent.slice(0, 200)}`);
   node.shadowRoot.querySelector('form').requestSubmit();
   check('input form: the values have the type of each contract', sent.length === 1 && sent[0].arguments.copies === 3
     && sent[0].arguments.due === '2026-12-01' && sent[0].arguments.branch === 'North' && sent[0].arguments.note === 'Keep dry.'
     && sent[0].arguments.reminder === false && sent[0].arguments.notice === true && !Object.hasOwn(sent[0].arguments, 'digest')
-    && JSON.stringify(sent[0].arguments.price) === '[10,30]' && sent[0].edits.length === 0, JSON.stringify(sent));
+    && JSON.stringify(sent[0].arguments.price) === '[10,30]' && sent[0].arguments.pickup === 'Central'
+    && sent[0].edits.length === 0, JSON.stringify(sent));
   node.receipt({ id: sent[0].id, ok: true });
   // A number that is not valid sends no action. The field tells why and takes the focus.
   const copies = inputOf(node, 'copies');
@@ -1171,7 +1173,7 @@ const inputOf = (node, name) => {
     && refusedText(choice).includes('data.fields[0].data.value: the value is not one of the choices'), refusedText(choice));
   const other = mount('editable-form', { ...INPUT_FORM, fields: [fill('button', { label: 'Shelf code' })] });
   check('input form: refuses a component that the form does not name', other.dataset.state === 'refused'
-    && refusedText(other).includes('data.fields[0].component: must be field or long-text-field or number-field or date-field or choice-field or toggle-field or range-field'),
+    && refusedText(other).includes('data.fields[0].component: must be field or long-text-field or number-field or date-field or choice-field or toggle-field or range-field or select-field'),
   refusedText(other));
 }
 

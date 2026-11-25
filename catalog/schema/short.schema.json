@@ -43,7 +43,7 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "role": {"enum": ["article", "button", "checkbox", "form", "group", "list", "region", "slider", "status", "switch", "textbox", "none"]},
+        "role": {"enum": ["article", "button", "checkbox", "combobox", "form", "group", "list", "region", "slider", "status", "switch", "textbox", "none"]},
         "name": {
           "oneOf": [
             {

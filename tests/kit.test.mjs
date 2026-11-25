@@ -367,6 +367,24 @@ test('the range fill refuses values outside the range, off a step or in reverse 
   assert.deepEqual(validateFill(form), ['data.fields[0].data.value: the number is off a step']);
 });
 
+test('the select tool schema gives up to 500 text choices, also in an editable form', () => {
+  const kit = createKit({ actor: ACTOR });
+  const schema = toolSchema('select-field');
+  const formSchema = toolSchema('editable-form');
+  const { properties, required } = schema.properties.data;
+  assert.deepEqual(required, ['label', 'choices']);
+  assert.equal(properties.choices.maxItems, 500);
+  assert.equal(properties.choices.items.type, 'string');
+  const choices = Array.from({ length: 500 }, (_, index) => 'Branch ' + index);
+  for (const [items, valid] of [[choices, true], [[...choices, 'Other'], false]]) {
+    const field = fill('select-field', { name: 'branch', label: 'Pickup branch', choices: items, value: choices.at(-1) });
+    const form = kit.outer('editable-form', { title: 'Pickup details', submit_label: 'Save', fields: [field] });
+    assert.equal(instanceErrors(field, schema).length === 0, valid);
+    assert.equal(instanceErrors(form, formSchema).length === 0, valid);
+    assert.equal(validateFill(form).length === 0, valid);
+  }
+});
+
 test('the step grid rounds to a step and moves within the available limits', () => {
   const grid = stepGrid({ minimum: -0.05, maximum: 0.26, step: 0.1 });
   assert.equal(grid.last, 0.25);
