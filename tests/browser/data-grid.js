@@ -36,6 +36,14 @@ export async function dataGridKeyboardChecks(session, sessionId, { evaluate, key
     && found.text === '400' && found.requests === 1, found);
   found = await press('Tab', 9);
   check('Tab leaves the grid', found.cell === null, found);
+  await evaluate(session, sessionId, 'window.muGridStall()');
+  found = await press('Tab', 9);
+  check('Tab reaches Retry below a stalled grid', found.focus === 'retry', found);
+  found = await press('Tab', 9);
+  check('Tab moves from Retry to Cancel', found.focus === 'cancel', found);
+  await key(session, sessionId, ' ', 'Space', 32, ' ');
+  found = await state();
+  check('Space cancels the action and returns focus to the cell', found.cell === 'rent jan' && found.text === '1250Changed', found);
   return results;
 }
 
@@ -612,6 +620,62 @@ async function browserChecks() {
   }
   press(states, 'Escape');
 
+  const pending = mount(budget());
+  const exit = (element, name) => root(element).querySelector(`[part="${name}"]`);
+  const afterPatience = () => new Promise((done) => setTimeout(done, 20));
+  pending.patience = 1;
+  edit(pending, 'rent', 'jan', '910');
+  const firstTry = last(pending);
+  check('pending: a try in flight has no exits', pending.dataset.wait === 'sent'
+    && exit(pending, 'retry').hidden && exit(pending, 'cancel').hidden);
+  await afterPatience();
+  const retry = exit(pending, 'retry');
+  const cancel = exit(pending, 'cancel');
+  check(`${mode}: a try with no receipt shows the reason and both exits`, pending.dataset.wait === 'stalled'
+    && exit(pending, 'pending').textContent === 'Pending: No receipt came back.' && at(pending, 'rent', 'jan').textContent === '910Pending'
+    && !root(pending).textContent.includes('Done') && [retry, cancel].every((button) => button.checkVisibility()
+      && button.getBoundingClientRect().height >= 44));
+  retry.focus();
+  retry.click();
+  const secondTry = last(pending);
+  check('retry: the key and arguments stay, the id changes and focus goes to the cell', secondTry.key === firstTry.key
+    && secondTry.id !== firstTry.id && secondTry.arguments === firstTry.arguments && where(pending) === 'rent jan');
+  check('receipt: a foreign id with the same key leaves the grid pending', !pending.receipt({ id: 'other', key: firstTry.key, ok: true })
+    && pending.dataset.wait === 'sent');
+  edit(pending, 'food', 'jan', '410');
+  await afterPatience();
+  cancel.focus();
+  cancel.click();
+  check('cancel: the edit stays Changed and the next cell goes out', pending.requests.length === 3 && last(pending).arguments.row === 'food'
+    && at(pending, 'rent', 'jan').textContent === '910Changed' && where(pending) === 'rent jan' && status(pending).startsWith('Canceled.'));
+  check('cancel: late receipts change nothing', !pending.receipt({ id: firstTry.id, ok: true })
+    && !pending.receipt({ key: secondTry.key, ok: true }) && at(pending, 'rent', 'jan').textContent === '910Changed');
+  answer(pending);
+  edit(pending, 'rent', 'jan', '910');
+  check('cancel: a new save of the same value has a new key', pending.requests.length === 4 && last(pending).key !== firstTry.key);
+  answer(pending);
+
+  const offline = mount(budget());
+  const { queueActions } = await import('../../src/kit.js');
+  const { memoryStore, openQueue } = await import('../../src/offline/queue.js');
+  const store = memoryStore();
+  const sentOffline = [];
+  const queue = await openQueue({ store, principal: 'person-check', online: () => false, locks: null,
+    send: (request) => { sentOffline.push(request); return { ok: true }; } });
+  const stopQueue = queueActions(offline, queue);
+  edit(offline, 'rent', 'jan', '920');
+  await tick();
+  check('queue: a queued change shows its reason and only Cancel', offline.dataset.wait === 'queued'
+    && exit(offline, 'pending').textContent === 'Pending: Waiting for a connection.'
+    && exit(offline, 'retry').hidden && exit(offline, 'cancel').checkVisibility());
+  exit(offline, 'cancel').click();
+  await tick();
+  check('queue: Cancel removes the record and leaves the edit Changed', !offline.dataset.wait && sentOffline.length === 0
+    && (await store.all()).length === 0 && at(offline, 'rent', 'jan').textContent === '920Changed'
+    && status(offline) === 'Canceled. The request did not leave this device.');
+  stopQueue();
+  queue.close();
+
   // A thread shows a data grid. The application binds the tool and gives the receipt. A new snapshot gives new values.
   const thread = document.createElement('mu-thread');
   const performed = [];
@@ -654,7 +718,12 @@ async function browserChecks() {
   const keyed = mount(budget(), BINDING, keyboard);
   window.muPresses = () => presses;
   window.muGridState = () => ({ cell: where(keyed), editor: editor(keyed) ? editor(keyed).value : null, requests: keyed.requests.length,
-    last: keyed.requests.length ? JSON.stringify(last(keyed).arguments) : null, text: active(keyed)?.closest('td')?.textContent ?? null });
+    last: keyed.requests.length ? JSON.stringify(last(keyed).arguments) : null, text: active(keyed)?.closest('td')?.textContent ?? null,
+    focus: active(keyed)?.getAttribute('part') });
+  window.muGridStall = () => {
+    keyed.noReceipt(last(keyed).id);
+    at(keyed, 'rent', 'jan').focus();
+  };
   window.muChecks = { mode, results };
 }
 

@@ -3,6 +3,7 @@
 // and the limits. The kit sends no data: the page sends each file, and the API decides and gives the receipt.
 // All data is synthetic and neutral.
 import { define } from '../../src/components/index.js';
+import { deliverReceipt } from '../../src/actions/action.js';
 import { createKit } from '../../src/kit.js';
 
 define();
@@ -47,18 +48,14 @@ async function load() {
 
 // The kit gives one request for each file. The page sends the file with its own transport.
 // The file shows Done only after the receipt of the API.
-document.addEventListener('mu-upload', async (event) => {
+document.addEventListener('mu-upload', (event) => {
   const { id, arguments: values, file } = event.detail;
-  let receipt;
-  try {
+  return deliverReceipt(event.target, event.detail, async () => {
     const response = await fetch(FILES, { method: 'POST', body: file,
       headers: { 'content-type': values.type, 'x-file-name': encodeURIComponent(values.name), 'x-request-id': id } });
     if (!response.ok) throw new Error(`The API gave the status ${response.status}.`);
-    receipt = await response.json();
-  } catch (error) {
-    receipt = { id, ok: false, message: 'The API gave no receipt. ' + error.message };
-  }
-  event.target.receipt(receipt);
+    return response.json();
+  });
 });
 
 document.addEventListener('mu-receipt', load);

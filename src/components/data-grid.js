@@ -6,6 +6,7 @@ import { MuElement } from '../primitives/base.js';
 import { ActionState } from '../actions/action.js';
 import { el, sheet } from '../render/dom.js';
 import { isDate } from '../render/validate.js';
+import { PATIENCE, patienceOf, ReceiptTimer } from './pending.js';
 import { REFERENCE_CSS, showReference } from './receipt.js';
 
 const NUMBER = /^[+-]?(\d+\.?\d*|\.\d+)(e[+-]?\d+)?$/i;
@@ -118,11 +119,19 @@ export class MuDataGrid extends MuElement {
     .title { font-weight: var(--mu-type-weight-strong); }
     .status { font: var(--mu-type-caption); min-height: 1.5em; }
     .status.done { color: var(--mu-color-success); border-inline-start: 2px solid currentColor; padding-inline-start: var(--mu-space-2); }
+    .pending-exits { display: flex; flex-wrap: wrap; gap: var(--mu-space-2); }
+    .pending-exits[hidden] { display: none; }
+    .pending-exits button {
+      min-width: 2.75rem; min-height: 2.75rem; padding: var(--mu-space-2) var(--mu-space-3);
+      border: 1px solid var(--mu-color-border); border-radius: var(--mu-radius-1);
+      background: var(--mu-color-surface); color: var(--mu-color-text); font: var(--mu-type-body); cursor: pointer;
+    }
     .muted { font: var(--mu-type-caption); color: var(--mu-color-text-muted); }
     @media (forced-colors: active) {
       .scroll, th, td, .editor { border-color: CanvasText; }
       th, td { background: Canvas; }
       td[aria-readonly="true"], td[data-state="error"] .marker, .status.done, .status.error, .muted { color: CanvasText; }
+      .pending-exits button { background: ButtonFace; color: ButtonText; border-color: ButtonText; forced-color-adjust: none; }
     }
   `)];
 
@@ -146,6 +155,9 @@ export class MuDataGrid extends MuElement {
   #status = null;
   #reference = null;
   #success = null;
+  #pending = null;
+  #timer = new ReceiptTimer();
+  #patience = PATIENCE;
 
   // The state of the action can only be read. Only the binding, a saved change and a receipt change it.
   get action() {
@@ -177,7 +189,45 @@ export class MuDataGrid extends MuElement {
     this.#confirmed.clear();
     this.#sent = null;
     this.#success = null;
+    this.#updatePending();
     if (this.fill) this.fill = this.fill;
+  }
+
+  get patience() {
+    return this.#patience;
+  }
+
+  set patience(value) {
+    this.#patience = patienceOf(value);
+  }
+
+  hold(update) {
+    if (!this.#action.hold(update)) return false;
+    this.#updatePending();
+    return true;
+  }
+
+  noReceipt(id) {
+    if (this.#action.noReceipt(id)) this.#updatePending();
+  }
+
+  cancel(key) {
+    const sent = this.#sent;
+    if (!sent || !key || key !== this.#action.key || !this.#action.cancel()) return false;
+    this.#sent = null;
+    const change = this.#changes.get(sent.id);
+    if (change) {
+      // Keep the last value of the cell. A person must save it again before it can go out.
+      change.state = 'changed';
+      change.canceled = true;
+      const cell = this.#find(change.row, change.column);
+      if (cell) this.#paint(cell);
+    }
+    if (this.fill) this.#say(this.#action.message);
+    this.#updatePending(sent);
+    this.#flush();
+    this.#sync();
+    return true;
   }
 
   // Returns true if the receipt belongs to the pending request. Only a receipt with ok removes the marker.
@@ -190,6 +240,7 @@ export class MuDataGrid extends MuElement {
     this.#sent = null;
     // The action can start again for the next change.
     this.#action.reopen();
+    this.#updatePending(change);
     if (!change) return true;
     const cell = this.#find(change.row, change.column);
     // A newer change of the same cell stays. It goes in the next request.
@@ -267,6 +318,7 @@ export class MuDataGrid extends MuElement {
     const active = this.shadowRoot.activeElement;
     const keep = active && this.#current && this.#scroll?.contains(active)
       ? { ...this.#current, draft: this.#editing ? this.#editing.input.value : undefined } : null;
+    const heldExit = this.#pending?.exits.contains(active) ? active.getAttribute('part') : null;
     this.#editing = null;
     const json = JSON.stringify(data);
     const fresh = json !== this.#seen;
@@ -331,13 +383,34 @@ export class MuDataGrid extends MuElement {
     this.#scroll = el('div', { class: 'scroll', part: 'scroll' }, table);
     this.#status = el('p', { class: 'status', id: 'status', role: 'status', 'aria-live': 'polite', part: 'status' });
     this.#reference = el('div', { class: 'reference-row' });
+    const detail = el('p', { class: 'muted', role: 'status', part: 'pending' });
+    const retry = el('button', { type: 'button', part: 'retry' }, 'Retry');
+    const cancel = el('button', { type: 'button', part: 'cancel' }, 'Cancel');
+    retry.addEventListener('click', () => {
+      const request = this.#action.retry();
+      if (request) this.#send(request);
+    });
+    cancel.addEventListener('click', () => {
+      const key = this.#action.key;
+      if (!key || cancel.hidden) return;
+      const event = new CustomEvent('mu-action-cancel', { bubbles: true, composed: true, cancelable: true, detail: Object.freeze({ key }) });
+      if (this.dispatchEvent(event)) this.cancel(key);
+    });
+    const exits = el('div', { class: 'pending-exits', part: 'exit' }, retry, cancel);
+    this.#pending = { detail, retry, cancel, exits };
+    this.#updatePending();
     if (this.#success) this.#say(this.#success.words, 'done', this.#success.reference);
     if (keep) queueMicrotask(() => this.#restore(keep));
+    if (heldExit) queueMicrotask(() => {
+      const button = this.#pending[heldExit];
+      if (button.isConnected && !button.hidden) button.focus();
+    });
     const author = this.fill.slots.authorship;
     const name = author.name ? ` (${author.name})` : '';
     return [el('div', { class: 'grid', role: 'group', 'aria-label': data.label, part: 'data-grid' },
       el('p', { class: 'title', part: 'title' }, data.label), this.#scroll,
-      data.rows.length ? null : el('p', { part: 'empty' }, 'No rows. Change the request, or try again later.'), this.#status, this.#reference,
+      data.rows.length ? null : el('p', { part: 'empty' }, 'No rows. Change the request, or try again later.'),
+      this.#status, this.#reference, detail, exits,
       el('p', { class: 'muted', part: 'authorship' }, `Author: ${author.type} ${author.id}${name}`))];
   }
 
@@ -391,6 +464,31 @@ export class MuDataGrid extends MuElement {
 
   #sync() {
     if (this.fill) this.dataset.state = this.state(this.fill.data);
+  }
+
+  #updatePending(change = this.#sent) {
+    const { key, wait, message } = this.#action;
+    this.#timer.watch(wait, this.#patience, () => this.hold({ key, wait: 'stalled' }));
+    if (wait) this.dataset.wait = wait;
+    else delete this.dataset.wait;
+    if (!this.fill || !this.#pending) return;
+    const { detail, retry, cancel, exits } = this.#pending;
+    const active = this.shadowRoot.activeElement;
+    const cell = change && this.#find(change.row, change.column);
+    const name = cell ? `${cell.row.label}, ${cell.column.label}` : this.fill.data.label;
+    const words = wait ? (message ? `Pending: ${message}` : 'Pending') : '';
+    if (detail.textContent !== words) detail.textContent = words;
+    detail.hidden = !wait;
+    retry.hidden = wait !== 'stalled';
+    cancel.hidden = wait !== 'stalled' && wait !== 'queued';
+    exits.hidden = cancel.hidden;
+    retry.setAttribute('aria-label', `Retry ${name}`);
+    cancel.setAttribute('aria-label', `Cancel ${name}`);
+    if ((active === retry || active === cancel) && active.hidden) {
+      if (!cancel.hidden) cancel.focus();
+      else if (cell) this.#focus(cell);
+      else if (this.#current) this.#find(this.#current.row, this.#current.column)?.td.focus();
+    }
   }
 
   // One cell has the Tab stop. The arrow keys, Home and End move it.
@@ -515,8 +613,8 @@ export class MuDataGrid extends MuElement {
   #save(cell, value) {
     const change = this.#changes.get(cell.id);
     const base = this.#base(cell);
-    // The same value as the cell shows is no change. The same value as a failed change sends the change again.
-    if (value === (change ? change.value : base) && change?.state !== 'error') return;
+    // A save of the same value sends the change again after a rejection or a cancel.
+    if (value === (change ? change.value : base) && change?.state !== 'error' && !change?.canceled) return;
     // A change back to the confirmed value needs no request. But while a request of this cell is pending,
     // its receipt can confirm a different value. Then the change stays until that receipt comes back.
     if (value === base && this.#sent?.id !== cell.id) {
@@ -528,18 +626,23 @@ export class MuDataGrid extends MuElement {
 
   // Sends the oldest change that has no request. One request is pending at a time.
   #flush() {
-    if (this.#sent || this.#action.state !== 'default') return;
+    if (!this.fill || this.#sent || this.#action.state !== 'default') return;
     for (const change of this.#changes.values()) {
-      if (change.state !== 'changed') continue;
+      if (change.state !== 'changed' || change.canceled) continue;
       const request = this.#action.start({ row: change.row, column: change.column, value: change.value });
       if (!request) return;
       change.state = 'pending';
       this.#sent = change;
       const cell = this.#find(change.row, change.column);
       if (cell) this.#paint(cell);
-      this.#sync();
-      this.dispatchEvent(new CustomEvent('mu-action', { bubbles: true, composed: true, detail: request }));
+      this.#send(request);
       return;
     }
+  }
+
+  #send(request) {
+    this.#sync();
+    this.#updatePending();
+    this.dispatchEvent(new CustomEvent('mu-action', { bubbles: true, composed: true, detail: request }));
   }
 }

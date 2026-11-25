@@ -12,7 +12,7 @@ const EXAMPLES = [
 ];
 const SRC = [
   'actions/action.js', 'components/chart.js', 'components/data-grid.js', 'components/image.js',
-  'components/index.js', 'components/receipt.js', 'components/rich-text.js', 'components/status.js',
+  'components/index.js', 'components/pending.js', 'components/receipt.js', 'components/rich-text.js', 'components/status.js',
   'components/table.js', 'components/upload.js', 'envelope/envelope.js', 'kit.js', 'narration/check.js',
   'offline/queue.js', 'offline/source.js', 'primitives/base.js', 'primitives/fields.js', 'primitives/index.js',
   'primitives/read-more.js', 'render/catalog.js', 'render/dom.js', 'render/registry.js', 'render/resolve.js',
@@ -31,5 +31,5 @@ const CATALOG = [
   'text-cell.json', 'text.json', 'toggle-field.json', 'upload.json',
 ];
 
-mughamOffline.serve(self, { version: 'queue-example-3', files: [...PAGE, ...EXAMPLES.map((name) => '../' + name),
+mughamOffline.serve(self, { version: 'queue-example-4', files: [...PAGE, ...EXAMPLES.map((name) => '../' + name),
   ...SRC.map((name) => '../../src/' + name), ...CATALOG.map((name) => '../../catalog/' + name)] });

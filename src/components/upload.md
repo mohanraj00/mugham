@@ -4,13 +4,14 @@
 
 ```js
 import { define } from './src/components/index.js';
+import { deliverReceipt } from './src/actions/action.js';
 define();
 const upload = document.createElement('mu-upload');
 upload.actor = { type: 'agent', id: 'agent-desk' };
 upload.action = { tool: 'ticket.attach', arguments: { ticket_id: 'T-2041' }, label: 'Attach receipts to ticket T-2041',
   accept: ['application/pdf', '.pdf'], max_size: 2000000, max_files: 3 };
 upload.fill = fill;
-upload.addEventListener('mu-upload', async (event) => upload.receipt(await sendToTheApi(event.detail)));
+upload.addEventListener('mu-upload', (event) => deliverReceipt(upload, event.detail, () => sendToTheApi(event.detail)));
 ```
 
 ## Data
@@ -72,19 +73,22 @@ The kit sends no data. The request has the `File` object, and only the code of t
 Each file shows its name, its size and its state. The Upload button sends one `mu-upload` event for each file that waits:
 
 ```js
-{ id: '…', tool: 'ticket.attach', arguments: { name: 'receipt-a.pdf', size: 613, type: 'application/pdf', ticket_id: 'T-2041' }, file }
+{ id: '…', key: '…', tool: 'ticket.attach', arguments: { name: 'receipt-a.pdf', size: 613, type: 'application/pdf', ticket_id: 'T-2041' }, file }
 ```
 
-The application sends the file, then calls `upload.receipt({ id, ok, message, reference })`. The receipt must give the pending file's id and `ok` as `true` or `false`. If present, `message` and `reference` must be text, with 200 and 80 characters maximum. After the control accepts the receipt, it sends a `mu-receipt` event with `id`, `name`, `size`, `ok`, `message` and `reference`.
+The application sends the file, then gives the receipt to `upload.receipt()`. The receipt must have the key of the pending upload, the id of one of its tries, or both. If it has both, both must match. The value of `ok` must be `true` or `false`. If present, `message` and `reference` must be text, with 200 and 80 characters maximum. After the control accepts the receipt, it sends a `mu-receipt` event with the id of the last try, `name`, `size`, `ok`, `message` and `reference`.
 
 | File state | Text | Condition |
 |---|---|---|
 | pending | `Pending` | The file is in the list, and no request has it. A person can remove it. |
 | uploading | `Uploading` | The request waits for its receipt. A person cannot remove the file. |
+| stalled | `Pending: No receipt came back.` | The time limit passed. The file has a Retry button and a Cancel button. |
 | done | `Done` | A receipt with `ok` set to `true` came back. The reference of the receipt shows below. |
 | not done | `Not done` | A receipt with `ok` set to `false` came back. The message of the receipt shows. A person can send the file again or remove it. |
 
-`Done` shows only after a valid receipt with `ok: true`. A missing or invalid receipt leaves the file in `Uploading`. For an invalid receipt, `receipt()` gives `false`.
+`Done` shows only after a valid receipt with `ok: true`. For an invalid receipt, `receipt()` gives `false`. When no valid receipt comes back in `upload.patience` milliseconds, the file changes to `stalled`. The default is 30000 milliseconds. The upload still accepts a valid receipt while the file is stalled.
+
+Retry sends only that file in a new `mu-upload` event. The id changes and the key stays the same. Send the key to the service as the idempotency key. Cancel returns the file to `Pending` and shows that the result of the upload is unknown. A person can remove the file or start a new upload with a new key. The control ignores each receipt of the canceled upload. Use the application's transport for each file. The offline queue refuses a request with a file.
 
 In a thread, the application gives the binding with `bind`. The thread gives each request to `perform`, with the file, and gives the receipt to the control.
 
@@ -94,10 +98,10 @@ The control has the role `group` and the name of its label. The file list has th
 
 | Key | Result |
 |---|---|
-| Tab, Shift+Tab | Move between the Choose files button, the Remove button of each file and the Upload button. |
-| Enter, Space | On Choose files, open the file picker. On Remove, remove the file. On Upload, send each file that waits. |
+| Tab, Shift+Tab | Move between Choose files, the available buttons of each file and Upload. |
+| Enter, Space | Open the file picker or use the selected button. |
 
-The name of a Remove button has the file name, for example `Remove receipt-a.pdf`. After a person removes a file, the focus moves to the Remove button of the next file, or to the Choose files button. A polite status region tells the number of files in each state and each reason. Drag and drop is an addition for a pointer. The file picker does the same task with a keyboard.
+The names of Remove, Retry and Cancel include the file name. After retry, the focus moves to Upload. After cancel, the focus moves to the Remove button of that file. After a person removes a file, the focus moves to the Remove button of the next file, or to Choose files. A polite status region tells the number of files in each state and each reason. Drag and drop is an addition for a pointer. The file picker does the same task with a keyboard.
 
 ## States
 

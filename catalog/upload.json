@@ -1,6 +1,6 @@
 {
   "name": "upload",
-  "description": "A person picks or drops files. Page code binds the tool, accepted types, size limit and file count. The control checks each file before the application sends it. Done shows only after a successful receipt. Each file receipt can show a reference with a copy control.",
+  "description": "A person picks or drops files. Page code binds the tool and the limits. The control checks each file before the application sends it. A file with no receipt offers Retry and Cancel after the wait limit. Done shows only after a successful receipt. The receipt can show a reference with a copy control.",
   "data": {
     "label": {"type": "text", "required": true, "min_length": 1, "size": "line"},
     "help": {"type": "text", "label": "Help text", "min_length": 1, "size": "summary"},

@@ -320,6 +320,7 @@ test('the queue refuses a request that is not valid and keeps nothing', async ()
     [{ ...request(), id: '' }, 'The request has no valid id.'],
     [{ ...request(), key: 'a b' }, 'The request has no valid key.'],
     [{ ...request(), tool: 'Tool Reserve' }, 'The tool name is not valid.'],
+    [request('T-01', { file: new File(['Synthetic text'], 'note.txt') }), 'The queue cannot keep a file.'],
     [{ ...request(), arguments: { nested: { a: 1 } } }, 'The arguments are not valid.'],
     [{ ...request(), edits: [{ actor: { nested: {} } }] }, 'The edits are not valid.'],
     [{ ...request(), arguments: { note: 'n'.repeat(200001) } }, 'The action is too large for the queue.'],
