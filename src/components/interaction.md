@@ -76,6 +76,6 @@ The collapse toggle of a card shows a chevron after its text. The chevron points
 
 A collapsed card has 8px between its header, its status, its short summary and its provenance, and no empty space below the last part. The controls of a card grid have 8px above them and 12px below them, at each width from 375 CSS pixels up. The browser check measures the two rules at 375, 768 and 1280 CSS pixels.
 
-## No contract change
+## Contract changes
 
-The five action components declare `color.success` in their token lists. The base style uses `color.focus`, `color.danger`, `type.caption`, `space.2` and `motion.fast` for each component.
+The five action components add `color.success` to their token lists. No data key, state or event changes. The base style uses `color.focus`, `color.danger`, `type.caption`, `space.2` and `motion.fast` for each component.
