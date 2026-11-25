@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { ActionState } from '../src/actions/action.js';
+import { ActionState, bindingErrors } from '../src/actions/action.js';
 import { createKit, describe, fill, mount, onAction, queueActions, toolSchema, validateFill } from '../src/kit.js';
 import { CATALOG } from '../src/render/catalog.js';
 import { BRAND, register } from '../src/render/registry.js';
@@ -325,6 +325,21 @@ test('the action button tool schema gives optional icon and display enums', () =
     const [key] = Object.keys(fields);
     assert.notDeepEqual(instanceErrors(value, schema), []);
     assert.match(validateFill(value)[0], new RegExp(`^data\\.${key}: must be one of`));
+  }
+});
+
+test('an action button binding accepts only icons and displays from the contract', () => {
+  const binding = { tool: 'request.approve', label: 'Approve request 42' };
+  const { icon, display } = CATALOG['action-button'].data;
+  for (const name of icon.values) {
+    for (const mode of display.values) {
+      assert.deepEqual(bindingErrors({ ...binding, icon: name, display: mode }), []);
+    }
+  }
+  for (const value of ['unknown', '', null, 7]) {
+    assert.deepEqual(bindingErrors({ ...binding, icon: value }),
+      ['the icon must be one of check, cross, edit, delete, send, retry']);
+    assert.deepEqual(bindingErrors({ ...binding, display: value }), ['the display must be one of text, icon, both']);
   }
 });
 

@@ -161,6 +161,9 @@ class ActionElement extends MuElement {
   }
 
   set action(binding) {
+    if (this.constructor.component !== 'action-button' && binding && (Object.hasOwn(binding, 'icon') || Object.hasOwn(binding, 'display'))) {
+      throw new TypeError('action: only an action button accepts icon and display');
+    }
     const errors = this.#action.bind(binding);
     if (errors.length) throw new TypeError('action: ' + errors.join('; '));
     this.#close();
@@ -402,15 +405,17 @@ export class MuActionButton extends ActionElement {
   static focus = true;
   static styles = [ACTION_CSS];
 
-  // The description can name the target of the bound arguments. Thus the application gives it, and a fill
-  // with a different description is refused. A binding with no description accepts no fill with a description.
+  // The application gives the description, icon and display of the bound action. The fill must agree with the binding.
   check(data) {
     const errors = super.check(data);
     if (errors.length) return errors;
-    const description = this.action.description;
-    if (description !== null && (data.description ?? '') !== description) {
+    const { description, icon, display } = this.action;
+    if (description === null) return [];
+    if ((data.description ?? '') !== description) {
       return ['data.description: the description is not the description of the application'];
     }
+    if (data.icon !== icon) return ['data.icon: the icon is not the icon of the application'];
+    if (data.display !== display) return ['data.display: the display is not the display of the application'];
     return [];
   }
 

@@ -152,6 +152,8 @@ A binding has these keys. Only `tool` is necessary.
 | `arguments` | The fixed arguments. Each value is a string, a number, or `true` or `false`. |
 | `label` | The label of the action, 1 to 80 characters. |
 | `description` | The description of an action button, 1 to 200 characters. |
+| `icon` | The icon of an action button. Use `check`, `cross`, `edit`, `delete`, `send` or `retry`. |
+| `display` | The display of an action button. Use `text`, `icon` or `both`. |
 | `title` | The title of an editable form, 1 to 120 characters. |
 | `editable` | The names that an editable form or a form card can send, each with its label. Up to 400 names, because a form card has up to 10 sections of 40 fields. |
 | `typed` | Optional. The editable names that need an edit type. See "Typed edits". |
@@ -164,7 +166,9 @@ The binding of an `upload` has `tool`, `arguments`, `label`, `accept`, `max_size
 
 The application gives the label of the action. The element refuses a fill with a different label: the `label` of an action button or the `submit_label` of an editable form. A binding with no label accepts no fill. Thus a fill cannot show "View details" on a button that sends a different action. The application also gives the `description` of an action button. The button refuses a fill with a different description, because a description can name the target of the bound arguments. A binding with no description accepts no fill with a description.
 
-The fill keeps the label and the description, and the element compares them with the binding. The fill stays necessary for these reasons:
+The application also gives the `icon` and `display` of a bound action button. If the binding gives one of these keys, the fill must give the same value. If the binding omits one of these keys, omit that key in the fill. To use the default text display, omit `display` in the binding and the fill, or set both to `text`. The button checks these values when it receives a fill or a binding.
+
+The fill keeps these values, and the element compares them with the binding. The fill stays necessary for these reasons:
 
 - The accessible name of each component comes from a required field of its contract. Thus a fill with no label is not valid.
 - A validator that has no binding, for example `tools/catalog.py`, can check a fill.

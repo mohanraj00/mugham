@@ -15,7 +15,7 @@ for (const [icon, label, tool] of [
   ['cross', 'Reject request 42', 'request.reject'],
 ]) {
   mount('action-button', { label, icon, display: 'icon' }, {
-    parent: card, slot: 'actions', action: { tool, label, arguments: { request_id: 42 } },
+    parent: card, slot: 'actions', action: { tool, label, icon, display: 'icon', arguments: { request_id: 42 } },
   });
 }
 

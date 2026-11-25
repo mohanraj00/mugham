@@ -554,7 +554,7 @@ check('action-button: a refused button sends no request', button.dataset.state =
   for (const name of icons) {
     const label = 'Test icon ' + name;
     const node = mount('action-button', { label, icon: name, display: 'icon' });
-    node.action = { tool: 'request.test', label };
+    node.action = { tool: 'request.test', label, icon: name, display: 'icon' };
     const control = node.shadowRoot.querySelector('button');
     const svg = control.querySelector('svg[part="icon"]');
     check(`action-button: ${name} shows one decorative SVG and the label names the button`,
@@ -574,7 +574,7 @@ check('action-button: a refused button sends no request', button.dataset.state =
     [{ display: 'both' }, 'Text when both needs an icon', false],
   ]) {
     const node = mount('action-button', { label, ...fields });
-    node.action = { tool: 'request.test', label };
+    node.action = { tool: 'request.test', label, ...fields };
     const control = node.shadowRoot.querySelector('button');
     check(`action-button: ${label} shows the label and the correct icon part`, control.textContent === label
       && Boolean(control.querySelector('[part="icon"]')) === showsIcon && !node.shadowRoot.querySelector('[part="tooltip"]'));
@@ -593,7 +593,7 @@ check('action-button: a refused button sends no request', button.dataset.state =
   marked.remove();
 
   const node = mount('action-button', { label: 'Approve request 42', icon: 'check', display: 'icon' });
-  node.action = { tool: 'request.approve', label: 'Approve request 42' };
+  node.action = { tool: 'request.approve', label: 'Approve request 42', icon: 'check', display: 'icon' };
   let request;
   node.addEventListener('mu-action', (event) => { request = event.detail; });
   const control = node.shadowRoot.querySelector('button');
@@ -762,11 +762,49 @@ const described = mount('action-button', { label: 'Renew', description: 'Renews 
 described.action = BOUND;
 check('action-button: the description of the application shows', described.dataset.state === 'default'
   && described.shadowRoot.textContent.includes('Renews Rivers and deltas.'), `${described.dataset.state} ${described.shadowRoot.textContent}`);
+
+{
+  const label = 'Return loan';
+  const binding = { tool: 'library.return_loan', label, icon: 'check', display: 'icon' };
+  for (const [name, data, action, field] of [
+    ['a different icon', { icon: 'cross', display: 'icon' }, binding, 'icon'],
+    ['an icon with no icon in the binding', { icon: 'check', display: 'icon' }, { tool: binding.tool, label, display: 'icon' }, 'icon'],
+    ['icon display with no display in the binding', { icon: 'check', display: 'icon' }, { tool: binding.tool, label, icon: 'check' }, 'display'],
+    ['no display with text display in the binding', { icon: 'check' }, { ...binding, display: 'text' }, 'display'],
+  ]) {
+    const node = mount('action-button', { label, ...data });
+    check(`action-button: ${name} shows before binding`, node.dataset.state === 'disabled' && node.shadowRoot.querySelector('button'));
+    node.action = action;
+    check(`action-button: ${name} is refused after binding`, node.dataset.state === 'refused'
+      && !node.shadowRoot.querySelector('button')
+      && node.shadowRoot.textContent.includes(`data.${field}: the ${field} is not the ${field} of the application`), node.shadowRoot.textContent);
+  }
+  const node = document.createElement('mu-action-button');
+  node.action = binding;
+  node.fill = outer('action-button', { label, icon: 'check', display: 'icon' });
+  const control = node.shadowRoot.querySelector('button');
+  check('action-button: the icon and display of the application show', node.dataset.state === 'default'
+    && control?.getAttribute('aria-label') === label && control.querySelector('[part="icon"]'));
+  node.fill = outer('action-button', { label, icon: 'check', display: 'both' });
+  check('action-button: a new fill with a different display is refused', node.dataset.state === 'refused'
+    && !node.shadowRoot.querySelector('button')
+    && node.shadowRoot.textContent.includes('data.display: the display is not the display of the application'), node.shadowRoot.textContent);
+}
+
 const misnamedForm = mount('editable-form', { ...FORM, submit_label: 'View details' });
 misnamedForm.action = { tool: 'library.update_loan', label: 'Save', title: 'Loan details', editable: EDITABLE };
 check('editable-form: a submit label that is not the label of the application is refused', misnamedForm.dataset.state === 'refused'
   && misnamedForm.shadowRoot.textContent.includes('data.submit_label: the label is not the label of the application'),
   misnamedForm.shadowRoot.textContent);
+for (const name of ['editable-form', 'form-card']) {
+  const node = document.createElement(TAGS[name]);
+  for (const fields of [{ icon: 'check' }, { display: 'icon' }]) {
+    let reason = '';
+    try { node.action = { tool: 'library.update_loan', label: 'Save', ...fields }; } catch (error) { reason = error.message; }
+    check(`${name}: a binding with ${Object.keys(fields)[0]} is refused`,
+      reason === 'action: only an action button accepts icon and display' && node.action.state === 'disabled', reason);
+  }
+}
 // The application gives the title of the form. A fill cannot show a different target for the bound arguments.
 const retitled = mount('editable-form', { ...FORM, title: 'Loan L-0002' });
 retitled.action = { tool: 'library.update_loan', label: 'Save', title: 'Loan details', arguments: { loan_id: 'L-0001' }, editable: EDITABLE };
@@ -1600,7 +1638,7 @@ target.addEventListener('mu-action', (event) => { presses += 1; target.receipt({
 keyboard.append(target);
 const iconTarget = document.createElement('mu-action-button');
 iconTarget.fill = outer('action-button', { label: 'Icon keyboard target', icon: 'check', display: 'icon' });
-iconTarget.action = { tool: 'request.test', label: 'Icon keyboard target' };
+iconTarget.action = { tool: 'request.test', label: 'Icon keyboard target', icon: 'check', display: 'icon' };
 const iconRow = document.createElement('div');
 iconRow.append(iconTarget);
 keyboard.append(iconRow);

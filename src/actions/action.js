@@ -3,6 +3,8 @@
 // The state is pending until a receipt of the action comes back. An action has one key for all its tries, and each
 // try has a new request id. A pending action with no receipt has an exit: a retry or a cancel. It never shows done.
 // docs/contracts/offline-queue.md gives the rules.
+import actionButton from '../../catalog/action-button.json' with { type: 'json' };
+
 const TOOL = /^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)*$/;
 const MAX_MESSAGE = 200;
 const FIELD_NAME = /^[a-z][a-z0-9]*(_[a-z0-9]+)*$/;
@@ -13,6 +15,8 @@ const MAX_LABEL = 80;
 const MAX_TITLE = 120;
 // The action-button contract gives a description of 200 characters at most.
 const MAX_DESCRIPTION = 200;
+const ACTION_ICONS = [...actionButton.data.icon.values];
+const ACTION_DISPLAYS = [...actionButton.data.display.values];
 // A confirm step has a message of 200 characters at most and a button label of 40 characters at most.
 const MAX_CONFIRM_MESSAGE = 200;
 const MAX_CONFIRM_LABEL = 40;
@@ -74,6 +78,12 @@ export function bindingErrors(binding) {
   // The application gives the description of an action, so a fill cannot describe a different target.
   if (binding.description !== undefined && (typeof binding.description !== 'string' || binding.description.length === 0
     || longer(binding.description, MAX_DESCRIPTION))) errors.push('the description must be a text of 1 to 200 characters');
+  if (binding.icon !== undefined && !ACTION_ICONS.includes(binding.icon)) {
+    errors.push(`the icon must be one of ${ACTION_ICONS.join(', ')}`);
+  }
+  if (binding.display !== undefined && !ACTION_DISPLAYS.includes(binding.display)) {
+    errors.push(`the display must be one of ${ACTION_DISPLAYS.join(', ')}`);
+  }
   // The application gives the confirm step, so a fill cannot remove it or change its words.
   if (binding.confirm !== undefined) {
     const confirm = binding.confirm;
@@ -184,6 +194,15 @@ export class ActionState {
     return this.#binding ? this.#binding.description : null;
   }
 
+  // The application gives the icon and display. If the binding does not give a value, it is undefined.
+  get icon() {
+    return this.#binding?.icon;
+  }
+
+  get display() {
+    return this.#binding?.display;
+  }
+
   // The bound arguments that each request sends. The application gives them in the binding. Without a binding,
   // the value is null.
   get arguments() {
@@ -217,7 +236,9 @@ export class ActionState {
     }
     const errors = bindingErrors(binding);
     if (errors.length) return errors;
-    this.#binding = Object.freeze({ tool: binding.tool, label: binding.label ?? '', title: binding.title ?? '', description: binding.description ?? '', arguments: Object.freeze({ ...(binding.arguments ?? {}) }),
+    this.#binding = Object.freeze({ tool: binding.tool, label: binding.label ?? '', title: binding.title ?? '',
+      description: binding.description ?? '', icon: binding.icon, display: binding.display,
+      arguments: Object.freeze({ ...(binding.arguments ?? {}) }),
       editable: Object.freeze(Object.assign(Object.create(null), binding.editable ?? {})),
       typed: Object.freeze([...(binding.typed ?? [])]),
       editor: binding.editor ? Object.freeze({ type: binding.editor.type, id: binding.editor.id }) : null,
