@@ -76,6 +76,24 @@ test('the reader shows each step of a stream with the honest state', () => {
   assert.equal(reader.result().messages[0].state, 'final');
 });
 
+test('the reader keeps the refused component name for display', () => {
+  const reader = createReader();
+  const metadata = { mugham: { actor: { type: 'agent', id: 'agent-plan' } } };
+  const snapshot = (component, format, data = { text: 'Note' }, replace = true) => ({
+    type: 'ACTIVITY_SNAPSHOT', activityType: 'mugham.fill', messageId: 'm-1', metadata, replace,
+    content: { format, fill: { component, version: '0.1.0', data } },
+  });
+  reader.push(snapshot('text', 1));
+  assert.equal(reader.refusedComponent('m-1'), 'text');
+  assert.deepEqual(reader.result().messages[0].parts, [{ type: 'refusal', errors: ['content.format: must be 2'] }]);
+  reader.push(snapshot('button', 1, {}, false));
+  assert.equal(reader.refusedComponent('m-1'), 'text');
+  reader.push(snapshot('button', 1));
+  assert.equal(reader.refusedComponent('m-1'), 'button');
+  reader.push(snapshot('text', 2));
+  assert.equal(reader.refusedComponent('m-1'), undefined);
+});
+
 test('a text longer than 100000 characters refuses the message', () => {
   const actor = { type: 'agent', id: 'agent-plan' };
   const result = readStream([

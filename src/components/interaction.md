@@ -50,9 +50,11 @@ Each empty state and each refused state has a short text that tells the person w
 | `source-status` | `empty` | `No records. Add a record, or try again later.` |
 | `diff` | `empty` | `No changes. You do not need to review these versions.` |
 | `diff`, one part | `empty` | `No changes. You do not need to review this part.` |
-| Each component | `refused` | `Refused <name>: <first error>`, then `Ask for this content again. If the refusal shows again, tell the owner of the application.` |
+| Each component | `refused` | `This content did not show because it did not match the rules of the application.` Some components give a more specific sentence. |
 
-The refusal is one status. The part `reason` holds the reason, and the part `next` holds the next step. A refused part of a thread and a refused message show the same next step.
+The element shows the reason in the part `reason`. Then the part `next` shows `Ask for this content again. If the refusal shows again, tell the owner of the application.` A refused thread part uses the same display rules. A refused message also shows the same next step.
+
+The part `details` is a closed disclosure with the label `Technical details`. When you open it, you can read the component name, if available, and the validation errors. The text stays plain. Press Tab to reach the label and Enter or Space to open or close the disclosure. The `Copy technical details` button copies the text inside. The element sends `mu-refused` with all errors in `event.detail.errors`.
 
 The `text` primitive is one exception. An empty text shows nothing, because the application puts a text in a sentence or next to a label.
 
@@ -62,7 +64,7 @@ A table of more than 30rem scrolls in its own area, and its column headers stay 
 
 ## Copy controls
 
-A code block of a rich text and the reference of a receipt have a `Copy` button, with the names `Copy code` and `Copy reference`. A press writes the text to the clipboard. The button shows `Copied` for 2 seconds, only after the browser accepts the text. The accessible name of the button does not change. A status with `role="status"` gives `Copied` to a screen reader. If the browser refuses, the button shows `Not copied`, and the status tells the person to select the text and copy it.
+A code block, a receipt reference and the technical details of a refusal each have a `Copy` button. A press writes the text to the clipboard. The button shows `Copied` for 2 seconds, only after the browser accepts the text. The accessible name of the button does not change. A status with `role="status"` gives `Copied` to a screen reader. If the browser refuses, the button shows `Not copied`, and the status tells the person to select the text and copy it.
 
 The text goes only to the clipboard, and only after a person presses the button. The receipt reference and its copy control share a row below the action status. The control uses the standard control edge, which is less strong than its text. The target is at least 44 by 44 CSS pixels. If the row is too narrow, the control wraps below the reference. The action status stays in its own live region. The parts are `reference`, `copy` and `copy-status`.
 

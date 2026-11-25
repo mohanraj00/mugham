@@ -36,7 +36,7 @@ const HELPERS = `window.mu = {
   thread() {
     const root = document.querySelector('mu-thread')?.shadowRoot;
     return root ? { actors: [...root.querySelectorAll('li.message .actor')].map((node) => node.textContent),
-      refusals: [...root.querySelectorAll('.refusal')].map((node) => node.textContent), text: root.textContent } : null;
+      refusals: [...root.querySelectorAll('.refusal [part="details"] > div')].map((node) => node.textContent), text: root.textContent } : null;
   },
 }, true`;
 

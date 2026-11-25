@@ -54,7 +54,7 @@ async function browserChecks() {
   const button = (node) => root(node).querySelector('[part="open"]');
   const box = (node) => root(node).querySelector('[part="box"]').getBoundingClientRect();
   const refused = (node) => node.dataset.state === 'refused' && node.fill === null && !image(node)
-    && root(node).querySelector('[role="status"]')?.textContent.startsWith('Refused image:');
+    && root(node).querySelector('[part="details"] > div')?.textContent.startsWith('image:');
 
   check('origins: the page starts with no permitted origin', MuImage.allowedOrigins.length === 0 && refused(mount()));
   const origins = [location.origin];

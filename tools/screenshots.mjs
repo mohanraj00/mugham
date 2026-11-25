@@ -42,6 +42,7 @@ const STATE = `(() => {
     actors: messages.map((node) => node.querySelector('.actor')?.textContent),
     refusals: [...root.querySelectorAll('.refusal')].map((node) => node.textContent),
     action: button?.dataset.state, status: button?.shadowRoot.querySelector('.status').textContent,
+    reference: button?.shadowRoot.querySelector('[part="reference"]')?.textContent ?? '',
     boxes: { conversation: box([document.querySelector('h1'), ...messages.slice(0, Math.max(refused, 1))]),
       refusal: box(refused < 0 ? [] : [messages[refused]]), action: box([action]) } };
 })()`;
@@ -103,7 +104,10 @@ async function main() {
           const { requestId } = await held;
           await session.send('Fetch.continueRequest', { requestId }, sessionId);
           value = await waitFor(session, sessionId, (v) => v.action === 'done' || v.action === 'error');
-          if (!/^Done: .*Reference: R-\d{4}$/.test(value.status)) throw new Error('the action shows ' + value.status);
+          // The reference shows in its own row after the status (issue 133).
+          if (!/^Done: /.test(value.status) || !/^Reference: R-\d{4}$/.test(value.reference)) {
+            throw new Error(`the action shows ${value.status} with ${value.reference}`);
+          }
         }
         if (value.action !== frame.action) throw new Error(`${frame.name}: the action is ${value.action}, not ${frame.action}`);
         const box = value.boxes[frame.part];

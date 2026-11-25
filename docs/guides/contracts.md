@@ -112,7 +112,7 @@ no authorship slot: slots.authorship: a required slot is missing
 a title that is too long: data.title: more than 120 characters
 ```
 
-If an element gets a fill with an error, it shows `Refused <name>: <first error>` as text. After the reason, it tells the person to ask for the content again. It sets `data-state` to `refused`, keeps no data and sends a `mu-refused` event with all the errors.
+If an element gets a fill with an error, it shows a short reason and tells the person to ask for the content again. The `Technical details` disclosure shows the component name and the errors as text. The element sets `data-state` to `refused`, keeps no fill and sends a `mu-refused` event with all the errors.
 
 ## Text stays text
 
@@ -136,7 +136,7 @@ claim.fill = fill('card', { title: 'Tide table' }, { slots: { authorship: { type
 main.append(claim);
 ```
 
-Expected result: the card shows `Refused card: slots.authorship: the author is not the bound actor`. Thus an agent cannot name a person as the author of its content.
+The card shows a refusal. Open `Technical details` to see `card: slots.authorship: the author is not the bound actor`. Thus an agent cannot name a person as the author of its content.
 
 Set `actor` before `fill`. If no actor is bound, the element refuses each fill with an authorship slot. `mu-thread` binds the actor of the envelope to each component element.
 
@@ -189,7 +189,7 @@ for (const count of [42, 500]) {
 Expected result:
 
 - The first element shows an article with the name `East marsh` and the text `42 birds on 2026-11-02`.
-- The second element shows `Refused bird-count: data.count: more than the maximum 300`.
+- The second element shows a refusal. Open its `Technical details` to see `bird-count: data.count: more than the maximum 300`.
 
 `register` fails with a `TypeError` and changes nothing if the contract is not valid, if the name is already used, or if the element is not a correct subclass. [Application contracts](../../catalog/README.md#application-contracts) gives each condition and each limit. A registered contract stays until the page closes.
 

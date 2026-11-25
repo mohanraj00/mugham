@@ -77,7 +77,7 @@ Verify each item before you report the page as done.
 
 - [ ] The page loads `src/tokens/tokens.css` before the kit code, and it is served over HTTP.
 - [ ] The page calls `define` of `src/components/index.js`, and `define` of `src/thread/index.js` if it uses `mu-thread`.
-- [ ] No element shows `Refused`, and `data-state` is not `refused` on an element, except for each fill that you planned to refuse.
+- [ ] Only the elements with fills that you planned to refuse have `data-state="refused"` and a `Technical details` control.
 - [ ] No fill has an `actions` key, a key that its contract does not declare, or markup that you expect to render.
 - [ ] Each action element has a binding. After send it shows `Pending`, and a missing or invalid receipt keeps it pending. A valid receipt can show `Done` or `Not done`. A local failure before send gives its own reason.
 - [ ] Each message of the thread shows the correct actor name and type: `Person`, `Agent` or `System`.

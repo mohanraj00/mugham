@@ -8,6 +8,7 @@ define();
 const MARKUP = '<img src=x onerror="window.muUnsafe=1"><script>window.muUnsafe=1</script>';
 const results = [];
 const check = (name, ok, detail = '') => results.push({ name, ok: Boolean(ok), detail: String(detail) });
+const refusedText = (node) => node.shadowRoot.querySelector('[part="details"] > div')?.textContent ?? '';
 const fill = (component, data) => ({ component, version: '0.1.0', data });
 const VALID = {
   text: { text: 'Weather at sea' },
@@ -39,15 +40,15 @@ for (const name of Object.keys(TAGS)) {
   check(`${name}: renders a valid fill`, node.dataset.state !== 'refused' && node.fill !== null, node.dataset.state);
   node.fill = fill(name, { ...VALID[name], script: 'x' });
   check(`${name}: refuses an undeclared field`, node.dataset.state === 'refused' && node.fill === null
-    && node.shadowRoot.textContent.includes('data.script: the contract does not declare this field'), node.shadowRoot.textContent);
+    && refusedText(node).includes('data.script: the contract does not declare this field'), node.shadowRoot.textContent);
   node.fill = fill('banner', {});
   check(`${name}: refuses an undeclared component`, node.dataset.state === 'refused', node.dataset.state);
   node.fill = fill(name === 'text' ? 'button' : 'text', name === 'text' ? VALID.button : VALID.text);
   check(`${name}: refuses a fill of a different component`, node.dataset.state === 'refused'
-    && node.shadowRoot.textContent.includes(`component: must be ${name}`), node.shadowRoot.textContent);
+    && refusedText(node).includes(`component: must be ${name}`), node.shadowRoot.textContent);
   node.fill = fill(name === 'text' ? 'button' : 'text', { label: 7, text: 7 });
   check(`${name}: names the component first for a bad fill of a different component`,
-    node.shadowRoot.textContent.includes(`component: must be ${name}`), node.shadowRoot.textContent);
+    refusedText(node).includes(`component: must be ${name}`), node.shadowRoot.textContent);
 }
 
 // Markup in each text field shows as text and makes no element.
@@ -165,10 +166,10 @@ const reasonOf = (node) => {
   check('number-field: a minimum alone shows the minimum', reasonOf(low).text === 'Give a number of at least 1.', reasonOf(low).text);
   const outside = mount('number-field', { label: 'Copies', value: 30, maximum: 12 });
   check('number-field: refuses a value outside the range of the fill', outside.dataset.state === 'refused'
-    && outside.shadowRoot.textContent.includes('data.value: the number is outside the range'), outside.shadowRoot.textContent);
+    && refusedText(outside).includes('data.value: the number is outside the range'), outside.shadowRoot.textContent);
   const wrong = mount('number-field', { label: 'Copies', value: '3' });
   check('number-field: refuses a value that is not a number', wrong.dataset.state === 'refused'
-    && wrong.shadowRoot.textContent.includes('data.value: must be a number'), wrong.shadowRoot.textContent);
+    && refusedText(wrong).includes('data.value: must be a number'), wrong.shadowRoot.textContent);
   const crossed = mount('number-field', { label: 'Copies', minimum: 5, maximum: 2 });
   check('number-field: refuses a minimum above the maximum', crossed.dataset.state === 'refused', crossed.shadowRoot.textContent);
 }
@@ -186,10 +187,10 @@ const reasonOf = (node) => {
   check('date-field: a valid date removes the reason', reasonOf(node).text === '' && node.value === '2026-12-24', reasonOf(node).text);
   const wrong = mount('date-field', { label: 'Due date', value: '2026-13-01' });
   check('date-field: refuses a value that is not a date', wrong.dataset.state === 'refused'
-    && wrong.shadowRoot.textContent.includes('data.value: must be a date as YYYY-MM-DD'), wrong.shadowRoot.textContent);
+    && refusedText(wrong).includes('data.value: must be a date as YYYY-MM-DD'), wrong.shadowRoot.textContent);
   const outside = mount('date-field', { label: 'Due date', value: '2026-10-01', earliest: '2026-11-01' });
   check('date-field: refuses a value outside the range of the fill', outside.dataset.state === 'refused'
-    && outside.shadowRoot.textContent.includes('data.value: the date is outside the range'), outside.shadowRoot.textContent);
+    && refusedText(outside).includes('data.value: the date is outside the range'), outside.shadowRoot.textContent);
 }
 
 // A choice field gives one of its choices. It refuses a value that is not a choice.
@@ -203,7 +204,7 @@ const reasonOf = (node) => {
   check('choice-field: no value checks no choice', empty.value === '' && !empty.changed, empty.value);
   const wrong = mount('choice-field', { label: 'Branch', value: 'East', choices: ['North', 'South'] });
   check('choice-field: refuses a value that is not a choice', wrong.dataset.state === 'refused'
-    && wrong.shadowRoot.textContent.includes('data.value: the value is not one of the choices'), wrong.shadowRoot.textContent);
+    && refusedText(wrong).includes('data.value: the value is not one of the choices'), wrong.shadowRoot.textContent);
   const twice = mount('choice-field', { label: 'Branch', choices: ['North', 'North'] });
   check('choice-field: refuses two choices with one text', twice.dataset.state === 'refused', twice.shadowRoot.textContent);
   const none = mount('choice-field', { label: 'Branch', choices: [] });
@@ -249,7 +250,7 @@ for (const [name, value, shown] of [['long-text-field', 'First\r\nSecond', 'Firs
 for (const name of ['button', ...INPUTS, 'stack', 'grid']) {
   const blank = mount(name, { ...VALID[name], label: '' });
   check(`${name}: refuses a blank label`, blank.dataset.state === 'refused'
-    && blank.shadowRoot.textContent.includes('data.label: fewer than 1 characters'), blank.shadowRoot.textContent);
+    && refusedText(blank).includes('data.label: fewer than 1 characters'), blank.shadowRoot.textContent);
 }
 
 const disabled = mount('button', { label: 'Return', disabled: true });

@@ -61,8 +61,15 @@ export function icon(name) {
   return node;
 }
 
-// What a person does after a refusal. Each refused state shows this text after the reason.
+export const REFUSED_REASON = 'This content did not show because it did not match the rules of the application.';
 export const REFUSED_NEXT = 'Ask for this content again. If the refusal shows again, tell the owner of the application.';
+
+export function refusalDetails(component, errors) {
+  const body = el('div');
+  body.textContent = (component ? component + ': ' : '') + errors.join('\n');
+  return el('details', { part: 'details' }, el('summary', {}, 'Technical details'), body,
+    copyControl(body.textContent, 'technical details'));
+}
 
 // The time in milliseconds that a copy control shows Copied.
 export const COPIED_TIME = 2000;
@@ -125,6 +132,9 @@ export const BASE = sheet(`
   .copy-status { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   .refused { font: var(--mu-type-caption); color: var(--mu-color-danger); }
   .refused [part="next"] { display: block; }
+  details[part="details"] > summary { min-height: 2.75rem; min-width: 2.75rem; padding-block: 0.625rem; cursor: pointer; }
+  details[part="details"]:not([open]) > :not(summary) { display: none; }
+  details[part="details"] > div { white-space: pre-wrap; overflow-wrap: anywhere; }
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { transition: none !important; animation: none !important; }
   }

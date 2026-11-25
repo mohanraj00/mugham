@@ -109,7 +109,7 @@ async function browserChecks() {
   const stage = document.getElementById('stage');
   const root = (element) => element.shadowRoot;
   const tick = () => new Promise((done) => setTimeout(done, 0));
-  const refusal = (element) => (element.dataset.state === 'refused' ? root(element).querySelector('[role="status"] [part="reason"]')?.textContent : null);
+  const refusal = (element) => (element.dataset.state === 'refused' ? root(element).querySelector('[part="details"] > div')?.textContent : null);
   const thrown = (act) => { try { act(); return ''; } catch (error) { return `${error.name}: ${error.message}`; } };
   function mount(value, binding = BINDING, parent = stage) {
     const element = new MuDataGrid();
@@ -440,7 +440,7 @@ async function browserChecks() {
   ];
   for (const [data, reason] of REFUSED) {
     const bad = mount(fill(data));
-    check(`refused: ${reason}`, refusal(bad) === 'Refused data-grid: ' + reason && !root(bad).querySelector('table') && bad.fill === null, root(bad).textContent);
+    check(`refused: ${reason}`, refusal(bad) === 'data-grid: ' + reason && !root(bad).querySelector('table') && bad.fill === null, root(bad).textContent);
   }
 
   // The binding: the application gives only the tool and its arguments. With no binding, the grid is read-only.
@@ -494,7 +494,7 @@ async function browserChecks() {
       'data.columns[0].data.choices: the choices are not the choices of the application'],
   ]) {
     const bad = mount(value);
-    check(`policy: ${name} is refused`, refusal(bad) === 'Refused data-grid: ' + reason && !root(bad).querySelector('table'), root(bad).textContent);
+    check(`policy: ${name} is refused`, refusal(bad) === 'data-grid: ' + reason && !root(bad).querySelector('table'), root(bad).textContent);
   }
   const extra = mount(relabel((data) => {
     data.columns.splice(4, 0, column('feb', 'January', 'number'));

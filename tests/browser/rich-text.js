@@ -1,5 +1,7 @@
 // Expected elements, limits and refusal texts come from catalog/rich-*.json and src/components/rich-text.md.
 // tools/browser_check.mjs imports the keyboard checks in Node and loads this page in each media mode.
+import { showsRefusal } from './refusal.js';
+
 export async function richTextKeyboardChecks(session, sessionId, { evaluate, key }, page) {
   const results = [];
   const check = (name, ok, detail) => results.push({ page, step: name, ok: Boolean(ok), detail: JSON.stringify(detail) });
@@ -50,7 +52,7 @@ async function browserChecks() {
   const stage = document.getElementById('stage');
   const root = (element) => element.shadowRoot;
   const tags = (element, selector) => [...root(element).querySelectorAll(selector)].map((item) => item.localName).join(' ');
-  const refusal = (element) => (element.dataset.state === 'refused' ? root(element).querySelector('[role="status"] [part="reason"]')?.textContent : null);
+  const refusal = (element) => (element.dataset.state === 'refused' ? root(element).querySelector('[part="details"] > div')?.textContent : null);
   function mount(value, parent = stage) {
     const element = new MuRichText();
     element.actor = AUTHOR;
@@ -149,13 +151,13 @@ async function browserChecks() {
     ['a relative address', '/rules'], ['an address with a user name', 'https://person@example.org/rules'],
     ['an http address', 'http://example.org/rules'], ['a mail address', 'mailto:desk@example.org'], ['text that is no address', 'rules page 4']]) {
     const bad = mount(fill(paragraph(span('Read the '), link('Synthetic rules', url))));
-    check(`link: ${name} is refused`, refusal(bad) === 'Refused rich-text: data.blocks[0].data.content[1].data.url: the page does not permit this link'
-      && !root(bad).querySelector('button, a, [href]') && bad.fill === null && window.muUnsafe === undefined, root(bad).textContent);
+    check(`link: ${name} is refused`, refusal(bad) === 'rich-text: data.blocks[0].data.content[1].data.url: the page does not permit this link'
+      && !root(bad).querySelector('button:not([part="copy"]), a, [href]') && bad.fill === null && window.muUnsafe === undefined, root(bad).textContent);
   }
   const inList = mount(fill(list(false, paragraph(span('One')), paragraph(link('Two', SCRIPT)))));
-  check('link: the refusal gives the path of a link in a list', refusal(inList) === 'Refused rich-text: data.blocks[0].data.items[1].data.content[0].data.url: the page does not permit this link');
+  check('link: the refusal gives the path of a link in a list', refusal(inList) === 'rich-text: data.blocks[0].data.items[1].data.content[0].data.url: the page does not permit this link');
   const inQuote = mount(fill(quote(paragraph(link('Two', SCRIPT)))));
-  check('link: the refusal gives the path of a link in a quote', refusal(inQuote) === 'Refused rich-text: data.blocks[0].data.paragraphs[0].data.content[0].data.url: the page does not permit this link');
+  check('link: the refusal gives the path of a link in a quote', refusal(inQuote) === 'rich-text: data.blocks[0].data.paragraphs[0].data.content[0].data.url: the page does not permit this link');
 
   // The page sets the schemes. A fill cannot set them. A new policy applies to each connected rich text.
   check('schemes: the default is https only', MuRichText.linkSchemes.join() === 'https:' && Object.isFrozen(MuRichText.linkSchemes));
@@ -180,7 +182,7 @@ async function browserChecks() {
       === 'TypeError: link schemes: must be an array of https:, http:, mailto:' && MuRichText.linkSchemes.join() === 'https:');
   }
   check('schemes: a fill cannot set the policy', refusal(mount({ ...fill(paragraph(span('x'))), data: { blocks: [], linkSchemes: ['http:'] } }))
-    === 'Refused rich-text: data.linkSchemes: the contract does not declare this field');
+    === 'rich-text: data.linkSchemes: the contract does not declare this field');
 
   // Headings: the page sets the first level. A heading cannot skip a level.
   check('heading: the default first level is 2', MuRichText.headingLevel === 2 && tags(answer, '.heading') === 'h2 h3 h4');
@@ -194,24 +196,24 @@ async function browserChecks() {
       === 'TypeError: heading level: must be an integer from 2 to 6' && MuRichText.headingLevel === 2);
   }
   check('heading: a first heading of level 2 is refused', refusal(mount(fill(paragraph(span('x')), heading(2, span('Details')))))
-    === 'Refused rich-text: data.blocks[1].data.level: a heading cannot skip a level');
+    === 'rich-text: data.blocks[1].data.level: a heading cannot skip a level');
   check('heading: level 1 then level 3 is refused', refusal(mount(fill(heading(1, span('A')), heading(3, span('B')))))
-    === 'Refused rich-text: data.blocks[1].data.level: a heading cannot skip a level');
+    === 'rich-text: data.blocks[1].data.level: a heading cannot skip a level');
   check('heading: a heading can go up by more than one level', mount(fill(heading(1, span('A')), heading(2, span('B')), heading(3, span('C')),
     heading(1, span('D')))).dataset.state === 'default');
   check('heading: no element has the level 1 of the page', !root(answer).querySelector('h1'));
 
   // An unknown node type and an undeclared attribute show a refusal.
   check('an unknown block type is refused', refusal(mount(fill(node('rich-table', { rows: [] }))))
-    === 'Refused rich-text: data.blocks[0].component: must be ' + BLOCKS);
+    === 'rich-text: data.blocks[0].component: must be ' + BLOCKS);
   check('an unknown inline type is refused', refusal(mount(fill(paragraph(node('rich-image', { url: RULES })))))
-    === 'Refused rich-text: data.blocks[0].data.content[0].component: must be rich-span or rich-link');
+    === 'rich-text: data.blocks[0].data.content[0].component: must be rich-span or rich-link');
   for (const key of ['style', 'class', 'onclick', 'href', 'id']) {
     check(`a span with ${key} is refused`, refusal(mount(fill(paragraph(node('rich-span', { text: 'x', [key]: 'x' })))))
-      === `Refused rich-text: data.blocks[0].data.content[0].data.${key}: the contract does not declare this field`);
+      === `rich-text: data.blocks[0].data.content[0].data.${key}: the contract does not declare this field`);
   }
   check('an undeclared mark is refused', refusal(mount(fill(paragraph(span('x', 'underline')))))
-    === 'Refused rich-text: data.blocks[0].data.content[0].data.mark: must be one of emphasis, strong, code');
+    === 'rich-text: data.blocks[0].data.content[0].data.mark: must be one of emphasis, strong, code');
 
   // States: empty, the size limit and the author.
   const empty = mount(fill());
@@ -219,7 +221,7 @@ async function browserChecks() {
   const row = Array.from({ length: 50 }, () => span('x'));
   check('size: 2000 inline nodes are valid', mount(fill(...Array.from({ length: 40 }, () => paragraph(...row)))).dataset.state === 'default');
   check('size: more than 2000 inline nodes are refused', refusal(mount(fill(...Array.from({ length: 40 }, () => paragraph(...row)), paragraph(span('x')))))
-    === 'Refused rich-text: data.blocks: more than 2000 inline nodes');
+    === 'rich-text: data.blocks: more than 2000 inline nodes');
   const unbound = document.createElement('mu-rich-text');
   stage.append(unbound);
   unbound.fill = fill(paragraph(span('x')));
@@ -287,7 +289,9 @@ async function browserChecks() {
   check('thread: a rich text part shows with the actor of the envelope', parts.length === 2 && parts[0].dataset.state === 'default'
     && parts[0].actor.id === AUTHOR.id && tags(parts[0], '.heading') === 'h2 h3 h4', parts.length);
   check('thread: a rich text with a script address shows a refusal', parts[1]?.dataset.state === 'refused'
-    && !root(parts[1]).querySelector('button, a') && window.muUnsafe === undefined);
+    && showsRefusal(root(parts[1]), 'rich-text', 'data.blocks[0].data.content[0].data.url: the page does not permit this link')
+    && !root(parts[1]).querySelector('button:not([part="copy"]), a, [href]') && window.muUnsafe === undefined,
+  parts[1]?.shadowRoot.textContent);
 
   // These checks moved the focus. Put the Tab start point before the keyboard target. The link is the next Tab stop.
   const keyboard = document.getElementById('keyboard');
