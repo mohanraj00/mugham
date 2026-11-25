@@ -207,6 +207,31 @@ test('a checkbox group submits a bounded list in choice order', () => {
   assert.equal(field.changed, false);
 });
 
+test('the booking form refuses time zones that do not agree with the binding', () => {
+  const binding = { tool: 'rooms.save', title: 'Room booking', label: 'Save',
+    editable: { setup: 'Setup date and time', note: 'Note' } };
+  const field = fill('date-time-field', { name: 'setup', label: binding.editable.setup,
+    value: '2028-02-29T08:00', time_zone: 'Europe/Oslo' });
+  const note = fill('field', { name: 'note', label: binding.editable.note });
+  const wrongZone = 'data.fields: the time zone of the field setup is not the time zone of the application';
+  for (const [fields, time_zones, reason] of [
+    [[field], { setup: 'America/New_York' }, wrongZone],
+    [[field], undefined, wrongZone],
+    [[fill('time-field', { name: 'setup', label: binding.editable.setup, value: '08:00' })], { setup: 'Europe/Oslo' },
+      'data.fields: the time zone of the application for setup needs a date and time field'],
+    [[field, note], { setup: 'Europe/Oslo', note: 'Europe/Oslo' },
+      'data.fields: the time zone of the application for note needs a date and time field'],
+    [[field], { setup: 'Europe/Oslo', note: 'Europe/Oslo' },
+      'data.fields: the time zone of the application for note needs a date and time field'],
+  ]) {
+    const form = kit.mount('editable-form', { title: binding.title, submit_label: binding.label, fields },
+      { action: { ...binding, time_zones } });
+    assert.equal(form.dataset.state, 'refused');
+    assert.match(part(form.shadowRoot, 'details').textContent, new RegExp(reason));
+    assert.equal(part(form.shadowRoot, 'button'), undefined);
+  }
+});
+
 test('the booking form submits a date pair and two text values after invalid edits are fixed', () => {
   const values = { dates: ['2028-02-29', '2028-03-01'], start_time: '09:35', setup: '2028-02-29T08:00' };
   const editable = { dates: 'Booking dates', start_time: 'Start time', setup: 'Setup date and time' };
@@ -214,7 +239,7 @@ test('the booking form submits a date pair and two text values after invalid edi
     fill('date-range-field', { name: 'dates', label: editable.dates, value: values.dates, earliest: '2028-02-29' }),
     fill('time-field', { name: 'start_time', label: editable.start_time, value: values.start_time, earliest: '09:05', step: 15 }),
     fill('date-time-field', { name: 'setup', label: editable.setup, value: values.setup, time_zone: 'Europe/Oslo', hint: 'Set the setup time.' }),
-  ] }, { action: { tool: 'rooms.save', title: 'Room booking', label: 'Save', editable } });
+  ] }, { action: { tool: 'rooms.save', title: 'Room booking', label: 'Save', editable, time_zones: { setup: 'Europe/Oslo' } } });
   const field = (name) => find(form.shadowRoot, (node) => node.tag === 'mu-' + name);
   const dates = field('date-range-field');
   const time = field('time-field');

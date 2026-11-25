@@ -165,6 +165,7 @@ A binding has these keys. Only `tool` is necessary.
 | `display` | The display of an action button. Use `text`, `icon` or `both`. |
 | `title` | The title of an editable form, 1 to 120 characters. |
 | `editable` | The names that an editable form or a form card can send, each with its label. Up to 400 names, because a form card has up to 10 sections of 40 fields. |
+| `time_zones` | Optional. Maps names from `editable` to IANA time zone names, with one entry that matches the `time_zone` of each `date-time-field` in the fill. |
 | `typed` | Optional. The editable names that need an edit type. See "Typed edits". |
 | `editor` | The person who edits a typed form: `{ type: 'human', id }`. `id` has 1 to 128 characters. It is necessary if `typed` has a name. |
 | `confirm` | Optional. The confirm step: `{ message, label }`. `message` has 1 to 200 characters. `label` has 1 to 40 characters. |
@@ -221,6 +222,8 @@ form.action = { tool: 'library.update_loan', label: 'Save', title: 'Change a loa
 ```
 
 The form refuses a fill with a different `title`, because the title names the target of the bound arguments. A binding with no title accepts no form fill. The form also refuses a fill with no field that a person can edit, because only the application labels of the fields tell what the request does. The form also refuses a fill with a field name that `editable` does not give, or with a field label that is not the label in `editable`. The form does not send the value of a disabled field, because a person cannot edit it. A new fill lets the form save again, because a receipt from before the fill does not confirm the new values. This check occurs when the fill or the binding changes. A binding with no `editable` map accepts no field. If a second submit occurs while a request is pending, the form refuses it. The refused submit does not change the values of the pending request.
+
+The form refuses a fill if a name in `time_zones` has no `date-time-field` in the fill. The request sends the local date and time as text. The application keeps the time zone in the binding.
 
 ### Typed edits
 

@@ -4,7 +4,7 @@ Each release has an entry. The newest entry is first.
 
 ## Unreleased
 
-- An editable form accepts native fields for a date range, a time and a local date and time with a fixed time zone label (#124).
+- An editable form accepts native fields for a date range, a time and a local date and time with a fixed time zone label (#124). The form refuses a date and time field if its time zone is absent from the action binding or differs from the binding.
 
 - An editable form accepts multiple choices as checkboxes or a searchable tag picker and sends the selected texts as a list (#121).
 - An editable form accepts a select field with up to 500 choices (#120). A list of more than seven choices has a search box.
