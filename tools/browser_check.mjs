@@ -21,6 +21,7 @@ import { UPLOAD_FILES, uploadExampleChecks, uploadKeyboardChecks } from '../test
 import { plannedErrors, queueExampleChecks } from '../tests/browser/queue.js';
 import { DIALOG_PAGE, dialogExampleChecks } from '../tests/browser/dialog.js';
 import { POPOVER_PAGE, popoverExampleChecks } from '../tests/browser/popovers.js';
+import { SETTINGS_PAGE, settingsExampleChecks } from '../tests/browser/settings.js';
 import { RANGE_PAGE, rangeExampleChecks } from '../tests/browser/range-field.js';
 import { MULTI_CHOICE_PAGE, multiChoiceExampleChecks } from '../tests/browser/multi-choice-field.js';
 import { BOOKING_PAGE, bookingExampleChecks } from '../tests/browser/date-time-fields.js';
@@ -103,6 +104,7 @@ const EXAMPLES = {
     ['switch', 'Send due date reminders'], ['switch', 'Send pickup notices']]],
   [DIALOG_PAGE]: [3, 0, [['button', 'Open dialog'], ['button', 'Open drawer']]],
   [POPOVER_PAGE]: [3, 0, [['button', 'Tray options'], ['button', 'About this tray'], ['button', 'Save note']]],
+  [SETTINGS_PAGE]: [6, 0, [['tablist', 'Settings'], ['tab', 'General'], ['tabpanel', 'General']]],
   [RANGE_PAGE]: [3, 0, [['form', 'Loan limits'], ['slider', 'Loan period in days'], ['spinbutton', 'Loan period in days number'],
     ['group', 'Price range'], ['slider', 'Price range Minimum'], ['spinbutton', 'Price range Minimum number'],
     ['slider', 'Price range Maximum'], ['spinbutton', 'Price range Maximum number']]],
@@ -443,7 +445,8 @@ export async function pageRules(session, sessionId, where) {
     .map((node) => node.role.value);
   const markup = await evaluate(session, sessionId, `(() => {
     const ROLES = new Set(['alert', 'article', 'button', 'checkbox', 'combobox', 'dialog', 'form', 'grid', 'group', 'heading', 'img', 'link', 'list',
-      'listbox', 'listitem', 'log', 'main', 'menu', 'menuitem', 'navigation', 'none', 'option', 'presentation', 'radio', 'radiogroup', 'region', 'slider', 'status', 'switch', 'textbox', 'tooltip']);
+      'listbox', 'listitem', 'log', 'main', 'menu', 'menuitem', 'navigation', 'none', 'option', 'presentation', 'radio', 'radiogroup', 'region', 'slider', 'status', 'switch',
+      'tab', 'tablist', 'tabpanel', 'textbox', 'tooltip']);
     const BOOLEAN = ['true', 'false'];
     const VALUES = { 'aria-invalid': BOOLEAN, 'aria-live': ['off', 'polite', 'assertive'], 'aria-disabled': BOOLEAN,
       'aria-expanded': BOOLEAN, 'aria-haspopup': [...BOOLEAN, 'menu', 'listbox', 'tree', 'grid', 'dialog'],
@@ -1031,6 +1034,8 @@ async function main() {
     report.keyboard.push(...await dialogExampleChecks(session, sessionId, base, MODES,
       { evaluate, open, key, pageRules, axErrors }, problems));
     report.keyboard.push(...await popoverExampleChecks(session, sessionId, base, MODES,
+      { evaluate, open, key, pageRules, axErrors }, problems));
+    report.keyboard.push(...await settingsExampleChecks(session, sessionId, base, MODES,
       { evaluate, open, key, pageRules, axErrors }, problems));
     report.keyboard.push(...await rangeExampleChecks(session, sessionId, base, MODES, { evaluate, open, key }, problems));
     report.keyboard.push(...await selectExampleChecks(session, sessionId, base, MODES, { evaluate, open, key, pageRules }, problems));

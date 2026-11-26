@@ -1,6 +1,8 @@
 // The contracts that the kit knows, in the full form. CI validates each one with tools/catalog.py.
 // A contract file has the short form. resolveContract gives its full form (catalog/schema/README.md).
 import { resolveContract } from './resolve.js';
+import accordion from '../../catalog/accordion.json' with { type: 'json' };
+import tabs from '../../catalog/tabs.json' with { type: 'json' };
 import actionButton from '../../catalog/action-button.json' with { type: 'json' };
 import actionQueue from '../../catalog/action-queue.json' with { type: 'json' };
 import button from '../../catalog/button.json' with { type: 'json' };
@@ -65,7 +67,7 @@ const FILES = {
   'action-button': actionButton, 'action-queue': actionQueue, 'queued-action': queuedAction, button, card, 'card-grid': cardGrid, 'choice-field': choiceField, citation, 'date-field': dateField,
   diff, 'diff-change': diffChange, 'diff-part': diffPart, dialog, drawer, 'editable-form': editableForm, excerpt, fact, field,
   'form-card': formCard, 'form-line': formLine, 'form-section': formSection, grid, image,
-  menu, tooltip, toast,
+  menu, tooltip, toast, tabs, accordion,
   'long-text-field': longTextField, 'number-field': numberField, 'source-status': sourceStatus, stack, status, text, table, 'table-row': tableRow,
   'toggle-field': toggleField,
   'range-field': rangeField,

@@ -5,7 +5,7 @@ import { define as definePrimitives, FIELDS } from '../primitives/index.js';
 import { ActionState, isActionValue, isEditType } from '../actions/action.js';
 import { copyValue } from '../offline/queue.js';
 import { PATIENCE, patienceOf, ReceiptTimer } from './pending.js';
-import { EDGE, LIFT, el, icon, sheet } from '../render/dom.js';
+import { EDGE, LIFT, el, icon, setDisclosure, sheet } from '../render/dom.js';
 import { ACTION_RESULT_CSS, REFERENCE_CSS, showReference } from './receipt.js';
 import { fillErrors } from '../render/validate.js';
 import { CONTRACTS, registeredTag } from '../render/registry.js';
@@ -15,6 +15,8 @@ import { MuDialog, MuDrawer } from './dialog.js';
 export { MuDialog, MuDrawer } from './dialog.js';
 import { MuMenu, MuTooltip, MuToast } from './popovers.js';
 export { MuMenu, MuTooltip, MuToast } from './popovers.js';
+import { MuAccordion, MuTabs } from './panels.js';
+export { MuAccordion, MuTabs } from './panels.js';
 import { MuStatus } from './status.js';
 export { MuStatus } from './status.js';
 import { MuImage } from './image.js';
@@ -545,10 +547,9 @@ export class MuCard extends MuElement {
 
   #sync() {
     if (!this.#toggle) return;
-    this.#toggle.setAttribute('aria-expanded', String(!this.#collapsed));
+    setDisclosure(this.#toggle, this.#body, !this.#collapsed);
     this.#toggle.setAttribute('aria-label', `${this.#collapsed ? 'Expand' : 'Collapse'} ${this.fill.data.title}`);
     this.#toggle.firstChild.textContent = this.#collapsed ? 'Expand' : 'Collapse';
-    this.#body.hidden = this.#collapsed;
     if (this.#summary) this.#summary.hidden = !this.#collapsed;
   }
 
@@ -1545,6 +1546,7 @@ export function define(registry = customElements) {
     ['mu-card-grid', MuCardGrid], ['mu-editable-form', MuEditableForm], ['mu-form-card', MuFormCard], ['mu-citation', MuCitation], ['mu-diff', MuDiff],
     ['mu-dialog', MuDialog], ['mu-drawer', MuDrawer],
     ['mu-menu', MuMenu], ['mu-tooltip', MuTooltip], ['mu-toast', MuToast],
+    ['mu-tabs', MuTabs], ['mu-accordion', MuAccordion],
     ['mu-excerpt', MuExcerpt], ['mu-table', MuTable], ['mu-status', MuStatus], ['mu-source-status', MuSourceStatus], ['mu-action-queue', MuActionQueue], ['mu-image', MuImage], ['mu-chart', MuChart],
     ['mu-rich-text', MuRichText], ['mu-data-grid', MuDataGrid], ['mu-upload', MuUpload]]) {
     if (!registry.get(name)) registry.define(name, element);

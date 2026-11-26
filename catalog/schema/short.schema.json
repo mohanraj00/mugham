@@ -45,7 +45,7 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "role": {"enum": ["article", "button", "checkbox", "combobox", "dialog", "form", "group", "list", "menu", "region", "slider", "status", "switch", "textbox", "tooltip", "none"]},
+        "role": {"enum": ["article", "button", "checkbox", "combobox", "dialog", "form", "group", "list", "menu", "region", "slider", "status", "switch", "tablist", "textbox", "tooltip", "none"]},
         "name": {
           "oneOf": [
             {

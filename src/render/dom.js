@@ -29,6 +29,11 @@ export function sheet(css) {
   return result;
 }
 
+export function setDisclosure(button, panel, expanded) {
+  button.setAttribute('aria-expanded', String(expanded));
+  panel.hidden = !expanded;
+}
+
 // The edge and the small shadow of a container that is not a control: a card, a form or a message. They come
 // from the border token, so each theme and each contract that declares color.border has them. A control keeps
 // the full border color, because its edge needs a contrast of 3:1. Forced colors replaces the two.

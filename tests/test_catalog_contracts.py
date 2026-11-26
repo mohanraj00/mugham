@@ -66,6 +66,8 @@ VALID = {
     'fact': FACT['data'],
     'card': CARD['data'],
     'action-button': {'label': 'Renew', 'description': 'Renew the loan for two weeks.'},
+    'tabs': {'label': 'Settings', 'tabs': [{'label': 'General', 'name': 'general'}]},
+    'accordion': {'label': 'Notifications', 'sections': [{'label': 'Digest schedule', 'name': 'digest_schedule'}]},
     'dialog': {'title': 'Release tray A3', 'close_label': 'Close dialog'},
     'drawer': {'title': 'Tray details', 'close_label': 'Close drawer'},
     'menu': {'label': 'Tray options', 'items': [{'label': 'Export CSV', 'name': 'export_csv'}]},
@@ -111,6 +113,36 @@ VALID = {
 
 
 class CatalogContractTest(unittest.TestCase):
+    def test_panel_contracts_declare_roles_keys_and_scalar_records(self):
+        expected = {
+            'tabs': ('tabs', 'tablist', ['Tab', 'Shift+Tab', 'Enter', 'Space', 'ArrowLeft', 'ArrowRight', 'Home', 'End'],
+                     ['default', 'refused'], {'panel', 'tab', 'tablist'}),
+            'accordion': ('sections', 'group', ['Tab', 'Shift+Tab', 'Enter', 'Space'],
+                          ['default', 'expanded', 'collapsed', 'refused'], {'heading', 'panel', 'toggle'}),
+        }
+        for name, (key, role, keyboard, states, parts) in expected.items():
+            with self.subTest(component=name):
+                contract = CATALOG[name]
+                data = VALID[name]
+                self.assertEqual(catalog.contract_errors(contract, name + '.json'), [])
+                self.assertFalse(contract['ai_content'])
+                self.assertEqual(contract['states'], states)
+                self.assertEqual(contract['accessibility'], {
+                    'role': role, 'name': {'field': 'label'}, 'keyboard': keyboard,
+                    'forced_colors': True, 'reduced_motion': True,
+                })
+                self.assertTrue(parts <= {part['name'] for part in contract['parts'] if part['guardrail']})
+                self.assertEqual(catalog.fill_errors(fill(name, data), CATALOG), [])
+                for changes, field in [
+                    ({key: []}, key),
+                    ({key: [{'label': 'General', 'name': 'General-tab'}]}, f'{key}[0].name'),
+                    ({key: [{**data[key][0], 'body': CARD}]}, f'{key}[0].body'),
+                    ({'panels': [CARD]}, 'panels'),
+                ]:
+                    errors = catalog.fill_errors(fill(name, {**data, **changes}), CATALOG)
+                    self.assertEqual(len(errors), 1)
+                    self.assertTrue(errors[0].startswith(f'data.{field}:'), errors)
+
     def test_popover_contracts_declare_roles_keys_and_parts(self):
         expected = {
             'menu': ('menu', {'field': 'label'}, ['Tab', 'Shift+Tab', 'Enter', 'Space', 'Escape',

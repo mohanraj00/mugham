@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; object-src 'none'; base-uri 'none'">
+  <title>Mugham settings</title>
+  <link rel="stylesheet" href="../../src/tokens/tokens.css">
+  <link rel="stylesheet" href="../../src/styles/page.css">
+  <link rel="stylesheet" href="../page.css">
+  <script type="module" src="settings.js"></script>
+  <script type="module" src="../frame.js"></script>
+</head>
+<body>
+  <main id="main">
+    <h1>Seed library settings</h1>
+    <mu-tabs>
+      <mu-accordion slot="notifications">
+        <section slot="digest_schedule" aria-label="Digest options">
+          <p>
+            <label for="digest-frequency">Digest frequency</label>
+            <select id="digest-frequency">
+              <option value="daily">Daily</option>
+              <option value="weekly">Weekly</option>
+            </select>
+          </p>
+          <p><button id="review-settings" type="button">Review settings</button></p>
+        </section>
+        <p slot="reminders">A reminder goes out two days before a seed tray is due.</p>
+      </mu-accordion>
+      <p slot="access_rules">A library keeper can change notice settings. A reader can see the seed list.</p>
+    </mu-tabs>
+    <p id="save-result">Saved digest frequency: Daily.</p>
+  </main>
+</body>
+</html>
