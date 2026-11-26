@@ -15,6 +15,7 @@
     <strong slot="top">Library staff</strong>
     <a id="loan-link" slot="side" href="#loans">Loans</a>
     <a slot="side" href="#staff-guide">Staff guide</a>
+    <a slot="side" href="#member-wizard">Add a member</a>
     <mu-breadcrumbs></mu-breadcrumbs>
     <section id="loans" aria-labelledby="loans-title">
       <h1 id="loans-title">Loans</h1>
@@ -24,6 +25,26 @@
     <section id="staff-guide" aria-labelledby="staff-guide-title">
       <h2 id="staff-guide-title">Staff guide</h2>
       <p>Check the shelf code before you return a book.</p>
+    </section>
+    <section id="member-wizard" aria-labelledby="member-wizard-title">
+      <h2 id="member-wizard-title">Add a member</h2>
+      <mu-steps></mu-steps>
+      <mu-progress id="member-progress"></mu-progress>
+      <section data-member-step aria-labelledby="member-details-title">
+        <h3 id="member-details-title" tabindex="-1">Details</h3>
+      </section>
+      <section data-member-step aria-labelledby="member-type-title" hidden>
+        <h3 id="member-type-title" tabindex="-1">Membership type</h3>
+      </section>
+      <section data-member-step aria-labelledby="member-review-title" hidden>
+        <h3 id="member-review-title" tabindex="-1">Review</h3>
+        <dl>
+          <dt>Member name</dt>
+          <dd id="member-name"></dd>
+          <dt>Membership type</dt>
+          <dd id="member-type"></dd>
+        </dl>
+      </section>
     </section>
   </mu-app-shell>
 </body>

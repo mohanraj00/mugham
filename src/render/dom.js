@@ -3,7 +3,7 @@
 const ATTRIBUTES = new Set(['id', 'class', 'part', 'role', 'type', 'for', 'name', 'autocomplete', 'tabindex',
   'aria-label', 'aria-describedby', 'aria-invalid', 'aria-live', 'aria-disabled', 'data-state', 'scope', 'aria-sort', 'aria-hidden',
   'aria-labelledby', 'aria-modal', 'aria-expanded', 'aria-haspopup', 'aria-controls', 'aria-readonly', 'aria-autocomplete',
-  'aria-selected', 'aria-multiselectable', 'aria-current']);
+  'aria-selected', 'aria-multiselectable', 'aria-current', 'aria-valuemin', 'aria-valuemax', 'aria-valuenow']);
 
 export function text(value) {
   return document.createTextNode(String(value));

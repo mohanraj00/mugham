@@ -44,6 +44,39 @@
    "tokens": [],
    "accessibility": {"role": "navigation", "name": {"field": "label"}, "keyboard": ["Tab", "Shift+Tab", "Enter", "Space"], "forced_colors": true, "reduced_motion": true}
   },
+  "steps": {
+   "format": 2,
+   "name": "steps",
+   "version": "0.1.0",
+   "kind": "component",
+   "description": "A list of wizard steps.",
+   "ai_content": false,
+   "data": {
+    "label": {"type": "text", "label": "Label", "required": true, "min_length": 1, "max_length": 80},
+    "labels": {"type": "list", "label": "Labels", "required": true, "min_items": 1, "max_items": 20,
+     "items": {"type": "text", "label": "Step label", "required": true, "min_length": 1, "max_length": 80}},
+    "current": {"type": "integer", "label": "Current", "required": true, "minimum": 0, "maximum": 19}
+   },
+   "states": ["default"],
+   "tokens": [],
+   "accessibility": {"role": "list", "name": {"field": "label"}, "keyboard": ["Tab", "Shift+Tab", "Enter", "Space"], "forced_colors": true, "reduced_motion": true}
+  },
+  "progress": {
+   "format": 2,
+   "name": "progress",
+   "version": "0.1.0",
+   "kind": "component",
+   "description": "A named progress bar.",
+   "ai_content": false,
+   "data": {
+    "label": {"type": "text", "label": "Label", "required": true, "min_length": 1, "max_length": 80},
+    "maximum": {"type": "number", "label": "Maximum", "required": true, "minimum": 5e-324, "maximum": 1.7976931348623157e308},
+    "value": {"type": "number", "label": "Value", "required": false, "minimum": 0, "maximum": 1.7976931348623157e308}
+   },
+   "states": ["default", "loading"],
+   "tokens": [],
+   "accessibility": {"role": "progressbar", "name": {"field": "label"}, "keyboard": [], "forced_colors": true, "reduced_motion": true}
+  },
   "date-time-field": {
    "format": 2,
    "name": "date-time-field",
@@ -329,6 +362,51 @@
    "name": "pagination refuses a page above the page count",
    "fill": {"component": "pagination", "version": "0.1.0", "data": {"label": "Pages", "page": 3, "page_count": 2}},
    "errors": ["data.page: must be at most page_count"]
+  },
+  {
+   "name": "steps accept the first step at index zero",
+   "fill": {"component": "steps", "version": "0.1.0", "data": {"label": "Member steps", "labels": ["Details"], "current": 0}},
+   "errors": []
+  },
+  {
+   "name": "steps refuse an index outside the list",
+   "fill": {"component": "steps", "version": "0.1.0", "data": {"label": "Member steps", "labels": ["Details"], "current": 1}},
+   "errors": ["data.current: must be within labels"]
+  },
+  {
+   "name": "steps refuse blank list and step labels",
+   "fill": {"component": "steps", "version": "0.1.0", "data": {"label": "\u00a0", "labels": ["Details", "\t\ufeff"], "current": 1}},
+   "errors": ["data.label: give text", "data.labels[1]: give text"]
+  },
+  {
+   "name": "progress accepts a known decimal value",
+   "fill": {"component": "progress", "version": "0.1.0", "data": {"label": "Files copied", "maximum": 2.5, "value": 1.5}},
+   "errors": []
+  },
+  {
+   "name": "progress accepts an omitted value",
+   "fill": {"component": "progress", "version": "0.1.0", "data": {"label": "Files copied", "maximum": 2}},
+   "errors": []
+  },
+  {
+   "name": "progress refuses a blank name",
+   "fill": {"component": "progress", "version": "0.1.0", "data": {"label": "\u2003", "maximum": 2}},
+   "errors": ["data.label: give text"]
+  },
+  {
+   "name": "progress refuses a value above the maximum",
+   "fill": {"component": "progress", "version": "0.1.0", "data": {"label": "Files copied", "maximum": 2.5, "value": 3}},
+   "errors": ["data.value: must be at most maximum"]
+  },
+  {
+   "name": "progress refuses a zero maximum and a negative value",
+   "fill": {"component": "progress", "version": "0.1.0", "data": {"label": "Files copied", "maximum": 0, "value": -1}},
+   "errors": ["data.maximum: less than the minimum 5e-324", "data.value: less than the minimum 0"]
+  },
+  {
+   "name": "progress refuses a value that is not finite",
+   "fill": {"component": "progress", "version": "0.1.0", "data": {"label": "Files copied", "maximum": 3, "value": 1e309}},
+   "errors": ["data.value: must be a number"]
   },
   {"name": "a component reference accepts a field contract", "fill": {"component": "sample-form", "version": "0.1.0", "data": {"fields": [{"component": "sample-color", "version": "0.1.0", "data": {}}]}}, "errors": []},
   {"name": "a component reference refuses a contract with field false", "fill": {"component": "sample-form", "version": "0.1.0", "data": {"fields": [{"component": "sample-label", "version": "0.1.0", "data": {}}]}}, "errors": ["data.fields[0].component: must be a field"]},

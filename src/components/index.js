@@ -15,8 +15,10 @@ import { MuDialog, MuDrawer } from './dialog.js';
 export { MuDialog, MuDrawer } from './dialog.js';
 import { MuMenu, MuTooltip, MuToast } from './popovers.js';
 export { MuMenu, MuTooltip, MuToast } from './popovers.js';
-import { MuAppShell, MuBreadcrumbs, MuPagination } from './navigation.js';
-export { MuAppShell, MuBreadcrumbs, MuPagination } from './navigation.js';
+import { MuAppShell, MuBreadcrumbs, MuPagination, MuSteps } from './navigation.js';
+export { MuAppShell, MuBreadcrumbs, MuPagination, MuSteps } from './navigation.js';
+import { MuProgress } from './progress.js';
+export { MuProgress } from './progress.js';
 import { MuAccordion, MuTabs } from './panels.js';
 export { MuAccordion, MuTabs } from './panels.js';
 import { MuStatus } from './status.js';
@@ -1550,6 +1552,7 @@ export function define(registry = customElements) {
     ['mu-menu', MuMenu], ['mu-tooltip', MuTooltip], ['mu-toast', MuToast],
     ['mu-tabs', MuTabs], ['mu-accordion', MuAccordion],
     ['mu-app-shell', MuAppShell], ['mu-breadcrumbs', MuBreadcrumbs], ['mu-pagination', MuPagination],
+    ['mu-steps', MuSteps], ['mu-progress', MuProgress],
     ['mu-excerpt', MuExcerpt], ['mu-table', MuTable], ['mu-status', MuStatus], ['mu-source-status', MuSourceStatus], ['mu-action-queue', MuActionQueue], ['mu-image', MuImage], ['mu-chart', MuChart],
     ['mu-rich-text', MuRichText], ['mu-data-grid', MuDataGrid], ['mu-upload', MuUpload]]) {
     if (!registry.get(name)) registry.define(name, element);

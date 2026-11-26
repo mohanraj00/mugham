@@ -95,6 +95,8 @@ const BREADCRUMBS = { label: 'Breadcrumbs', items: [
   { label: 'Loans' },
 ] };
 const PAGINATION = { label: 'Loan pages', page: 8, page_count: 16 };
+const STEPS = { label: 'Member steps', labels: ['Details <member>', 'Membership type', 'Review'], current: 1 };
+const PROGRESS = { label: 'Member progress', maximum: 3.5, value: 1.5 };
 
 function make(name, data) {
   const element = new (elements.get('mu-' + name))();
@@ -282,4 +284,98 @@ test('pagination refuses a page outside the integer range', () => {
     assert.equal(pagination.fill, null);
   }
   assert.equal(refused.length, 6);
+});
+
+test('steps show position and state and only a done step requests a change', () => {
+  const steps = make('steps', STEPS);
+  const requested = events(steps, 'mu-step-change');
+  const [list] = steps.shadowRoot.children;
+  const [done, current, next] = list.children;
+  assert.equal(list.tag, 'ol');
+  assert.equal(list.getAttribute('aria-label'), STEPS.label);
+  assert.deepEqual(list.children.map((item) => item.tag), ['li', 'li', 'li']);
+  assert.deepEqual(list.children.map((item) => find(item, 'position').textContent),
+    ['Step 1 of 3', 'Step 2 of 3', 'Step 3 of 3']);
+  assert.deepEqual(list.children.map((item) => find(item, 'state').textContent), ['Done', 'Current', 'Next']);
+  assert.deepEqual(list.children.map((item) => item.getAttribute('aria-current')), [null, 'step', null]);
+  assert.equal(find(current, 'back'), undefined);
+  assert.equal(find(next, 'back'), undefined);
+  const back = find(done, 'back');
+  assert.equal(back.tag, 'button');
+  assert.match(back.textContent, /Details <member>/);
+  const before = document.activeElement;
+  current.click();
+  next.click();
+  back.click();
+  assert.deepEqual(requested, [{ index: 0 }]);
+  assert.equal(steps.fill.data.current, 1);
+  assert.equal(document.activeElement, before);
+  steps.fill = fill('steps', { ...STEPS, current: 0 });
+  back.click();
+  assert.equal(requested.length, 1);
+  assert.equal(document.activeElement, before);
+});
+
+test('progress shows its name and range and can change from known to unknown', () => {
+  const progress = make('progress', PROGRESS);
+  const bar = find(progress.shadowRoot, 'bar');
+  assert.equal(bar.tag, 'progress');
+  assert.equal(bar.getAttribute('aria-labelledby'), find(progress.shadowRoot, 'label').id);
+  assert.equal(bar.getAttribute('aria-valuemin'), '0');
+  assert.equal(bar.getAttribute('aria-valuemax'), '3.5');
+  assert.equal(bar.getAttribute('aria-valuenow'), '1.5');
+  assert.equal(bar.getAttribute('max'), '3.5');
+  assert.equal(bar.getAttribute('value'), '1.5');
+  assert.equal(find(progress.shadowRoot, 'value').textContent, '1.5 of 3.5');
+  assert.equal(progress.dataset.state, 'default');
+  progress.fill = fill('progress', { label: 'Loading loans', maximum: 4 });
+  const unknown = find(progress.shadowRoot, 'bar');
+  assert.equal(unknown.getAttribute('role'), 'progressbar');
+  assert.equal(unknown.getAttribute('aria-labelledby'), find(progress.shadowRoot, 'label').id);
+  assert.equal(unknown.getAttribute('aria-valuenow'), null);
+  assert.equal(find(progress.shadowRoot, 'value').textContent, 'Unknown');
+  assert.ok(find(progress.shadowRoot, 'indicator'));
+  assert.equal(progress.dataset.state, 'loading');
+  for (const value of [0, PROGRESS.maximum]) {
+    progress.fill = fill('progress', { ...PROGRESS, value });
+    assert.equal(find(progress.shadowRoot, 'bar').getAttribute('aria-valuenow'), String(value));
+    assert.equal(progress.dataset.state, 'default');
+  }
+});
+
+test('steps and progress export tool schemas and refuse invalid fills', () => {
+  const stepSchema = toolSchema('steps');
+  assert.equal(stepSchema.properties.component.const, 'steps');
+  assert.deepEqual(stepSchema.properties.data.required, ['label', 'labels', 'current']);
+  assert.equal(stepSchema.properties.data.properties.labels.items.type, 'string');
+  assert.equal(stepSchema.properties.data.properties.current.type, 'integer');
+  const progressSchema = toolSchema('progress');
+  assert.equal(progressSchema.properties.component.const, 'progress');
+  assert.deepEqual(progressSchema.properties.data.required, ['label', 'maximum']);
+  assert.equal(progressSchema.properties.data.properties.maximum.type, 'number');
+  assert.equal(progressSchema.properties.data.properties.value.type, 'number');
+  for (const [name, data, changes] of [
+    ['steps', STEPS, [
+      { label: ' ' }, { labels: [] }, { labels: ['Details', ' '] }, { current: -1 }, { current: 3 }, { current: 1.5 },
+      { markup: '<b>Step</b>' },
+    ]],
+    ['progress', PROGRESS, [
+      { label: ' ' }, { maximum: 0 }, { maximum: -1 }, { maximum: Infinity }, { maximum: NaN },
+      { value: -1 }, { value: 4 }, { value: '1' }, { value: null }, { value: Infinity }, { value: NaN },
+      { markup: '<b>Value</b>' },
+    ]],
+  ]) {
+    const element = make(name, data);
+    const refused = events(element, 'mu-refused');
+    for (const change of changes) {
+      const value = fill(name, { ...data, ...change });
+      const errors = validateFill(value);
+      assert.ok(errors[0]?.startsWith('data.' + Object.keys(change)[0]), JSON.stringify(change));
+      element.fill = value;
+      assert.equal(element.fill, null);
+      assert.equal(element.dataset.state, 'refused');
+      assert.deepEqual(refused.at(-1).errors, errors);
+    }
+    assert.equal(refused.length, changes.length);
+  }
 });
