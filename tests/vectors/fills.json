@@ -1,6 +1,9 @@
 {
  "note": "Shared cases for tools/catalog.py and src/render/validate.js. tests/test_vectors.py checks that the Python validator gives each expected list.",
  "catalog": {
+  "sample-color": {"format": 2, "name": "sample-color", "version": "0.1.0", "kind": "component", "description": "A synthetic example.", "ai_content": false, "field": true, "data": {}, "states": ["default"], "tokens": ["color.text"], "accessibility": {"role": "none", "keyboard": [], "forced_colors": true, "reduced_motion": true}},
+  "sample-label": {"format": 2, "name": "sample-label", "version": "0.1.0", "kind": "component", "description": "A synthetic example.", "ai_content": false, "field": false, "data": {}, "states": ["default"], "tokens": ["color.text"], "accessibility": {"role": "none", "keyboard": [], "forced_colors": true, "reduced_motion": true}},
+  "sample-form": {"format": 2, "name": "sample-form", "version": "0.1.0", "kind": "component", "description": "A synthetic example.", "ai_content": false, "data": {"fields": {"type": "list", "label": "Fields", "required": true, "max_items": 20, "items": {"type": "component", "label": "Field", "required": true, "field": true}}}, "states": ["default"], "tokens": ["color.text"], "accessibility": {"role": "none", "keyboard": [], "forced_colors": true, "reduced_motion": true}},
   "loan-card": {
    "format": 2,
    "name": "loan-card",
@@ -167,6 +170,9 @@
   }
  },
  "cases": [
+  {"name": "a component reference accepts a field contract", "fill": {"component": "sample-form", "version": "0.1.0", "data": {"fields": [{"component": "sample-color", "version": "0.1.0", "data": {}}]}}, "errors": []},
+  {"name": "a component reference refuses a contract with field false", "fill": {"component": "sample-form", "version": "0.1.0", "data": {"fields": [{"component": "sample-label", "version": "0.1.0", "data": {}}]}}, "errors": ["data.fields[0].component: must be a field"]},
+  {"name": "a component reference refuses an undeclared component", "fill": {"component": "sample-form", "version": "0.1.0", "data": {"fields": [{"component": "other", "version": "0.1.0", "data": {}}]}}, "errors": ["data.fields[0].component: no contract has the name other"]},
   {
    "name": "valid loan",
    "fill": {

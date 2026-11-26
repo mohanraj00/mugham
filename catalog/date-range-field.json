@@ -3,6 +3,7 @@
   "kind": "primitive",
   "description": "Two native date inputs in a named group. The required value is a pair of dates as YYYY-MM-DD, start then end. Both dates must exist and stay within the optional limits. The end date can equal the start date or come after it.",
   "ai_content": false,
+  "field": true,
   "parts": [
     {"name": "copy", "description": "Button that copies text.", "guardrail": true},
     {"name": "copy-status", "description": "Result of the copy operation.", "guardrail": true},

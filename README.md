@@ -114,7 +114,7 @@ Each component has a contract file in [catalog/](catalog/README.md). The contrac
 | `mu-card` | Shows a title, a summary, a date and up to six facts. | [card.json](catalog/card.json) |
 | fact | A label and a value in a card. It has no element of its own. | [fact.json](catalog/fact.json) |
 | `mu-action-button` | A button for one action. It shows done only after the receipt comes back. | [action-button.json](catalog/action-button.json) |
-| `mu-editable-form` | Up to 20 fields for text, long text, numbers, ranges, dates, date ranges, times, dates with times, choices, selects, multiple choices and yes or no values. A person edits the values and submits them as one action. | [editable-form.json](catalog/editable-form.json) |
+| `mu-editable-form` | Up to 20 kit or registered fields. A person edits the values and submits them as one action. | [editable-form.json](catalog/editable-form.json) |
 | `mu-form-card` | A long form in sections, as labels and values. A person edits one field in place and sends the changes as one action. Some fields are read-only. | [form-card.json](catalog/form-card.json) |
 | `mu-card-grid` | A labeled list of cards in columns of equal width. | [card-grid.json](catalog/card-grid.json) |
 | `mu-citation` | The source of a claim: a source name, a locator as text and an open button. | [citation.json](catalog/citation.json) |
@@ -179,6 +179,8 @@ python3 tools/serve.py
    - `http://localhost:8000/examples/forms/notices.html`: a library notice form with two switches.
    - `http://localhost:8000/examples/forms/ranges.html`: sliders for a loan period and a synthetic price range.
    - `http://localhost:8000/examples/forms/booking.html`: a room booking with a date range, a start time and a setup date and time.
+   - `http://localhost:8000/examples/forms/colors.html`: a form with a registered field for a label color.
+   - `http://localhost:8000/examples/forms/contact.html`: a registered contact card with two kit fields and a save button.
    - `http://localhost:8000/examples/forms/membership.html`: a form card with 3 sections and 25 fields in a thread, with read-only fields that the service computes.
    - `http://localhost:8000/examples/evidence/citation.html`: a citation in a message, a citation with no source and a refused citation.
    - `http://localhost:8000/examples/evidence/diff.html`: a diff of two versions of a synthetic hall booking, and a large diff that starts closed.

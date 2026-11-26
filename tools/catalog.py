@@ -287,7 +287,8 @@ def targets(field):
 
 
 def references(contract):
-    return [(path, target) for path, field in fields_of(contract) if field['type'] == 'component' for target in targets(field)]
+    return [(path, target) for path, field in fields_of(contract)
+            if field['type'] == 'component' and not field.get('field') for target in targets(field)]
 
 
 def contract_errors(contract, filename=None, catalog=None, invalid=()):
@@ -409,8 +410,14 @@ def value_errors(value, field, path, catalog, depth):
             errors.append(path + ': the items are not unique')
         return errors
     if kind == 'component':
-        if isinstance(value, dict) and value.get('component') not in targets(field):
-            return ['%s.component: must be %s' % (path, ' or '.join(targets(field)))]
+        if isinstance(value, dict):
+            name = value.get('component')
+            if field.get('field'):
+                target = catalog.get(name) if isinstance(name, str) else None
+                if target is not None and target.get('field') is not True:
+                    return [path + '.component: must be a field']
+            elif name not in targets(field):
+                return ['%s.component: must be %s' % (path, ' or '.join(targets(field)))]
         return fill_errors(value, catalog, path, depth + 1)
     raise ValueError('unknown field type ' + kind)
 

@@ -3,6 +3,7 @@
   "kind": "primitive",
   "description": "A labeled native input with a required date and time as YYYY-MM-DDTHH:MM. The calendar date and clock time must exist. The required IANA time zone name has the form Area/Location and shows as fixed text. The value has no offset.",
   "ai_content": false,
+  "field": true,
   "parts": [
     {"name": "copy", "description": "Button that copies text.", "guardrail": true},
     {"name": "copy-status", "description": "Result of the copy operation.", "guardrail": true},

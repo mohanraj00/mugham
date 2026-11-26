@@ -11,6 +11,7 @@ A contract is one JSON file. It declares the data of one component, and nothing 
 | `format` | Always `2`. |
 | `name`, `version`, `kind`, `description` | The name of the component, its version, `primitive` or `component`, and one sentence. |
 | `ai_content` | `true` if the component can show content from a model. Then the contract must declare a required authorship slot. |
+| `field` | Optional. Use `true` if the element supplies an input to an editable form. |
 | `slots` | The provenance slots: `authorship`, `citation` or the two. |
 | `data` | The data fields. Each field has a type, a label, `required` and its limits. A text field always has `max_length`. |
 | `states` | The states that the component can show, for example `default`, `pending`, `done` and `refused`. |
@@ -192,6 +193,37 @@ Expected result:
 - The second element shows a refusal. Open its `Technical details` to see `bird-count: data.count: more than the maximum 300`.
 
 `register` fails with a `TypeError` and changes nothing if the contract is not valid, if the name is already used, or if the element is not a correct subclass. [Application contracts](../../catalog/README.md#application-contracts) gives each condition and each limit. A registered contract stays until the page closes.
+
+## Field protocol
+
+Set `"field": true` in the contract and use `register(contract, Element)`. The editable form accepts each kit or registered component with this flag. Call `toolSchema('editable-form')` after registration to include the field in the tool schema.
+
+Declare `name` and `label` in the field data. Use the action binding to give the form title, the editable names and their labels. If the field has typed edits, declare `typed` and agree with the binding. To show a local date and time with a fixed zone, declare `time_zone` and give the same zone in the binding. A nested fill takes the slots that it declares from the form. For example, a field that requires authorship receives the author of the form.
+
+The element supplies these properties:
+
+| Property | Value |
+|---|---|
+| `value` | The current value. Use text, a finite number, a boolean, a list of up to 500 texts of up to 80 characters each, or a pair of finite numbers in low to high order. Use empty text for an empty text value. |
+| `validationMessage` | Empty text for a valid value. For an invalid value, give a short error message. |
+| `disabled` | A boolean. Use `true` when the person cannot edit the field. The form leaves a disabled field out of the request. |
+| `editType` | `judgment`, `correction` or `override` when a person chooses the type of a changed typed edit. Use `null` when there is no type. |
+
+Send a bubbling, composed `mu-edit` event from the field after a change of value or edit type. The form reads the properties of the element. It uses the event to record the time and to let the person submit again after an edit. The form reads the action arguments through `values()`. The protocol uses regular custom elements.
+
+For an invalid value, the form shows `validationMessage` and focuses the field. Set `static focus = true` to move focus from the field to its control. An element can supply `reportValidity()` to show its own message and focus its control. Return `true` for a valid value or `false` after you show an error. For a missing edit type, the form shows `Choose an edit type.` An element can supply `needType()` to show that message and focus its edit type control.
+
+The [color example](../../examples/forms/colors.html) registers a [field contract](../../examples/forms/color-field.json) with three fixed colors. Its [element](../../examples/forms/colors.js) extends `FieldElement` from `src/primitives/index.js`. That class supplies the protocol, the label and the error display. The example supplies a native select, reads the selected value and calls `changedValue()` when the selection changes. An element can also extend `MuElement` and supply the properties and event itself.
+
+Press **Save label** before you choose a color. The field shows **Choose a label color.** and the select takes focus. Choose **Reed green** and press **Save label** again. The request shows `{"color":"Reed green"}`, and the form shows **Done** after the receipt.
+
+## A composite contact card
+
+The [contact example](../../examples/forms/contact.html) registers a [contact card contract](../../examples/forms/contact-card.json). Its [element](../../examples/forms/contact.js) extends `MuElement` and uses `mount` to make a `field` for the name, a `choice-field` for the contact method and an `action-button` to save. The card appends the three elements to an article in its shadow root.
+
+The card listens for `mu-edit` and binds the current name and method to `contacts.save`. The page uses `onAction` to read the request and return a receipt.
+
+The card starts with **Contact A1** and **Email**. Enter **Contact B2**, choose **Phone**, and press **Save contact**. The request shows `{"contact_name":"Contact B2","method":"Phone"}`, and the button shows **Done** after the receipt.
 
 ## Run the page
 

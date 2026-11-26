@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { createKit, fill, validateFill } from '../src/kit.js';
+import { createKit, fill, toolSchema, validateFill } from '../src/kit.js';
 
 // The DOM calls used by the field and form. The browser checks cover focus order, layout and the accessibility tree.
 let focused;
@@ -19,6 +19,11 @@ class TestNode extends EventTarget {
   get id() { return this.getAttribute('id'); }
   get textContent() { return this.children.map((node) => typeof node === 'string' ? node : node.textContent).join(''); }
   set textContent(value) { this.replaceChildren({ textContent: String(value) }); }
+  querySelector(selector) { return this.querySelectorAll(selector)[0] ?? null; }
+  querySelectorAll(selector) {
+    const matches = (node) => node.tag === 'input' && (selector === 'input' || (selector === 'input:checked' && node.checked));
+    return this.children.flatMap((node) => [...(matches(node) ? [node] : []), ...(node.querySelectorAll?.(selector) ?? [])]);
+  }
   focus() { focused = this; }
   click() { this.dispatchEvent(new Event('click')); }
   scrollIntoView() {}
@@ -44,7 +49,7 @@ globalThis.HTMLElement = class extends TestNode {
 };
 globalThis.CSSStyleSheet = class { replaceSync() {} };
 
-const { define } = await import('../src/components/index.js');
+const { MuElement, define, register } = await import('../src/components/index.js');
 define();
 
 const DATA = { name: 'branch', label: 'Pickup branch', value: 'North Wing',
@@ -330,4 +335,148 @@ test('a tag picker toggles the active option and keeps the search open', () => {
   remove().click();
   assert.deepEqual(field.value, []);
   assert.equal(focused, search);
+});
+
+class SampleField extends MuElement {
+  static component = 'sample-field';
+  value = '';
+  validationMessage = '';
+  disabled = false;
+  editType = null;
+
+  render(data) {
+    this.value = data.value;
+    this.disabled = Boolean(data.disabled);
+    return [];
+  }
+}
+class SampleDisplay extends MuElement {
+  static component = 'sample-display';
+}
+
+const sampleData = {
+  name: { type: 'text', size: 'short' },
+  label: { type: 'text', required: true, size: 'line' },
+  value: { type: 'text', required: true, size: 'line' },
+  disabled: { type: 'boolean' },
+  typed: { type: 'boolean' },
+  time_zone: { type: 'text', size: 'line' },
+};
+register({ name: 'sample-field', description: 'A synthetic field.', field: true, data: sampleData }, SampleField);
+register({ name: 'sample-display', description: 'A synthetic display.', ai_content: false, data: sampleData }, SampleDisplay);
+
+const sample = { name: 'color', label: 'Color', value: 'Rain blue' };
+const sampleAction = { title: 'Sample label', label: 'Save', tool: 'labels.save', editable: { color: 'Color' } };
+function sampleForm(fields, action = sampleAction, title = sampleAction.title) {
+  return kit.mount('editable-form', { title, submit_label: 'Save', fields }, { action });
+}
+function submit(form) {
+  find(form.shadowRoot, (node) => node.tag === 'form').dispatchEvent(new Event('submit', { cancelable: true }));
+}
+function requestsFrom(form) {
+  const requests = [];
+  form.addEventListener('mu-action', ({ detail }) => {
+    requests.push(detail);
+    form.receipt({ id: detail.id, ok: true });
+  });
+  return requests;
+}
+
+test('a kit field and a registered field send the same request arguments and typed edit', () => {
+  const action = { ...sampleAction, typed: ['color'], editor: { type: 'human', id: 'editor-1' } };
+  for (const name of ['field', 'sample-field']) {
+    const form = sampleForm([fill(name, { ...sample, typed: true })], action);
+    const field = find(form.shadowRoot, (node) => node instanceof SampleField || node.tag === 'mu-field');
+    const requests = requestsFrom(form);
+    if (field instanceof SampleField) {
+      assert.deepEqual(field.fill.slots, form.fill.slots);
+      assert.deepEqual(field.actor, form.actor);
+      field.value = 'Reed green';
+      field.dispatchEvent(new CustomEvent('mu-edit', { detail: { value: 'Other' } }));
+      submit(form);
+      assert.equal(requests.length, 0);
+      assert.equal(part(form.shadowRoot, 'reason').textContent, 'Choose an edit type.');
+      field.editType = 'correction';
+      field.dispatchEvent(new CustomEvent('mu-edit'));
+    } else {
+      type(part(field.shadowRoot, 'input'), 'Reed green');
+      const correction = find(part(field.shadowRoot, 'edit-type'), (node) => node.tag === 'input' && node.value === 'correction');
+      correction.checked = true;
+      correction.dispatchEvent(new Event('change'));
+    }
+    assert.equal(field.disabled, false);
+    assert.equal(field.validationMessage, '');
+    assert.equal(field.editType, 'correction');
+    assert.deepEqual(form.values(), { color: 'Reed green' });
+    submit(form);
+    assert.equal(requests.length, 1);
+    assert.deepEqual(requests[0].arguments, { color: 'Reed green' });
+    const [{ time, ...edit }] = requests[0].edits;
+    assert.equal(new Date(time).toISOString(), time);
+    assert.deepEqual(edit, { field: 'color', type: 'correction', old_value: 'Rain blue', new_value: 'Reed green', actor: action.editor });
+  }
+  const schema = toolSchema('editable-form');
+  assert.ok(schema.$defs['sample-field']);
+  assert.equal(schema.$defs['sample-display'], undefined);
+});
+
+test('an editable form refuses a registered display and checks the binding of a registered field', () => {
+  const cases = [
+    ['sample-display', sample, sampleAction, sampleAction.title, 'data.fields[0].component: must be a field'],
+    ['sample-field', sample, sampleAction, 'Other label', 'data.title: the title is not the title of the application'],
+    ['sample-field', { ...sample, name: 'color?' }, sampleAction, sampleAction.title, 'data.fields: each field needs a name'],
+    ['sample-field', { ...sample, name: 'other' }, sampleAction, sampleAction.title, 'data.fields: the application does not accept the field other'],
+    ['sample-field', { ...sample, label: 'Other' }, sampleAction, sampleAction.title, 'data.fields: the label of the field color is not the label of the application'],
+    ['sample-field', { ...sample, typed: true }, sampleAction, sampleAction.title, 'data.fields: the edit type of the field color is not the rule of the application'],
+    ['sample-field', { ...sample, time_zone: 'America/New_York' }, { ...sampleAction, time_zones: { color: 'Europe/Oslo' } },
+      sampleAction.title, 'data.fields: the time zone of the field color is not the time zone of the application'],
+    ['sample-field', sample, { ...sampleAction, time_zones: { color: 'Europe/Oslo' } },
+      sampleAction.title, 'data.fields: the time zone of the application for color needs a date and time field'],
+  ];
+  for (const [component, data, action, title, reason] of cases) {
+    const form = sampleForm([fill(component, data)], action, title);
+    assert.equal(form.dataset.state, 'refused');
+    assert.ok(part(form.shadowRoot, 'details').textContent.includes(reason), reason);
+    assert.equal(part(form.shadowRoot, 'button'), undefined);
+  }
+});
+
+test('the form shows a registered field error and refuses unsupported action values', () => {
+  const form = sampleForm([fill('sample-field', sample)]);
+  const field = find(form.shadowRoot, (node) => node instanceof SampleField);
+  const requests = requestsFrom(form);
+  field.validationMessage = 'Choose a color.';
+  submit(form);
+  assert.equal(part(form.shadowRoot, 'reason').textContent, 'Choose a color.');
+  assert.equal(focused, field);
+  field.validationMessage = '';
+
+  const cycle = {};
+  cycle.self = cycle;
+  for (const value of [cycle, null, undefined, Infinity, [2, 1], ['Text', 2], Array(1)]) {
+    field.value = value;
+    submit(form);
+    assert.equal(requests.length, 0);
+    assert.equal(part(form.shadowRoot, 'reason').textContent, 'Color: the value is not valid for the action.');
+  }
+  field.value = ['Rain blue', 'Reed green'];
+  submit(form);
+  assert.equal(form.dataset.state, 'done');
+  assert.deepEqual(requests.map((request) => request.arguments), [{ color: ['Rain blue', 'Reed green'] }]);
+});
+
+test('the form leaves a disabled registered field out of the request', () => {
+  for (const disabled of [true, false]) {
+    const form = sampleForm([
+      fill('sample-field', { ...sample, disabled }),
+      fill('field', { name: 'note', label: 'Note', value: 'Sample label' }),
+    ], { ...sampleAction, editable: { color: 'Color', note: 'Note' } });
+    const field = find(form.shadowRoot, (node) => node instanceof SampleField);
+    assert.equal(field.disabled, disabled);
+    field.disabled = true;
+    const requests = requestsFrom(form);
+    assert.deepEqual(form.values(), { note: 'Sample label' });
+    submit(form);
+    assert.deepEqual(requests.map((request) => request.arguments), [{ note: 'Sample label' }]);
+  }
 });

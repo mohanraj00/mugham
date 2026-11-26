@@ -3,6 +3,7 @@
   "kind": "primitive",
   "description": "A labeled native time input with a required value as HH:MM in 24-hour form. The time must exist and stay within the optional limits. The optional step is in minutes from the earliest time, or from 00:00 when there is no earliest time. The default step is one minute.",
   "ai_content": false,
+  "field": true,
   "parts": [
     {"name": "copy", "description": "Button that copies text.", "guardrail": true},
     {"name": "copy-status", "description": "Result of the copy operation.", "guardrail": true},

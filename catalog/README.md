@@ -223,7 +223,7 @@ form.action = { tool: 'library.update_loan', label: 'Save', title: 'Change a loa
 
 The form refuses a fill with a different `title`, because the title names the target of the bound arguments. A binding with no title accepts no form fill. The form also refuses a fill with no field that a person can edit, because only the application labels of the fields tell what the request does. The form also refuses a fill with a field name that `editable` does not give, or with a field label that is not the label in `editable`. The form does not send the value of a disabled field, because a person cannot edit it. A new fill lets the form save again, because a receipt from before the fill does not confirm the new values. This check occurs when the fill or the binding changes. A binding with no `editable` map accepts no field. If a second submit occurs while a request is pending, the form refuses it. The refused submit does not change the values of the pending request.
 
-The form refuses a fill if a name in `time_zones` has no `date-time-field` in the fill. The request sends the local date and time as text. The application keeps the time zone in the binding.
+The form refuses a fill if a name in `time_zones` has no field with the same `time_zone` in the fill. The request sends the local date and time as text. The application keeps the time zone in the binding.
 
 ### Typed edits
 
@@ -263,7 +263,7 @@ A field that did not change has no edit. A disabled field has no edit, because t
 
 ### Input types
 
-An editable form accepts twelve field contracts. Each one has the data fields `name`, `label`, `hint`, `error`, `disabled` and `typed`, and the same states. A typed edit works the same with each input type.
+An editable form accepts the twelve kit field contracts below and each registered contract with `field: true`. Each kit field has the data fields `name`, `label`, `hint`, `error`, `disabled` and `typed`. The [field protocol](../docs/guides/contracts.md#field-protocol) gives the rules for registered fields.
 
 | Contract | Value | Other data | The request sends |
 |---|---|---|---|

@@ -25,6 +25,8 @@
         {"name": "Library pickup branch", "path": "forms/branches.html", "components": ["editable-form", "select-field"], "text": "Choose a pickup branch from 40 synthetic library branches."},
         {"name": "Garden bed", "path": "forms/garden.html", "components": ["editable-form", "multi-choice-field"], "text": "Choose the sun levels and plants for a garden bed."},
         {"name": "Room booking", "path": "forms/booking.html", "components": ["editable-form", "date-range-field", "time-field", "date-time-field"], "text": "Set the booking dates, the start time and the setup date and time."},
+        {"name": "Label color", "path": "forms/colors.html", "components": ["editable-form", "color-field"], "text": "Choose a color in a form with a registered field."},
+        {"name": "Contact card", "path": "forms/contact.html", "components": ["contact-card", "field", "choice-field", "action-button"], "text": "A registered card that combines kit fields and an action button."},
         {"name": "Membership form", "path": "forms/membership.html", "components": ["thread", "form-card"], "text": "A form card with 3 sections and 25 fields in a thread. A person edits one field in place."},
         {"name": "Upload", "path": "forms/upload.html", "components": ["upload"], "text": "An upload control with the limits of the page. Each file shows Done only after its receipt.", "needs": "python3 tools/upload_server.py"}
       ]

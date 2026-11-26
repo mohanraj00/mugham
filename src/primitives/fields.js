@@ -138,6 +138,14 @@ export class FieldElement extends MuElement {
     return input === '' && !this.#targets[0].required ? null : this.reason(input, this.fill.data);
   }
 
+  get validationMessage() {
+    return this.problem ?? '';
+  }
+
+  get disabled() {
+    return Boolean(this.fill?.data.disabled);
+  }
+
   // The edit type of a changed typed field: judgment, correction or override. Else null.
   get editType() {
     if (!this.#group || !this.changed) return null;
@@ -155,6 +163,10 @@ export class FieldElement extends MuElement {
     this.showProblem();
     (this.problemTarget?.() ?? this.#targets[0]).focus();
     return true;
+  }
+
+  reportValidity() {
+    return !this.needValue();
   }
 
   showProblem() {

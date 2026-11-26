@@ -1,6 +1,6 @@
 {
   "name": "editable-form",
-  "description": "A form with up to 20 fields for text, long text, numbers, ranges, dates, date ranges, times, dates with times, choices, selects, multiple choices and yes or no values. The form sends the values and the edit types as one action. A pending action offers retry and cancel.",
+  "description": "A form with up to 20 kit or registered fields. The form sends the values and the edit types as one action. A pending action offers retry and cancel.",
   "parts": [
     {"name": "accept", "description": "Button that confirms the action.", "guardrail": true},
     {"name": "authorship", "description": "Type and ID of the author, with a name when available.", "guardrail": true},
@@ -31,7 +31,7 @@
       "items": {
         "type": "component",
         "label": "Field",
-        "names": ["field", "long-text-field", "number-field", "date-field", "choice-field", "toggle-field", "range-field", "select-field", "multi-choice-field", "date-range-field", "time-field", "date-time-field"]
+        "field": true
       }
     },
     "submit_label": {"type": "text", "required": true, "min_length": 1, "size": "short"}

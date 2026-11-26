@@ -80,6 +80,14 @@ function scalar(value) {
   return typeof value === 'string' || typeof value === 'boolean' || (typeof value === 'number' && Number.isFinite(value));
 }
 
+export function isActionValue(value) {
+  return scalar(value) || isOrderedPair(value) || isTextList(value);
+}
+
+export function isEditType(value) {
+  return EDIT_TYPES.has(value);
+}
+
 export function bindingErrors(binding) {
   if (binding === null || typeof binding !== 'object' || Array.isArray(binding)) return ['the action must be an object'];
   const errors = [];
@@ -155,7 +163,7 @@ function editsOf(edits, binding, values) {
     const { field, type, old_value: old, time } = edit;
     if (!binding.typed.includes(field) || seen.has(field) || !Object.hasOwn(values, field)) return null;
     const next = values[field];
-    if (!EDIT_TYPES.has(type) || sameValue(old, next)) return null;
+    if (!isEditType(type) || sameValue(old, next)) return null;
     if (Array.isArray(old) || Array.isArray(next)) {
       const pair = isOrderedPair(old) && isOrderedPair(next);
       const texts = isTextList(old) && isTextList(next);
@@ -310,7 +318,7 @@ export class ActionState {
       return null;
     }
     if (Object.keys(extra).some((name) => !Object.hasOwn(this.#binding.editable, name))) return null;
-    if (Object.values(extra).some((value) => Array.isArray(value) && !isOrderedPair(value) && !isTextList(value))) return null;
+    if (!Object.values(extra).every(isActionValue)) return null;
     const values = copyArgs(extra);
     const typed = this.#binding.typed.length > 0;
     if (!typed && edits !== undefined && !(Array.isArray(edits) && edits.length === 0)) return null;

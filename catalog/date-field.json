@@ -3,6 +3,7 @@
   "kind": "primitive",
   "description": "A labeled date input as YYYY-MM-DD. A person edits the date. The input refuses a date that does not exist or that is outside the range.",
   "ai_content": false,
+  "field": true,
   "parts": [
     {"name": "copy", "description": "Button that copies text.", "guardrail": true},
     {"name": "copy-status", "description": "Result of the copy operation.", "guardrail": true},

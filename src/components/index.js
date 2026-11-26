@@ -2,12 +2,13 @@
 import { MuElement } from '../primitives/base.js';
 import { ReadMoreElement, READ_MORE_CSS } from '../primitives/read-more.js';
 import { define as definePrimitives, FIELDS } from '../primitives/index.js';
-import { ActionState } from '../actions/action.js';
+import { ActionState, isActionValue, isEditType } from '../actions/action.js';
+import { copyValue } from '../offline/queue.js';
 import { PATIENCE, patienceOf, ReceiptTimer } from './pending.js';
 import { EDGE, LIFT, el, icon, sheet } from '../render/dom.js';
 import { ACTION_RESULT_CSS, REFERENCE_CSS, showReference } from './receipt.js';
 import { fillErrors } from '../render/validate.js';
-import { CONTRACTS } from '../render/registry.js';
+import { CONTRACTS, registeredTag } from '../render/registry.js';
 import { MuTable } from './table.js';
 export { MuTable } from './table.js';
 import { MuStatus } from './status.js';
@@ -612,24 +613,45 @@ export class MuCardGrid extends MuElement {
   }
 }
 
+function fieldTag(name) {
+  return registeredTag(name) ?? FIELDS[name]?.[0];
+}
+
+function fieldEnabled({ data, node }) {
+  return !data.disabled && !node.disabled;
+}
+
+function sameFieldValue(first, second) {
+  return first === second || (Array.isArray(first) && Array.isArray(second)
+    && first.length === second.length && first.every((value, index) => value === second[index]));
+}
+
 export class MuEditableForm extends ActionElement {
   static component = 'editable-form';
   static labelField = 'submit_label';
   static styles = [CARD_CSS, ACTION_CSS, REFERENCE_CSS, ACTION_RESULT_CSS, sheet(`
     :host { display: block; }
     form { display: flex; flex-direction: column; gap: var(--mu-space-3); }
+    .field-error { display: block; color: var(--mu-color-danger); overflow-wrap: anywhere; }
+    @media (forced-colors: active) { .field-error { color: CanvasText; } }
   `)];
 
   #fields = [];
   #sent = null;
+  #error = null;
 
   // A change of a value or of an edit type after the request makes the data new.
   stale() {
-    return this.#snapshot() !== this.#sent;
+    const values = this.values();
+    return Object.values(values).some((value) => !isActionValue(value)) || this.#snapshot(values) !== this.#sent;
   }
 
-  #snapshot() {
-    return JSON.stringify([this.values(), this.#fields.map((node) => node.editType)]);
+  #snapshot(values) {
+    const types = this.#fields.filter(fieldEnabled).map(({ node }) => {
+      const type = node.editType;
+      return isEditType(type) ? type : null;
+    });
+    return JSON.stringify([values, types]);
   }
 
   // A form also needs a unique name for each field, so that the values have keys.
@@ -645,8 +667,12 @@ export class MuEditableForm extends ActionElement {
     if (!data.fields.some((item) => !item.data.disabled)) return ['data.fields: the form needs at least one field that a person can edit'];
     // A field can give a value or a range that do not agree. The form refuses the fill, as the field does.
     for (const [index, item] of data.fields.entries()) {
-      const errors = FIELDS[item.component][1].rules(item.data);
-      if (errors.length) return [`data.fields[${index}].${errors[0]}`];
+      if (CONTRACTS[item.component]?.field !== true) return [`data.fields[${index}].component: must be a field`];
+      const tag = fieldTag(item.component);
+      if (!tag) return [`data.fields[${index}].component: must be a field`];
+      const element = FIELDS[item.component]?.[1] ?? globalThis.customElements?.get(tag);
+      const errors = element?.rules?.(item.data);
+      if (errors?.length) return [`data.fields[${index}].${errors[0]}`];
     }
     const names = data.fields.map((item) => item.data.name);
     if (!names.every((name) => typeof name === 'string' && FIELD_NAME.test(name))) return ['data.fields: each field needs a name'];
@@ -662,8 +688,8 @@ export class MuEditableForm extends ActionElement {
     // The application uses the bound zone to read the local date and time. The fill must show the same zone.
     const timeZones = this.action.timeZones;
     const dateTimes = new Set();
-    for (const { component, data: field } of data.fields) {
-      if (component !== 'date-time-field') continue;
+    for (const { data: field } of data.fields) {
+      if (!Object.hasOwn(field, 'time_zone')) continue;
       if (field.time_zone !== timeZones[field.name]) {
         return [`data.fields: the time zone of the field ${field.name} is not the time zone of the application`];
       }
@@ -678,64 +704,108 @@ export class MuEditableForm extends ActionElement {
     return [];
   }
 
-  // The edits of the typed fields that changed, without the new value and the actor. The action path adds them.
-  #edits() {
-    return this.#fields.filter((node) => node.fill.data.typed && !node.fill.data.disabled && node.changed)
-      .map((node) => ({ field: node.fill.data.name, type: node.editType, old_value: node.initial, time: node.editedAt }));
-  }
-
   // A person cannot edit a disabled field, so its value does not go in the request.
   values() {
-    return Object.fromEntries(this.#fields.filter((node) => !node.fill.data.disabled)
-      .map((node) => [node.fill.data.name, node.value ?? '']));
+    if (!this.fill) return {};
+    return Object.fromEntries(this.#fields.filter(fieldEnabled).map(({ data, node }) => {
+      const value = node.value;
+      return [data.name, isActionValue(value) ? copyValue(value) : value];
+    }));
+  }
+
+  #showError(message, node, method) {
+    this.#error.textContent = '';
+    if (method && typeof node[method] === 'function') node[method]();
+    else {
+      this.#error.textContent = message;
+      node?.focus();
+    }
+  }
+
+  #submit() {
+    if (!this.fill || !['default', 'error'].includes(this.action.state)) return;
+    const values = this.values();
+    if (!Object.keys(values).length) {
+      this.#showError('The form needs at least one field that a person can edit.');
+      return;
+    }
+    const edits = this.action.typed.length ? [] : undefined;
+    for (const { node, data, initial, editedAt } of this.#fields) {
+      if (!Object.hasOwn(values, data.name)) continue;
+      const message = node.validationMessage;
+      if (typeof message === 'string' && message) {
+        this.#showError(message, node, 'reportValidity');
+        return;
+      }
+      const value = values[data.name];
+      if (typeof message !== 'string' || !isActionValue(value)) {
+        this.#showError(`${data.label}: the value is not valid for the action.`, node);
+        return;
+      }
+      if (!data.typed || sameFieldValue(initial, value)) continue;
+      if (initial === undefined) {
+        this.#showError(`${data.label}: the initial value is not valid for the action.`, node);
+        return;
+      }
+      const type = node.editType;
+      if (!isEditType(type)) {
+        this.#showError('Choose an edit type.', node, 'needType');
+        return;
+      }
+      edits.push({ field: data.name, type, old_value: initial, time: editedAt ?? new Date().toISOString() });
+    }
+    this.#error.textContent = '';
+    const snapshot = this.#snapshot(values);
+    this.send(values, () => { this.#sent = snapshot; }, edits);
   }
 
   render(data) {
     this.#sent = null;
     this.#fields = data.fields.map((item) => {
-      const node = document.createElement(FIELDS[item.component][0]);
-      node.fill = item;
-      return node;
+      const node = document.createElement(fieldTag(item.component));
+      const declared = CONTRACTS[item.component].slots ?? {};
+      const slots = Object.fromEntries(Object.entries(this.fill.slots ?? {}).filter(([key]) => Object.hasOwn(declared, key)));
+      node.actor = this.actor;
+      node.fill = Object.keys(slots).length ? { ...item, slots } : item;
+      const field = { node, data: item.data, initial: undefined, editedAt: null };
+      if (item.data.typed) {
+        const value = node.value;
+        field.initial = isActionValue(value) ? copyValue(value) : undefined;
+        node.addEventListener('mu-edit', () => { field.editedAt = new Date().toISOString(); });
+      }
+      return field;
     });
+    this.#error = el('span', { class: 'field-error', role: 'status', part: 'reason' });
     const status = el('span', { class: 'status', role: 'status', 'aria-live': 'polite', part: 'status' });
     const submit = el('button', { type: 'submit', part: 'button' }, data.submit_label);
     const form = el('form', { 'aria-label': data.title, part: 'form' },
-      el('p', { class: 'title' }, data.title), provenance(this.fill.slots), ...this.#fields, el('div', {}, submit), ...this.attach(submit, status));
+      el('p', { class: 'title' }, data.title), provenance(this.fill.slots), ...this.#fields.map(({ node }) => node),
+      el('div', {}, submit, this.#error), ...this.attach(submit, status));
     // An edit after done makes the values new, so the form can save again.
-    form.addEventListener('mu-edit', () => this.reopen());
+    form.addEventListener('mu-edit', () => {
+      this.#error.textContent = '';
+      this.reopen();
+    });
     form.addEventListener('submit', (event) => {
       event.preventDefault();
-      // A changed typed field needs an edit type. The first such field tells why and takes the focus.
-      if (this.dataset.state === 'refused' || !this.fill) return;
-      const open = this.action.state === 'default' || this.action.state === 'error';
-      // A value that its contract does not accept sends no action. The first such field tells why and takes the focus.
-      const wrong = this.#fields.find((node) => !node.fill.data.disabled && node.problem);
-      if (wrong) {
-        if (open) wrong.needValue();
-        return;
-      }
-      const untyped = this.#fields.find((node) => node.fill.data.typed && !node.fill.data.disabled && node.changed && !node.editType);
-      if (untyped) {
-        if (open) untyped.needType();
-        return;
-      }
-      const values = this.values();
-      const snapshot = this.#snapshot();
-      const edits = this.action.typed?.length ? this.#edits() : undefined;
-      // Keep the values only for an accepted request. A refused submit does not change them.
-      this.send(values, () => { this.#sent = snapshot; }, edits);
+      this.#submit();
     });
     // Each input is in the shadow root of its field, so the browser does not connect it to this form.
     // Thus Enter in a single-line text, number or date field submits the form here, as it does in a plain form.
     form.addEventListener('keydown', (event) => {
       if (event.key !== 'Enter' || event.isComposing || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
-      if (!this.#fields.includes(event.target) || !event.target.constructor.submitOnEnter) return;
+      if (!this.#fields.some(({ node }) => node === event.target) || !event.target.constructor.submitOnEnter) return;
       event.preventDefault();
       form.requestSubmit(submit);
     });
     // A new fill has new values. A receipt from before the fill does not confirm them, so the form can save again.
     this.reopen();
     return [form];
+  }
+
+  rendered() {
+    const index = this.#fields.findIndex(({ node }) => node.dataset.state === 'refused');
+    if (index !== -1) this.refuse([`data.fields[${index}]: the field refused its fill`]);
   }
 }
 
