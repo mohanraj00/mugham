@@ -128,6 +128,19 @@ const otherReport = {
   ...policyReport,
   stackTrace: { callFrames: [{ url: otherScript }, ...policyReport.stackTrace.callFrames] },
 };
+const styleReport = {
+  ...policyReport,
+  text: "Applying inline style violates the following Content Security Policy directive 'style-src 'self''."
+    + " Either the 'unsafe-inline' keyword, a hash ('sha256-p0bF+un5yUb9MBO6xRb8kPHlY2BdpHVtLiFkDrZPF64='), or a nonce ('nonce-...') is required to enable inline execution."
+    + ' The action has been blocked.',
+};
+const styleAttributeReport = {
+  ...policyReport,
+  text: "Applying inline style violates the following Content Security Policy directive 'style-src 'self''."
+    + " Either the 'unsafe-inline' keyword, a hash ('sha256-8f935d27GvUutRyY9yWScUMiFUk4WTdZURISiYfPOeQ='), or a nonce ('nonce-...') is required to enable inline execution."
+    + " Note that hashes do not apply to event handlers, style attributes and javascript: navigations unless the 'unsafe-hashes' keyword is present."
+    + ' The action has been blocked.',
+};
 
 test('a planned policy report has the exact source, level, text and first script URL', () => {
   assert.equal(isPlannedPolicyReport(policyReport), true);
@@ -145,24 +158,43 @@ test('a planned policy report has the exact source, level, text and first script
   }
 });
 
-test('an unplanned report fails the paste check and stays in the page errors', async () => {
-  const pageError = 'Uncaught Error: The page failed.';
+test('the style reports match only the specified text, hash and source', () => {
+  assert.equal(isPlannedPolicyReport(styleReport), true);
+  assert.equal(isPlannedPolicyReport(styleAttributeReport), true);
+  for (const [name, entry] of [
+    ['a different directive', { ...styleReport, text: styleReport.text.replace('style-src', 'img-src') }],
+    ['different text', { ...styleReport, text: styleReport.text.replace('Applying', 'Loading') }],
+    ['a short hash', { ...styleReport, text: styleReport.text.replace('F64=', 'F6=') }],
+    ['a long hash', { ...styleReport, text: styleReport.text.replace('F64=', 'F644=') }],
+    ['a different first script URL', { ...otherReport, text: styleReport.text }],
+    ['a different source', { ...styleReport, source: 'javascript' }],
+    ['a warning', { ...styleReport, level: 'warning' }],
+    ['extra text', { ...styleAttributeReport, text: styleAttributeReport.text + '\n' }],
+  ]) {
+    assert.equal(isPlannedPolicyReport(entry), false, name);
+  }
+});
+
+async function runPasteChecks(events) {
   const problems = [policyReport.text];
   const listenerCounts = [];
+  const networkCommands = [];
   const sessionId = 'note';
   const recordPageError = (event) => {
     if (event.sessionId !== sessionId) return;
-    problems.push(event.params.entry?.text ?? event.params.exceptionDetails.text);
+    if (event.method === 'Log.entryAdded') problems.push(event.params.entry.text);
+    if (event.method === 'Runtime.exceptionThrown') problems.push(event.params.exceptionDetails.text);
   };
   let width;
   const session = {
     listeners: [recordPageError],
-    send(method, params) {
+    send(method, params, target) {
       if (method === 'Emulation.setDeviceMetricsOverride') width = params.width;
+      if (method.startsWith('Network.')) networkCommands.push([width, method, target]);
     },
   };
-  const emit = (method, params) => {
-    for (const listener of session.listeners) listener({ sessionId, method, params });
+  const emit = (method, params, target = sessionId) => {
+    for (const listener of session.listeners) listener({ sessionId: target, method, params });
   };
   const steps = await richTextFieldChecks(session, sessionId, 'http://127.0.0.1:8000', { light: [] }, {
     open() {},
@@ -171,11 +203,8 @@ test('an unplanned report fails the paste check and stays in the page errors', a
     evaluate(_session, _id, expression) {
       if (expression.startsWith('(async function exercisePasteAndDrop(')) {
         listenerCounts.push(session.listeners.length);
-        emit('Log.entryAdded', { entry: policyReport });
-        if (width === 1280) {
-          emit('Log.entryAdded', { entry: otherReport });
-          emit('Runtime.exceptionThrown', { exceptionDetails: { text: pageError, url: otherScript } });
-        }
+        networkCommands.push([width, 'paste', sessionId]);
+        events(emit, width);
         return [];
       }
       if (expression.startsWith('(async function exerciseEditor(')) {
@@ -186,13 +215,59 @@ test('an unplanned report fails the paste check and stays in the page errors', a
       return { tabStops: [] };
     },
   }, problems);
-  const pasteSteps = steps.filter(({ step }) => step.endsWith('planned policy reports and no handler runs'));
-  assert.deepEqual(pasteSteps.map(({ ok }) => ok), [true, false]);
-  assert.deepEqual(JSON.parse(pasteSteps[1].detail).detail, {
-    count: 1,
-    other: [{ text: otherReport.text, url: otherScript }, { text: pageError, url: otherScript }],
-  });
-  assert.deepEqual(problems, [policyReport.text, otherReport.text, pageError]);
   assert.deepEqual(listenerCounts, [2, 1, 2, 1]);
   assert.deepEqual(session.listeners, [recordPageError]);
+  return {
+    problems, networkCommands,
+    pasteSteps: steps.filter(({ step }) => step.endsWith('planned policy reports and no handler runs')),
+    networkSteps: steps.filter(({ step }) => step.endsWith('a paste of URL tags starts no request')),
+  };
+}
+
+test('an unplanned report fails the paste check and stays in the page errors', async () => {
+  const pageError = 'Uncaught Error: The page failed.';
+  const otherStyleReport = { ...otherReport, text: styleReport.text };
+  const { pasteSteps, networkSteps, problems } = await runPasteChecks((emit, width) => {
+    emit('Log.entryAdded', { entry: policyReport });
+    emit('Log.entryAdded', { entry: styleReport });
+    emit('Log.entryAdded', { entry: styleAttributeReport });
+    if (width === 1280) {
+      emit('Log.entryAdded', { entry: otherReport });
+      emit('Log.entryAdded', { entry: otherStyleReport });
+      emit('Runtime.exceptionThrown', { exceptionDetails: { text: pageError, url: otherScript } });
+    }
+  });
+  assert.deepEqual(pasteSteps.map(({ ok }) => ok), [true, false]);
+  assert.deepEqual(JSON.parse(pasteSteps[1].detail).detail, {
+    count: 3,
+    other: [otherReport.text, otherStyleReport.text, pageError].map((text) => ({ text, url: otherScript })),
+  });
+  assert.deepEqual(problems, [policyReport.text, otherReport.text, otherStyleReport.text, pageError]);
+  assert.deepEqual(networkSteps.map(({ ok }) => ok), [true, false]);
+});
+
+test('style reports alone fail the inline handler check', async () => {
+  const { pasteSteps, problems } = await runPasteChecks((emit) => {
+    emit('Log.entryAdded', { entry: styleReport });
+    emit('Log.entryAdded', { entry: styleAttributeReport });
+  });
+  assert.deepEqual(pasteSteps.map(({ ok }) => ok), [false, false]);
+  assert.match(JSON.parse(pasteSteps[0].detail).reason, /inline handler policy report/);
+  assert.deepEqual(problems, [policyReport.text]);
+});
+
+test('the URL paste check records requests for its own session during paste and drop', async () => {
+  const probeURL = 'http://127.0.0.1:8000/probe-paste/img.png';
+  const { networkSteps, networkCommands } = await runPasteChecks((emit, width) => {
+    emit('Log.entryAdded', { entry: policyReport });
+    emit('Network.requestWillBeSent', { request: { url: 'http://127.0.0.1:8000/favicon.ico' } });
+    emit('Network.requestWillBeSent', { request: { url: probeURL } }, 'other');
+    if (width === 1280) emit('Network.requestWillBeSent', { request: { url: probeURL } });
+  });
+  assert.deepEqual(networkCommands, [375, 1280].flatMap((width) =>
+    ['Network.enable', 'paste', 'Network.disable'].map((method) => [width, method, 'note'])));
+  assert.deepEqual(networkSteps.map(({ ok }) => ok), [true, false]);
+  const failure = JSON.parse(networkSteps[1].detail);
+  assert.match(failure.reason, /started a request/);
+  assert.deepEqual(failure.detail.urls, [probeURL]);
 });

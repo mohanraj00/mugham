@@ -1,22 +1,30 @@
 export const RICH_TEXT_FIELD_PAGE = 'examples/apps/library-note.html';
 
+const PASTE_PROBE_PATH = '/probe-paste/';
 const INLINE_HANDLER_REPORT = "Executing inline event handler violates the following Content Security Policy directive 'script-src 'self''."
   + " Either the 'unsafe-inline' keyword, a hash ('sha256-...'), or a nonce ('nonce-...') is required to enable inline execution."
   + " Note that hashes do not apply to event handlers, style attributes and javascript: navigations unless the 'unsafe-hashes' keyword is present."
   + ' The action has been blocked.';
+const INLINE_STYLE_REPORT = new RegExp(
+  String.raw`^Applying inline style violates the following Content Security Policy directive 'style-src 'self''\.`
+  + String.raw` Either the 'unsafe-inline' keyword, a hash \('sha256-[A-Za-z0-9+/]{43}='\), or a nonce \('nonce-\.\.\.'\) is required to enable inline execution\.`
+  + String.raw`(?: Note that hashes do not apply to event handlers, style attributes and javascript: navigations unless the 'unsafe-hashes' keyword is present\.)?`
+  + String.raw` The action has been blocked\.$`,
+);
 
 export function isPlannedPolicyReport(entry) {
   const url = entry?.stackTrace?.callFrames?.[0]?.url;
-  return entry?.source === 'security' && entry.level === 'error' && entry.text === INLINE_HANDLER_REPORT
-    && typeof url === 'string' && url.endsWith('/src/primitives/rich-text-field-model.js');
+  return entry?.source === 'security' && entry.level === 'error'
+    && typeof url === 'string' && url.endsWith('/src/primitives/rich-text-field-model.js')
+    && typeof entry.text === 'string' && (entry.text === INLINE_HANDLER_REPORT || INLINE_STYLE_REPORT.test(entry.text));
 }
 
 function plannedErrors(entries, problems, start) {
-  let count = 0;
+  const planned = [];
   const other = [];
   for (const entry of entries) {
     if (isPlannedPolicyReport(entry)) {
-      count += 1;
+      planned.push(entry.text);
     } else {
       other.push({
         text: entry.exception?.description || entry.text || 'Text is missing.',
@@ -24,13 +32,15 @@ function plannedErrors(entries, problems, start) {
       });
     }
   }
-  let toRemove = count;
+  const count = planned.length;
+  const inlineHandler = planned.includes(INLINE_HANDLER_REPORT);
   const added = problems.splice(start);
   for (const text of added) {
-    if (toRemove > 0 && text === INLINE_HANDLER_REPORT) toRemove -= 1;
+    const match = planned.indexOf(text);
+    if (match >= 0) planned.splice(match, 1);
     else problems.push(text);
   }
-  return { count, other };
+  return { count, inlineHandler, other };
 }
 
 function toolbarState() {
@@ -208,7 +218,7 @@ async function exerciseEditor() {
   return { headingOrder, failures };
 }
 
-async function exercisePasteAndDrop() {
+async function exercisePasteAndDrop(probePath) {
   const { richTextValueErrors } = await import('/src/render/rich-text.js');
   const form = document.querySelector('mu-editable-form');
   const field = form.shadowRoot.querySelector('mu-rich-text-field');
@@ -253,9 +263,21 @@ async function exercisePasteAndDrop() {
   check(paste('', 'x'.repeat(2001)) && root.querySelector('[part="status"]').textContent && JSON.stringify(field.value) === prior,
     'The paste that exceeded the span limit did not keep the previous value.');
   selectNote();
+  const url = location.origin + probePath;
+  const urlTags = '<p>Safe text</p>'
+    + `<img src="${url}img.png"><link rel="stylesheet" href="${url}style.css">`
+    + `<video poster="${url}poster.png"></video><iframe src="${url}frame.html"></iframe>`
+    + `<object data="${url}object.html"></object><svg><image href="${url}svg.png"/></svg>`
+    + `<input type="image" src="${url}input.png"><script src="${url}script.js"></script>`;
+  check(paste(urlTags, 'Fallback') && valid() && editor().textContent === 'Safe text'
+    && !editor().querySelector('img,link,video,iframe,object,svg,input,script,[src],[href],[poster],[data]')
+    && !JSON.stringify(field.value).includes(probePath), 'The paste with URL tags did not keep only the safe text.');
+  selectNote();
   check(paste('<em>Drop text</em>', '', 'drop') && valid()
     && field.value.data.blocks[0]?.data.content[0]?.data.mark === 'emphasis' && editor().textContent === 'Drop text',
     'The drop did not cancel the default action and use the same data walk.');
+  // Let Chrome process pending events from the paste and drop.
+  await new Promise((done) => setTimeout(done, 0));
   return failures;
 }
 
@@ -276,7 +298,8 @@ export async function richTextFieldChecks(session, sessionId, base, modes, { ope
     detail: JSON.stringify(ok ? detail ?? {} : { reason, detail }),
   });
   const send = (method, params = {}) => withLimit(() => session.send(method, params, sessionId), method);
-  const page = (fn) => withLimit(() => evaluate(session, sessionId, '(' + fn + ')()'), 'Read the editor');
+  const page = (fn, ...args) => withLimit(
+    () => evaluate(session, sessionId, '(' + fn + ')(' + args.map((arg) => JSON.stringify(arg)).join(',') + ')'), 'Read the editor');
   const press = (name, code) => withLimit(() => key(session, sessionId, name, name, code), 'Press ' + name);
 
   try {
@@ -330,17 +353,21 @@ export async function richTextFieldChecks(session, sessionId, base, modes, { ope
 
           const start = problems.length;
           const entries = [];
+          const requests = [];
           const policyFailures = [];
-          const recordError = (message) => {
+          const networkFailures = [];
+          const recordPasteEvent = (message) => {
             if (message.sessionId !== sessionId) return;
             if (message.method === 'Log.entryAdded' && message.params.entry.level === 'error') {
               entries.push(message.params.entry);
             }
             if (message.method === 'Runtime.exceptionThrown') entries.push(message.params.exceptionDetails);
+            if (message.method === 'Network.requestWillBeSent') requests.push(message.params.request.url);
           };
-          session.listeners.push(recordError);
+          session.listeners.push(recordPasteEvent);
           try {
-            const errors = await page(exercisePasteAndDrop);
+            await send('Network.enable');
+            const errors = await page(exercisePasteAndDrop, PASTE_PROBE_PATH);
             check(view, 'paste and drop keep only the permitted data', errors.length === 0,
               'Paste or drop gave a different result.', errors);
             if (await page(() => 'noteScriptExecuted' in window)) {
@@ -348,14 +375,24 @@ export async function richTextFieldChecks(session, sessionId, base, modes, { ope
             }
           } catch (error) {
             policyFailures.push(String(error));
+            networkFailures.push(String(error));
           } finally {
-            session.listeners = session.listeners.filter((listener) => listener !== recordError);
+            await send('Network.disable').catch((error) => networkFailures.push(String(error)));
+            session.listeners = session.listeners.filter((listener) => listener !== recordPasteEvent);
           }
-          const { count, other } = plannedErrors(entries, problems, start);
-          if (count === 0) policyFailures.push('The browser did not give a planned policy report.');
-          if (other.length > 0) policyFailures.push('Paste or drop gave an unexpected page error.');
+          const { count, inlineHandler, other } = plannedErrors(entries, problems, start);
+          if (!inlineHandler) policyFailures.push('The browser did not give the inline handler policy report.');
+          if (other.length > 0) {
+            const reason = 'Paste or drop gave an unexpected page error.';
+            policyFailures.push(reason);
+            networkFailures.push(reason);
+          }
           check(view, 'a paste of inline handlers makes only the planned policy reports and no handler runs',
             policyFailures.length === 0, policyFailures.join(' '), { count, other });
+          const urls = requests.filter((url) => url.includes(PASTE_PROBE_PATH));
+          if (urls.length > 0) networkFailures.push('A pasted URL started a request.');
+          check(view, 'a paste of URL tags starts no request', networkFailures.length === 0,
+            networkFailures.join(' '), { urls, other });
 
           const { headingOrder, failures } = await page(exerciseEditor);
           check(view, 'Heading 3 on an empty note keeps the value and asks for Heading 1', headingOrder,
