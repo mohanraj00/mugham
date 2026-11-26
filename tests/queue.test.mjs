@@ -4,6 +4,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { ActionQueue, indexedDbStore, memoryStore, openQueue, queueFill } from '../src/offline/queue.js';
+import { richTextLinkSchemes, setRichTextLinkSchemes } from '../src/render/rich-text.js';
 
 const RECORD_KEYS = ['arguments', 'key', 'label', 'message', 'order', 'owner', 'principal', 'queued', 'state', 'tool', 'tries'];
 const sleep = (ms = 0) => new Promise((done) => setTimeout(done, ms));
@@ -138,11 +139,14 @@ test('the queue stores and sends a numeric pair and its edit', async () => {
   queue.close();
 });
 
-test('the queue keeps a frozen copy of a rich text save after it opens again', async () => {
+test('the queue keeps a frozen copy of a rich text argument after the link policy changes', async (t) => {
+  const schemes = richTextLinkSchemes();
+  t.after(() => setRichTextLinkSchemes(schemes));
+  setRichTextLinkSchemes(['https:', 'http:']);
   const net = device();
   net.online = false;
   const queue = await net.open();
-  const original = note(paragraph(span('A note.')));
+  const original = note(paragraph(link('http://example.org/reading')));
   const save = request('T-01', { tool: 'note.save', arguments: { note: structuredClone(original) } });
   void queue.perform(save);
   await until(() => queue.entries.length === 1, 'the rich text save');
@@ -152,7 +156,9 @@ test('the queue keeps a frozen copy of a rich text save after it opens again', a
   assert.deepEqual((await net.store.all())[0].arguments.note, original);
   queue.close();
 
+  setRichTextLinkSchemes(['https:']);
   const reopened = await net.open();
+  assert.deepEqual(reopened.entries.map((entry) => entry.key), [save.key]);
   assert.deepEqual(reopened.entries[0].arguments.note, original);
   assertFrozenTree(reopened.entries[0].arguments.note);
   net.online = true;
@@ -163,22 +169,28 @@ test('the queue keeps a frozen copy of a rich text save after it opens again', a
   reopened.close();
 });
 
-test('the queue keeps and sends a typed rich text edit after it opens again', async () => {
+test('the queue keeps and sends a typed rich text edit after the link policy changes', async (t) => {
+  const schemes = richTextLinkSchemes();
+  t.after(() => setRichTextLinkSchemes(schemes));
+  setRichTextLinkSchemes(['https:', 'http:']);
   const net = device();
   net.online = false;
   const queue = await net.open();
-  const old = note(paragraph(link('http://example.org/reading')));
-  const next = note(paragraph(link('https://example.org/reading')));
+  const old = note(paragraph(link('http://example.org/old')));
+  const next = note(paragraph(link('http://example.org/reading')));
   const expected = edit(old, next);
   const change = structuredClone(expected);
-  void queue.perform(request('T-01', { tool: 'note.save', arguments: { note: change.new_value }, edits: [change] }));
+  const save = request('T-01', { tool: 'note.save', edits: [change] });
+  void queue.perform(save);
   await until(() => queue.entries.length === 1, 'the typed rich text edit');
   change.old_value.data.blocks.length = 0;
   change.new_value.data.blocks.length = 0;
   assert.deepEqual((await net.store.all())[0].edits, [expected]);
   queue.close();
 
+  setRichTextLinkSchemes(['https:']);
   const reopened = await net.open();
+  assert.deepEqual(reopened.entries.map((entry) => entry.key), [save.key]);
   net.online = true;
   await reopened.flush();
   assert.deepEqual(net.sent[0].edits, [expected]);
@@ -450,16 +462,13 @@ test('the queue refuses invalid rich text and a rich text record over the size l
   const queue = await net.open();
   const safe = note(paragraph(span('A note.')));
   const refusedLink = note(paragraph(link('javascript:ignored')));
-  const disabledScheme = note(paragraph(link('http://example.org/reading')));
   const malformed = { component: 'rich-text', version: '0.1.0' };
   const large = note(...Array.from({ length: 100 }, () => paragraph(span('x'.repeat(2000)))));
-  for (const value of [refusedLink, disabledScheme, malformed]) {
+  for (const value of [refusedLink, malformed]) {
     assert.deepEqual(await queue.perform(request('T-01', { arguments: { note: value } })),
       { ok: false, message: 'The arguments are not valid.' });
     assert.deepEqual(await queue.perform(request('T-01', { edits: [edit(safe, value)] })),
       { ok: false, message: 'The edits are not valid.' });
-  }
-  for (const value of [refusedLink, malformed]) {
     assert.deepEqual(await queue.perform(request('T-01', { edits: [edit(value, safe)] })),
       { ok: false, message: 'The edits are not valid.' });
   }
@@ -758,6 +767,8 @@ test('only valid stored records of a known version are sent', async (t) => {
   before.close();
   const [record] = await net.store.all();
   const { version, ...legacy } = record;
+  const safe = note(paragraph(span('A note.')));
+  const refusedLink = note(paragraph(link('javascript:ignored')));
   for (const [name, change] of [
     ['unknown version', { version: 2 }],
     ['invalid tool name', { tool: 'Tool.Reserve' }],
@@ -765,6 +776,9 @@ test('only valid stored records of a known version are sent', async (t) => {
     ['large record', { arguments: { note: 'x'.repeat(200000) } }],
     ['extra key', { extra: true }],
     ['invalid arguments', { arguments: { tool: { id: 'T-01' } } }],
+    ['unsupported link scheme in an argument', { arguments: { note: refusedLink } }],
+    ['unsupported link scheme in an old value', { edits: [edit(refusedLink, safe)] }],
+    ['unsupported link scheme in a new value', { edits: [edit(safe, refusedLink)] }],
     ['credential name', { arguments: { token: 'synthetic' } }],
     ['invalid order', { order: NaN }],
     ['invalid principal', { principal: '' }],

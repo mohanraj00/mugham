@@ -100,8 +100,14 @@ export function copyArgs(args) {
   return Object.freeze(Object.fromEntries(Object.entries(args).map(([name, value]) => [name, copyValue(value)])));
 }
 
+// The queue uses all supported link schemes. The action path checks the page policy for new values.
+function validArguments(args) {
+  return isPlain(args) && Object.values(args).every((value) => isScalar(value) || isOrderedPair(value) || isTextList(value)
+    || richTextValueErrors(value, RICH_TEXT_SCHEMES).length === 0);
+}
+
 // A deep copy of the typed edits of a request, or null.
-function editsOf(edits, schemes) {
+function editsOf(edits) {
   if (!Array.isArray(edits) || edits.length > 400) return null;
   const copy = [];
   for (const edit of edits) {
@@ -112,7 +118,7 @@ function editsOf(edits, schemes) {
       if (isScalar(value)) item[name] = value;
       else if (fieldValue && (isOrderedPair(value) || isTextList(value))) item[name] = copyValue(value);
       else if (fieldValue && value?.component === 'rich-text') {
-        if (richTextValueErrors(value, name === 'old_value' ? RICH_TEXT_SCHEMES : schemes).length) return null;
+        if (richTextValueErrors(value, RICH_TEXT_SCHEMES).length) return null;
         item[name] = copyValue(value);
       } else if (isPlain(value) && Object.values(value).every(isScalar)) item[name] = { ...value };
       else return null;
@@ -130,10 +136,7 @@ function checkedRecord(record) {
   const { key, principal, owner, order, tool, arguments: args, label, queued, tries, state, message } = record;
   if (typeof key !== 'string' || !ID.test(key)) return { error: 'The request has no valid key.' };
   if (typeof tool !== 'string' || tool.length > 80 || !TOOL.test(tool)) return { error: 'The tool name is not valid.' };
-  if (!isPlain(args) || !Object.values(args).every((value) => isScalar(value) || isOrderedPair(value) || isTextList(value)
-    || richTextValueErrors(value).length === 0)) {
-    return { error: 'The arguments are not valid.' };
-  }
+  if (!validArguments(args)) return { error: 'The arguments are not valid.' };
   const secret = Object.keys(args).find((name) => CREDENTIAL.test(name));
   if (secret !== undefined) return { error: `The queue does not keep the argument ${secret.slice(0, 40)}. Its name looks like a credential.` };
   const hasEdits = Object.hasOwn(record, 'edits');
@@ -599,9 +602,10 @@ export class ActionQueue {
       // The store knows about the try before the request leaves the device.
       await this.#keep(record);
       // Keep the link schemes that passed the check when the queue took the record.
+      const edits = record.edits ? editsOf(record.edits) : undefined;
       const request = Object.freeze({ id: crypto.randomUUID(), key: record.key, tool: record.tool,
-        arguments: copyArgs(record.arguments), ...(record.edits ? { edits: Object.freeze(editsOf(record.edits, RICH_TEXT_SCHEMES)) } : {}) });
-      const receipt = await this.#try(request);
+        arguments: copyArgs(record.arguments), ...(edits ? { edits: Object.freeze(edits) } : {}) });
+      const receipt = edits === null || !validArguments(record.arguments) ? null : await this.#try(request);
       if (receipt === UNSENT) {
         // The queue closed before the request left the device, for example at a sign-out. The record stays for
         // its principal as it was before this try.
