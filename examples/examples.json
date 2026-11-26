@@ -99,7 +99,7 @@
             "accordion", "action-button", "action-queue", "app-shell", "approval-queue", "avatar", "badge", "breadcrumbs", "button", "card", "card-grid", "chart", "choice-field", "citation",
             "data-grid", "date-field", "date-range-field", "date-time-field", "dialog", "diff", "drawer", "editable-form", "empty-state", "excerpt",
             "field", "form-card", "grid", "image", "long-text-field", "menu", "multi-choice-field", "number-field",
-            "pagination", "plan", "progress", "range-field", "rich-text", "run-steps", "select-field", "skeleton", "source-status", "stack", "status", "steps", "table", "tabs", "text",
+            "pagination", "plan", "progress", "range-field", "rich-text", "rich-text-field", "run-steps", "select-field", "skeleton", "source-status", "stack", "status", "steps", "table", "tabs", "text",
             "time-field", "toast", "toggle-field", "tooltip", "upload", "thread"
           ],
           "text": "Compare each catalog component in the three presets and in light and dark modes."
