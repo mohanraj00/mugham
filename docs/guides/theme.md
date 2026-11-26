@@ -246,12 +246,14 @@ An asterisk marks a guardrail part. Keep it visible when the kit shows it. Run `
 | `mu-multi-choice-field` | `checkbox`\*, `checkbox-label`\*, `copy`\*, `copy-status`\*, `details`\*, `edit-type`\*, `group`\*, `label`\*, `listbox`\*, `next`\*, `option`\*, `popup`\*, `problem`\*, `reason`\*, `remove`\*, `search`\*, `status`\*, `tag`, `tag-text`\*, `tags` |
 | `mu-number-field` | `copy`\*, `copy-status`\*, `details`\*, `edit-type`\*, `input`\*, `label`\*, `next`\*, `problem`\*, `reason`\* |
 | `mu-pagination` | `copy`\*, `copy-status`\*, `details`\*, `gap`, `nav`\*, `next`\*, `next-page`\*, `page`\*, `previous-page`\*, `reason`\* |
+| `mu-progress` | `bar`\*, `copy`\*, `copy-status`\*, `details`\*, `indicator`\*, `label`\*, `next`\*, `reason`\*, `value`\* |
 | `mu-range-field` | `controls`\*, `copy`\*, `copy-status`\*, `details`\*, `edit-type`\*, `group`\*, `handle-label`\*, `label`\*, `next`\*, `number`\*, `problem`\*, `reason`\*, `slider`\* |
 | `mu-rich-text` | `authorship`\*, `code`, `copy`\*, `copy-status`\*, `details`\*, `empty`, `link`\*, `next`\*, `read-more-content`\*, `read-more-toggle`\*, `reason`\*, `rich-text`, `target`\* |
 | `mu-select-field` | `control`\*, `copy`\*, `copy-status`\*, `details`\*, `edit-type`\*, `label`\*, `listbox`\*, `next`\*, `option`\*, `popup`\*, `problem`\*, `reason`\*, `search`\*, `status`\*, `value`\* |
 | `mu-source-status` | `checked`\*, `copy`\*, `copy-status`\*, `details`\*, `empty`, `label`, `next`\*, `reason`\*, `source`\*, `state`\* |
 | `mu-stack` | `copy`\*, `copy-status`\*, `details`\*, `layout`, `next`\*, `reason`\* |
 | `mu-status` | `authorship`\*, `copy`\*, `copy-status`\*, `details`\*, `label`\*, `next`\*, `reason`\*, `status`\*, `text`\* |
+| `mu-steps` | `back`\*, `copy`\*, `copy-status`\*, `details`\*, `list`\*, `next`\*, `position`\*, `reason`\*, `state`\*, `step`\* |
 | `mu-table` | `authorship`\*, `copy`\*, `copy-status`\*, `details`\*, `empty`, `next`\*, `reason`\*, `sort-status`\*, `table` |
 | `mu-tabs` | `copy`\*, `copy-status`\*, `details`\*, `next`\*, `panel`\*, `reason`\*, `tab`\*, `tablist`\* |
 | `mu-text` | `copy`\*, `copy-status`\*, `details`\*, `next`\*, `read-more-content`\*, `read-more-toggle`\*, `reason`\*, `text` |
@@ -303,6 +305,10 @@ Keep the `tablist` and each `tab` visible. Let the list wrap on narrow screens. 
 Keep the app shell landmarks `top`, `side` and `main` visible in their active layout. Keep the `skip` part visible on focus and keep the `menu` part visible on narrow screens. Give each control in the top and side slots a 44 by 44 CSS pixel target and a visible focus ring.
 
 Let the breadcrumb `list` and pagination `nav` wrap. Keep the current page distinct in each theme and in forced colors. Keep each `link`, `page`, `previous-page` and `next-page` target at least 44 by 44 CSS pixels and keep its focus ring visible.
+
+Let the wizard `list` wrap and keep each `step`, its `position` and its `state` visible. Give each `back` button a target of at least 44 by 44 CSS pixels and keep its focus ring visible.
+
+Keep the progress `label` and `value` visible. Keep the `bar` edge and fill distinct in forced colors. Keep the `indicator` visible for unknown progress and stop its motion when the person asks for reduced motion.
 
 The image parts are `image`, `box`, `caption` and `dialog`. Keep the box ratio and its loading and failed notices visible. Keep the caption and the full-size close button visible. The `open` part must keep its focus ring.
 

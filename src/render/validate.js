@@ -429,6 +429,17 @@ export function fillErrors(fill, catalog, path = '', depth = 0) {
   if (!errors.length && fill.component === 'pagination' && data.page > data.page_count) {
     errors.push(prefix + 'data.page: must be at most page_count');
   }
+  if (!errors.length && (fill.component === 'steps' || fill.component === 'progress')) {
+    if (!data.label.trim()) errors.push(prefix + 'data.label: give text');
+    if (fill.component === 'steps') {
+      for (const [index, label] of data.labels.entries()) {
+        if (!label.trim()) errors.push(prefix + `data.labels[${index}]: give text`);
+      }
+      if (data.current >= data.labels.length) errors.push(prefix + 'data.current: must be within labels');
+    } else if (own(data, 'value') && data.value > data.maximum) {
+      errors.push(prefix + 'data.value: must be at most maximum');
+    }
+  }
   return [...errors, ...slotErrors(fill, contract, prefix, depth)];
 }
 

@@ -217,3 +217,38 @@ export class MuPagination extends MuElement {
     this.#focusAfterRender = null;
   }
 }
+
+export class MuSteps extends MuElement {
+  static component = 'steps';
+  static styles = [NAVIGATION_CSS, sheet(`
+    ol { display: flex; flex-wrap: wrap; gap: var(--mu-space-2); list-style: none; margin: 0; padding: 0; }
+    li { display: flex; align-items: center; min-block-size: 44px; max-inline-size: 100%; overflow-wrap: anywhere; }
+    li > span { padding-inline: var(--mu-space-2); }
+    [aria-current="step"] { font-weight: bold; }
+    button { display: block; text-align: start; }
+  `)];
+
+  render(data) {
+    const { label, labels, current } = data;
+    const list = el('ol', { part: 'list', role: 'list', 'aria-label': label });
+    for (const [index, title] of labels.entries()) {
+      const done = index < current;
+      const position = el('span', { part: 'position' }, `Step ${index + 1} of ${labels.length}`);
+      const state = el('span', { part: 'state' }, done ? 'Done' : index === current ? 'Current' : 'Next');
+      const content = [position, '. ', title, '. ', state];
+      const item = el('li', { part: 'step', 'aria-current': index === current ? 'step' : null });
+      if (done) {
+        const back = el('button', { part: 'back', type: 'button' }, ...content);
+        back.addEventListener('click', () => {
+          if (this.fill?.data !== data) return;
+          this.dispatchEvent(new CustomEvent('mu-step-change', { bubbles: true, composed: true, detail: { index } }));
+        });
+        item.append(back);
+      } else {
+        item.append(el('span', {}, ...content));
+      }
+      list.append(item);
+    }
+    return [list];
+  }
+}

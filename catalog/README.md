@@ -387,3 +387,9 @@ Give `mu-breadcrumbs` a navigation name and a list of labels and link addresses.
 An HTTPS address starts with `https://` in upper or lower case. Use a host with ASCII DNS labels separated by dots. Each label has 1 to 63 letters, digits or hyphens. A hyphen cannot start or end a label. The host cannot contain only digits and dots. The host can have a port of 1 to 5 digits with a value of at most 65535. A path, query or fragment after the host or port starts with `/`, `?` or `#`. Each address must be free of white space, control characters, U+FEFF and backslashes.
 
 Give `mu-pagination` a navigation name, the current `page` and the total `page_count`. Both numbers are positive safe integers. When a person requests a different page, `mu-page-change` bubbles across shadow roots with `{ page }` in its detail. Read that number in page code. When the content is ready, show it and set a new fill with the new current page. The end buttons are disabled at the limits. Long ranges show the first and last pages, a short range near the current page and marks for the gaps.
+
+## Steps and progress
+
+Give `mu-steps` a list name in `label`, an ordered list of step names in `labels` and the current index in `current`. The first index is zero. The list shows Done, Current or Next and the position of each step. The current item has `aria-current="step"`. Tab reaches the buttons for done steps. Enter or Space sends `mu-step-change`, which bubbles across shadow roots with `{ index }` in its detail. Page code sets the new fill, shows the step content and moves focus to the new heading.
+
+Give `mu-progress` a name in `label` and a positive number in `maximum`. Use a finite `value` from zero through `maximum` for known progress. Omit `value` for unknown progress. The bar has the same name in both cases. Unknown progress shows a fixed mark if the person asks for reduced motion.

@@ -4,6 +4,8 @@ import { resolveContract } from './resolve.js';
 import appShell from '../../catalog/app-shell.json' with { type: 'json' };
 import breadcrumbs from '../../catalog/breadcrumbs.json' with { type: 'json' };
 import pagination from '../../catalog/pagination.json' with { type: 'json' };
+import progress from '../../catalog/progress.json' with { type: 'json' };
+import steps from '../../catalog/steps.json' with { type: 'json' };
 import accordion from '../../catalog/accordion.json' with { type: 'json' };
 import tabs from '../../catalog/tabs.json' with { type: 'json' };
 import actionButton from '../../catalog/action-button.json' with { type: 'json' };
@@ -70,7 +72,7 @@ const FILES = {
   'action-button': actionButton, 'action-queue': actionQueue, 'queued-action': queuedAction, button, card, 'card-grid': cardGrid, 'choice-field': choiceField, citation, 'date-field': dateField,
   diff, 'diff-change': diffChange, 'diff-part': diffPart, dialog, drawer, 'editable-form': editableForm, excerpt, fact, field,
   'form-card': formCard, 'form-line': formLine, 'form-section': formSection, grid, image,
-  menu, tooltip, toast, tabs, accordion, 'app-shell': appShell, breadcrumbs, pagination,
+  menu, tooltip, toast, tabs, accordion, 'app-shell': appShell, breadcrumbs, pagination, progress, steps,
   'long-text-field': longTextField, 'number-field': numberField, 'source-status': sourceStatus, stack, status, text, table, 'table-row': tableRow,
   'toggle-field': toggleField,
   'range-field': rangeField,

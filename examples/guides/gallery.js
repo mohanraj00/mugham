@@ -44,6 +44,12 @@ const pages = mount('pagination', { label: 'Tray pages', page: 2, page_count: 12
 pages.addEventListener('mu-page-change', ({ detail: { page } }) => {
   pages.fill = fill('pagination', { label: 'Tray pages', page, page_count: 12 });
 });
+const traySteps = { label: 'Tray steps', labels: ['Choose a tray', 'Check the shelf', 'Review'] };
+const steps = mount('steps', { ...traySteps, current: 1 }, { parent: shell });
+steps.addEventListener('mu-step-change', ({ detail: { index } }) => {
+  steps.fill = fill('steps', { ...traySteps, current: index });
+});
+mount('progress', { label: 'Trays checked', maximum: 8, value: 5 }, { parent: shell });
 
 const plot = (title, shelf) => ({ title, facts: [fill('fact', { label: 'Shelf', value: shelf })] });
 mount('card-grid', { label: 'Seed trays', cards: [

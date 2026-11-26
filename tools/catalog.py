@@ -32,6 +32,11 @@ TIME = re.compile(r'([01][0-9]|2[0-3]):([0-5][0-9])')
 TIME_ZONE = re.compile(r'[A-Za-z_][A-Za-z0-9_+-]*(/[A-Za-z_][A-Za-z0-9_+-]*)+')
 
 
+# The code points that String.trim() removes in the browser validator.
+LABEL_SPACE = ('\t\n\v\f\r \u00a0\u1680\u2000\u2001\u2002\u2003\u2004\u2005'
+               '\u2006\u2007\u2008\u2009\u200a\u2028\u2029\u202f\u205f\u3000\ufeff')
+
+
 def shown(key):
     return key[:MAX_NAME] + '...' if len(key) > MAX_NAME else key
 
@@ -504,6 +509,17 @@ def fill_errors(fill, catalog, path='', depth=0):
                 errors.append(prefix + 'data.items[%d].href: give a relative path or an https address' % index)
     if not errors and fill['component'] == 'pagination' and data['page'] > data['page_count']:
         errors.append(prefix + 'data.page: must be at most page_count')
+    if not errors and fill['component'] in ('steps', 'progress'):
+        if not data['label'].strip(LABEL_SPACE):
+            errors.append(prefix + 'data.label: give text')
+        if fill['component'] == 'steps':
+            for index, label in enumerate(data['labels']):
+                if not label.strip(LABEL_SPACE):
+                    errors.append(prefix + 'data.labels[%d]: give text' % index)
+            if data['current'] >= len(data['labels']):
+                errors.append(prefix + 'data.current: must be within labels')
+        elif 'value' in data and data['value'] > data['maximum']:
+            errors.append(prefix + 'data.value: must be at most maximum')
     return errors + slot_errors(fill, contract, prefix, depth)
 
 

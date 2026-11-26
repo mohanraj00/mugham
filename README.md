@@ -124,6 +124,8 @@ Each component has a contract file in [catalog/](catalog/README.md). The contrac
 | `mu-app-shell` | A top bar, a main area and a side bar that opens in a drawer on a phone. | [app-shell.json](catalog/app-shell.json) |
 | `mu-breadcrumbs` | Links in page order, with a mark for the current page. | [breadcrumbs.json](catalog/breadcrumbs.json) |
 | `mu-pagination` | Numbered controls that request a page of content. | [pagination.json](catalog/pagination.json) |
+| `mu-steps` | An ordered list that shows the position and state of each wizard step. | [steps.json](catalog/steps.json) |
+| `mu-progress` | A named bar with a known or unknown value. | [progress.json](catalog/progress.json) |
 | `mu-editable-form` | Up to 20 kit or registered fields. A person edits the values and submits them as one action. | [editable-form.json](catalog/editable-form.json) |
 | `mu-form-card` | A long form in sections, as labels and values. A person edits one field in place and sends the changes as one action. Some fields are read-only. | [form-card.json](catalog/form-card.json) |
 | `mu-card-grid` | A labeled list of cards in columns of equal width. | [card-grid.json](catalog/card-grid.json) |
@@ -184,7 +186,7 @@ python3 tools/serve.py
    - `http://localhost:8000/examples/cards/loans.html`: a card, an action button, a card grid and a form.
    - `http://localhost:8000/examples/cards/dialogs.html`: a seed tray reservation with a confirm step and a drawer with tray details.
    - `http://localhost:8000/examples/cards/settings.html`: settings in tabs and an accordion, with a confirm step and a toast after a save.
-   - `http://localhost:8000/examples/apps/library.html`: a library staff page with a side bar, breadcrumbs and a list with numbered pages.
+   - `http://localhost:8000/examples/apps/library.html`: a library staff page with a side bar, breadcrumbs, a list with numbered pages and a wizard to add a member.
    - `http://localhost:8000/examples/cards/popovers.html`: tray choices, help text and a message after a note save.
    - `http://localhost:8000/examples/cards/approval-icons.html`: a request card with buttons to approve or reject the request.
    - `http://localhost:8000/examples/forms/inputs.html`: a form with text, long text, a number, a date and a choice.

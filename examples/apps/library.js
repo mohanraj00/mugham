@@ -1,5 +1,5 @@
 import { define } from '../../src/components/index.js';
-import { fill } from '../../src/kit.js';
+import { createKit, fill, onAction } from '../../src/kit.js';
 
 define();
 
@@ -39,3 +39,63 @@ function showPage(page) {
 
 pagination.addEventListener('mu-page-change', (event) => showPage(event.detail.page));
 showPage(1);
+
+const wizard = document.getElementById('member-wizard');
+const steps = wizard.querySelector('mu-steps');
+const progress = document.getElementById('member-progress');
+const panels = [...wizard.querySelectorAll('[data-member-step]')];
+const headings = panels.map((panel) => panel.querySelector('h3'));
+const labels = headings.map((heading) => heading.textContent);
+const draft = {};
+let review = '';
+const { mount } = createKit({ actor: { type: 'human', id: 'library-staff' } });
+
+function memberForm(index, title, field, data) {
+  const action = { tool: 'library.continue_member', title, label: 'Next', editable: { [data.name]: data.label } };
+  const form = mount('editable-form', { title, submit_label: action.label, fields: [fill(field, data)] },
+    { parent: panels[index], action });
+  // Page code accepts the local draft before it opens the next step.
+  form.addEventListener('mu-action', ({ detail: { id, arguments: values } }) => {
+    if (!form.receipt({ id, ok: true })) return;
+    Object.assign(draft, values);
+    showMemberStep(index + 1);
+  });
+  return form;
+}
+
+const forms = [
+  memberForm(0, 'Member details', 'field', { name: 'member_name', label: 'Member name', value: 'Sample Member' }),
+  memberForm(1, 'Membership options', 'choice-field', {
+    name: 'membership_type', label: 'Membership type', choices: ['Standard', 'Household'], value: 'Standard',
+  }),
+];
+for (const index of [1, 2]) {
+  const back = mount('button', { label: 'Back', emphasis: 'secondary' }, { parent: panels[index] });
+  back.addEventListener('mu-press', () => showMemberStep(index - 1));
+}
+const add = mount('action-button', { label: 'Add member' }, { parent: panels[2] });
+add.id = 'add-member';
+onAction(add, async () => {
+  await new Promise((done) => setTimeout(done, 400));
+  return { ok: true, message: 'Member added.' };
+});
+
+function showMemberStep(index, focus = true) {
+  if (index === 2) {
+    document.getElementById('member-name').textContent = draft.member_name;
+    document.getElementById('member-type').textContent = draft.membership_type;
+    const values = JSON.stringify(draft);
+    if (review !== values) {
+      add.action = { tool: 'library.add_member', label: 'Add member', arguments: draft };
+      review = values;
+    }
+  }
+  forms[index]?.reopen();
+  for (const [number, panel] of panels.entries()) panel.hidden = number !== index;
+  steps.fill = fill('steps', { label: 'Member steps', labels, current: index });
+  progress.fill = fill('progress', { label: 'Wizard progress', maximum: labels.length, value: index + 1 });
+  if (focus) headings[index].focus();
+}
+
+steps.addEventListener('mu-step-change', ({ detail: { index } }) => showMemberStep(index));
+showMemberStep(0, false);

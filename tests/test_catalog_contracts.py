@@ -48,6 +48,8 @@ VALID = {
                   'skip_label': 'Skip to main content'},
     'breadcrumbs': {'label': 'Breadcrumbs', 'items': [{'label': 'Desk', 'href': './desk'}, {'label': 'Loans'}]},
     'pagination': {'label': 'Loan pages', 'page': 2, 'page_count': 12},
+    'steps': {'label': 'Member steps', 'labels': ['Details', 'Membership type', 'Review'], 'current': 1},
+    'progress': {'label': 'Member progress', 'maximum': 3, 'value': 1.5},
     'text': {'text': 'Weather at sea', 'variant': 'caption'},
     'button': {'label': 'Renew', 'emphasis': 'secondary', 'disabled': False},
     'field': {'name': 'shelf', 'label': 'Shelf code', 'value': 'B-14', 'hint': 'A letter and a number.'},
@@ -147,6 +149,26 @@ class CatalogContractTest(unittest.TestCase):
                 errors = catalog.fill_errors(fill(name, {**VALID[name], **data}), CATALOG)
                 self.assertEqual(len(errors), 1)
                 self.assertTrue(errors[0].startswith(f'data.{field}:'), errors)
+
+    def test_steps_and_progress_declare_roles_keys_states_and_parts(self):
+        expected = {
+            'steps': ('list', ['Tab', 'Shift+Tab', 'Enter', 'Space'], ['default', 'refused'],
+                      {'list', 'step', 'position', 'state', 'back'}),
+            'progress': ('progressbar', [], ['default', 'loading', 'refused'],
+                         {'bar', 'indicator', 'label', 'value'}),
+        }
+        for name, (role, keyboard, states, parts) in expected.items():
+            with self.subTest(component=name):
+                contract = CATALOG[name]
+                self.assertEqual(catalog.contract_errors(contract, name + '.json'), [])
+                self.assertFalse(contract['ai_content'])
+                self.assertEqual(contract['states'], states)
+                self.assertEqual(contract['accessibility'], {
+                    'role': role, 'name': {'field': 'label'}, 'keyboard': keyboard,
+                    'forced_colors': True, 'reduced_motion': True,
+                })
+                self.assertTrue(parts <= {part['name'] for part in contract['parts'] if part['guardrail']})
+        self.assertEqual(catalog.fill_errors(fill('progress', {'label': 'Loading loans', 'maximum': 3}), CATALOG), [])
 
     def test_panel_contracts_declare_roles_keys_and_scalar_records(self):
         expected = {

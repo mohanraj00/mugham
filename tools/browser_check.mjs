@@ -440,14 +440,14 @@ async function axErrors(session, sessionId, expected, where) {
 // Each control in the accessibility tree has a name. In each root, an id is unique and each id reference finds its
 // target. Each role, each value of an ARIA attribute and each tabindex is valid. A tabindex above 0 changes the focus order.
 const CONTROLS = new Set(['button', 'checkbox', 'combobox', 'Date', 'DateTime', 'DisclosureTriangle', 'InputTime', 'link', 'listbox', 'menuitem', 'option', 'radio',
-  'searchbox', 'slider', 'spinbutton', 'switch', 'tab', 'textbox']);
+  'progressbar', 'searchbox', 'slider', 'spinbutton', 'switch', 'tab', 'textbox']);
 export async function pageRules(session, sessionId, where) {
   const { nodes } = await session.send('Accessibility.getFullAXTree', {}, sessionId);
   const unnamed = nodes.filter((node) => !node.ignored && CONTROLS.has(node.role?.value) && !node.name?.value?.trim())
     .map((node) => node.role.value);
   const markup = await evaluate(session, sessionId, `(() => {
     const ROLES = new Set(['alert', 'article', 'button', 'checkbox', 'combobox', 'dialog', 'form', 'grid', 'group', 'heading', 'img', 'link', 'list',
-      'listbox', 'listitem', 'log', 'main', 'menu', 'menuitem', 'navigation', 'none', 'option', 'presentation', 'radio', 'radiogroup', 'region', 'slider', 'status', 'switch',
+      'listbox', 'listitem', 'log', 'main', 'menu', 'menuitem', 'navigation', 'none', 'option', 'presentation', 'progressbar', 'radio', 'radiogroup', 'region', 'slider', 'status', 'switch',
       'tab', 'tablist', 'tabpanel', 'textbox', 'tooltip']);
     const BOOLEAN = ['true', 'false'];
     const VALUES = { 'aria-invalid': BOOLEAN, 'aria-live': ['off', 'polite', 'assertive'], 'aria-disabled': BOOLEAN,
