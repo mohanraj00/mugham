@@ -79,7 +79,7 @@ mount('card', {
 Expected result:
 
 - The page shows an article with the name `Tide table for the north pier`.
-- The card shows `Author: agent agent-notes (Note helper)` and `Source: Synthetic tide notes, page 2`.
+- The card shows `Author: Note helper (agent, agent-notes)` and `Source: Synthetic tide notes, page 2`.
 - The card shows the locator as text. The locator opens only after a person presses the button `Open source: Synthetic tide notes, page 2`.
 
 A nested fill, for example the fact, has no `slots` key. It takes the slots of its outer fill.
