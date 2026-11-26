@@ -26,16 +26,32 @@ help.addEventListener('click', () => {
   summary.textContent = 'Tray A3 holds dune bell seeds. It is on the east shelf.';
 });
 
-const toast = mount('toast', { message: 'Tray note saved.' }, { parent: document.getElementById('main') });
+const pending = { message: 'Saving tray note.' };
+const toast = mount('toast', pending, { parent: document.getElementById('main') });
 const result = document.getElementById('save-result');
-function showResult(data) {
-  result.textContent = data.message;
-  toast.fill = fill('toast', data);
-  toast.show();
+let savePending = false;
+
+function requestSave(ok) {
+  return new Promise((resolve) => {
+    setTimeout(() => resolve({
+      ok,
+      message: ok ? 'Tray note saved.' : 'Tray note did not save.',
+    }), 250);
+  });
 }
-document.getElementById('show-toast').addEventListener('click', () => {
-  showResult({ message: 'Tray note saved.' });
-});
-document.getElementById('show-error').addEventListener('click', () => {
-  showResult({ message: 'Tray note did not save.', kind: 'error', close_label: 'Close message' });
-});
+
+async function saveNote(succeeds) {
+  if (savePending) return;
+  savePending = true;
+  result.textContent = pending.message;
+  toast.fill = fill('toast', pending);
+
+  const { ok, message } = await requestSave(succeeds);
+  toast.fill = fill('toast', ok ? { message } : { message, kind: 'error', close_label: 'Close message' });
+  toast.show();
+  result.textContent = message;
+  savePending = false;
+}
+
+document.getElementById('show-toast').addEventListener('click', () => saveNote(true));
+document.getElementById('show-error').addEventListener('click', () => saveNote(false));

@@ -164,7 +164,7 @@ The menu sends `mu-menu-select` with `{ name }` when a person chooses an item. P
 
 Put one named, focusable control in the default slot of `mu-tooltip`. The fill gives the description in `text`. The element adds the description to the control with `aria-describedby`. The tooltip shows while the control has focus or the pointer is over the control or its tooltip. Escape hides the tooltip and leaves focus where it is.
 
-Call `show()` on a connected `mu-toast` with a valid fill. It announces the `message` as a status. Set `kind` to `error` to announce an alert. Keep the error or refusal in the page too. A toast without a `close_label` closes after eight seconds. A toast with a `close_label` stays open until the person uses its close button or page code replaces the fill. Focus stays where it is when the toast opens.
+Call `show()` on a connected `mu-toast` with a valid fill. For an action result, wait for its receipt before you call `show()`. The toast announces the `message` as a status. Set `kind` to `error` to announce an alert. Keep the error or refusal in the page too. A toast without a `close_label` closes after eight seconds. A toast with a `close_label` stays open until the person uses its close button or page code replaces the fill. Focus stays where it is when the toast opens.
 
 Each element sends its `mu-<component>-open` and `mu-<component>-close` events when the browser reports a change in the popover state. The events bubble and cross shadow roots. See the [seed tray notes example](../examples/cards/popovers.html).
 
