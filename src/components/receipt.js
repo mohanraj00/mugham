@@ -30,8 +30,14 @@ export const ACTION_RESULT_CSS = sheet(`
 `);
 
 // Keep the copy control while the reference stays the same.
-export function showReference(row, reference) {
+export function showReference(row, reference, nameControl) {
   const words = reference ? 'Reference: ' + reference : '';
   if ((row.firstElementChild?.textContent ?? '') === words) return;
-  row.replaceChildren(...(words ? [el('span', { part: 'reference' }, words), copyControl(reference, 'reference')] : []));
+  if (!words) {
+    row.replaceChildren();
+    return;
+  }
+  const copy = copyControl(reference, 'reference');
+  nameControl?.(copy.firstElementChild, 'Copy reference');
+  row.replaceChildren(el('span', { part: 'reference' }, words), copy);
 }

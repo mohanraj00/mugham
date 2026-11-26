@@ -48,13 +48,19 @@ class TestNode extends EventTarget {
   }
   setAttribute(name, value) { this.attributes.set(name, value); }
   getAttribute(name) { return this.attributes.get(name) ?? null; }
+  removeAttribute(name) { this.attributes.delete(name); }
+  contains(node) { return this === node || this.children.some((child) => child.contains?.(node)); }
+  get firstElementChild() { return this.children.find((child) => child instanceof TestNode) ?? null; }
   get id() { return this.getAttribute('id') ?? ''; }
   set id(value) { this.setAttribute('id', value); }
   get localName() { return this.tag; }
   get textContent() { return this.children.map((child) => child.textContent).join(''); }
   set textContent(value) { this.replaceChildren({ textContent: value }); }
   matches(selector) { return selector === 'a[href]' && this.tag === 'a' && this.getAttribute('href') !== null; }
-  focus() { document.activeElement = this; this.getRootNode().activeElement = this; }
+  focus() {
+    document.activeElement = this;
+    for (let node = this; node; node = node.getRootNode().host) node.getRootNode().activeElement = node;
+  }
   click() {
     if (!this.disabled) this.dispatchEvent(new Event('click', { cancelable: true }));
   }
@@ -90,7 +96,7 @@ globalThis.matchMedia = (query) => {
 };
 globalThis.Node = TestNode;
 globalThis.HTMLElement = class extends TestNode {
-  attachShadow() { return (this.shadowRoot = new TestNode()); }
+  attachShadow() { return (this.shadowRoot = Object.assign(new TestNode(), { host: this })); }
 };
 globalThis.CSSStyleSheet = class { replaceSync() {} };
 globalThis.document = {
@@ -429,6 +435,182 @@ function makeResearch(name, data) {
   component.fill = researchFill(name, data);
   return component;
 }
+
+const APPROVALS = {
+  label: 'Library approvals',
+  items: [
+    { id: 'hold', title: 'Place a hold', summary: 'Keep <one> book at the east branch.' },
+    { id: 'list', title: 'Add a book to the list', summary: 'Keep the title for later.' },
+  ],
+};
+
+function bindDecisions(queue, id) {
+  queue.bind(id, {
+    approve: { tool: 'catalog.approve', arguments: { id }, confirm: { message: 'Approve this proposal?', label: 'Confirm approval' } },
+    reject: { tool: 'catalog.reject', arguments: { id }, confirm: { message: 'Reject this proposal?', label: 'Confirm rejection' } },
+  });
+}
+
+function decision(row, index) {
+  const source = row.children.at(-1).children[index];
+  const root = source.shadowRoot;
+  const control = find(root, 'button');
+  const requests = [];
+  source.addEventListener('mu-action', ({ detail }) => requests.push(detail));
+  return { source, root, control, requests, confirm: () => find(root, 'accept').click() };
+}
+
+function words(row) {
+  return find(row, 'state').textContent;
+}
+
+test('the approval queue exports an authored fill and refuses duplicate ids and an invalid item', () => {
+  const name = 'approval-queue';
+  const schema = toolSchema(name);
+  const item = schema.properties.data.properties.items.items;
+  assert.equal(schema.properties.component.const, name);
+  assert.deepEqual(item.required, ['id', 'title', 'summary']);
+  assert.deepEqual(schema.properties.slots.required, ['authorship']);
+  const queue = makeResearch(name, APPROVALS);
+  const list = find(queue.shadowRoot, 'list');
+  assert.equal(list.getAttribute('aria-label'), 'Library approvals');
+  assert.equal(find(queue.shadowRoot, 'authorship').textContent, 'Author: Catalog assistant (agent, catalog-assistant)');
+  assert.equal(find(list, 'summary').textContent, 'Keep <one> book at the east branch.');
+  assert.deepEqual(list.children.map(words), ['Unavailable', 'Unavailable']);
+  assert.equal(find(queue.shadowRoot, 'announcement').textContent, '');
+  for (const [items, errors] of [
+    [Array(2).fill(APPROVALS.items[0]), ['data.items[1].id: must be unique']],
+    [[{ ...APPROVALS.items[0], state: 'approved' }], ['data.items[0].state: the contract does not declare this field']],
+  ]) {
+    queue.addEventListener('mu-refused', (event) => assert.deepEqual(event.detail.errors, errors), { once: true });
+    queue.fill = { ...researchFill(name, APPROVALS), data: { label: 'Library approvals', items } };
+    assert.equal(queue.dataset.state, 'refused');
+    assert.equal(queue.fill, null);
+    assert.ok(find(queue.shadowRoot, 'reason'));
+  }
+  queue.fill = researchFill(name, { label: 'Library approvals', items: [] });
+  assert.equal(queue.dataset.state, 'empty');
+  assert.equal(find(queue.shadowRoot, 'empty').textContent, 'No items need a decision. Check again later.');
+});
+
+test('each proposal confirms, waits for its own receipt and reports only its own result', () => {
+  const queue = makeResearch('approval-queue', APPROVALS);
+  bindDecisions(queue, 'hold');
+  bindDecisions(queue, 'list');
+  const [hold, list] = find(queue.shadowRoot, 'list').children;
+  const live = find(queue.shadowRoot, 'announcement');
+  const approve = decision(hold, 0);
+  const other = decision(hold, 1);
+  const reject = decision(list, 1);
+  assert.deepEqual([words(hold), words(list)], ['Awaiting decision', 'Awaiting decision']);
+
+  approve.control.click();
+  assert.equal(words(hold), 'Confirm approval');
+  assert.equal(live.textContent, 'Place a hold: Confirm approval');
+  assert.equal(approve.root.activeElement, find(approve.root, 'cancel'));
+  assert.deepEqual(approve.requests, []);
+  const step = find(approve.root, 'confirm');
+  step.dispatchEvent(Object.assign(new Event('keydown'), { key: 'Escape' }));
+  assert.equal(approve.root.activeElement, approve.control);
+  assert.equal(words(hold), 'Awaiting decision');
+  assert.deepEqual(approve.requests, []);
+  approve.control.click();
+  approve.confirm();
+  assert.equal(words(hold), 'Pending');
+  assert.equal(live.textContent, 'Place a hold: Pending');
+  assert.equal(approve.control.getAttribute('aria-busy'), 'true');
+  assert.equal(other.control.getAttribute('aria-disabled'), 'true');
+  other.control.click();
+  assert.equal(find(other.root, 'confirm'), undefined);
+  assert.deepEqual(other.requests, []);
+
+  reject.control.click();
+  reject.confirm();
+  const [approval] = approve.requests;
+  const [rejection] = reject.requests;
+  assert.equal(approval.tool, 'catalog.approve');
+  assert.equal(rejection.tool, 'catalog.reject');
+  assert.deepEqual(approval.arguments, { id: 'hold' });
+  assert.deepEqual(rejection.arguments, { id: 'list' });
+  assert.notEqual(approval.key, rejection.key);
+  assert.deepEqual([words(hold), words(list)], ['Pending', 'Pending']);
+  assert.equal(queue.receipt({ id: approval.id, key: rejection.key, ok: true }), false);
+  assert.equal(queue.receipt({ id: approval.id, key: approval.key, ok: true }), true);
+  assert.deepEqual([words(hold), words(list)], ['Approved', 'Pending']);
+  assert.equal(live.textContent, 'Place a hold: Approved');
+  assert.equal(other.control.getAttribute('aria-disabled'), 'true');
+  assert.equal(queue.receipt({ key: rejection.key, ok: true }), true);
+  assert.deepEqual([words(hold), words(list)], ['Approved', 'Rejected']);
+  assert.equal(live.textContent, 'Add a book to the list: Rejected');
+  const announced = live.children[0];
+  assert.equal(queue.receipt({ id: rejection.id, ok: true }), false);
+  queue.fill = queue.fill;
+  assert.equal(live.children[0], announced);
+});
+
+test('a failed decision can start again and a try with no receipt keeps the same key', () => {
+  const queue = makeResearch('approval-queue', APPROVALS);
+  bindDecisions(queue, 'hold');
+  const [hold] = find(queue.shadowRoot, 'list').children;
+  const approve = decision(hold, 0);
+  const reject = decision(hold, 1);
+  approve.control.click();
+  approve.confirm();
+  const [first] = approve.requests;
+  assert.equal(queue.receipt({ id: first.id, ok: false, message: 'The branch is busy.' }), true);
+  assert.equal(words(hold), 'Not done: The branch is busy.');
+  assert.equal(find(queue.shadowRoot, 'announcement').textContent, 'Place a hold: Not done: The branch is busy.');
+  assert.equal(reject.control.getAttribute('aria-disabled'), 'false');
+  reject.control.click();
+  find(reject.root, 'cancel').click();
+  assert.equal(words(hold), 'Not done: The branch is busy.');
+
+  approve.control.click();
+  approve.confirm();
+  const second = approve.requests[1];
+  assert.notEqual(second.key, first.key);
+  assert.equal(queue.receipt({ id: first.id, ok: true }), false);
+  approve.source.noReceipt(second.id);
+  assert.equal(words(hold), 'Pending: No receipt came back.');
+  assert.equal(reject.control.getAttribute('aria-disabled'), 'true');
+  find(approve.root, 'retry').click();
+  const third = approve.requests[2];
+  assert.equal(third.key, second.key);
+  assert.notEqual(third.id, second.id);
+  assert.equal(queue.receipt({ id: second.id, key: second.key, ok: true }), true);
+  assert.equal(words(hold), 'Approved');
+});
+
+test('a new approval fill keeps the focused control, pending action and state by id', () => {
+  const queue = makeResearch('approval-queue', APPROVALS);
+  bindDecisions(queue, 'hold');
+  bindDecisions(queue, 'list');
+  const list = find(queue.shadowRoot, 'list');
+  const [hold, other] = list.children;
+  const approve = decision(hold, 0);
+  const reject = decision(other, 1);
+  const live = find(queue.shadowRoot, 'announcement');
+  approve.control.click();
+  approve.confirm();
+  reject.control.click();
+  const cancel = find(reject.root, 'cancel');
+  const announced = live.children[0];
+  const [held, listed] = APPROVALS.items;
+  queue.fill = researchFill('approval-queue', { ...APPROVALS, items: [
+    { ...listed, title: 'Add the title to the list' }, { ...held, summary: 'Keep the book for two days.' },
+  ] });
+  assert.deepEqual(list.children, [other, hold]);
+  assert.equal(reject.root.activeElement, cancel);
+  assert.equal(queue.shadowRoot.activeElement, reject.source);
+  assert.equal(find(other, 'title').textContent, 'Add the title to the list');
+  assert.equal(find(hold, 'summary').textContent, 'Keep the book for two days.');
+  assert.deepEqual([words(other), words(hold)], ['Confirm rejection', 'Pending']);
+  assert.equal(live.children[0], announced);
+  assert.equal(queue.receipt({ key: approve.requests[0].key, ok: true }), true);
+  assert.equal(words(hold), 'Approved');
+  assert.equal(reject.root.activeElement, cancel);
+  find(reject.root, 'cancel').click();
+});
 
 test('run steps show an ordered list, the states and optional details as text', () => {
   const run = makeResearch('run-steps', RUN_STEPS);

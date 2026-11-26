@@ -49,6 +49,8 @@ VALID = {
     'breadcrumbs': {'label': 'Breadcrumbs', 'items': [{'label': 'Desk', 'href': './desk'}, {'label': 'Loans'}]},
     'pagination': {'label': 'Loan pages', 'page': 2, 'page_count': 12},
     'steps': {'label': 'Member steps', 'labels': ['Details', 'Membership type', 'Review'], 'current': 1},
+    'approval-queue': {'label': 'Library approvals', 'items': [
+        {'id': 'hold', 'title': 'Place a hold', 'summary': 'Keep one book at the east branch.'}]},
     'run-steps': {'label': 'Research run', 'steps': [{'id': 'search', 'name': 'Search the catalog', 'state': 'done',
                                                    'tool_name': 'catalog.search', 'tool_result': 'One match'}]},
     'plan': {'label': 'Research plan', 'tasks': [{'id': 'search', 'name': 'Find a book', 'state': 'in_progress'}]},
@@ -195,6 +197,23 @@ class CatalogContractTest(unittest.TestCase):
                 field = contract['data'][key]
                 self.assertEqual((field['min_items'], field['max_items']), (1, 20))
                 self.assertEqual(field['items']['fields']['state']['values'], states)
+
+    def test_approval_queue_declares_a_named_list_with_authorship_and_item_text(self):
+        name = 'approval-queue'
+        contract = CATALOG[name]
+        self.assertEqual(catalog.contract_errors(contract, name + '.json'), [])
+        self.assertTrue(contract['ai_content'])
+        self.assertTrue(contract['slots']['authorship']['required'])
+        self.assertEqual(contract['states'], ['default', 'empty', 'refused'])
+        self.assertEqual(contract['accessibility'], {
+            'role': 'list', 'name': {'field': 'label'}, 'keyboard': ['Tab', 'Shift+Tab', 'Enter', 'Space', 'Escape'],
+            'forced_colors': True, 'reduced_motion': True,
+        })
+        items = contract['data']['items']
+        self.assertEqual(items['max_items'], 20)
+        self.assertEqual(set(items['items']['fields']), {'id', 'title', 'summary'})
+        self.assertTrue(all(field['required'] for field in items['items']['fields'].values()))
+        self.assertEqual(catalog.fill_errors(outer(name, {'label': 'Library approvals', 'items': []}), CATALOG), [])
 
     def test_page_states_declare_roles_keys_and_parts(self):
         expected = {

@@ -220,6 +220,7 @@ An asterisk marks a guardrail part. Keep it visible when the kit shows it. Run `
 | `mu-accordion` | `copy`\*, `copy-status`\*, `details`\*, `heading`\*, `next`\*, `panel`\*, `reason`\*, `toggle`\* |
 | `mu-action-button` | `accept`\*, `button`, `cancel`\*, `confirm`\*, `copy`\*, `copy-status`\*, `details`\*, `exit`\*, `icon`\*, `next`\*, `reason`\*, `reference`\*, `retry`\*, `status`\*, `tooltip`\* |
 | `mu-action-queue` | `action`, `actions`, `cancel`\*, `copy`\*, `copy-status`\*, `details`\*, `dismiss`\*, `label`, `name`, `next`\*, `queue`, `queued`, `reason`\*, `retry`\*, `state`\*, `summary` |
+| `mu-approval-queue` | `action-button-accept`\*, `action-button-button`, `action-button-cancel`\*, `action-button-confirm`\*, `action-button-copy`\*, `action-button-copy-status`\*, `action-button-exit`\*, `action-button-reference`\*, `action-button-retry`\*, `announcement`\*, `authorship`\*, `copy`\*, `copy-status`\*, `details`\*, `empty`, `item`, `label`\*, `list`\*, `next`\*, `reason`\*, `state`\*, `summary`\*, `title`\* |
 | `mu-app-shell` | `copy`\*, `copy-status`\*, `details`\*, `main`\*, `menu`\*, `next`\*, `reason`\*, `side`\*, `skip`\*, `top`\* |
 | `mu-avatar` | `copy`\*, `copy-status`\*, `details`\*, `initials`\*, `next`\*, `reason`\* |
 | `mu-badge` | `copy`\*, `copy-status`\*, `details`\*, `label`\*, `next`\*, `reason`\* |
@@ -276,6 +277,15 @@ Use these names on the outer element. Each alias starts with the name of the inn
 
 | Outer element | Inner element | Inner part | Exported name |
 |---|---|---|---|
+| `mu-approval-queue` | `mu-action-button` | `accept` | `action-button-accept` |
+| `mu-approval-queue` | `mu-action-button` | `button` | `action-button-button` |
+| `mu-approval-queue` | `mu-action-button` | `cancel` | `action-button-cancel` |
+| `mu-approval-queue` | `mu-action-button` | `confirm` | `action-button-confirm` |
+| `mu-approval-queue` | `mu-action-button` | `copy` | `action-button-copy` |
+| `mu-approval-queue` | `mu-action-button` | `copy-status` | `action-button-copy-status` |
+| `mu-approval-queue` | `mu-action-button` | `exit` | `action-button-exit` |
+| `mu-approval-queue` | `mu-action-button` | `reference` | `action-button-reference` |
+| `mu-approval-queue` | `mu-action-button` | `retry` | `action-button-retry` |
 | `mu-card-grid` | `mu-card` | `status` | `card-status` |
 | `mu-card-grid` | `mu-card` | `title` | `card-title` |
 | `mu-card-grid` | `mu-card` | `toggle` | `card-toggle` |
@@ -315,6 +325,8 @@ Let the breadcrumb `list` and pagination `nav` wrap. Keep the current page disti
 Let the wizard `list` wrap and keep each `step`, its `position` and its `state` visible. Give each `back` button a target of at least 44 by 44 CSS pixels and keep its focus ring visible.
 
 Keep the run step and plan `list`, `authorship`, `name` and `state` visible. Keep the `announcement` in the accessibility tree. Keep each run step `toggle` at least 44 by 44 CSS pixels with a visible focus ring. Keep the `panel` and its text visible while the disclosure is open. Let long detail, arguments and result text wrap on narrow screens.
+
+Keep the approval `list`, `label`, `authorship`, `title`, `summary` and `state` visible. Keep the `announcement` in the accessibility tree. Let the item text and decisions wrap. Keep the action controls, confirmation, pending exits and receipt details visible when they are available. Keep the controls at least 44 by 44 CSS pixels with a visible focus ring.
 
 Keep the progress `label` and `value` visible. Keep the `bar` edge and fill distinct in forced colors. Keep the `indicator` visible for unknown progress and stop its motion when the person asks for reduced motion.
 

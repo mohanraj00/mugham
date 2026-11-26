@@ -58,6 +58,15 @@ mount('plan', { label: 'Tray plan', tasks: [
   { id: 'count', name: 'Count the seedlings', state: 'in_progress' },
   { id: 'water', name: 'Water the tray', state: 'pending' },
 ] }, { parent: shell });
+const approvals = mount('approval-queue', { label: 'Tray approvals', items: [
+  { id: 'move', title: 'Move the Glass moss tray', summary: 'Put the tray on the east shelf.' },
+] }, { parent: shell });
+approvals.bind('move', {
+  approve: { tool: 'garden.approve_move', arguments: { tray: 'B1' },
+    confirm: { message: 'Approve the move to the east shelf?', label: 'Confirm approval' } },
+  reject: { tool: 'garden.reject_move', arguments: { tray: 'B1' },
+    confirm: { message: 'Reject the move to the east shelf?', label: 'Confirm rejection' } },
+});
 mount('progress', { label: 'Trays checked', maximum: 8, value: 5 }, { parent: shell });
 mount('empty-state', { title: 'No trays found', text: 'Try another shelf code.' }, { parent: shell });
 mount('skeleton', { label: 'Loading trays', lines: 3 }, { parent: shell });

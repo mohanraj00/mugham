@@ -53,10 +53,59 @@ function readResearch() {
   };
 }
 
+function readApprovals() {
+  const root = document.querySelector('mu-approval-queue')?.shadowRoot;
+  const part = (scope, name) => scope?.querySelector('[part="' + name + '"]');
+  const rows = [...(root?.querySelectorAll('[part="item"]') ?? [])];
+  const actions = rows.map((row) => [...row.querySelectorAll('mu-action-button')]);
+  const active = root?.activeElement?.shadowRoot?.activeElement;
+  const focus = active && getComputedStyle(active);
+  const controls = actions.flatMap((row) => row.flatMap((item) => [...item.shadowRoot.querySelectorAll('button')]));
+  const color = (value) => {
+    const probe = document.createElement('span');
+    probe.style.color = value;
+    document.body.append(probe);
+    const result = getComputedStyle(probe).color;
+    probe.remove();
+    return result;
+  };
+  const forced = matchMedia('(forced-colors: active)').matches;
+  const primary = controls[0] && getComputedStyle(controls[0]);
+  const cancel = controls.find((button) => button.getAttribute('part') === 'cancel');
+  const cancelStyle = cancel && getComputedStyle(cancel);
+  return {
+    width: innerWidth,
+    scroll: document.documentElement.scrollWidth,
+    states: rows.map((row) => part(row, 'state').textContent),
+    live: part(root, 'announcement')?.textContent,
+    polite: part(root, 'announcement')?.getAttribute('aria-live') === 'polite',
+    disabled: actions.map((row) => row.map((item) => part(item.shadowRoot, 'button').getAttribute('aria-disabled') === 'true')),
+    busy: actions.map((row) => row.map((item) => part(item.shadowRoot, 'button').getAttribute('aria-busy') === 'true')),
+    confirms: actions.flat().filter((item) => part(item.shadowRoot, 'confirm')).length,
+    focus: [actions.findIndex((row) => row.includes(root?.activeElement)),
+      actions.flat().indexOf(root?.activeElement), active?.getAttribute('part')].join(','),
+    ring: focus?.outlineStyle === 'solid' && parseFloat(focus.outlineWidth) >= 2
+      && focus.outlineColor === color(forced ? 'Highlight' : 'var(--mu-color-focus)'),
+    targets: controls.length >= 4 && controls.every((button) => {
+      const { width, height } = button.getBoundingClientRect();
+      return width >= 44 && height >= 44;
+    }),
+    colors: primary?.backgroundColor === color(forced ? 'ButtonFace' : 'var(--mu-color-accent)')
+      && primary?.color === color(forced ? 'ButtonText' : 'var(--mu-color-on-accent)')
+      && primary?.borderTopColor === color(forced ? 'ButtonText' : 'var(--mu-color-accent)'),
+    cancelColors: !forced || (cancelStyle?.backgroundColor === color('ButtonFace') && cancelStyle?.color === color('ButtonText')),
+    noMotion: controls.every((button) => {
+      const style = getComputedStyle(button);
+      return style.transitionProperty === 'none' && style.animationName === 'none';
+    }),
+  };
+}
+
 export async function researchExampleChecks(session, sessionId, base, modes, { evaluate, open, key, pageRules }, problems) {
   const steps = [];
   const page = (expression) => evaluate(session, sessionId, expression);
   const read = () => page(`(${readResearch})()`);
+  const approvals = () => page(`(${readApprovals})()`);
   const press = async (name, code, number, text) => {
     await key(session, sessionId, name, code, number, text);
     if (name === 'Escape') {
@@ -77,7 +126,8 @@ export async function researchExampleChecks(session, sessionId, base, modes, { e
     return false;
   };
   const check = (view, step, ok, detail) => steps.push({
-    page: RESEARCH_PAGE, step: view + ': ' + step, ok: Boolean(ok), detail: JSON.stringify(detail),
+    page: RESEARCH_PAGE, step: view + ': ' + step, ok: Boolean(ok),
+    detail: JSON.stringify(ok ? detail : { reason: detail?.reason ?? 'The page did not show the expected result.', detail }),
   });
   const ax = async () => {
     const { nodes } = await session.send('Accessibility.getFullAXTree', {}, sessionId);
@@ -85,6 +135,8 @@ export async function researchExampleChecks(session, sessionId, base, modes, { e
     const has = (role, name) => exposed.some((node) => node.role?.value === role && node.name?.value === name);
     const toggle = exposed.find((node) => node.role?.value === 'button' && node.name?.value === 'Search the catalog');
     const items = exposed.filter((node) => node.role?.value === 'listitem');
+    const hold = 'Place a hold on Moss on stone';
+    const reading = 'Add Moss on stone to the reading list';
     return {
       lists: has('list', 'Research run') && has('list', 'Research plan') && items.length >= 7,
       advance: has('button', 'Advance run'),
@@ -92,8 +144,113 @@ export async function researchExampleChecks(session, sessionId, base, modes, { e
       running: has('StaticText', 'Running') && has('StaticText', 'In progress'),
       expanded: toggle?.properties?.find(({ name }) => name === 'expanded')?.value?.value,
       result: has('StaticText', 'Moss on stone. Shelf B4.'),
+      approvals: has('list', 'Research approvals') && items.length >= 9
+        && [hold, reading].every((title) => has('button', 'Approve: ' + title) && has('button', 'Reject: ' + title)),
+      approveConfirm: has('group', 'Approve this proposal? ' + hold + '.')
+        && has('button', 'Cancel: ' + hold) && has('button', 'Confirm approval: ' + hold),
+      rejectConfirm: has('group', 'Reject this proposal? ' + reading + '.')
+        && has('button', 'Cancel: ' + reading) && has('button', 'Confirm rejection: ' + reading),
+      approved: has('StaticText', 'Approved'),
+      rejected: has('StaticText', 'Rejected'),
     };
   };
+
+  async function approvalChecks(view, width, mode) {
+    const hold = 'Place a hold on Moss on stone';
+    const reading = 'Add Moss on stone to the reading list';
+    const hasFocus = (value, control) => value.focus === control && value.ring;
+    const waitForState = (index, text) => waitFor(`(${readApprovals})().states[${index}] === ${JSON.stringify(text)}`);
+
+    await tab();
+    const ready = await approvals();
+    const readyAX = await ax();
+    check(view, 'the approval list has named decisions, theme colors and 44 by 44 CSS pixel targets',
+      ready.states.join() === 'Awaiting decision,Awaiting decision' && readyAX.approvals
+      && ready.polite && ready.live === '' && ready.targets && ready.colors && ready.scroll <= width
+      && hasFocus(ready, '0,0,button') && (mode !== 'reduced-motion' || ready.noMotion), { ready, readyAX });
+
+    await enter();
+    const opened = await approvals();
+    const openedAX = await ax();
+    steps.push(...await pageRules(session, sessionId, RESEARCH_PAGE + ' with approval confirmation at ' + view));
+    await tab();
+    const accept = await approvals();
+    await press('Escape', 'Escape', 27);
+    const escaped = await approvals();
+    check(view, 'Enter opens approval confirmation and Escape returns focus without sending a request',
+      opened.confirms === 1 && opened.states[0] === 'Confirm approval' && opened.live === hold + ': Confirm approval'
+      && openedAX.approveConfirm && hasFocus(opened, '0,0,cancel') && hasFocus(accept, '0,0,accept')
+      && opened.targets && opened.cancelColors && opened.scroll <= width && (mode !== 'reduced-motion' || opened.noMotion)
+      && escaped.confirms === 0 && escaped.states[0] === 'Awaiting decision' && hasFocus(escaped, '0,0,button'),
+      { opened, openedAX, accept, escaped });
+
+    await space();
+    await tab();
+    await enter();
+    const pending = await approvals();
+    check(view, 'confirmation sends the approval and disables only the decisions for that item',
+      pending.states.join() === 'Pending,Awaiting decision' && pending.live === hold + ': Pending'
+      && pending.busy[0]?.[0] && pending.disabled[0]?.every(Boolean) && pending.disabled[1]?.every((value) => !value)
+      && hasFocus(pending, '0,0,button'), pending);
+
+    const failure = 'Not done: The branch could not place the hold. Try again.';
+    const failedInTime = await waitForState(0, failure);
+    const failed = await approvals();
+    check(view, 'the failed receipt gives the reason and lets the person retry',
+      failedInTime && failed.live === hold + ': ' + failure && failed.disabled[0]?.every((value) => !value)
+      && hasFocus(failed, '0,0,button'), { failed, reason: failedInTime ? undefined : 'No failed receipt within the wait limit.' });
+
+    await enter();
+    await tab();
+    await space();
+    const retry = await approvals();
+    const approvedInTime = await waitForState(0, 'Approved');
+    const approved = await approvals();
+    const approvedAX = await ax();
+    const quiet = await page(`(() => {
+      const queue = document.querySelector('mu-approval-queue');
+      const status = queue.shadowRoot.querySelector('[part="announcement"]');
+      const notes = new MutationObserver(() => {});
+      notes.observe(status, { childList: true, subtree: true });
+      queue.fill = queue.fill;
+      const quiet = notes.takeRecords().length === 0;
+      notes.disconnect();
+      return quiet;
+    })()`);
+    check(view, 'the approval changes to Approved after the retry receipt and gives the change once',
+      retry.states[0] === 'Pending' && approvedInTime && approvedAX.approved && quiet
+      && approved.live === hold + ': Approved' && approved.states[1] === 'Awaiting decision'
+      && approved.disabled[0]?.every(Boolean),
+      { retry, approved, approvedAX, quiet, reason: approvedInTime ? undefined : 'No approval receipt within the wait limit.' });
+
+    await tab();
+    const firstReject = await approvals();
+    await tab();
+    const secondApprove = await approvals();
+    await tab();
+    const secondReject = await approvals();
+    await space();
+    const rejectConfirm = await approvals();
+    const rejectAX = await ax();
+    await tab();
+    const rejectAccept = await approvals();
+    check(view, 'Tab reaches each decision and Space opens the named rejection confirmation',
+      hasFocus(firstReject, '0,1,button') && hasFocus(secondApprove, '1,2,button') && hasFocus(secondReject, '1,3,button')
+      && hasFocus(rejectConfirm, '1,3,cancel') && hasFocus(rejectAccept, '1,3,accept') && rejectConfirm.targets && rejectConfirm.cancelColors
+      && rejectConfirm.scroll <= width && rejectAX.rejectConfirm && rejectConfirm.live === reading + ': Confirm rejection',
+      { firstReject, secondApprove, secondReject, rejectConfirm, rejectAccept, rejectAX });
+
+    await enter();
+    const rejecting = await approvals();
+    const rejectedInTime = await waitForState(1, 'Rejected');
+    const rejected = await approvals();
+    const rejectedAX = await ax();
+    check(view, 'the rejection shows Pending and then Rejected after its own receipt',
+      rejecting.states.join() === 'Approved,Pending' && rejecting.busy[1]?.[1] && rejecting.disabled[1]?.every(Boolean)
+      && rejecting.live === reading + ': Pending' && rejectedInTime && rejectedAX.rejected && rejectedAX.approved
+      && rejected.states.join() === 'Approved,Rejected' && rejected.live === reading + ': Rejected' && rejected.scroll <= width,
+      { rejecting, rejected, rejectedAX, reason: rejectedInTime ? undefined : 'No rejection receipt within the wait limit.' });
+  }
 
   try {
     for (const width of [375, 1280]) {
@@ -195,6 +352,7 @@ export async function researchExampleChecks(session, sessionId, base, modes, { e
           check(view, 'long tool text wraps while the disclosure is open',
             longText.panelVisible && longText.scroll <= width && longText.args?.length === 2000,
             { panelVisible: longText.panelVisible, scroll: longText.scroll, length: longText.args?.length });
+          await approvalChecks(view, width, mode);
         } catch (error) {
           check(view, 'complete the research checks', false, String(error));
         }

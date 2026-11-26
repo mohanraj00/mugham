@@ -36,6 +36,7 @@ TIME_ZONE = re.compile(r'[A-Za-z_][A-Za-z0-9_+-]*(/[A-Za-z_][A-Za-z0-9_+-]*)+')
 LABEL_SPACE = ('\t\n\v\f\r \u00a0\u1680\u2000\u2001\u2002\u2003\u2004\u2005'
                '\u2006\u2007\u2008\u2009\u200a\u2028\u2029\u202f\u205f\u3000\ufeff')
 PAGE_TEXT_FIELDS = {'empty-state': ('title', 'text'), 'skeleton': ('label',), 'badge': ('text',), 'avatar': ('name',)}
+WORK_ITEMS = {'run-steps': ('steps', 'name'), 'plan': ('tasks', 'name'), 'approval-queue': ('items', 'title', 'summary')}
 
 
 def shown(key):
@@ -521,8 +522,8 @@ def fill_errors(fill, catalog, path='', depth=0):
                 errors.append(prefix + 'data.current: must be within labels')
         elif 'value' in data and data['value'] > data['maximum']:
             errors.append(prefix + 'data.value: must be at most maximum')
-    if not errors and fill['component'] in ('run-steps', 'plan'):
-        key = 'steps' if fill['component'] == 'run-steps' else 'tasks'
+    if not errors and fill['component'] in WORK_ITEMS:
+        key, *fields = WORK_ITEMS[fill['component']]
         if not data['label'].strip(LABEL_SPACE):
             errors.append(prefix + 'data.label: give text')
         ids = set()
@@ -533,8 +534,9 @@ def fill_errors(fill, catalog, path='', depth=0):
             elif item['id'] in ids:
                 errors.append(at + 'id: must be unique')
             ids.add(item['id'])
-            if not item['name'].strip(LABEL_SPACE):
-                errors.append(at + 'name: give text')
+            for field in fields:
+                if not item[field].strip(LABEL_SPACE):
+                    errors.append(at + field + ': give text')
             if (key == 'steps' and any(field in item for field in ('tool_name', 'tool_arguments', 'tool_result'))
                     and not item.get('tool_name', '').strip(LABEL_SPACE)):
                 errors.append(at + 'tool_name: give a name for the tool call')
