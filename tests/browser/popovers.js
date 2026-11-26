@@ -1,3 +1,5 @@
+import { setTimeout as delay } from 'node:timers/promises';
+
 export const POPOVER_PAGE = 'examples/cards/popovers.html';
 
 function readPopovers() {
@@ -60,7 +62,11 @@ export async function popoverExampleChecks(session, sessionId, base, modes, { ev
   const read = () => page(`(${readPopovers})()`);
   const press = async (name, code, number, text) => {
     await key(session, sessionId, name, code, number, text);
-    if (name === 'Escape') await session.send('Page.bringToFront', {}, sessionId);
+    if (name === 'Escape') {
+      // Headless Chrome hides the page shortly after Escape. A hidden page stops animation frames.
+      await delay(150);
+      await session.send('Page.bringToFront', {}, sessionId);
+    }
   };
   const enter = () => press('Enter', 'Enter', 13, '\r');
   const space = () => press(' ', 'Space', 32, ' ');
@@ -193,6 +199,7 @@ export async function popoverExampleChecks(session, sessionId, base, modes, { ev
   } finally {
     await session.send('Emulation.clearDeviceMetricsOverride', {}, sessionId);
     await session.send('Emulation.setEmulatedMedia', { features: modes.light }, sessionId);
+    await session.send('Page.bringToFront', {}, sessionId);
   }
   return steps;
 }

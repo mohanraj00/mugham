@@ -14,7 +14,6 @@ class TestNode extends EventTarget {
   scrollHeight = 44;
   offsetHeight = 44;
   #open = false;
-  #previousFocus = null;
 
   constructor(tag) { super(); this.tag = tag; }
   append(child) { this.children.push(child); child.parentNode = this; }
@@ -41,14 +40,14 @@ class TestNode extends EventTarget {
   }
 
   showPopover() {
-    this.#previousFocus = document.activeElement;
     this.#toggle('closed', 'open');
   }
 
   hidePopover() {
     if (!this.#open) return;
     this.#toggle('open', 'closed');
-    if (this.popover !== 'manual' && this.contains(document.activeElement)) this.#previousFocus?.focus();
+    // Model the fallback to the body when the browser cannot restore focus.
+    if (this.contains(document.activeElement)) document.body.focus();
   }
 
   escape() {
@@ -82,6 +81,7 @@ globalThis.document = Object.assign(new EventTarget(), {
   createElement: (tag) => new TestNode(tag),
   createTextNode: (textContent) => ({ textContent }),
   getElementById: () => null,
+  body: new TestNode('body'),
   documentElement: { clientWidth: 375, clientHeight: 812 },
 });
 globalThis.customElements = {
@@ -170,7 +170,7 @@ test('the menu moves focus in order and sends one selection with its name', asyn
     press(from, key);
     assert.equal(document.activeElement, to);
   }
-  // Escape closes the auto popover. The browser restores its previous focus.
+  // Escape closes the auto popover. The menu returns focus to its trigger.
   assert.equal(menu.popover, 'auto');
   menu.escape();
   await nextTask();
@@ -203,17 +203,39 @@ test('the menu moves focus in order and sends one selection with its name', asyn
   }
 });
 
+test('closing the menu returns focus from an item and keeps focus outside the menu', () => {
+  const element = make('menu', menuData);
+  const trigger = find(element.shadowRoot, 'trigger');
+  const menu = find(element.shadowRoot, 'menu');
+  const [first] = menu.children;
+  press(trigger, 'Enter');
+  assert.equal(document.activeElement, first);
+  menu.hidePopover();
+  assert.equal(menu.matches(':popover-open'), false);
+  assert.equal(document.activeElement, trigger);
+
+  const other = new TestNode('button');
+  press(trigger, 'Enter');
+  other.focus();
+  menu.hidePopover();
+  assert.equal(document.activeElement, other);
+});
+
 test('the tooltip describes its target and opens on hover or focus without moving focus', async () => {
   const element = make('tooltip', tooltipData);
   const target = new TestNode('button');
   target.setAttribute('aria-describedby', 'existing');
+  element.append(target);
   const slot = find(element.shadowRoot, 'slot');
   slot.assignedElements = () => [target];
   element.connectedCallback();
   const popup = find(element.shadowRoot, 'tooltip');
   const anchor = slot.parentNode;
   const events = watch(element, ['mu-tooltip-open', 'mu-tooltip-close']);
-  const description = element.children[0];
+  const description = element.children[1];
+  const descriptionSlot = element.shadowRoot.children.find((node) => node.tag === 'slot');
+  assert.equal(descriptionSlot?.getAttribute('name'), description.slot);
+  assert.equal(description.hidden, true);
   assert.equal(description.textContent, tooltipData.text);
   assert.equal(target.getAttribute('aria-describedby'), 'existing ' + description.getAttribute('id'));
   assert.equal(popup.getAttribute('role'), 'tooltip');
@@ -238,8 +260,39 @@ test('the tooltip describes its target and opens on hover or focus without movin
 
   element.fill = fill('tooltip', { text: ' ' });
   assert.equal(target.getAttribute('aria-describedby'), 'existing');
-  assert.equal(element.children.length, 0);
+  assert.deepEqual(element.children, [target]);
   assert.equal(element.dataset.state, 'refused');
+});
+
+test('Escape keeps the tooltip closed until focus returns or the pointer enters', () => {
+  const element = make('tooltip', tooltipData);
+  const target = new TestNode('button');
+  const other = new TestNode('button');
+  const slot = find(element.shadowRoot, 'slot');
+  slot.assignedElements = () => [target];
+  element.connectedCallback();
+  const popup = find(element.shadowRoot, 'tooltip');
+  const focusEvent = (type, relatedTarget) => target.dispatchEvent(Object.assign(new Event(type), { relatedTarget }));
+
+  target.focus();
+  focusEvent('focus', other);
+  assert.equal(popup.matches(':popover-open'), true);
+  popup.escape();
+  focusEvent('blur', null);
+  focusEvent('focus', null);
+  assert.equal(document.activeElement, target);
+  assert.equal(popup.matches(':popover-open'), false);
+
+  other.focus();
+  focusEvent('blur', other);
+  target.focus();
+  focusEvent('focus', other);
+  assert.equal(popup.matches(':popover-open'), true);
+
+  popup.escape();
+  slot.parentNode.dispatchEvent(Object.assign(new Event('pointerenter'), { pointerType: 'mouse' }));
+  assert.equal(popup.matches(':popover-open'), true);
+  assert.equal(document.activeElement, target);
 });
 
 test('a toast stays open for eight seconds or until the person closes it', async (t) => {

@@ -98,7 +98,7 @@ class MuPopover extends MuElement {
     this.#position?.();
     this.#position = null;
     if (this.dataset.state === 'open') this.dataset.state = 'default';
-    this.panelClosed();
+    this.panelClosed(this.#panel);
   }
 
   panelClosed() {}
@@ -138,8 +138,10 @@ export class MuMenu extends MuPopover {
     return errors;
   }
 
-  panelClosed() {
+  panelClosed(panel) {
     this.#trigger?.setAttribute('aria-expanded', 'false');
+    // Escape closes the auto popover. If focus is in the menu, return it to the trigger before the panel hides.
+    if (panel?.contains(this.shadowRoot.activeElement)) this.#trigger.focus({ preventScroll: true });
   }
 
   render(data) {
@@ -172,7 +174,6 @@ export class MuMenu extends MuPopover {
       if (event.key !== 'Tab') return;
       // Close first so the browser moves focus from the trigger in the page tab order.
       this.hidePanel();
-      trigger.focus();
     });
 
     items.forEach((item, index) => {
@@ -192,7 +193,6 @@ export class MuMenu extends MuPopover {
       item.addEventListener('click', () => {
         if (!open(panel)) return;
         this.hidePanel();
-        trigger.focus();
         this.dispatchEvent(new CustomEvent('mu-menu-select', { ...BUBBLES, detail: { name: data.items[index].name } }));
       });
     });
@@ -277,18 +277,19 @@ export class MuTooltip extends MuPopover {
       hover = false;
       if (!focused) this.hidePanel();
     }, options);
-    target.addEventListener('focus', () => {
+    const showOnFocus = () => {
+      if (focused) return;
       focused = true;
       this.showPanel(anchor);
-    }, options);
-    target.addEventListener('blur', () => {
+    };
+    target.addEventListener('focus', showOnFocus, options);
+    target.addEventListener('blur', (event) => {
+      // The page can lose focus while the target stays active in its root.
+      if (event.relatedTarget === null && root.activeElement === target) return;
       focused = false;
       if (!hover) this.hidePanel();
     }, options);
-    if (root.activeElement === target) {
-      focused = true;
-      this.showPanel(anchor);
-    }
+    if (root.activeElement === target) showOnFocus();
   }
 
   connectedCallback() { this.#bind(); }
@@ -312,7 +313,8 @@ export class MuTooltip extends MuPopover {
     slot.addEventListener('slotchange', () => this.#bind());
     this.#slot = slot;
     const panel = this.setPanel(el('span', { part: 'tooltip', class: 'anchored', role: 'tooltip' }, data.text), 'hint');
-    return [el('span', { class: 'target' }, slot, panel)];
+    // The named slot makes the hidden description available in the flat tree.
+    return [el('span', { class: 'target' }, slot, panel), el('slot', { name: 'description' })];
   }
 }
 
