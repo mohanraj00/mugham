@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
-import { actorErrors, authorErrors, fillErrors, schemaErrors } from '../src/render/validate.js';
+import { actorErrors, authorErrors, dateRangeProblem, fillErrors, schemaErrors } from '../src/render/validate.js';
 
 const vectors = JSON.parse(readFileSync(new URL('./vectors/fills.json', import.meta.url), 'utf8'));
 
@@ -14,6 +14,13 @@ for (const item of vectors.cases) {
     assert.equal(JSON.stringify(item.fill), before, 'the validator must not change the fill');
   });
 }
+
+test('an invalid range date has a message for its input', () => {
+  assert.deepEqual(dateRangeProblem(['2028-02-30', '2028-03-01'], {}),
+    { index: 0, message: 'Give a start date that exists.' });
+  assert.deepEqual(dateRangeProblem(['2028-02-29', '2028-02-30'], {}),
+    { index: 1, message: 'Give an end date that exists.' });
+});
 
 test('an unknown schema keyword is refused', () => {
   assert.throws(() => schemaErrors({}, { type: 'object', format: 'email' }));

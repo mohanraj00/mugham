@@ -57,6 +57,7 @@ test('time_zones maps editable field names to IANA time zone names', () => {
   for (const time_zones of [null, [], new Map(), { setup: 'Moon/Base' }, { setup: 1 }, { start: 'Europe/Oslo' }]) {
     assert.deepEqual(bindingErrors({ ...binding, time_zones }), error);
   }
+  assert.deepEqual(bindingErrors({ ...binding, time_zones: { setup: 'UTC' } }), error);
 
   const action = new ActionState();
   assert.equal(action.timeZones, null);

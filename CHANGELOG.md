@@ -7,7 +7,7 @@ Each release has an entry. The newest entry is first.
 - An editable form accepts a registered field that follows the kit field protocol (#125). The examples show a color field and a contact card made from kit components.
 - The kit adds new color, elevation, radius and easing tokens, with neutral, high contrast and compact presets in light and dark modes (#126). The component gallery shows each preset.
 - Each catalog contract declares its style parts and the parts that a page must keep visible (#135). A card grid exports the title, state text and collapse control of each nested card.
-- An editable form accepts native fields for a date range, a time and a local date and time with a fixed time zone label (#124). The form refuses a date and time field if its time zone is absent from the action binding or differs from the binding.
+- An editable form accepts native fields for a date range, a time and a local date and time with a fixed time zone label (#124). The form refuses a date and time field if its time zone is absent from the action binding or differs from the binding. Both fill validators check the `Area/Location` form of the time zone.
 
 - An editable form accepts multiple choices as checkboxes or a searchable tag picker and sends the selected texts as a list (#121).
 - An editable form accepts a select field with up to 500 choices (#120). A list of more than seven choices has a search box.

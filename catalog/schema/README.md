@@ -32,9 +32,9 @@ A contract is one JSON file in `catalog/`, for example `catalog/card.json`. The 
 
 ### Parts
 
-Each item in `parts` has three keys.
+The `parts` list has at most 40 items. Each item has three keys.
 
-- `name` gives one name from a `part` attribute or a name that the component exports from a nested element. Use only lower-case letters, digits and hyphens. Use each name only once in a contract.
+- `name` gives one name from a `part` attribute or a name that the component exports from a nested element. Use only lower-case letters, digits and hyphens, with at most 40 characters. Use each name only once in a contract.
 - `description` gives the use of the part in 1 to 300 characters.
 - `guardrail` is `true` if a page must keep the part visible when the component shows it. Use `false` for other parts.
 
