@@ -253,6 +253,7 @@ An asterisk marks a guardrail part. Keep it visible when the kit shows it. Run `
 | `mu-plan` | `announcement`\*, `authorship`\*, `copy`\*, `copy-status`\*, `details`\*, `list`\*, `name`\*, `next`\*, `reason`\*, `state`\*, `task` |
 | `mu-progress` | `bar`\*, `copy`\*, `copy-status`\*, `details`\*, `indicator`\*, `label`\*, `next`\*, `reason`\*, `value`\* |
 | `mu-range-field` | `controls`\*, `copy`\*, `copy-status`\*, `details`\*, `edit-type`\*, `group`\*, `handle-label`\*, `label`\*, `next`\*, `number`\*, `problem`\*, `reason`\*, `slider`\* |
+| `mu-rich-text-field` | `copy`\*, `copy-status`\*, `details`\*, `edit-type`\*, `format`\*, `input`\*, `label`\*, `link-editor`\*, `next`\*, `problem`\*, `reason`\*, `status`\*, `toolbar`\* |
 | `mu-rich-text` | `approval-mark`\*, `authorship`\*, `code`, `copy`\*, `copy-status`\*, `details`\*, `empty`, `link`\*, `next`\*, `read-more-content`\*, `read-more-toggle`\*, `reason`\*, `rich-text`, `target`\* |
 | `mu-run-steps` | `announcement`\*, `arguments`\*, `authorship`\*, `copy`\*, `copy-status`\*, `detail`\*, `details`\*, `list`\*, `name`\*, `next`\*, `panel`\*, `reason`\*, `result`\*, `state`\*, `step`, `toggle`\*, `tool`\* |
 | `mu-select-field` | `control`\*, `copy`\*, `copy-status`\*, `details`\*, `edit-type`\*, `label`\*, `listbox`\*, `next`\*, `option`\*, `popup`\*, `problem`\*, `reason`\*, `search`\*, `status`\*, `value`\* |
@@ -355,6 +356,8 @@ The range field parts are `label`, `group`, `handle-label`, `controls`, `slider`
 The date range field parts are `label`, `group`, `date-label`, `start` and `end`. The time and date-time fields have `label` and `input` parts. The date-time field adds `time-zone`. Keep each label and the time zone visible. Let the time zone wrap. Keep the native controls, their borders and their focus rings visible in each theme and in forced colors. Keep each input at least 44 by 44 CSS pixels. Let the fields fit at 375 CSS pixels without horizontal scroll. Keep the `problem` part visible when it has text.
 
 The text limit parts are `read-more-content` and `read-more-toggle`. Keep the full text in the content part. Keep the compact toggle, its underline and its focus ring visible when the text exceeds the limit. Keep its border visible in forced colors. Do not add a fade or a height animation.
+
+Keep the rich text field `label`, `input` and `toolbar` visible. Let the `format` buttons wrap and keep each button at least 44 by 44 CSS pixels. Keep the pressed state distinct in each media mode. Keep focus rings visible on the format buttons, the editable area and the controls in `link-editor`. Keep the `problem`, `status` and `edit-type` parts visible when the field shows them. Let the field and its status text wrap at 375 CSS pixels.
 
 Keep the `approval-mark` text visible in rich text and in the approval queue. The rich text also has `rich-text`, `code`, `link` and `target` parts. Keep the underline and the focus ring of the `link` part. Do not hide the `target` part, because it shows the address that a link opens.
 

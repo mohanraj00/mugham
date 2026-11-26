@@ -17,7 +17,7 @@ const SRC = [
   'offline/queue.js', 'offline/source.js', 'primitives/badge.js', 'primitives/base.js', 'primitives/choice-list.js', 'primitives/date-time-fields.js',
   'primitives/fields.js', 'primitives/index.js',
   'primitives/multi-choice-field.js',
-  'primitives/range-field.js', 'primitives/read-more.js', 'primitives/rich-text-field-model.js', 'primitives/select-field.js',
+  'primitives/range-field.js', 'primitives/read-more.js', 'primitives/rich-text-field-edit.js', 'primitives/rich-text-field-model.js', 'primitives/rich-text-field.js', 'primitives/select-field.js',
   'render/catalog.js', 'render/dom.js', 'render/range.js', 'render/registry.js', 'render/resolve.js', 'render/rich-text.js',
   'render/validate.js', 'styles/page.css', 'thread/index.js', 'tokens/tokens.css',
 ];

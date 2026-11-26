@@ -6,13 +6,15 @@ import { FieldElement, MuChoiceField, MuDateField, MuField, MuLongTextField, MuN
 import { MuDateRangeField, MuDateTimeField, MuTimeField } from './date-time-fields.js';
 import { MuMultiChoiceField } from './multi-choice-field.js';
 import { MuRangeField } from './range-field.js';
+import { MuRichTextField } from './rich-text-field.js';
 import { MuSelectField } from './select-field.js';
 
-export { FieldElement, MuChoiceField, MuDateField, MuField, MuLongTextField, MuMultiChoiceField, MuNumberField, MuRangeField, MuSelectField, MuToggleField };
+export { FieldElement, MuChoiceField, MuDateField, MuField, MuLongTextField, MuMultiChoiceField, MuNumberField, MuRangeField, MuRichTextField, MuSelectField, MuToggleField };
 export { MuDateRangeField, MuDateTimeField, MuTimeField };
 
 export const FIELDS = Object.freeze({
   field: ['mu-field', MuField],
+  'rich-text-field': ['mu-rich-text-field', MuRichTextField],
   'long-text-field': ['mu-long-text-field', MuLongTextField],
   'number-field': ['mu-number-field', MuNumberField],
   'date-field': ['mu-date-field', MuDateField],

@@ -6,6 +6,7 @@
 import actionButton from '../../catalog/action-button.json' with { type: 'json' };
 import { copyArgs, copyValue, isTextList, receiptOf } from '../offline/queue.js';
 import { isOrderedPair, sameValue } from '../render/range.js';
+import { RICH_TEXT_SCHEMES, richTextValueErrors, sameRichTextValue } from '../render/rich-text.js';
 import { hasTimeZoneForm } from '../render/validate.js';
 
 const TOOL = /^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)*$/;
@@ -81,7 +82,18 @@ function scalar(value) {
 }
 
 export function isActionValue(value) {
-  return scalar(value) || isOrderedPair(value) || isTextList(value);
+  return scalar(value) || isOrderedPair(value) || isTextList(value)
+    || (value?.component === 'rich-text' && richTextValueErrors(value).length === 0);
+}
+
+function freezeTree(value) {
+  if (value === null || typeof value !== 'object') return value;
+  if (Array.isArray(value)) return Object.freeze(value.map(freezeTree));
+  return Object.freeze(Object.fromEntries(Object.entries(value).map(([key, child]) => [key, freezeTree(child)])));
+}
+
+export function copyActionValue(value) {
+  return value?.component === 'rich-text' ? freezeTree(value) : copyValue(value);
 }
 
 export function isEditType(value) {
@@ -179,10 +191,12 @@ function editsOf(edits, binding, values) {
       const texts = isTextList(old) && isTextList(next);
       if (!pair && !texts) return null;
       if (texts && old.length === next.length && next.every((value, index) => value === old[index])) return null;
+    } else if (old?.component === 'rich-text' || next?.component === 'rich-text') {
+      if (richTextValueErrors(old, RICH_TEXT_SCHEMES).length || next?.component !== 'rich-text' || sameRichTextValue(old, next)) return null;
     } else if (!scalar(old)) return null;
     if (typeof time !== 'string' || !ISO_TIME.test(time) || Number.isNaN(Date.parse(time))) return null;
     seen.add(field);
-    result.push(Object.freeze({ field, type, old_value: copyValue(old), new_value: next, actor: binding.editor, time }));
+    result.push(Object.freeze({ field, type, old_value: copyActionValue(old), new_value: next, actor: binding.editor, time }));
   }
   return Object.freeze(result);
 }
@@ -329,7 +343,7 @@ export class ActionState {
     }
     if (Object.keys(extra).some((name) => !Object.hasOwn(this.#binding.editable, name))) return null;
     if (!Object.values(extra).every(isActionValue)) return null;
-    const values = copyArgs(extra);
+    const values = Object.fromEntries(Object.entries(extra).map(([name, value]) => [name, copyActionValue(value)]));
     const typed = this.#binding.typed.length > 0;
     if (!typed && edits !== undefined && !(Array.isArray(edits) && edits.length === 0)) return null;
     const checked = typed ? editsOf(edits, this.#binding, values) : null;

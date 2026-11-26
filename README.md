@@ -133,7 +133,7 @@ Each component has a contract file in [catalog/](catalog/README.md). The contrac
 | `mu-skeleton` | A named loading status with lines that hold space for content. | [skeleton.json](catalog/skeleton.json) |
 | `mu-badge` | A short label with a tone. | [badge.json](catalog/badge.json) |
 | `mu-avatar` | A name shown as initials. | [avatar.json](catalog/avatar.json) |
-| `mu-editable-form` | Up to 20 kit or registered fields. A person edits the values and submits them as one action. | [editable-form.json](catalog/editable-form.json) |
+| `mu-editable-form` | Up to 20 kit or registered fields. A person edits the values and submits them as one action. Fields can send rich text data. | [editable-form.json](catalog/editable-form.json) |
 | `mu-form-card` | A long form in sections, as labels and values. A person edits one field in place and sends the changes as one action. Some fields are read-only. | [form-card.json](catalog/form-card.json) |
 | `mu-card-grid` | A labeled list of cards in columns of equal width. | [card-grid.json](catalog/card-grid.json) |
 | `mu-citation` | The source of a claim: a source name, a locator as text and an open button. | [citation.json](catalog/citation.json) |
@@ -144,6 +144,7 @@ Each component has a contract file in [catalog/](catalog/README.md). The contrac
 | `mu-image` | An image in a fixed box with a caption and a text alternative. Page code permits the origins. A native dialog shows the full-size view. | [image.json](catalog/image.json) |
 | `mu-chart` | An SVG bar, line or stacked bar chart with keyboard point controls and a table view. | [chart.json](catalog/chart.json) |
 | `mu-rich-text` | Paragraphs, headings, lists, code blocks and quotes. Page code can set approval marks on top-level blocks. | [rich-text.json](catalog/rich-text.json) |
+| `mu-rich-text-field` | A keyboard and touch editor for headings, lists, links, quotes and code. The field sends rich text data. | [rich-text-field.json](catalog/rich-text-field.json) |
 | `mu-data-grid` | An editable grid with column headers, row headers and typed cells. Each saved change goes to the application as one action, and the cell shows a marker until the receipt comes back. | [data-grid.json](catalog/data-grid.json) |
 | `mu-upload` | A control that takes files with a file picker or a drop. Page code binds the tool, the accepted types, the size limit and the file count. Done shows only after the receipt. | [upload.json](catalog/upload.json) |
 | `mu-source-status` | The state of an offline data source as text: ready, stale, empty or error, with the time of the last confirmed read. The application fills it, not a model. | [source-status.json](catalog/source-status.json) |
@@ -196,6 +197,7 @@ python3 tools/serve.py
    - `http://localhost:8000/examples/apps/research.html`: an agent run and a plan for a library catalog search.
    - `http://localhost:8000/examples/apps/newsletter.html`: three newsletter blocks with approval states from a fixture API.
    - `http://localhost:8000/examples/apps/library.html`: a library staff page with a side bar, breadcrumbs, a list with numbered pages and a wizard to add a member.
+   - `http://localhost:8000/examples/apps/library-note.html`: edit a note and see the rich text data from the form.
    - `http://localhost:8000/examples/cards/popovers.html`: tray choices, help text and a message after a note save.
    - `http://localhost:8000/examples/cards/approval-icons.html`: a request card with buttons to approve or reject the request.
    - `http://localhost:8000/examples/forms/inputs.html`: a form with text, long text, a number, a date and a choice.

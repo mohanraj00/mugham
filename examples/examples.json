@@ -78,6 +78,7 @@
       "examples": [
         {"name": "Library staff", "path": "apps/library.html", "components": ["app-shell", "drawer", "breadcrumbs", "pagination", "steps", "progress", "empty-state", "skeleton", "badge", "avatar", "field", "choice-field", "button", "action-button"], "text": "Find a loan by title or shelf code. Add a member with a three-step wizard."},
         {"name": "Library research", "path": "apps/research.html", "components": ["run-steps", "plan", "approval-queue", "action-button"], "text": "Advance an agent run, then approve or reject proposals from the library search."},
+        {"name": "Library note editor", "path": "apps/library-note.html", "components": ["editable-form", "rich-text-field"], "text": "Edit a reading room note and see the rich text data that the form sends."},
         {"name": "Library newsletter", "path": "apps/newsletter.html", "components": ["rich-text"], "text": "Read three newsletter blocks with approval states from a fixture API."},
         {"name": "Support desk", "path": "apps/support/", "components": ["grid", "card", "button", "thread", "editable-form", "field"], "text": "A ticket queue and a thread. A person corrects the reply that an agent drafts, and sends it.", "needs": "python3 tools/apps_server.py"},
         {"name": "Change review", "path": "apps/changes/", "components": ["card", "button", "thread", "action-button", "excerpt"], "text": "An agent proposes a timetable change with a citation. A reviewer approves it with a confirm step.", "needs": "python3 tools/apps_server.py"},

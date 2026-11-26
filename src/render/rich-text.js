@@ -3,6 +3,7 @@ import { CATALOG } from './catalog.js';
 import { fillErrors, parseLinkURL } from './validate.js';
 
 export const RICH_TEXT_SCHEMES = Object.freeze(['https:', 'http:', 'mailto:']);
+const linkWatchers = new Set();
 let linkSchemes = Object.freeze(['https:']);
 const MAX_INLINE = 2000;
 
@@ -15,6 +16,12 @@ export function setRichTextLinkSchemes(values) {
     throw new TypeError('link schemes: must be an array of ' + RICH_TEXT_SCHEMES.join(', '));
   }
   linkSchemes = Object.freeze([...new Set(values)]);
+  for (const watch of linkWatchers) watch();
+}
+
+export function watchRichTextLinkSchemes(watch) {
+  linkWatchers.add(watch);
+  return () => linkWatchers.delete(watch);
 }
 
 export function richNode(component, data) {
@@ -65,4 +72,17 @@ export function richTextValueErrors(value, schemes = richTextLinkSchemes()) {
   if (value?.component !== 'rich-text') return ['value.component: must be rich-text'];
   const errors = fillErrors(value, CATALOG, 'value', 1);
   return errors.length ? errors : richTextRules(value.data, schemes);
+}
+
+// Compare two validated values. The order of the keys in a fill has no effect.
+export function sameRichTextValue(first, second) {
+  if (first === second) return true;
+  if (!first || !second || first.component !== 'rich-text' || second.component !== 'rich-text') return false;
+  function same(a, b) {
+    if (a === b) return true;
+    if (a === null || b === null || typeof a !== 'object' || typeof b !== 'object') return false;
+    const keys = Object.keys(a);
+    return keys.length === Object.keys(b).length && keys.every((key) => Object.hasOwn(b, key) && same(a[key], b[key]));
+  }
+  return same(first, second);
 }

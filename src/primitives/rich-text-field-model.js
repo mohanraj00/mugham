@@ -1,4 +1,5 @@
 // Read a bounded DOM tree as rich text. Never return or move a node from the source.
+import { CATALOG } from '../render/catalog.js';
 import { parseLinkURL } from '../render/validate.js';
 import { richHeadingLevel, richNode, richTextLinkSchemes, richTextValueErrors } from '../render/rich-text.js';
 
@@ -20,7 +21,7 @@ export const richSpan = (text, mark) => richNode('rich-span', mark ? { text, mar
 export const richParagraph = (content) => richNode('rich-paragraph', { content });
 export const richValue = (blocks) => richNode('rich-text', { blocks });
 
-function childrenOf(root, editorLink) {
+function childrenOf(root, editorLink, ignoreText) {
   let count = 0;
   let size = 0;
   let tooLarge = false;
@@ -37,6 +38,7 @@ function childrenOf(root, editorLink) {
         size += node.data.length;
         if (size > MAX_SOURCE && !editorLink) tooLarge = true;
         if (keep && node.data) result.push({ text: node.data });
+        else if (node.data) ignoreText?.(node);
         continue;
       }
       const name = node.namespaceURI === HTML ? node.localName : '';
@@ -44,7 +46,7 @@ function childrenOf(root, editorLink) {
       const children = walk(node, depth + 1, allowed);
       if (name === 'template' && node.content) walk(node.content, depth + 1, false);
       if (!allowed || tooLarge) continue;
-      const href = name === 'a' ? (editorLink ? editorLink(node) : node.getAttribute('href')) : null;
+      const href = name === 'a' ? (editorLink?.(node) ?? node.getAttribute('href')) : null;
       result.push({ name, children, href });
     }
     return result;
@@ -96,7 +98,7 @@ function blocksOf(nodes, schemes, imported) {
         if (GROUP.has(name) && children.some(({ name }) => BLOCK.has(name) || GROUP.has(name))) walk(children);
         else if (name?.startsWith('h') && BLOCK.has(name)) {
           const next = Number(name[1]);
-          level = imported ? richHeadingLevel(next, level) : next;
+          level = richHeadingLevel(next, level);
           blocks.push(richNode('rich-heading', { level, content: contentOf(children) }));
         } else if (name === 'ul' || name === 'ol') {
           const items = children.filter(({ name }) => name === 'li').map(({ children }) => richParagraph(contentOf(children)));
@@ -123,8 +125,8 @@ function checked(value) {
   return richTextValueErrors(value).length ? { problem: INVALID } : { value };
 }
 
-export function readRichTree(root, { imported = false, editorLink } = {}) {
-  const tree = childrenOf(root, editorLink);
+export function readRichTree(root, { imported = false, editorLink, ignoreText } = {}) {
+  const tree = childrenOf(root, editorLink, ignoreText);
   return tree === null ? { problem: TOO_LARGE } : checked(richValue(blocksOf(tree, richTextLinkSchemes(), imported)));
 }
 
@@ -149,5 +151,8 @@ export function readRichTransfer(transfer, parse = parseHTML) {
   }
   const plain = transfer?.getData('text/plain') ?? '';
   if (plain.length > MAX_SOURCE) return { problem: TOO_LARGE };
-  return checked(richValue(plain ? plain.split(/\r\n?|\n/).map((line) => richParagraph(line ? [richSpan(line)] : [])) : []));
+  const max = CATALOG['rich-text'].data.blocks.max_items;
+  const lines = plain ? plain.split(/\r\n?|\n/, max + 1) : [];
+  if (lines.length > max) return { problem: TOO_LARGE };
+  return checked(richValue(lines.map((line) => richParagraph(line ? [richSpan(line)] : []))));
 }

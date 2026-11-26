@@ -204,7 +204,7 @@ The element supplies these properties:
 
 | Property | Value |
 |---|---|
-| `value` | The current value. Use text, a finite number, a boolean, a list of up to 500 texts of up to 80 characters each, or a pair of finite numbers in low to high order. Use empty text for an empty text value. |
+| `value` | The current value. Use text, a finite number, a boolean, a list of up to 500 texts of up to 80 characters each, a pair of finite numbers in low to high order, or a [rich text value](../../src/primitives/rich-text-field.md). Use empty text for an empty text value. |
 | `validationMessage` | Empty text for a valid value. For an invalid value, give a short error message. |
 | `disabled` | A boolean. Use `true` when the person cannot edit the field. The form leaves a disabled field out of the request. |
 | `editType` | `judgment`, `correction` or `override` when a person chooses the type of a changed typed edit. Use `null` when there is no type. |
