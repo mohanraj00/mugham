@@ -60,6 +60,23 @@ showToast.textContent = 'Show save result';
 tooltip.append(showToast);
 const toast = mount('toast', { message: 'Tray note saved.' }, { parent: cards });
 showToast.addEventListener('click', () => toast.show());
+const tabs = mount('tabs', { label: 'Tray locations', tabs: [
+  { label: 'East shelf', name: 'east' },
+  { label: 'West shelf', name: 'west' },
+] }, { parent: cards });
+mount('text', { text: 'The Rain bell tray is on shelf A2.' }, { parent: tabs, slot: 'east' });
+mount('text', { text: 'The Glass moss tray is on shelf B1.' }, { parent: tabs, slot: 'west' });
+
+const accordion = document.createElement('mu-accordion');
+accordion.setAttribute('heading-level', '3');
+accordion.fill = fill('accordion', { label: 'Tray care', sections: [
+  { label: 'Water', name: 'water' },
+  { label: 'Light', name: 'light' },
+] });
+mount('text', { text: 'Water the trays before noon.' }, { parent: accordion, slot: 'water' });
+mount('text', { text: 'Keep the trays in shade.' }, { parent: accordion, slot: 'light' });
+cards.append(accordion);
+
 mount('action-queue', { label: 'Action queue', actions: [
   fill('queued-action', { key: 'tray-3', label: 'Reserve a tray', state: 'sent' }),
 ] }, { parent: cards });
