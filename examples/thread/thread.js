@@ -39,6 +39,10 @@ async function* events(url) {
 }
 
 const thread = document.querySelector('mu-thread');
+// This fixture maps one message id to a fixed author. It verifies nothing.
+// A real application gets the author from a trusted source, for example its own record of the card.
+thread.bindCardAuthor = (_fill, message) => message.messageId === 'm-5-rules'
+  ? { type: 'agent', id: 'a-renew', name: 'Renewal agent' } : undefined;
 thread.bind = (fill) => (fill.component === 'action-button' ? RENEW : undefined);
 // The API decides. Its response is the receipt.
 thread.perform = async (request) => {

@@ -2,6 +2,10 @@
 
 `mu-card` shows a title, an optional summary, date, facts and provenance. The application puts action controls in the `actions` slot. A fill cannot add an action.
 
+The card is an article with its title as its accessible name. Each fact label and value align on the baseline. A card in a thread uses `--mu-color-surface-subtle` and shows its edge in forced colors.
+
+The author line shows the name first and shows the type and id in muted text, as in `Author: Catalog agent (agent, a-catalog)`. If the author has no name, the line shows `Author: agent, a-catalog`. If the author and the message actor have the same type and id, the visible line shows `Author: same as the message`. A screen reader reads the full author line. If the card gives no name for that actor, the full line uses the name from the message when available. A different author shows in full.
+
 ## Collapse
 
 The optional data key `collapsible: true` adds one native header button. `collapsed: true` starts the card collapsed. If `collapsible` is false or absent, `collapsed` has no effect and the card has no toggle. An expanded collapsible card has `data-state="expanded"`. A collapsed card has `data-state="collapsed"`. Other cards keep `data-state="default"`.

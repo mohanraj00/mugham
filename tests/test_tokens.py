@@ -11,7 +11,8 @@ import tokens  # noqa: E402
 BRAND = Path(__file__).resolve().parents[1] / 'docs' / 'brand' / 'tokens.json'
 # Each kit color takes its value from one brand color. The kit border is the edge of a control, so it needs 3:1.
 # Thus it takes border-strong, not the decorative border. The kit danger color is the brand error color.
-COLORS = {'color.surface': 'surface', 'color.text': 'ink', 'color.text-muted': 'ink-muted',
+COLORS = {'color.surface': 'surface', 'color.surface-subtle': 'surface-raised',
+          'color.text': 'ink', 'color.text-muted': 'ink-muted',
           'color.border': 'border-strong', 'color.accent': 'accent', 'color.on-accent': 'on-accent',
           'color.focus': 'focus', 'color.danger': 'error', 'color.success': 'ok',
           # The default page style uses these two. The decorative border is only for a rule, never for a control.
@@ -28,7 +29,9 @@ PAIRS = [('color.text', 'color.surface', 4.5), ('color.text-muted', 'color.surfa
          ('color.on-accent', 'color.accent', 4.5), ('color.accent', 'color.surface', 4.5),
          ('color.danger', 'color.surface', 4.5), ('color.success', 'color.surface', 4.5),
          ('color.border', 'color.surface', 3.0),
-         ('color.focus', 'color.surface', 3.0)]
+         ('color.focus', 'color.surface', 3.0),
+         ('color.text', 'color.surface-subtle', 4.5), ('color.text-muted', 'color.surface-subtle', 4.5),
+         ('color.border', 'color.surface-subtle', 3.0), ('color.focus', 'color.surface-subtle', 3.0)]
 # The default page style (src/styles/page.css) puts text, links and controls on the page ground.
 PAGE_PAIRS = [('color.text', 'color.page', 4.5), ('color.text-muted', 'color.page', 4.5),
               ('color.accent', 'color.page', 4.5), ('color.danger', 'color.page', 4.5), ('color.success', 'color.page', 4.5),

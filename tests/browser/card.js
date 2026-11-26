@@ -67,7 +67,7 @@ async function browserChecks() {
       && root.querySelectorAll('[part="authorship"]').length === 1
       && root.querySelectorAll('[part="citation"]').length === 1
       && parts.every((node) => node && node.getBoundingClientRect().height > 0)
-      && parts[0].textContent === 'Author: agent agent-cards'
+      && parts[0].textContent === 'Author: agent, agent-cards'
       && parts[1].textContent === `Source: ${CITATION.source}` && parts[2].textContent === CITATION.locator;
   }
   function action(card, confirm = false) {
@@ -81,6 +81,14 @@ async function browserChecks() {
   }
   const press = (node) => node.shadowRoot.querySelector('[part="button"]').click();
   const tick = () => new Promise((done) => setTimeout(done, 0));
+  const expanded = mount();
+  const facts = expanded.shadowRoot.querySelector('[part="facts"]');
+  check('card: the labels and values align on the baseline', getComputedStyle(facts).alignItems === 'baseline');
+  if (!matchMedia('(forced-colors: active)').matches) {
+    const surface = matchMedia('(prefers-color-scheme: dark)').matches ? 'rgb(23, 27, 33)' : 'rgb(255, 255, 255)';
+    check('card: a standalone card uses the standard surface',
+      getComputedStyle(expanded.shadowRoot.querySelector('[part="card"]')).backgroundColor === surface);
+  }
   const initial = document.createElement('mu-card');
   initial.actor = AUTHOR;
   let initialEvents = 0;
