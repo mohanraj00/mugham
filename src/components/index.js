@@ -17,6 +17,8 @@ import { MuMenu, MuTooltip, MuToast } from './popovers.js';
 export { MuMenu, MuTooltip, MuToast } from './popovers.js';
 import { MuAppShell, MuBreadcrumbs, MuPagination, MuSteps } from './navigation.js';
 export { MuAppShell, MuBreadcrumbs, MuPagination, MuSteps } from './navigation.js';
+import { MuRunSteps, MuPlan } from './run-steps.js';
+export { MuRunSteps, MuPlan } from './run-steps.js';
 import { MuProgress } from './progress.js';
 export { MuProgress } from './progress.js';
 import { MuEmptyState, MuSkeleton, MuBadge, MuAvatar } from './page-states.js';
@@ -1555,6 +1557,7 @@ export function define(registry = customElements) {
     ['mu-tabs', MuTabs], ['mu-accordion', MuAccordion],
     ['mu-app-shell', MuAppShell], ['mu-breadcrumbs', MuBreadcrumbs], ['mu-pagination', MuPagination],
     ['mu-steps', MuSteps], ['mu-progress', MuProgress],
+    ['mu-run-steps', MuRunSteps], ['mu-plan', MuPlan],
     ['mu-empty-state', MuEmptyState], ['mu-skeleton', MuSkeleton], ['mu-badge', MuBadge], ['mu-avatar', MuAvatar],
     ['mu-excerpt', MuExcerpt], ['mu-table', MuTable], ['mu-status', MuStatus], ['mu-source-status', MuSourceStatus], ['mu-action-queue', MuActionQueue], ['mu-image', MuImage], ['mu-chart', MuChart],
     ['mu-rich-text', MuRichText], ['mu-data-grid', MuDataGrid], ['mu-upload', MuUpload]]) {

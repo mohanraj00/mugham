@@ -1,6 +1,8 @@
 {
  "note": "Shared cases for tools/catalog.py and src/render/validate.js. tests/test_vectors.py checks that the Python validator gives each expected list.",
  "catalog": {
+  "run-steps": {"format": 2, "name": "run-steps", "version": "0.1.0", "kind": "component", "description": "An ordered list of one agent run. Each step has a unique id and a state in text. A button opens the detail or tool call. A new fill keeps an open or focused button for the same id. A polite status gives changes to existing steps after the first fill.", "ai_content": true, "slots": {"authorship": {"required": true}}, "parts": [{"name": "announcement", "description": "Polite status for changes to step states.", "guardrail": true}, {"name": "arguments", "description": "Tool arguments as plain text.", "guardrail": true}, {"name": "authorship", "description": "Author of the run steps.", "guardrail": true}, {"name": "copy", "description": "Button that copies text.", "guardrail": true}, {"name": "copy-status", "description": "Result of the copy operation.", "guardrail": true}, {"name": "detail", "description": "Additional information for a step.", "guardrail": true}, {"name": "details", "description": "Control and technical details of a refusal.", "guardrail": true}, {"name": "list", "description": "Named ordered list of run steps.", "guardrail": true}, {"name": "name", "description": "Visible step name.", "guardrail": true}, {"name": "next", "description": "Next step after a refusal.", "guardrail": true}, {"name": "panel", "description": "Panel opened by the step button.", "guardrail": true}, {"name": "reason", "description": "Reason for a refusal.", "guardrail": true}, {"name": "result", "description": "Tool result as plain text.", "guardrail": true}, {"name": "state", "description": "Visible step state.", "guardrail": true}, {"name": "step", "description": "One step in the list.", "guardrail": false}, {"name": "toggle", "description": "Button that opens or closes step details.", "guardrail": true}, {"name": "tool", "description": "Tool name as plain text.", "guardrail": true}], "data": {"label": {"type": "text", "label": "Label", "required": true, "min_length": 1, "max_length": 80}, "steps": {"type": "list", "label": "Steps", "required": true, "min_items": 1, "max_items": 20, "items": {"type": "record", "label": "Steps", "required": true, "fields": {"id": {"type": "text", "label": "Id", "required": true, "min_length": 1, "max_length": 80}, "name": {"type": "text", "label": "Name", "required": true, "min_length": 1, "max_length": 120}, "state": {"type": "enum", "label": "State", "required": true, "values": ["pending", "running", "done", "failed"]}, "detail": {"type": "text", "label": "Detail", "required": false, "min_length": 1, "max_length": 2000}, "tool_name": {"type": "text", "label": "Tool name", "required": false, "min_length": 1, "max_length": 80}, "tool_arguments": {"type": "text", "label": "Tool arguments", "required": false, "max_length": 2000}, "tool_result": {"type": "text", "label": "Tool result", "required": false, "max_length": 2000}}}}}, "states": ["default", "refused"], "tokens": ["color.text", "color.border", "type.body", "color.surface", "color.focus", "type.caption", "type.code", "space.1", "space.2", "radius.2", "motion.fast"], "accessibility": {"role": "list", "name": {"field": "label"}, "keyboard": ["Tab", "Shift+Tab", "Enter", "Space"], "forced_colors": true, "reduced_motion": true}},
+  "plan": {"format": 2, "name": "plan", "version": "0.1.0", "kind": "component", "description": "A named list of tasks in an agent plan. Each task has a unique id and shows its state as text. A polite status gives changes to existing tasks after the first fill.", "ai_content": true, "slots": {"authorship": {"required": true}}, "parts": [{"name": "announcement", "description": "Polite status for changes to task states.", "guardrail": true}, {"name": "authorship", "description": "Author of the plan.", "guardrail": true}, {"name": "copy", "description": "Button that copies text.", "guardrail": true}, {"name": "copy-status", "description": "Result of the copy operation.", "guardrail": true}, {"name": "details", "description": "Control and technical details of a refusal.", "guardrail": true}, {"name": "list", "description": "Named list of tasks.", "guardrail": true}, {"name": "name", "description": "Visible task name.", "guardrail": true}, {"name": "next", "description": "Next step after a refusal.", "guardrail": true}, {"name": "reason", "description": "Reason for a refusal.", "guardrail": true}, {"name": "state", "description": "Visible task state.", "guardrail": true}, {"name": "task", "description": "One task in the list.", "guardrail": false}], "data": {"label": {"type": "text", "label": "Label", "required": true, "min_length": 1, "max_length": 80}, "tasks": {"type": "list", "label": "Tasks", "required": true, "min_items": 1, "max_items": 20, "items": {"type": "record", "label": "Tasks", "required": true, "fields": {"id": {"type": "text", "label": "Id", "required": true, "min_length": 1, "max_length": 80}, "name": {"type": "text", "label": "Name", "required": true, "min_length": 1, "max_length": 120}, "state": {"type": "enum", "label": "State", "required": true, "values": ["pending", "in_progress", "done", "failed", "skipped"]}}}}}, "states": ["default", "refused"], "tokens": ["color.text", "color.border", "type.body", "type.caption", "space.1", "space.2"], "accessibility": {"role": "list", "name": {"field": "label"}, "keyboard": [], "forced_colors": true, "reduced_motion": true}},
   "sample-color": {"format": 2, "name": "sample-color", "version": "0.1.0", "kind": "component", "description": "A synthetic example.", "ai_content": false, "field": true, "data": {}, "states": ["default"], "tokens": ["color.text"], "accessibility": {"role": "none", "keyboard": [], "forced_colors": true, "reduced_motion": true}},
   "sample-label": {"format": 2, "name": "sample-label", "version": "0.1.0", "kind": "component", "description": "A synthetic example.", "ai_content": false, "field": false, "data": {}, "states": ["default"], "tokens": ["color.text"], "accessibility": {"role": "none", "keyboard": [], "forced_colors": true, "reduced_motion": true}},
   "sample-form": {"format": 2, "name": "sample-form", "version": "0.1.0", "kind": "component", "description": "A synthetic example.", "ai_content": false, "data": {"fields": {"type": "list", "label": "Fields", "required": true, "max_items": 20, "items": {"type": "component", "label": "Field", "required": true, "field": true}}}, "states": ["default"], "tokens": ["color.text"], "accessibility": {"role": "none", "keyboard": [], "forced_colors": true, "reduced_motion": true}},
@@ -324,6 +326,41 @@
   }
  },
  "cases": [
+  {
+   "name": "run steps take a tool call as text",
+   "fill": {"component": "run-steps", "version": "0.1.0", "data": {"label": "Library research", "steps": [{"id": "search", "name": "Search the catalog", "state": "pending", "tool_name": "catalog.search", "tool_arguments": "<q>moss</q>", "tool_result": "One match"}]}, "slots": {"authorship": {"type": "agent", "id": "catalog-assistant"}}},
+   "errors": []
+  },
+  {
+   "name": "run steps refuse a repeated id with a different state",
+   "fill": {"component": "run-steps", "version": "0.1.0", "data": {"label": "Library research", "steps": [{"id": "search", "name": "Search the catalog", "state": "pending"}, {"id": "search", "name": "Search the catalog", "state": "done"}]}, "slots": {"authorship": {"type": "agent", "id": "catalog-assistant"}}},
+   "errors": ["data.steps[1].id: must be unique"]
+  },
+  {
+   "name": "run steps require a tool name for tool output",
+   "fill": {"component": "run-steps", "version": "0.1.0", "data": {"label": "Library research", "steps": [{"id": "search", "name": "Search the catalog", "state": "pending", "tool_result": "One match"}]}, "slots": {"authorship": {"type": "agent", "id": "catalog-assistant"}}},
+   "errors": ["data.steps[0].tool_name: give a name for the tool call"]
+  },
+  {
+   "name": "run steps refuse a blank step name",
+   "fill": {"component": "run-steps", "version": "0.1.0", "data": {"label": "Library research", "steps": [{"id": "search", "name": " \t", "state": "pending"}]}, "slots": {"authorship": {"type": "agent", "id": "catalog-assistant"}}},
+   "errors": ["data.steps[0].name: give text"]
+  },
+  {
+   "name": "a plan takes a task in progress",
+   "fill": {"component": "plan", "version": "0.1.0", "data": {"label": "Library research", "tasks": [{"id": "find", "name": "Find a book", "state": "in_progress"}]}, "slots": {"authorship": {"type": "agent", "id": "catalog-assistant"}}},
+   "errors": []
+  },
+  {
+   "name": "a plan refuses a repeated id with a different name",
+   "fill": {"component": "plan", "version": "0.1.0", "data": {"label": "Library research", "tasks": [{"id": "find", "name": "Find a book", "state": "in_progress"}, {"id": "find", "name": "Check availability", "state": "in_progress"}]}, "slots": {"authorship": {"type": "agent", "id": "catalog-assistant"}}},
+   "errors": ["data.tasks[1].id: must be unique"]
+  },
+  {
+   "name": "a plan refuses a run step state",
+   "fill": {"component": "plan", "version": "0.1.0", "data": {"label": "Library research", "tasks": [{"id": "find", "name": "Find a book", "state": "running"}]}, "slots": {"authorship": {"type": "agent", "id": "catalog-assistant"}}},
+   "errors": ["data.tasks[0].state: must be one of pending, in_progress, done, failed, skipped"]
+  },
   {
    "name": "empty-state accepts scalar text",
    "fill": {"component": "empty-state", "version": "0.1.0", "data": {"title": "No loans <found>", "text": "Try another search."}},

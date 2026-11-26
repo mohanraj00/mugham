@@ -13,19 +13,36 @@ class TestNode extends EventTarget {
 
   constructor(tag) { super(); this.tag = tag; }
   append(...children) {
-    for (const child of children) {
-      if (child instanceof TestNode) {
-        if (child.parentNode) child.parentNode.children = child.parentNode.children.filter((node) => node !== child);
-        child.parentNode = this;
-      }
-      this.children.push(child);
+    for (const child of children) this.insertBefore(child, null);
+  }
+  insertBefore(child, before) {
+    if (child instanceof TestNode) {
+      child.remove();
+      child.parentNode = this;
     }
+    this.children.splice(before === null ? this.children.length : this.children.indexOf(before), 0, child);
+  }
+  get nextElementSibling() {
+    const siblings = this.parentNode?.children;
+    return siblings?.[siblings.indexOf(this) + 1] ?? null;
+  }
+  getRootNode() {
+    return this.parentNode?.getRootNode() ?? this;
+  }
+  remove() {
+    if (!this.parentNode) return;
+    const root = this.getRootNode();
+    for (let node = root.activeElement; node; node = node.parentNode) {
+      if (node === this) root.activeElement = null;
+    }
+    this.parentNode.children = this.parentNode.children.filter((node) => node !== this);
+    this.parentNode = null;
   }
   prepend(child) {
-    this.append(child);
-    this.children.unshift(this.children.pop());
+    this.insertBefore(child, this.children[0] ?? null);
   }
   replaceChildren(...children) {
+    for (const child of this.children) if (child instanceof TestNode) child.remove();
     this.children = [];
     this.append(...children);
   }
@@ -37,7 +54,7 @@ class TestNode extends EventTarget {
   get textContent() { return this.children.map((child) => child.textContent).join(''); }
   set textContent(value) { this.replaceChildren({ textContent: value }); }
   matches(selector) { return selector === 'a[href]' && this.tag === 'a' && this.getAttribute('href') !== null; }
-  focus() { document.activeElement = this; }
+  focus() { document.activeElement = this; this.getRootNode().activeElement = this; }
   click() {
     if (!this.disabled) this.dispatchEvent(new Event('click', { cancelable: true }));
   }
@@ -377,5 +394,164 @@ test('steps and progress export tool schemas and refuse invalid fills', () => {
       assert.deepEqual(refused.at(-1).errors, errors);
     }
     assert.equal(refused.length, changes.length);
+  }
+});
+
+const RESEARCHER = { type: 'agent', id: 'catalog-assistant', name: 'Catalog assistant' };
+const RUN_STEPS = {
+  label: 'Research run',
+  steps: [
+    { id: 'read', name: 'Read the request', state: 'done' },
+    { id: 'search', name: 'Search the catalog', state: 'running',
+      tool_name: 'catalog.search', tool_arguments: '<query>moss</query>', tool_result: '<img src=x>' },
+    { id: 'check', name: 'Check availability', state: 'pending', detail: 'Check the east branch.' },
+    { id: 'index', name: 'Read the index', state: 'failed' },
+  ],
+};
+const PLAN = {
+  label: 'Research plan',
+  tasks: [
+    { id: 'read', name: 'Read the request', state: 'done' },
+    { id: 'find', name: 'Find a book', state: 'in_progress' },
+    { id: 'check', name: 'Check availability', state: 'pending' },
+    { id: 'index', name: 'Read the index', state: 'failed' },
+    { id: 'browse', name: 'Browse another shelf', state: 'skipped' },
+  ],
+};
+
+function researchFill(name, data) {
+  return fill(name, data, { slots: { authorship: RESEARCHER } });
+}
+
+function makeResearch(name, data) {
+  const component = new (elements.get('mu-' + name))();
+  component.actor = RESEARCHER;
+  component.fill = researchFill(name, data);
+  return component;
+}
+
+test('run steps show an ordered list, the states and optional details as text', () => {
+  const run = makeResearch('run-steps', RUN_STEPS);
+  const list = find(run.shadowRoot, 'list');
+  assert.equal(list.tag, 'ol');
+  assert.equal(list.getAttribute('aria-label'), 'Research run');
+  assert.match(find(run.shadowRoot, 'authorship').textContent, /Catalog assistant \(agent, catalog-assistant\)/);
+  assert.deepEqual(list.children.map((row) => find(row, 'state').textContent), ['Done', 'Running', 'Pending', 'Failed']);
+  assert.equal(find(list.children[0], 'toggle'), undefined);
+  const [, search, check] = list.children;
+  const button = find(search, 'toggle');
+  const panel = find(search, 'panel');
+  assert.equal(button.tag, 'button');
+  assert.equal(button.getAttribute('aria-labelledby'), find(button, 'name').id);
+  assert.equal(button.getAttribute('aria-controls'), panel.id);
+  assert.equal(button.getAttribute('aria-expanded'), 'false');
+  assert.equal(panel.hidden, true);
+  button.click();
+  assert.equal(button.getAttribute('aria-expanded'), 'true');
+  assert.equal(panel.hidden, false);
+  assert.match(find(search, 'tool').textContent, /catalog\.search/);
+  for (const [part, expected] of [['arguments', '<query>moss</query>'], ['result', '<img src=x>']]) {
+    const node = find(search, part);
+    assert.equal(node.tag, 'pre');
+    assert.equal(node.textContent, expected);
+    assert.equal(node.children.some((child) => child instanceof TestNode), false);
+  }
+  button.click();
+  assert.equal(button.getAttribute('aria-expanded'), 'false');
+  assert.equal(panel.hidden, true);
+  assert.equal(find(check, 'detail').textContent, 'Check the east branch.');
+});
+
+test('run step updates keep the same open and focused button across a reorder', () => {
+  const run = makeResearch('run-steps', RUN_STEPS);
+  const list = find(run.shadowRoot, 'list');
+  const live = find(run.shadowRoot, 'announcement');
+  assert.equal(live.getAttribute('aria-live'), 'polite');
+  assert.equal(live.textContent, '');
+  const [read, search, check, index] = RUN_STEPS.steps;
+  const toggle = find(list.children[1], 'toggle');
+  const other = find(list.children[2], 'toggle');
+  toggle.click();
+  other.click();
+  toggle.focus();
+  const updated = { ...RUN_STEPS, steps: [read, check, { ...search, state: 'done', tool_result: 'One match.' }, index] };
+  run.fill = researchFill('run-steps', updated);
+  assert.equal(find(run.shadowRoot, 'list'), list);
+  assert.equal(find(run.shadowRoot, 'announcement'), live);
+  assert.equal(find(list.children[2], 'toggle'), toggle);
+  assert.equal(run.shadowRoot.activeElement, toggle);
+  assert.equal(toggle.getAttribute('aria-expanded'), 'true');
+  assert.equal(other.getAttribute('aria-expanded'), 'true');
+  assert.equal(find(list.children[2], 'result').textContent, 'One match.');
+  assert.equal(live.textContent, 'Search the catalog: done');
+  const [notice] = live.children;
+  run.fill = researchFill('run-steps', updated);
+  assert.equal(live.children[0], notice);
+  run.fill = researchFill('run-steps', { ...updated, steps: [read, check, index] });
+  assert.equal(run.shadowRoot.activeElement, null);
+  assert.equal(other.getAttribute('aria-expanded'), 'true');
+});
+
+test('plan shows each task state as text and announces each changed state once', () => {
+  const plan = makeResearch('plan', PLAN);
+  const list = find(plan.shadowRoot, 'list');
+  const live = find(plan.shadowRoot, 'announcement');
+  assert.equal(list.tag, 'ul');
+  assert.equal(list.getAttribute('aria-label'), 'Research plan');
+  assert.equal(find(plan.shadowRoot, 'toggle'), undefined);
+  assert.deepEqual(list.children.map((row) => find(row, 'state').textContent), ['Done', 'In progress', 'Pending', 'Failed', 'Skipped']);
+  assert.equal(live.getAttribute('aria-live'), 'polite');
+  assert.equal(live.textContent, '');
+  const [read, findBook, check, index] = PLAN.tasks;
+  const updated = { ...PLAN, tasks: [read, { ...findBook, state: 'done' }, { ...check, state: 'in_progress' },
+    index, { id: 'note', name: 'Write the result', state: 'pending' }] };
+  const outside = new TestNode('button');
+  outside.focus();
+  plan.fill = researchFill('plan', updated);
+  assert.equal(find(plan.shadowRoot, 'announcement'), live);
+  assert.equal(document.activeElement, outside);
+  assert.equal(live.textContent, 'Find a book: done. Check availability: in progress');
+  const [notice] = live.children;
+  plan.fill = researchFill('plan', updated);
+  assert.equal(live.children[0], notice);
+});
+
+test('run steps and plan export tool schemas and refuse invalid fills', () => {
+  for (const [name, data, key, states] of [
+    ['run-steps', RUN_STEPS, 'steps', ['pending', 'running', 'done', 'failed']],
+    ['plan', PLAN, 'tasks', ['pending', 'in_progress', 'done', 'failed', 'skipped']],
+  ]) {
+    const schema = toolSchema(name);
+    assert.equal(schema.properties.component.const, name);
+    const items = schema.properties.data.properties[key].items;
+    assert.deepEqual(items.required, ['id', 'name', 'state']);
+    assert.deepEqual(items.properties.state.enum, states);
+    if (key === 'steps') {
+      assert.equal(items.properties.tool_arguments.maxLength, 2000);
+      assert.equal(items.properties.tool_result.maxLength, 2000);
+    }
+    const component = makeResearch(name, data);
+    const [first] = data[key];
+    const cases = [
+      [[first, { ...first, name: 'A different name' }], 'data.' + key + '[1].id: must be unique'],
+      [[{ ...first, state: 'invalid' }], 'data.' + key + '[0].state: must be one of ' + states.join(', ')],
+    ];
+    if (key === 'steps') {
+      cases.push([[{ ...first, tool_name: 'catalog.search', tool_arguments: { query: 'moss' } }],
+        'data.steps[0].tool_arguments: must be a string']);
+      cases.push([[{ ...first, tool_name: 'catalog.search', tool_result: 'x'.repeat(2001) }],
+        'data.steps[0].tool_result: more than 2000 characters']);
+    }
+    const refused = events(component, 'mu-refused');
+    for (const [items, error] of cases) {
+      const invalid = researchFill(name, { ...data, [key]: items });
+      assert.deepEqual(validateFill(invalid), [error]);
+      component.fill = invalid;
+      assert.equal(component.dataset.state, 'refused');
+      assert.equal(component.fill, null);
+      assert.deepEqual(refused.at(-1).errors, [error]);
+    }
+    component.fill = researchFill(name, data);
+    assert.equal(find(component.shadowRoot, 'announcement').textContent, '');
   }
 });

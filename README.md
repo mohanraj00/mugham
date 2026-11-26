@@ -125,6 +125,8 @@ Each component has a contract file in [catalog/](catalog/README.md). The contrac
 | `mu-breadcrumbs` | Links in page order, with a mark for the current page. | [breadcrumbs.json](catalog/breadcrumbs.json) |
 | `mu-pagination` | Numbered controls that request a page of content. | [pagination.json](catalog/pagination.json) |
 | `mu-steps` | An ordered list that shows the position and state of each wizard step. | [steps.json](catalog/steps.json) |
+| `mu-run-steps` | An ordered list of agent run steps with states and optional tool details. | [run-steps.json](catalog/run-steps.json) |
+| `mu-plan` | A list of agent tasks with their states. | [plan.json](catalog/plan.json) |
 | `mu-progress` | A named bar with a known or unknown value. | [progress.json](catalog/progress.json) |
 | `mu-empty-state` | A heading and short text for an empty result, with a slot for a page control. | [empty-state.json](catalog/empty-state.json) |
 | `mu-skeleton` | A named loading status with lines that hold space for content. | [skeleton.json](catalog/skeleton.json) |
@@ -190,6 +192,7 @@ python3 tools/serve.py
    - `http://localhost:8000/examples/cards/loans.html`: a card, an action button, a card grid and a form.
    - `http://localhost:8000/examples/cards/dialogs.html`: a seed tray reservation with a confirm step and a drawer with tray details.
    - `http://localhost:8000/examples/cards/settings.html`: settings in tabs and an accordion, with a confirm step and a toast after a save.
+   - `http://localhost:8000/examples/apps/research.html`: an agent run and a plan for a library catalog search.
    - `http://localhost:8000/examples/apps/library.html`: a library staff page with a side bar, breadcrumbs, a list with numbered pages and a wizard to add a member.
    - `http://localhost:8000/examples/cards/popovers.html`: tray choices, help text and a message after a note save.
    - `http://localhost:8000/examples/cards/approval-icons.html`: a request card with buttons to approve or reject the request.

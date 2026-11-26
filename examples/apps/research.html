@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; object-src 'none'; base-uri 'none'">
+  <title>Library research</title>
+  <link rel="stylesheet" href="../../src/tokens/tokens.css">
+  <link rel="stylesheet" href="../../src/styles/page.css">
+  <script type="module" src="research.js"></script>
+  <script type="module" src="../frame.js"></script>
+</head>
+<body>
+  <main>
+    <h1 id="research-title" tabindex="-1">Library research</h1>
+    <p>Find a book about moss and check if it is available at the east branch.</p>
+    <section aria-labelledby="run-title">
+      <h2 id="run-title">Run steps</h2>
+      <mu-run-steps></mu-run-steps>
+    </section>
+    <section aria-labelledby="plan-title">
+      <h2 id="plan-title">Plan</h2>
+      <mu-plan></mu-plan>
+    </section>
+    <button id="advance-run" type="button">Advance run</button>
+  </main>
+</body>
+</html>

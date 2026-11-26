@@ -6,6 +6,8 @@ import breadcrumbs from '../../catalog/breadcrumbs.json' with { type: 'json' };
 import pagination from '../../catalog/pagination.json' with { type: 'json' };
 import progress from '../../catalog/progress.json' with { type: 'json' };
 import steps from '../../catalog/steps.json' with { type: 'json' };
+import runSteps from '../../catalog/run-steps.json' with { type: 'json' };
+import plan from '../../catalog/plan.json' with { type: 'json' };
 import emptyState from '../../catalog/empty-state.json' with { type: 'json' };
 import skeleton from '../../catalog/skeleton.json' with { type: 'json' };
 import badge from '../../catalog/badge.json' with { type: 'json' };
@@ -77,7 +79,7 @@ const FILES = {
   diff, 'diff-change': diffChange, 'diff-part': diffPart, dialog, drawer, 'editable-form': editableForm, excerpt, fact, field,
   'form-card': formCard, 'form-line': formLine, 'form-section': formSection, grid, image,
   menu, tooltip, toast, tabs, accordion, 'app-shell': appShell, breadcrumbs, pagination, progress, steps,
-  'empty-state': emptyState, skeleton, badge, avatar,
+  'empty-state': emptyState, skeleton, badge, avatar, 'run-steps': runSteps, plan,
   'long-text-field': longTextField, 'number-field': numberField, 'source-status': sourceStatus, stack, status, text, table, 'table-row': tableRow,
   'toggle-field': toggleField,
   'range-field': rangeField,

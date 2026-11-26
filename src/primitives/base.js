@@ -73,7 +73,9 @@ export class MuElement extends HTMLElement {
     this.#fill = structuredClone(value);
     this.dataset.state = this.state(this.#fill.data);
     // A render can give null for an optional part. Such a part shows nothing.
-    this.shadowRoot.replaceChildren(...this.render(this.#fill.data).filter((part) => part !== null && part !== undefined));
+    // A render can give null instead of a list when it updates the existing DOM.
+    const parts = this.render(this.#fill.data);
+    if (parts !== null) this.shadowRoot.replaceChildren(...parts.filter((part) => part !== null && part !== undefined));
     this.rendered();
   }
 
