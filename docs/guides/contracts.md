@@ -223,7 +223,7 @@ The [contact example](../../examples/forms/contact.html) registers a [contact ca
 
 The card listens for `mu-edit` and binds the current name and method to `contacts.save`. The page uses `onAction` to read the request and return a receipt.
 
-The card starts with **Contact A1** and **Email**. Enter **Contact B2**, choose **Phone**, and press **Save contact**. The request shows `{"contact_name":"Contact B2","method":"Phone"}`, and the button shows **Done** after the receipt.
+The card starts with **Contact A1** and **Email**. Enter **Contact B2**, choose **Phone**, and press **Save contact**. The request shows `{"contact_name":"Contact B2","method":"Phone"}`, and the button shows **Done** after the receipt. If you edit a value while the save is pending, the receipt confirms only the sent values. The button then shows **Save contact** again for the new values.
 
 ## Run the page
 
