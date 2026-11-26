@@ -16,7 +16,8 @@ Each token has a light value and a dark value. The table gives the CSS property,
 
 | CSS property | Light | Dark | Use |
 |---|---|---|---|
-| `--mu-color-surface` | `#ffffff` | `#171b21` | The ground of a card, a form, a message and a secondary button. |
+| `--mu-color-surface` | `#ffffff` | `#171b21` | The ground of a standalone card, a form, a message and a secondary button. |
+| `--mu-color-surface-subtle` | `#eff2f5` | `#1f242b` | The ground of a card in a thread message. |
 | `--mu-color-page` | `#f7f8fa` | `#0f1217` | The ground of a page in the default page style. |
 | `--mu-color-text` | `#141a23` | `#e6e9ee` | The text on the surface. |
 | `--mu-color-text-muted` | `#566170` | `#9ba5b1` | Captions, labels of facts, the actor type and the state text. |
@@ -123,6 +124,7 @@ The [density example](../../examples/tables/density.html) uses full width. It sh
   --mu-color-focus: #2b6a3c;
   --mu-color-on-accent: #ffffff;
   --mu-color-surface: #f5f8f3;
+  --mu-color-surface-subtle: #ecf2e9;
   --mu-color-text: #16241a;
   --mu-color-text-muted: #46584b;
   --mu-radius-2: 0.25rem;
@@ -163,6 +165,10 @@ A theme must keep these contrast ratios (WCAG 2.2, 1.4.3 and 1.4.11) in the ligh
 | `--mu-color-danger` | `--mu-color-surface` | 4.5:1 |
 | `--mu-color-border` | `--mu-color-surface` | 3:1 |
 | `--mu-color-focus` | `--mu-color-surface` | 3:1 |
+| `--mu-color-text` | `--mu-color-surface-subtle` | 4.5:1 |
+| `--mu-color-text-muted` | `--mu-color-surface-subtle` | 4.5:1 |
+| `--mu-color-border` | `--mu-color-surface-subtle` | 3:1 |
+| `--mu-color-focus` | `--mu-color-surface-subtle` | 3:1 |
 
 A page with the default page style also has text, links and controls on the page ground. Then a theme must also keep these ratios:
 
@@ -175,7 +181,7 @@ A page with the default page style also has text, links and controls on the page
 | `--mu-color-border` | `--mu-color-page` | 3:1 |
 | `--mu-color-focus` | `--mu-color-page` | 3:1 |
 
-The edge of a card, a form and a message is a mix of `--mu-color-border` at 45% and no color. This edge is not a control, so it has no minimum ratio. The edge of each control uses the full `--mu-color-border`.
+The edge of a standalone card, a form and a message is a mix of `--mu-color-border` at 45% and no color. This edge is not a control, so it has no minimum ratio. A card in a thread shows its edge in forced colors. The edge of each control uses the full `--mu-color-border`.
 
 Use `#rrggbb` values. Then `tools/tokens.py` can compute each ratio with its `contrast` function. If the ground of the page is not `--mu-color-surface`, check the danger color against that ground too. Each message of the thread sits on the surface, but the thread element has no ground of its own. Its notices of a stream error and of a failed source sit on the ground of the page.
 

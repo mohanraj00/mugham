@@ -9,6 +9,7 @@
   --mu-color-page: #f7f8fa;
   --mu-color-success: #1b7a45;
   --mu-color-surface: #ffffff;
+  --mu-color-surface-subtle: #eff2f5;
   --mu-color-text: #141a23;
   --mu-color-text-muted: #566170;
   --mu-motion-fast: 120ms;
@@ -43,6 +44,7 @@
     --mu-color-page: #0f1217;
     --mu-color-success: #73d39f;
     --mu-color-surface: #171b21;
+    --mu-color-surface-subtle: #1f242b;
     --mu-color-text: #e6e9ee;
     --mu-color-text-muted: #9ba5b1;
   }
@@ -57,6 +59,7 @@
   --mu-color-page: #0f1217;
   --mu-color-success: #73d39f;
   --mu-color-surface: #171b21;
+  --mu-color-surface-subtle: #1f242b;
   --mu-color-text: #e6e9ee;
   --mu-color-text-muted: #9ba5b1;
 }

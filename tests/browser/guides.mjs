@@ -113,7 +113,7 @@ export async function guideChecks(session, sessionId, base, { evaluate, open, sl
   ]), c.errors);
   const [tide, markup, claim] = c.cards;
   step(page, 'the card shows its data and its slots as text', tide?.state === 'default' && tide.text.includes('Tide table for the north pier')
-    && tide.text.includes('Author: agent agent-notes (Note helper)') && tide.text.includes('Source: Synthetic tide notes, page 2')
+    && tide.text.includes('Author: Note helper (agent, agent-notes)') && tide.text.includes('Source: Synthetic tide notes, page 2')
     && tide.text.includes('https://example.org/tides#page-2'), tide);
   step(page, 'markup in a text field shows as text', markup?.state === 'default' && markup.text.includes('<b>Bold tide</b>') && !markup.bold, markup);
   step(page, 'an author that is not the bound actor is refused', claim?.state === 'refused'
@@ -139,7 +139,8 @@ export async function guideChecks(session, sessionId, base, { evaluate, open, sl
   step(page, 'the thread reads the source to its end', a.thread === 'ended', a.thread);
   step(page, 'each message names its actor', JSON.stringify(a.actors) === JSON.stringify(['Robin Person', ...Array(4).fill('Loan helper Agent')]), a.actors);
   step(page, 'the thread refuses the undeclared component', a.refusals.length === 1 && a.refusals[0].includes('banner'), a.refusals);
-  step(page, 'the thread shows the card of the agent', a.card.includes('A short history of maps') && a.card.includes('Author: agent agent-loans (Loan helper)'), a.card);
+  step(page, 'the thread shows the card of the agent', a.card.includes('A short history of maps')
+    && a.card.includes('Author: same as the message'), a.card);
   const inThread = await evaluate(session, sessionId, press(`document.querySelector('mu-thread').shadowRoot.querySelector('mu-action-button')`));
   step(page, 'the action in the thread shows Pending before the receipt', inThread.state === 'pending', inThread);
   a = await until(ASSEMBLE, (value) => value.inThread.state !== 'pending');
