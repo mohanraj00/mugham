@@ -60,8 +60,134 @@ function readLibrary() {
     separators: [...crumbs.querySelectorAll('[part="separator"]')].map((node) => node.getAttribute('aria-hidden')),
     page: current.textContent, gaps: pages.querySelectorAll('[part="gap"]').length,
     previousDisabled: part(pages, 'previous-page').disabled, nextDisabled: part(pages, 'next-page').disabled,
-    firstLoan: document.querySelector('#loan-list li').textContent,
+    firstLoan: document.querySelector('#loan-list li')?.textContent,
   };
+}
+
+function readLoanStatus() {
+  const part = (host, name) => host?.shadowRoot?.querySelector('[part="' + name + '"]');
+  const shown = (node) => Boolean(node?.getClientRects().length);
+  const skeleton = document.querySelector('mu-skeleton');
+  const status = part(skeleton, 'status');
+  const lines = [...(status?.querySelectorAll('[part="line"]') ?? [])];
+  const empty = document.querySelector('mu-empty-state');
+  const search = document.getElementById('loan-query');
+  const submit = document.getElementById('search-loans');
+  const clear = document.getElementById('clear-loan-search');
+  const avatar = part(document.querySelector('mu-avatar'), 'initials');
+  const list = document.getElementById('loan-list');
+  const badges = [...(list?.querySelectorAll('mu-badge') ?? [])].map((badge) => part(badge, 'label'));
+  const forced = matchMedia('(forced-colors: active)').matches;
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const probe = document.createElement('span');
+  probe.style.forcedColorAdjust = 'none';
+  document.body.append(probe);
+  const color = (value) => {
+    probe.style.color = value;
+    return getComputedStyle(probe).color;
+  };
+  const focus = getComputedStyle(document.activeElement);
+  const result = {
+    focus: document.activeElement.id,
+    ring: focus.outlineStyle === 'solid' && parseFloat(focus.outlineWidth) >= 2
+      && focus.outlineColor === color(forced ? 'Highlight' : 'var(--mu-color-focus)'),
+    targets: [search, submit, ...(shown(empty) ? [clear] : [])].every((node) => {
+      const box = node?.getBoundingClientRect();
+      return box?.width >= 44 && box?.height >= 44;
+    }),
+    query: search?.value, scroll: document.documentElement.scrollWidth,
+    skeleton: shown(skeleton), list: shown(list), empty: shown(empty), pager: shown(document.querySelector('mu-pagination')),
+    loadingName: status?.getAttribute('aria-label'),
+    lineCount: lines.length,
+    linesVisible: lines.every((line) => {
+      const style = getComputedStyle(line);
+      const box = line.getBoundingClientRect();
+      return box.width > 0 && box.height > 0 && line.getAttribute('aria-hidden') === 'true'
+        && style.backgroundColor === color(forced ? 'GrayText' : 'var(--mu-color-border)')
+        && (reduced || forced ? style.animationName === 'none' : style.animationName !== 'none');
+    }),
+    title: part(empty, 'title')?.textContent, text: part(empty, 'text')?.textContent,
+    emptySurface: Boolean(part(empty, 'title')) && getComputedStyle(part(empty, 'title').parentElement).backgroundColor
+      === color(forced ? 'Canvas' : 'var(--mu-color-surface)'),
+    badges: badges.map((label) => label?.textContent),
+    badgeTheme: badges.every((label) => {
+      if (!label) return false;
+      const { backgroundColor, borderTopColor, color: foreground } = getComputedStyle(label);
+      return forced ? foreground === color('CanvasText') && borderTopColor === color('CanvasText')
+        : label.className === 'danger' ? borderTopColor === color('var(--mu-color-danger)')
+          : backgroundColor === color('var(--mu-color-' + label.className + ')')
+            && foreground === color('var(--mu-color-on-' + label.className + ')');
+    }),
+    avatar: avatar?.textContent,
+    avatarTheme: Boolean(avatar) && getComputedStyle(avatar).backgroundColor
+      === color(forced ? 'Canvas' : 'var(--mu-color-surface)'),
+    actions: window.libraryLoanActions,
+  };
+  probe.remove();
+  return result;
+}
+
+async function loanStatusChecks(session, sessionId, width, view, { page, tab, enter, space, check, waitFor, pageRules, axErrors }) {
+  const read = () => page(`(${readLoanStatus})()`);
+  const step = (name, ok, detail, reason) => check(view, name, ok, { ...detail, reason: ok ? undefined : reason });
+  const rules = [];
+  try {
+    await page(`(() => {
+      window.libraryLoanActions = [];
+      document.getElementById('loans')?.addEventListener('mu-action', ({ detail }) => window.libraryLoanActions.push(detail));
+      document.querySelector('mu-breadcrumbs')?.shadowRoot?.querySelector('a')?.focus();
+    })()`);
+    const loaded = await read();
+    const loadedRoles = await axErrors(session, sessionId, [
+      ['image', 'Sample Reader'], ['StaticText', 'On loan'], ['StaticText', 'Due soon'], ['StaticText', 'Overdue'],
+      ['textbox', 'Loan title or shelf'], ['button', 'Search'],
+    ], view);
+    step('the loan badges show their states and the staff avatar exposes the full name',
+      loaded.list && !loaded.skeleton && !loaded.empty && loaded.badges.join() === 'On loan,Due soon,Overdue'
+      && loaded.badgeTheme && loaded.avatar === 'SR' && loaded.avatarTheme && loaded.scroll <= width
+      && loadedRoles.every(({ ok }) => ok), { loaded, loadedRoles }, 'The loaded loan states or staff name did not match.');
+    await tab();
+    const search = await read();
+    await session.send('Input.insertText', { text: 'No such shelf' }, sessionId);
+    await tab();
+    const submit = await read();
+    step('Tab reaches the named search controls with full targets and focus rings',
+      search.focus === 'loan-query' && search.ring && submit.focus === 'search-loans' && submit.ring && submit.targets,
+      { search, submit }, 'The search focus order, ring or target size did not match.');
+    await enter();
+    const loading = await read();
+    const { nodes } = await session.send('Accessibility.getFullAXTree', {}, sessionId);
+    const names = nodes.filter((node) => !node.ignored && node.name?.value === 'Loading loans');
+    step('Enter shows one named status with visible lines that follow the color and motion settings',
+      loading.skeleton && !loading.list && !loading.empty && !loading.pager && loading.loadingName === 'Loading loans'
+      && loading.lineCount === 3 && loading.linesVisible && loading.scroll <= width
+      && names.length === 1 && names[0]?.role?.value === 'status',
+      { loading, roles: names.map((node) => node.role?.value) }, 'The loading state or its accessible name did not match.');
+    const ready = await waitFor('document.querySelector("mu-empty-state:not([hidden])") !== null');
+    const empty = await read();
+    const [loadingRole, ...emptyRoles] = await axErrors(session, sessionId, [
+      ['status', 'Loading loans'], ['group', 'No loans found'], ['heading', 'No loans found'], ['button', 'Clear search'],
+    ], view);
+    const ended = loadingRole?.ok === false;
+    step('the loading status goes away and the empty result and its action appear',
+      ready && !empty.skeleton && !empty.list && !empty.pager && empty.empty && empty.emptySurface
+      && empty.text === 'Try another title or shelf code.' && empty.scroll <= width && empty.targets
+      && ended && emptyRoles.every(({ ok }) => ok), { empty, emptyRoles, ended },
+      ready ? 'The loading status or the empty result did not match the expected state.' : 'No empty result within the wait limit.');
+    rules.push(...await pageRules(session, sessionId, LIBRARY_PAGE + ' with no loans in ' + view));
+    await tab();
+    const focused = await read();
+    await space();
+    const restored = await read();
+    step('Tab reaches Clear search and Space restores the loan list and search focus',
+      focused.focus === 'clear-loan-search' && focused.ring && restored.focus === 'loan-query' && restored.ring
+      && restored.query === '' && restored.list && restored.pager && !restored.empty && !restored.skeleton
+      && restored.badges.join() === 'On loan,Due soon,Overdue' && restored.targets && restored.scroll <= width
+      && restored.actions?.length === 0, { focused, restored }, 'The control did not restore the loan list and focus without an action.');
+  } catch (error) {
+    step('the loan status checks complete', false, {}, error.message);
+  }
+  return rules;
 }
 
 function readWizard() {
@@ -277,6 +403,7 @@ export async function libraryExampleChecks(session, sessionId, base, modes, { ev
   const press = async (name, code, number, text) => {
     await key(session, sessionId, name, code, number, text);
     if (name === 'Escape') {
+      // Headless Chrome can hide the page shortly after Escape.
       await delay(150);
       await session.send('Page.bringToFront', {}, sessionId);
     }
@@ -307,7 +434,7 @@ export async function libraryExampleChecks(session, sessionId, base, modes, { ev
         await open(session, sessionId, `${base}/${LIBRARY_PAGE}?view=${width}-${mode}`, problems);
         if (!await waitFor(`innerWidth === ${width} && document.querySelector("mu-pagination")?.dataset.state === "default"
           && document.querySelector("mu-steps")?.dataset.state === "default"
-          && document.querySelector(".examples-frame nav a")`)) {
+          && document.querySelector("#loan-list mu-badge") && document.querySelector(".examples-frame nav a")`)) {
           check(view, 'the library page is ready', false, 'The page did not reach the expected width or load its controls within the wait limit.');
           continue;
         }
@@ -341,6 +468,7 @@ export async function libraryExampleChecks(session, sessionId, base, modes, { ev
         check(view, 'the trail and page controls expose their roles and names',
           roles.every(({ ok }) => ok) && start.trail === 'Loans' && start.separators.join() === 'true', roles);
         steps.push(...await pageRules(session, sessionId, LIBRARY_PAGE + ' at ' + view));
+        await page('document.querySelector("#search-loans")?.focus()');
         await tab();
         const first = await read();
         await space();
@@ -405,6 +533,7 @@ export async function libraryExampleChecks(session, sessionId, base, modes, { ev
         check(view, 'Space on the last number sends one request and disables Next at the end',
           lastButton.ring && last.page === '12' && last.focus === 'page-12' && last.ring && last.nextDisabled
           && last.events.join() === '2,12' && last.targets && last.scroll <= width, last);
+        steps.push(...await loanStatusChecks(session, sessionId, width, view, { page, tab, enter, space, check, waitFor, pageRules, axErrors }));
         steps.push(...await wizardChecks(session, sessionId, width, view, { page, tab, press, enter, space, check, waitFor, pageRules }));
       }
     }

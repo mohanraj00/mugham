@@ -50,6 +50,10 @@ steps.addEventListener('mu-step-change', ({ detail: { index } }) => {
   steps.fill = fill('steps', { ...traySteps, current: index });
 });
 mount('progress', { label: 'Trays checked', maximum: 8, value: 5 }, { parent: shell });
+mount('empty-state', { title: 'No trays found', text: 'Try another shelf code.' }, { parent: shell });
+mount('skeleton', { label: 'Loading trays', lines: 3 }, { parent: shell });
+mount('badge', { text: 'Ready to sow', tone: 'success' }, { parent: shell });
+mount('avatar', { name: 'Sample Grower' }, { parent: shell, slot: 'top' });
 
 const plot = (title, shelf) => ({ title, facts: [fill('fact', { label: 'Shelf', value: shelf })] });
 mount('card-grid', { label: 'Seed trays', cards: [

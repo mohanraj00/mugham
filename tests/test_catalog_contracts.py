@@ -50,6 +50,10 @@ VALID = {
     'pagination': {'label': 'Loan pages', 'page': 2, 'page_count': 12},
     'steps': {'label': 'Member steps', 'labels': ['Details', 'Membership type', 'Review'], 'current': 1},
     'progress': {'label': 'Member progress', 'maximum': 3, 'value': 1.5},
+    'empty-state': {'title': 'No loans found', 'text': 'Try another search.'},
+    'skeleton': {'label': 'Loading loans', 'lines': 3},
+    'badge': {'text': 'On loan', 'tone': 'info'},
+    'avatar': {'name': 'Sample Reader'},
     'text': {'text': 'Weather at sea', 'variant': 'caption'},
     'button': {'label': 'Renew', 'emphasis': 'secondary', 'disabled': False},
     'field': {'name': 'shelf', 'label': 'Shelf code', 'value': 'B-14', 'hint': 'A letter and a number.'},
@@ -169,6 +173,29 @@ class CatalogContractTest(unittest.TestCase):
                 })
                 self.assertTrue(parts <= {part['name'] for part in contract['parts'] if part['guardrail']})
         self.assertEqual(catalog.fill_errors(fill('progress', {'label': 'Loading loans', 'maximum': 3}), CATALOG), [])
+
+    def test_page_states_declare_roles_keys_and_parts(self):
+        expected = {
+            'empty-state': ('group', 'title', ['Tab', 'Shift+Tab', 'Enter', 'Space'],
+                            ['default', 'empty', 'refused'], {'action', 'text', 'title'}),
+            'skeleton': ('status', 'label', [], ['default', 'loading', 'refused'], {'line', 'status'}),
+            'badge': ('none', None, [], ['default', 'refused'], {'label'}),
+            'avatar': ('img', 'name', [], ['default', 'refused'], {'initials'}),
+        }
+        for name, (role, label, keyboard, states, parts) in expected.items():
+            with self.subTest(component=name):
+                contract = CATALOG[name]
+                self.assertEqual(catalog.contract_errors(contract, name + '.json'), [])
+                self.assertFalse(contract['ai_content'])
+                self.assertEqual(contract['states'], states)
+                self.assertEqual(contract['accessibility'], {
+                    'role': role, 'keyboard': keyboard, 'forced_colors': True, 'reduced_motion': True,
+                    **({'name': {'field': label}} if label else {}),
+                })
+                self.assertEqual(set(contract['data']), set(VALID[name]))
+                self.assertTrue(parts <= {part['name'] for part in contract['parts'] if part['guardrail']})
+        lines = CATALOG['skeleton']['data']['lines']
+        self.assertEqual((lines['type'], lines['minimum'], lines['maximum']), ('integer', 1, 6))
 
     def test_panel_contracts_declare_roles_keys_and_scalar_records(self):
         expected = {

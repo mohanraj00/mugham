@@ -10,10 +10,18 @@ shell.fill = fill('app-shell', {
 document.querySelector('mu-breadcrumbs').fill = fill('breadcrumbs', {
   label: 'Breadcrumbs', items: [{ label: 'Staff home', href: '#staff' }, { label: 'Loans' }],
 });
+document.querySelector('mu-avatar').fill = fill('avatar', { name: 'Sample Reader' });
 
 const list = document.getElementById('loan-list');
 const pagination = document.querySelector('mu-pagination');
+const skeleton = document.getElementById('loan-loading');
+const empty = document.getElementById('loan-empty');
+const search = document.getElementById('loan-search');
+const query = document.getElementById('loan-query');
 const pageSize = 3;
+const loanStates = [
+  { text: 'On loan', tone: 'info' }, { text: 'Due soon', tone: 'warning' }, { text: 'Overdue', tone: 'danger' },
+];
 const loans = [
   'A guide to rain gardens', 'The life of pond plants', 'A map of coast trails', 'A field guide to moths',
   'The small orchard', 'Plants for sandy soil', 'How to mend a book', 'A walk through the dunes',
@@ -24,21 +32,59 @@ const loans = [
   'A book of shell shapes', 'The life of a dune', 'A guide to bog plants', 'The trees outside town',
   'Clouds above the hill', 'The river in spring', 'The rock garden', 'A guide to summer stars',
   'A walk beside the canal', 'Seeds from the meadow', 'The lake after dusk', 'A guide to tide pools',
-];
-const pageCount = Math.ceil(loans.length / pageSize);
+].map((title, index) => ({
+  title, shelf: 'A' + (index + 1), state: loanStates[index % loanStates.length],
+}));
+skeleton.fill = fill('skeleton', { label: 'Loading loans', lines: pageSize });
+empty.fill = fill('empty-state', { title: 'No loans found', text: 'Try another title or shelf code.' });
+let matches = loans;
+let loadTimer;
 
 function showPage(page) {
   const start = (page - 1) * pageSize;
-  list.replaceChildren(...loans.slice(start, start + pageSize).map((title, index) => {
+  list.replaceChildren(...matches.slice(start, start + pageSize).map(({ title, shelf, state }) => {
     const row = document.createElement('li');
-    row.textContent = title + ' (shelf A' + (start + index + 1) + ')';
+    const badge = document.createElement('mu-badge');
+    badge.fill = fill('badge', state);
+    row.append(title + ' (shelf ' + shelf + ') ', badge);
     return row;
   }));
-  pagination.fill = fill('pagination', { label: 'Loan pages', page, page_count: pageCount });
+  const pageCount = Math.ceil(matches.length / pageSize);
+  skeleton.hidden = true;
+  list.hidden = pageCount === 0;
+  empty.hidden = pageCount !== 0;
+  pagination.hidden = pageCount < 2;
+  if (pageCount > 0) {
+    pagination.fill = fill('pagination', { label: 'Loan pages', page, page_count: pageCount });
+  }
+}
+
+function loadLoans(term) {
+  clearTimeout(loadTimer);
+  list.hidden = true;
+  empty.hidden = true;
+  pagination.hidden = true;
+  skeleton.hidden = false;
+  // The timer gives the example a loading state without a service.
+  loadTimer = setTimeout(() => {
+    matches = loans.filter(({ title, shelf }) => title.toLowerCase().includes(term)
+      || shelf.toLowerCase().includes(term));
+    showPage(1);
+  }, 800);
 }
 
 pagination.addEventListener('mu-page-change', (event) => showPage(event.detail.page));
-showPage(1);
+search.addEventListener('submit', (event) => {
+  event.preventDefault();
+  loadLoans(query.value.trim().toLowerCase());
+});
+document.getElementById('clear-loan-search').addEventListener('click', () => {
+  query.value = '';
+  matches = loans;
+  query.focus();
+  showPage(1);
+});
+loadLoans('');
 
 const wizard = document.getElementById('member-wizard');
 const steps = wizard.querySelector('mu-steps');

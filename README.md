@@ -126,6 +126,10 @@ Each component has a contract file in [catalog/](catalog/README.md). The contrac
 | `mu-pagination` | Numbered controls that request a page of content. | [pagination.json](catalog/pagination.json) |
 | `mu-steps` | An ordered list that shows the position and state of each wizard step. | [steps.json](catalog/steps.json) |
 | `mu-progress` | A named bar with a known or unknown value. | [progress.json](catalog/progress.json) |
+| `mu-empty-state` | A heading and short text for an empty result, with a slot for a page control. | [empty-state.json](catalog/empty-state.json) |
+| `mu-skeleton` | A named loading status with lines that hold space for content. | [skeleton.json](catalog/skeleton.json) |
+| `mu-badge` | A short label with a tone. | [badge.json](catalog/badge.json) |
+| `mu-avatar` | A name shown as initials. | [avatar.json](catalog/avatar.json) |
 | `mu-editable-form` | Up to 20 kit or registered fields. A person edits the values and submits them as one action. | [editable-form.json](catalog/editable-form.json) |
 | `mu-form-card` | A long form in sections, as labels and values. A person edits one field in place and sends the changes as one action. Some fields are read-only. | [form-card.json](catalog/form-card.json) |
 | `mu-card-grid` | A labeled list of cards in columns of equal width. | [card-grid.json](catalog/card-grid.json) |

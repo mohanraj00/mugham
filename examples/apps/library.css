@@ -1,0 +1,20 @@
+#loan-search {
+  display: grid; gap: var(--mu-space-1);
+}
+.search-controls {
+  display: flex; flex-wrap: wrap; gap: var(--mu-space-2);
+}
+#loan-query {
+  inline-size: min(100%, 18rem); min-inline-size: 44px; min-block-size: 44px;
+  padding-inline: var(--mu-space-2); color: var(--mu-color-text); background: var(--mu-color-surface);
+  border: 1px solid var(--mu-color-border); border-radius: var(--mu-radius-2);
+}
+#loan-search button, #clear-loan-search { min-inline-size: 44px; min-block-size: 44px; }
+#loan-loading::part(line), #loan-list li { min-block-size: 2rem; }
+#loan-list li { overflow-wrap: anywhere; }
+#loan-list li + li { margin-block-start: var(--mu-space-2); }
+#loan-list mu-badge { margin-inline-start: var(--mu-space-2); vertical-align: middle; }
+
+@media (forced-colors: active) {
+  #loan-query { color: FieldText; background: Field; border-color: FieldText; }
+}

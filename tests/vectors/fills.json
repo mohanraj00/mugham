@@ -4,6 +4,65 @@
   "sample-color": {"format": 2, "name": "sample-color", "version": "0.1.0", "kind": "component", "description": "A synthetic example.", "ai_content": false, "field": true, "data": {}, "states": ["default"], "tokens": ["color.text"], "accessibility": {"role": "none", "keyboard": [], "forced_colors": true, "reduced_motion": true}},
   "sample-label": {"format": 2, "name": "sample-label", "version": "0.1.0", "kind": "component", "description": "A synthetic example.", "ai_content": false, "field": false, "data": {}, "states": ["default"], "tokens": ["color.text"], "accessibility": {"role": "none", "keyboard": [], "forced_colors": true, "reduced_motion": true}},
   "sample-form": {"format": 2, "name": "sample-form", "version": "0.1.0", "kind": "component", "description": "A synthetic example.", "ai_content": false, "data": {"fields": {"type": "list", "label": "Fields", "required": true, "max_items": 20, "items": {"type": "component", "label": "Field", "required": true, "field": true}}}, "states": ["default"], "tokens": ["color.text"], "accessibility": {"role": "none", "keyboard": [], "forced_colors": true, "reduced_motion": true}},
+  "empty-state": {
+   "format": 2,
+   "name": "empty-state",
+   "version": "0.1.0",
+   "kind": "component",
+   "description": "A heading and short text for an empty result, with an optional action from the page.",
+   "ai_content": false,
+   "data": {
+    "title": {"type": "text", "label": "Title", "required": true, "min_length": 1, "max_length": 120},
+    "text": {"type": "text", "label": "Text", "required": true, "min_length": 1, "max_length": 200}
+   },
+   "states": ["default", "empty", "refused"],
+   "tokens": [],
+   "accessibility": {"role": "group", "name": {"field": "title"}, "keyboard": ["Tab", "Shift+Tab", "Enter", "Space"], "forced_colors": true, "reduced_motion": true}
+  },
+  "skeleton": {
+   "format": 2,
+   "name": "skeleton",
+   "version": "0.1.0",
+   "kind": "component",
+   "description": "A named loading status with one to six lines that hold space for content.",
+   "ai_content": false,
+   "data": {
+    "label": {"type": "text", "label": "Label", "required": true, "min_length": 1, "max_length": 80},
+    "lines": {"type": "integer", "label": "Lines", "required": true, "minimum": 1, "maximum": 6}
+   },
+   "states": ["default", "loading", "refused"],
+   "tokens": [],
+   "accessibility": {"role": "status", "name": {"field": "label"}, "keyboard": [], "forced_colors": true, "reduced_motion": true}
+  },
+  "badge": {
+   "format": 2,
+   "name": "badge",
+   "version": "0.1.0",
+   "kind": "component",
+   "description": "A short label with a tone. The text gives its meaning.",
+   "ai_content": false,
+   "data": {
+    "text": {"type": "text", "label": "Text", "required": true, "min_length": 1, "max_length": 40},
+    "tone": {"type": "enum", "label": "Tone", "required": true, "values": ["neutral", "info", "success", "warning", "danger"]}
+   },
+   "states": ["default", "refused"],
+   "tokens": [],
+   "accessibility": {"role": "none", "keyboard": [], "forced_colors": true, "reduced_motion": true}
+  },
+  "avatar": {
+   "format": 2,
+   "name": "avatar",
+   "version": "0.1.0",
+   "kind": "component",
+   "description": "A name shown as one or two initials, with a question mark for a name with no letter.",
+   "ai_content": false,
+   "data": {
+    "name": {"type": "text", "label": "Name", "required": true, "min_length": 1, "max_length": 80}
+   },
+   "states": ["default", "refused"],
+   "tokens": [],
+   "accessibility": {"role": "img", "name": {"field": "name"}, "keyboard": [], "forced_colors": true, "reduced_motion": true}
+  },
   "breadcrumbs": {
    "format": 2,
    "name": "breadcrumbs",
@@ -265,6 +324,71 @@
   }
  },
  "cases": [
+  {
+   "name": "empty-state accepts scalar text",
+   "fill": {"component": "empty-state", "version": "0.1.0", "data": {"title": "No loans <found>", "text": "Try another search."}},
+   "errors": []
+  },
+  {
+   "name": "empty-state refuses blank text and title",
+   "fill": {"component": "empty-state", "version": "0.1.0", "data": {"title": "\u2003", "text": "\ufeff"}},
+   "errors": ["data.title: give text", "data.text: give text"]
+  },
+  {
+   "name": "empty-state refuses a control in a fill",
+   "fill": {"component": "empty-state", "version": "0.1.0", "data": {"title": "No loans <found>", "text": "Try another search.", "action": "Search"}},
+   "errors": ["data.action: the contract does not declare this field"]
+  },
+  {
+   "name": "skeleton accepts six lines",
+   "fill": {"component": "skeleton", "version": "0.1.0", "data": {"label": "Loading loans", "lines": 6}},
+   "errors": []
+  },
+  {
+   "name": "skeleton refuses a blank name",
+   "fill": {"component": "skeleton", "version": "0.1.0", "data": {"label": "\ufeff", "lines": 6}},
+   "errors": ["data.label: give text"]
+  },
+  {
+   "name": "skeleton refuses a fractional line count",
+   "fill": {"component": "skeleton", "version": "0.1.0", "data": {"label": "Loading loans", "lines": 2.5}},
+   "errors": ["data.lines: must be an integer"]
+  },
+  {
+   "name": "skeleton refuses more than six lines",
+   "fill": {"component": "skeleton", "version": "0.1.0", "data": {"label": "Loading loans", "lines": 7}},
+   "errors": ["data.lines: more than the maximum 6"]
+  },
+  {
+   "name": "badge accepts text and tone",
+   "fill": {"component": "badge", "version": "0.1.0", "data": {"text": "On loan", "tone": "info"}},
+   "errors": []
+  },
+  {
+   "name": "badge refuses a blank label",
+   "fill": {"component": "badge", "version": "0.1.0", "data": {"text": "\u00a0", "tone": "info"}},
+   "errors": ["data.text: give text"]
+  },
+  {
+   "name": "badge refuses an undeclared tone",
+   "fill": {"component": "badge", "version": "0.1.0", "data": {"text": "On loan", "tone": "urgent"}},
+   "errors": ["data.tone: must be one of neutral, info, success, warning, danger"]
+  },
+  {
+   "name": "avatar accepts a name with no letter",
+   "fill": {"component": "avatar", "version": "0.1.0", "data": {"name": "123 ..."}},
+   "errors": []
+  },
+  {
+   "name": "avatar refuses a blank name",
+   "fill": {"component": "avatar", "version": "0.1.0", "data": {"name": "\u2003"}},
+   "errors": ["data.name: give text"]
+  },
+  {
+   "name": "avatar refuses a URL field",
+   "fill": {"component": "avatar", "version": "0.1.0", "data": {"name": "Sample Reader", "url": "https://example.org/reader"}},
+   "errors": ["data.url: the contract does not declare this field"]
+  },
   {
    "name": "breadcrumbs accept relative paths and HTTPS addresses",
    "fill": {"component": "breadcrumbs", "version": "0.1.0", "data": {"label": "Path", "items": [
