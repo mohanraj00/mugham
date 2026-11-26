@@ -29,9 +29,16 @@ PAIRS = [('color.text', 'color.surface', 4.5), ('color.text-muted', 'color.surfa
          ('color.on-accent', 'color.accent', 4.5), ('color.accent', 'color.surface', 4.5),
          ('color.danger', 'color.surface', 4.5), ('color.success', 'color.surface', 4.5),
          ('color.border', 'color.surface', 3.0),
-         ('color.focus', 'color.surface', 3.0),
-         ('color.text', 'color.surface-subtle', 4.5), ('color.text-muted', 'color.surface-subtle', 4.5),
-         ('color.border', 'color.surface-subtle', 3.0), ('color.focus', 'color.surface-subtle', 3.0)]
+         ('color.focus', 'color.surface', 3.0)]
+PAIRS += [('color.on-' + state, 'color.' + state, 4.5)
+          for state in ('success', 'warning', 'info', 'hover', 'selected')]
+PAIRS += [('color.' + state, 'color.' + ground, 4.5)
+          for state in ('warning', 'info') for ground in ('surface', 'page')]
+PAIRS += [('color.' + front, 'color.surface-subtle', 4.5) for front in ('text', 'text-muted')]
+PAIRS += [('color.' + front, 'color.surface-subtle', 3.0) for front in ('border', 'focus')]
+PAIRS += [('color.focus', 'color.' + state, 3.0) for state in ('hover', 'selected')]
+PAIRS += [('color.on-' + state, 'color.' + ground, 3.0)
+          for state in ('hover', 'selected') for ground in ('surface', 'page')]
 # The default page style (src/styles/page.css) puts text, links and controls on the page ground.
 PAGE_PAIRS = [('color.text', 'color.page', 4.5), ('color.text-muted', 'color.page', 4.5),
               ('color.accent', 'color.page', 4.5), ('color.danger', 'color.page', 4.5), ('color.success', 'color.page', 4.5),
@@ -50,11 +57,13 @@ class TokensTest(unittest.TestCase):
             self.assertEqual(sorted(value), ['dark', 'light'], name)
 
     def test_contrast(self):
-        for theme in ('light', 'dark'):
-            values = {name: value[theme] for name, value in self.data['tokens'].items()}
-            for density, palette in (('default', values), ('compact', values | self.data['compact'])):
+        for mode in ('light', 'dark'):
+            values = {name: value[mode] for name, value in self.data['tokens'].items()}
+            high_contrast = {name: value[mode] for name, value in self.data['high-contrast'].items()}
+            for preset, palette in (('neutral', values), ('compact', values | self.data['compact']),
+                                    ('high-contrast', values | high_contrast)):
                 for front, back, minimum in PAIRS + PAGE_PAIRS:
-                    with self.subTest(theme=theme, density=density, front=front, back=back):
+                    with self.subTest(mode=mode, preset=preset, front=front, back=back):
                         self.assertGreaterEqual(tokens.contrast(palette[front], palette[back]), minimum)
 
     def test_compact_changes_only_spacing_body_type_and_column_sizes(self):
@@ -64,9 +73,17 @@ class TokensTest(unittest.TestCase):
             weight, _, family = self.data['tokens'][name]['light'].split(' ', 2)
             expected[name] = f'{weight} {size} {family}'
         self.assertEqual(self.data['compact'], expected)
-        lines = ['[data-mu-density="compact"] {']
+        lines = ['[data-mu-density="compact"], :root[data-mu-theme="compact"] {']
         lines.extend(f'  {tokens.css_name(name)}: {value};' for name, value in sorted(expected.items()))
         self.assertIn('\n'.join(lines + ['}']), tokens.css(self.data))
+
+    def test_high_contrast_has_stronger_text_and_control_edges(self):
+        for mode in ('light', 'dark'):
+            values = {name: value[mode] for name, value in self.data['high-contrast'].items()}
+            for ground in ('surface', 'page'):
+                for token, minimum in (('text', 7), ('text-muted', 7), ('border', 4.5), ('focus', 4.5)):
+                    with self.subTest(mode=mode, token=token, ground=ground):
+                        self.assertGreaterEqual(tokens.contrast(values['color.' + token], values['color.' + ground]), minimum)
 
     def test_invalid_compact_values_are_refused(self):
         for compact in ([], {'space.7': '1rem'}, {'color.focus': '#ffffff'}, {'space.1': '0; color: red'}):
@@ -111,6 +128,24 @@ class TokensTest(unittest.TestCase):
                 data = {'format': 1, 'tokens': {'color.text': {'light': value, 'dark': '#000000'}}}
                 self.assertTrue(tokens.errors(data))
 
+    def test_only_easing_tokens_allow_cubic_bezier(self):
+        curve = 'cubic-bezier(0.2, 0, 0.2, 1)'
+        for name, value, valid in (('easing.standard', curve, True), ('easing.standard', 'url(x)', False),
+                                   ('easing.standard', 'cubic-bezier(1.1, 0, 0, 1)', False),
+                                   ('easing.standard', curve + '; color: red', False),
+                                   ('radius.3', curve, False)):
+            with self.subTest(name=name, value=value):
+                data = {'format': 1, 'tokens': {name: {'light': value, 'dark': value}}}
+                self.assertEqual(tokens.errors(data) == [], valid)
+
+    def test_invalid_high_contrast_values_are_refused(self):
+        for overrides in ([], {'color.unknown': {'light': '#000000', 'dark': '#ffffff'}},
+                          {'motion.fast': {'light': '20ms', 'dark': '20ms'}},
+                          {'color.focus': {'light': '#000000'}},
+                          {'color.focus': {'light': '#000000', 'dark': 'red; color: red'}}):
+            with self.subTest(overrides=overrides):
+                self.assertTrue(tokens.errors(self.data | {'high-contrast': overrides}))
+
     def test_a_value_has_120_characters_at_most(self):
         for size, refused in ((120, False), (121, True)):
             with self.subTest(size=size):
@@ -133,9 +168,12 @@ class TokensTest(unittest.TestCase):
         css = tokens.css(self.data)
         self.assertIn('--mu-color-text: #141a23;', css)
         self.assertIn('@media (prefers-color-scheme: dark)', css)
-        self.assertIn(':root[data-mu-theme="dark"]', css)
+        self.assertIn('[data-mu-theme="dark"]:not([data-mu-mode])', css)
+        self.assertIn('[data-mu-mode="dark"]', css)
+        self.assertIn(':root[data-mu-theme="high-contrast"]', css)
         self.assertIn('@media (prefers-reduced-motion: reduce)', css)
         self.assertIn('--mu-motion-fast: 0ms;', css)
+        self.assertNotIn('--mu-easing-standard: 0ms;', css)
 
     def test_each_contract_token_exists(self):
         contracts, errors = catalog.load_catalog(catalog.ROOT / 'catalog')

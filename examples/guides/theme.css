@@ -13,7 +13,7 @@
   --mu-radius-2: 0.25rem;
 }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-mu-theme="light"]) .theme-forest {
+  :root:where(:not([data-mu-mode="light"], [data-mu-theme="light"]:not([data-mu-mode]))) .theme-forest {
     --mu-color-accent: #8ccf9d;
     --mu-color-border: #6a8070;
     --mu-color-danger: #f4aba4;
@@ -25,7 +25,7 @@
     --mu-color-text-muted: #9db3a3;
   }
 }
-:root[data-mu-theme="dark"] .theme-forest {
+:root:where([data-mu-mode="dark"], [data-mu-theme="dark"]:not([data-mu-mode])) .theme-forest {
   --mu-color-accent: #8ccf9d;
   --mu-color-border: #6a8070;
   --mu-color-danger: #f4aba4;

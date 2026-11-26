@@ -98,8 +98,19 @@ jobs:
             "profile chrome-for-testing $RUNNER_TEMP/chrome-linux64/chrome flags=(unconfined) {" \
             '  userns,' '}' | sudo tee /etc/apparmor.d/chrome-for-testing > /dev/null
           sudo apparmor_parser -r /etc/apparmor.d/chrome-for-testing
+      # The check writes a screenshot of the gallery for each preset and mode. A person compares them. They do not block a merge.
       - name: Run the accessibility and rendering check in headless Chrome
-        run: CHROME="$RUNNER_TEMP/chrome-linux64/chrome" node tools/browser_check.mjs
+        run: |
+          mkdir -p "$RUNNER_TEMP/gallery"
+          MUGHAM_GALLERY_SHOTS="$RUNNER_TEMP/gallery" CHROME="$RUNNER_TEMP/chrome-linux64/chrome" node tools/browser_check.mjs
+      - name: Keep the gallery screenshots
+        if: ${{ always() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: gallery-screenshots
+          path: ${{ runner.temp }}/gallery
+          if-no-files-found: ignore
+          retention-days: 14
   actionlint:
     runs-on: ubuntu-24.04
     timeout-minutes: 5

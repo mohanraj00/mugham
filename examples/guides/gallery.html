@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; object-src 'none'; base-uri 'none'">
+  <title>Mugham component gallery</title>
+  <link rel="stylesheet" href="../../src/tokens/tokens.css">
+  <link rel="stylesheet" href="../../src/styles/page.css">
+  <link rel="stylesheet" href="gallery.css">
+  <script type="module" src="gallery.js"></script>
+  <script type="module" src="../frame.js"></script>
+</head>
+<body>
+  <main>
+    <section class="appearance" aria-labelledby="gallery-title">
+      <h1 id="gallery-title">Component gallery</h1>
+      <p>Change the preset and color mode to compare the same components.</p>
+      <div class="appearance-controls">
+        <label for="preset">Preset</label>
+        <select id="preset">
+          <option value="neutral">Neutral</option>
+          <option value="high-contrast">High contrast</option>
+          <option value="compact">Compact</option>
+        </select>
+        <label for="mode">Color mode</label>
+        <select id="mode">
+          <option value="">System</option>
+          <option value="light">Light</option>
+          <option value="dark">Dark</option>
+        </select>
+      </div>
+    </section>
+    <section id="cards" class="samples" aria-labelledby="cards-title">
+      <h2 id="cards-title">Cards and actions</h2>
+    </section>
+    <section id="forms" class="samples" aria-labelledby="forms-title">
+      <h2 id="forms-title">Forms and fields</h2>
+    </section>
+    <section id="records" class="samples" aria-labelledby="records-title">
+      <h2 id="records-title">Tables and grids</h2>
+    </section>
+    <section id="evidence" class="samples" aria-labelledby="evidence-title">
+      <h2 id="evidence-title">Evidence and media</h2>
+    </section>
+    <section id="thread" class="samples" aria-labelledby="thread-title">
+      <h2 id="thread-title">Thread and rich text</h2>
+    </section>
+  </main>
+</body>
+</html>

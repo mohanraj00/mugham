@@ -48,6 +48,12 @@ for (const [state, label, border, text] of STATES) {
     check(`${state}: forced colors uses CanvasText and Canvas`, style?.color === resolved('CanvasText')
       && style?.borderTopColor === resolved('CanvasText') && style?.backgroundColor === resolved('Canvas'), style && `${style.color} ${style.borderTopColor} ${style.backgroundColor}`);
   }
+  const color = { pending: 'warning', passed: 'success' }[state];
+  if (color && mode !== 'forced-colors') {
+    const value = (name) => getComputedStyle(node).getPropertyValue('--mu-color-' + name).trim();
+    check(`${state}: the label uses its state colors`, style?.color === resolved(value('on-' + color))
+      && style?.backgroundColor === resolved(value(color)) && style?.borderTopColor === resolved(value(color)));
+  }
   if (mode === 'reduced-motion') {
     check(`${state}: reduced motion has no animation or transition`, style?.animationName === 'none' && style?.transitionDuration === '0s');
   }
