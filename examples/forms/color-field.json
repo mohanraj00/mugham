@@ -1,0 +1,15 @@
+{
+  "name": "color-field",
+  "description": "A field that selects one color for a sample label.",
+  "ai_content": false,
+  "field": true,
+  "data": {
+    "name": {"type": "text", "required": true, "min_length": 1, "size": "short"},
+    "label": {"type": "text", "required": true, "min_length": 1, "size": "line"},
+    "value": {"type": "enum", "values": ["rain_blue", "reed_green", "clay_red"], "editable": true},
+    "disabled": {"type": "boolean"}
+  },
+  "states": ["+disabled", "+error"],
+  "tokens": ["color.surface", "color.text", "color.border", "color.focus", "color.danger", "space.1", "space.2", "radius.1", "type.body", "type.caption"],
+  "accessibility": {"role": "combobox", "name": {"field": "label"}, "keyboard": ["Tab", "Shift+Tab", "ArrowUp", "ArrowDown", "Enter", "Space"]}
+}

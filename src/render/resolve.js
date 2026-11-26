@@ -64,6 +64,7 @@ export function resolveContract(contract, { defaults = DEFAULTS, checked = true 
     kind: stated(contract, 'kind', base.kind),
     description: contract.description,
     ai_content: aiContent,
+    ...(own(contract, 'field') ? { field: contract.field } : {}),
     slots: { ...(aiContent ? base.slots : {}), ...stated(contract, 'slots', {}) },
     ...(own(contract, 'parts') ? { parts: contract.parts } : {}),
     data: Object.fromEntries(Object.entries(contract.data).map(([key, field]) =>

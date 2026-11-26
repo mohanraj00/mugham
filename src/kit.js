@@ -106,9 +106,10 @@ function fieldSchema(field, reference) {
     case 'list': return { title, type: 'array', maxItems: field.max_items, items: fieldSchema(field.items, reference),
       ...(field.min_items === undefined ? {} : { minItems: field.min_items }),
       ...(field.unique_items === undefined ? {} : { uniqueItems: field.unique_items }) };
-    case 'component': return field.names
-      ? { title, oneOf: field.names.map(reference) }
-      : { title, ...reference(field.name) };
+    case 'component': {
+      const names = field.field ? Object.keys(CONTRACTS).filter((name) => CONTRACTS[name].field === true) : field.names;
+      return names ? { title, oneOf: names.map(reference) } : { title, ...reference(field.name) };
+    }
     default: throw new TypeError(`Unknown field type ${String(type)}`);
   }
 }
@@ -136,7 +137,11 @@ function exportSchema(name, outer) {
   const contract = contractOf(name);
   const definitions = new Map();
   const reference = (target) => {
-    if (!definitions.has(target)) definitions.set(target, fillSchema(contractOf(target), reference, false));
+    if (!definitions.has(target)) {
+      // A component that accepts fields can refer to a registered field that contains it.
+      definitions.set(target, null);
+      definitions.set(target, fillSchema(contractOf(target), reference, false));
+    }
     return { $ref: `#/$defs/${target}` };
   };
   const schema = outer ? fillSchema(contract, reference, true) : dataSchema(contract, reference);

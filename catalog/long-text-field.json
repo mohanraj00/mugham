@@ -3,6 +3,7 @@
   "kind": "primitive",
   "description": "A labeled input for long text in more than one line. A person edits the text.",
   "ai_content": false,
+  "field": true,
   "parts": [
     {"name": "copy", "description": "Button that copies text.", "guardrail": true},
     {"name": "copy-status", "description": "Result of the copy operation.", "guardrail": true},

@@ -72,3 +72,17 @@ test('an element that is not a mugham element is refused', () => {
     { name: 'TypeError', message: 'register: the element of seed-tray must be a class that extends MuElement' });
   assert.equal(CONTRACTS['seed-tray'], undefined);
 });
+
+// Each example registers its application contract. A contract that is not valid stops the page before it shows a component.
+test('each application contract of the examples is valid', async () => {
+  const { resolveContract } = await import('../src/render/resolve.js');
+  const catalog = { ...CONTRACTS };
+  for (const file of ['forms/color-field.json', 'forms/contact-card.json', 'cards/seed-tray.json', 'guides/bird-count.json',
+    'apps/inspection/check-item.json', 'apps/inspection/inspection-checklist.json']) {
+    const stated = JSON.parse(readFileSync(new URL(`../examples/${file}`, import.meta.url), 'utf8'));
+    const { contract, errors } = resolveContract(stated);
+    assert.deepEqual(errors.length ? errors : contractErrors(contract, catalog), [], file);
+    // A later contract can name an earlier one, as the page registers them in this order.
+    catalog[contract.name] = contract;
+  }
+});

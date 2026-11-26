@@ -3,6 +3,7 @@
   "kind": "primitive",
   "description": "A labeled field for more than one choice. Up to seven choices show as checkboxes. Longer lists use removable tags and a search box. Give unique values in choice order within the optional count limits. An omitted value gives an empty list.",
   "ai_content": false,
+  "field": true,
   "parts": [
     {"name": "checkbox", "description": "Checkbox for one choice.", "guardrail": true},
     {"name": "checkbox-label", "description": "Label and target of one checkbox.", "guardrail": true},

@@ -3,6 +3,7 @@
   "kind": "primitive",
   "description": "One or two named sliders each have a named number box. A native label names the first slider. A pair has a named group. Values use steps from the minimum and stay in range and in order. An invalid edit keeps the last value and shows the reason, with the limits for a number outside the range.",
   "ai_content": false,
+  "field": true,
   "parts": [
     {"name": "controls", "description": "Group that keeps a slider next to its number box.", "guardrail": true},
     {"name": "copy", "description": "Button that copies text.", "guardrail": true},

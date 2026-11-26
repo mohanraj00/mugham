@@ -3,6 +3,7 @@
   "kind": "primitive",
   "description": "A labeled number input. A person edits the number. The input refuses a value that is not a number or that is outside the range.",
   "ai_content": false,
+  "field": true,
   "parts": [
     {"name": "copy", "description": "Button that copies text.", "guardrail": true},
     {"name": "copy-status", "description": "Result of the copy operation.", "guardrail": true},

@@ -3,6 +3,7 @@
   "kind": "primitive",
   "description": "A labeled combobox for one choice. Each choice is unique, and a given value must be one of the choices. A list of more than seven choices has a search box. The search matches text in any part of a choice and ignores case. The field announces when there is no match.",
   "ai_content": false,
+  "field": true,
   "parts": [
     {"name": "control", "description": "Button that opens the choices.", "guardrail": true},
     {"name": "copy", "description": "Button that copies text.", "guardrail": true},

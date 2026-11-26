@@ -3,6 +3,7 @@
   "kind": "primitive",
   "description": "A labeled group of choices. A person selects one choice. The value must be one of the choices.",
   "ai_content": false,
+  "field": true,
   "parts": [
     {"name": "choices", "description": "Group of radio choices.", "guardrail": true},
     {"name": "copy", "description": "Button that copies text.", "guardrail": true},

@@ -264,7 +264,7 @@ function sample(field) {
     case 'enum': return field.values[0];
     case 'list': return [sample(field.items)];
     case 'component': {
-      const name = field.name ?? field.names[0];
+      const name = field.field ? 'field' : field.name ?? field.names[0];
       return fill(name, sampleData(CATALOG[name]));
     }
     default: assert.fail(`Unknown field type ${field.type}`);

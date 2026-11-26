@@ -3,6 +3,7 @@
   "kind": "primitive",
   "description": "A labeled text input. A person edits the value. If the field is typed, the person also gives the type of each edit.",
   "ai_content": false,
+  "field": true,
   "parts": [
     {"name": "copy", "description": "Button that copies text.", "guardrail": true},
     {"name": "copy-status", "description": "Result of the copy operation.", "guardrail": true},

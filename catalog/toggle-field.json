@@ -3,6 +3,7 @@
   "kind": "primitive",
   "description": "A labeled yes or no field. The switch display adds role=\"switch\" to the same native checkbox and shows On or Off. The value is false if the fill does not give it.",
   "ai_content": false,
+  "field": true,
   "parts": [
     {"name": "copy", "description": "Button that copies text.", "guardrail": true},
     {"name": "copy-status", "description": "Result of the copy operation.", "guardrail": true},

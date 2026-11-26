@@ -12,6 +12,7 @@
     "kind": {"enum": ["primitive", "component"]},
     "description": {"type": "string", "minLength": 1, "maxLength": 300},
     "ai_content": {"type": "boolean"},
+    "field": {"type": "boolean"},
     "slots": {
       "type": "object",
       "minProperties": 1,
@@ -94,7 +95,8 @@
         {"$ref": "#/$defs/enum_field"},
         {"$ref": "#/$defs/list_field"},
         {"$ref": "#/$defs/component_field"},
-        {"$ref": "#/$defs/components_field"}
+        {"$ref": "#/$defs/components_field"},
+        {"$ref": "#/$defs/input_component"}
       ]
     },
     "scalar_field": {
@@ -193,9 +195,21 @@
           "oneOf": [
             {"$ref": "#/$defs/scalar_field"},
             {"$ref": "#/$defs/component_field"},
-            {"$ref": "#/$defs/components_field"}
+            {"$ref": "#/$defs/components_field"},
+            {"$ref": "#/$defs/input_component"}
           ]
         }
+      }
+    },
+    "input_component": {
+      "type": "object",
+      "required": ["type", "label", "required", "field"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {"const": "component"},
+        "label": {"$ref": "#/$defs/label"},
+        "required": {"type": "boolean"},
+        "field": {"const": true}
       }
     },
     "component_field": {

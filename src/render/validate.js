@@ -149,7 +149,7 @@ function fieldsOf(contract) {
 
 // The component names that a component field accepts: its name, or each item of its names.
 const targets = (field) => (own(field, 'names') ? field.names : [field.name]);
-const references = (contract) => fieldsOf(contract).filter(([, field]) => field.type === 'component')
+const references = (contract) => fieldsOf(contract).filter(([, field]) => field.type === 'component' && !field.field)
   .flatMap(([path, field]) => targets(field).map((target) => [path, target]));
 
 function reaches(catalog, start, goal) {
@@ -304,7 +304,14 @@ function valueErrors(value, field, path, catalog, depth) {
       return errors;
     }
     case 'component':
-      if (isObject(value) && !targets(field).includes(value.component)) return [`${path}.component: must be ${targets(field).join(' or ')}`];
+      if (isObject(value)) {
+        const name = value.component;
+        if (field.field) {
+          if (typeof name === 'string' && own(catalog, name) && catalog[name].field !== true) {
+            return [`${path}.component: must be a field`];
+          }
+        } else if (!targets(field).includes(name)) return [`${path}.component: must be ${targets(field).join(' or ')}`];
+      }
       return fillErrors(value, catalog, path, depth + 1);
     default:
       throw new Error('unknown field type ' + field.type);

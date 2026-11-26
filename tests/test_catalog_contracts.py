@@ -147,11 +147,12 @@ class CatalogContractTest(unittest.TestCase):
     def test_a_form_accepts_each_input_type_and_no_other_component(self):
         inputs = ['field', 'long-text-field', 'number-field', 'date-field', 'choice-field', 'toggle-field',
                   'range-field', 'select-field', 'multi-choice-field', 'date-range-field', 'time-field', 'date-time-field']
+        self.assertEqual(set(inputs), {name for name, contract in CATALOG.items() if contract.get('field') is True})
         form = {'title': 'Loan details', 'submit_label': 'Save', 'fields': [fill(name, VALID[name]) for name in inputs]}
         self.assertEqual(catalog.fill_errors(outer('editable-form', form), CATALOG), [])
         other = {**form, 'fields': [fill('button', VALID['button'])]}
         self.assertEqual(catalog.fill_errors(outer('editable-form', other), CATALOG),
-                         ['data.fields[0].component: must be ' + ' or '.join(inputs)])
+                         ['data.fields[0].component: must be a field'])
 
     def test_the_date_and_time_contracts_refuse_invalid_values_in_a_form(self):
         cases = {
