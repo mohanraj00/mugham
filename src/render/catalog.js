@@ -28,6 +28,9 @@ import grid from '../../catalog/grid.json' with { type: 'json' };
 import longTextField from '../../catalog/long-text-field.json' with { type: 'json' };
 import numberField from '../../catalog/number-field.json' with { type: 'json' };
 import image from '../../catalog/image.json' with { type: 'json' };
+import menu from '../../catalog/menu.json' with { type: 'json' };
+import tooltip from '../../catalog/tooltip.json' with { type: 'json' };
+import toast from '../../catalog/toast.json' with { type: 'json' };
 import sourceStatus from '../../catalog/source-status.json' with { type: 'json' };
 import stack from '../../catalog/stack.json' with { type: 'json' };
 import status from '../../catalog/status.json' with { type: 'json' };
@@ -62,6 +65,7 @@ const FILES = {
   'action-button': actionButton, 'action-queue': actionQueue, 'queued-action': queuedAction, button, card, 'card-grid': cardGrid, 'choice-field': choiceField, citation, 'date-field': dateField,
   diff, 'diff-change': diffChange, 'diff-part': diffPart, dialog, drawer, 'editable-form': editableForm, excerpt, fact, field,
   'form-card': formCard, 'form-line': formLine, 'form-section': formSection, grid, image,
+  menu, tooltip, toast,
   'long-text-field': longTextField, 'number-field': numberField, 'source-status': sourceStatus, stack, status, text, table, 'table-row': tableRow,
   'toggle-field': toggleField,
   'range-field': rangeField,

@@ -263,6 +263,7 @@ function sample(field) {
     case 'date': return '2026-12-01';
     case 'enum': return field.values[0];
     case 'list': return [sample(field.items)];
+    case 'record': return Object.fromEntries(Object.entries(field.fields).map(([key, rule]) => [key, sample(rule)]));
     case 'component': {
       const name = field.field ? 'field' : field.name ?? field.names[0];
       return fill(name, sampleData(CATALOG[name]));

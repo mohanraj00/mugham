@@ -45,7 +45,7 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "role": {"enum": ["article", "button", "checkbox", "combobox", "dialog", "form", "group", "list", "region", "slider", "status", "switch", "textbox", "none"]},
+        "role": {"enum": ["article", "button", "checkbox", "combobox", "dialog", "form", "group", "list", "menu", "region", "slider", "status", "switch", "textbox", "tooltip", "none"]},
         "name": {
           "oneOf": [
             {
@@ -143,6 +143,7 @@
         "label": {"$ref": "#/$defs/label"},
         "required": {"type": "boolean"},
         "editable": {"type": "boolean"},
+        "format": {"const": "name"},
         "min_length": {"type": "integer", "minimum": 0, "maximum": 10000},
         "max_length": {"type": "integer", "minimum": 1, "maximum": 10000},
         "size": {"$ref": "#/$defs/size"}
@@ -221,10 +222,28 @@
         "items": {
           "oneOf": [
             {"$ref": "#/$defs/scalar_field"},
+            {"$ref": "#/$defs/record_item"},
             {"$ref": "#/$defs/component_field"},
             {"$ref": "#/$defs/components_field"},
             {"$ref": "#/$defs/input_component"}
           ]
+        }
+      }
+    },
+    "record_item": {
+      "type": "object",
+      "required": ["type", "fields"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {"const": "record"},
+        "label": {"$ref": "#/$defs/label"},
+        "required": {"type": "boolean"},
+        "fields": {
+          "type": "object",
+          "minProperties": 1,
+          "maxProperties": 40,
+          "propertyNames": {"$ref": "#/$defs/field_name"},
+          "additionalProperties": {"$ref": "#/$defs/scalar_field"}
         }
       }
     },

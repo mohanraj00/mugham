@@ -49,6 +49,17 @@ for (const [name, title] of [['dialog', 'Tray note'], ['drawer', 'Tray details']
   mount('text', { text: 'Tray A3 is on the east shelf.' }, { parent: modal });
   trigger.addEventListener('mu-press', () => modal.open());
 }
+const menu = mount('menu', { label: 'Tray options', items: [{ label: 'Show shelf', name: 'show_shelf' }] }, { parent: cards });
+menu.addEventListener('mu-menu-select', () => {
+  note.fill = fill('text', { text: 'Tray A3 is on the east shelf.' });
+});
+const tooltip = mount('tooltip', { text: 'Show a reminder about the tray.' }, { parent: cards });
+const showToast = document.createElement('button');
+showToast.type = 'button';
+showToast.textContent = 'Show tray reminder';
+tooltip.append(showToast);
+const toast = mount('toast', { message: 'Keep tray A3 dry.' }, { parent: cards });
+showToast.addEventListener('click', () => toast.show());
 mount('action-queue', { label: 'Action queue', actions: [
   fill('queued-action', { key: 'tray-3', label: 'Reserve a tray', state: 'sent' }),
 ] }, { parent: cards });

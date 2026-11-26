@@ -1,4 +1,5 @@
 import FILL_SCHEMA from '../catalog/schema/fill.schema.json' with { type: 'json' };
+import CONTRACT_SCHEMA from '../catalog/schema/contract.schema.json' with { type: 'json' };
 import { deliverReceipt } from './actions/action.js';
 import { CONTRACTS, registeredTag } from './render/registry.js';
 import { actorErrors, fillErrors } from './render/validate.js';
@@ -94,8 +95,12 @@ function objectSchema(properties, required = Object.keys(properties)) {
 function fieldSchema(field, reference) {
   const { type, label: title, min_length, max_length, minimum, maximum } = field;
   switch (type) {
-    case 'text': return { title, type: 'string', maxLength: max_length,
-      ...(min_length === undefined ? {} : { minLength: min_length }) };
+    case 'text': {
+      const name = CONTRACT_SCHEMA.$defs.field_name;
+      return { title, type: 'string', maxLength: field.format === 'name' ? Math.min(max_length, name.maxLength) : max_length,
+        ...(min_length === undefined ? {} : { minLength: min_length }),
+        ...(field.format === 'name' ? { pattern: name.pattern } : {}) };
+    }
     case 'date': return { title, type: 'string', format: 'date', pattern: '^(?!0000)[0-9]{4}-[0-9]{2}-[0-9]{2}$' };
     case 'enum': return { title, type: 'string', enum: [...field.values] };
     case 'number':
@@ -106,6 +111,7 @@ function fieldSchema(field, reference) {
     case 'list': return { title, type: 'array', maxItems: field.max_items, items: fieldSchema(field.items, reference),
       ...(field.min_items === undefined ? {} : { minItems: field.min_items }),
       ...(field.unique_items === undefined ? {} : { uniqueItems: field.unique_items }) };
+    case 'record': return { title, ...dataSchema(field.fields, reference) };
     case 'component': {
       const names = field.field ? Object.keys(CONTRACTS).filter((name) => CONTRACTS[name].field === true) : field.names;
       return names ? { title, oneOf: names.map(reference) } : { title, ...reference(field.name) };
@@ -114,14 +120,14 @@ function fieldSchema(field, reference) {
   }
 }
 
-function dataSchema(contract, reference) {
-  const fields = Object.entries(contract.data);
+function dataSchema(data, reference) {
+  const fields = Object.entries(data);
   return objectSchema(Object.fromEntries(fields.map(([key, field]) => [key, fieldSchema(field, reference)])),
     fields.filter(([, field]) => field.required).map(([key]) => key));
 }
 
 function fillSchema(contract, reference, outer) {
-  const properties = { component: { const: contract.name }, version: { const: contract.version }, data: dataSchema(contract, reference) };
+  const properties = { component: { const: contract.name }, version: { const: contract.version }, data: dataSchema(contract.data, reference) };
   const required = Object.keys(properties);
   if (outer) {
     const slots = Object.entries(contract.slots ?? {});
@@ -144,7 +150,7 @@ function exportSchema(name, outer) {
     }
     return { $ref: `#/$defs/${target}` };
   };
-  const schema = outer ? fillSchema(contract, reference, true) : dataSchema(contract, reference);
+  const schema = outer ? fillSchema(contract, reference, true) : dataSchema(contract.data, reference);
   return { $schema: FILL_SCHEMA.$schema, description: contract.description, ...schema,
     ...(definitions.size ? { $defs: Object.fromEntries(definitions) } : {}) };
 }

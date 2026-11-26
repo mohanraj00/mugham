@@ -224,6 +224,9 @@ def resolved_field(key, field, path, defaults, errors, tier='field'):
                 full['max_length'] = defaults['sizes'][value]
         elif name == 'items':
             full['items'] = resolved_field(key, value, path + '.items', defaults, errors, 'item')
+        elif name == 'fields':
+            full['fields'] = {key: resolved_field(key, field, path + '.fields.' + key, defaults, errors)
+                              for key, field in value.items()}
         else:
             full[name] = value
     return full
@@ -278,7 +281,11 @@ def fields_of(contract):
     for name, field in contract.get('data', {}).items():
         yield 'data.' + name, field
         if field['type'] == 'list':
-            yield 'data.%s.items' % name, field['items']
+            path = 'data.%s.items' % name
+            item = field['items']
+            yield path, item
+            for key, nested in item.get('fields', {}).items():
+                yield path + '.fields.' + key, nested
 
 
 def targets(field):
@@ -374,6 +381,8 @@ def value_errors(value, field, path, catalog, depth):
             return ['%s: more than %d characters' % (path, field['max_length'])]
         if len(value) < field.get('min_length', 0):
             return ['%s: fewer than %d characters' % (path, field['min_length'])]
+        if field.get('format') == 'name':
+            return schema_errors(value, CONTRACT_SCHEMA['$defs']['field_name'], path=path)
         return []
     if kind in ('number', 'integer'):
         if not is_type(value, kind):
@@ -409,6 +418,9 @@ def value_errors(value, field, path, catalog, depth):
         if not errors and field.get('unique_items') and len({canonical(item) for item in value}) != len(value):
             errors.append(path + ': the items are not unique')
         return errors
+    if kind == 'record':
+        return data_errors(value, field['fields'], path + '.', catalog, depth) if isinstance(value, dict) else [
+            path + ': must be an object']
     if kind == 'component':
         if isinstance(value, dict):
             name = value.get('component')
@@ -420,6 +432,19 @@ def value_errors(value, field, path, catalog, depth):
                 return ['%s.component: must be %s' % (path, ' or '.join(targets(field)))]
         return fill_errors(value, catalog, path, depth + 1)
     raise ValueError('unknown field type ' + kind)
+
+
+def data_errors(data, fields, prefix, catalog, depth):
+    maximum = FILL_SCHEMA['properties']['data']['maxProperties']
+    if len(data) > maximum:
+        return ['%s: more than %d keys' % (prefix[:-1], maximum)]
+    errors = [prefix + shown(key) + ': the contract does not declare this field' for key in data if key not in fields]
+    for key, field in fields.items():
+        if key in data:
+            errors += value_errors(data[key], field, prefix + key, catalog, depth)
+        elif field['required']:
+            errors.append(prefix + key + ': a required field is missing')
+    return errors
 
 
 def fill_errors(fill, catalog, path='', depth=0):
@@ -436,14 +461,7 @@ def fill_errors(fill, catalog, path='', depth=0):
     if fill['version'] != contract['version']:
         return ['%sversion: must be %s' % (prefix, contract['version'])]
     data = fill['data']
-    for key in data:
-        if key not in contract['data']:
-            errors.append('%sdata.%s: the contract does not declare this field' % (prefix, shown(key)))
-    for key, field in contract['data'].items():
-        if key in data:
-            errors += value_errors(data[key], field, '%sdata.%s' % (prefix, key), catalog, depth)
-        elif field['required']:
-            errors.append('%sdata.%s: a required field is missing' % (prefix, key))
+    errors = data_errors(data, contract['data'], prefix + 'data.', catalog, depth)
     if (not errors and fill['component'] == 'range-field' and contract['data'].get('value', {}).get('type') == 'number-or-pair'
             and all(is_type(data.get(key), 'number') for key in ('minimum', 'maximum', 'step')) and 'value' in data):
         errors += range_errors(data, prefix + 'data.')

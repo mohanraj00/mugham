@@ -26,7 +26,7 @@ A contract is one JSON file in `catalog/`, for example `catalog/card.json`. The 
 | `slots` | Optional. The provenance slots: `authorship`, `citation` or the two. Each slot has the `required` key. See "Slots". |
 | `parts` | Optional. The part names that a page can use in `::part()` rules. See "Parts". |
 | `data` | The data fields. Each field has a type, a label and the `required` key. |
-| `states` | The states of the component: `default`, `empty`, `loading`, `disabled`, `confirm`, `pending`, `done`, `error`, `refused`, `expanded`, `collapsed` or `open`. A component shows `confirm` while a person decides on a confirm step. A collapsible card uses `expanded` and `collapsed`. A dialog or drawer uses `open` while it is modal. |
+| `states` | The states of the component: `default`, `empty`, `loading`, `disabled`, `confirm`, `pending`, `done`, `error`, `refused`, `expanded`, `collapsed` or `open`. A component shows `confirm` while a person decides on a confirm step. A collapsible card uses `expanded` and `collapsed`. A dialog or drawer uses `open` while it is modal. A menu, tooltip or toast uses `open` while its popover shows. |
 | `tokens` | The design tokens that the component uses. |
 | `accessibility` | The role, the accessible name (not for the role `none`), the keys, and support for forced colors and reduced motion. |
 
@@ -44,14 +44,15 @@ The short form copies the list to the full form. A contract can omit the key or 
 
 | Type | Value in a fill | Limits |
 |---|---|---|
-| `text` | A string. The kit always shows it as text, never as markup. | `max_length` is necessary. `min_length` is optional. |
+| `text` | A string. The kit always shows it as text, never as markup. | `max_length` is necessary. `min_length` is optional. Use `format: "name"` for a name of up to 40 characters. Start with a lower-case letter. Use lower-case letters and digits, with single underscores between groups. |
 | `number` | A number. | `minimum` and `maximum` are optional. |
 | `integer` | An integer. | `minimum` and `maximum` are optional. |
 | `number-or-pair` | A finite number or an array of two finite numbers. | A field of this type can be editable. |
 | `boolean` | `true` or `false`. | |
 | `date` | A calendar date as `YYYY-MM-DD`. | The date must exist. |
 | `enum` | One string from `values`. | |
-| `list` | An array of items. An item is a scalar field or a component field. | `max_items` is necessary. Use `min_items` for a lower limit and `unique_items` to require distinct items. |
+| `list` | An array of items. An item is a scalar field, a record or a component field. | `max_items` is necessary. Use `min_items` for a lower limit and `unique_items` to require distinct items. |
+| `record` | An object with the scalar fields declared in `fields`. | For list items only. Include each required field. Each key must be in `fields`. |
 | `component` | A fill of the named component. | `name` names one component. `names` names 2 to 12 components, and the fill can be of each of them. Each named component must be in the catalog. Use `field: true` in place of `name` or `names` to accept components whose contracts declare `field: true`. |
 
 A field with `editable: true` is a form input. A component field cannot be editable.

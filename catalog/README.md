@@ -25,6 +25,9 @@ Each element that refuses a fill shows a short reason and the next step. Open `T
 | `fact.json` | in `mu-card` | component | A label and a value. |
 | `card.json` | `mu-card` | component | A title, a summary, a date and up to six facts, with optional collapse. See [Card rules](../src/components/card.md). |
 | `action-button.json` | `mu-action-button` | component | A button for one action. |
+| `menu.json` | `mu-menu` | component | A button and a list of named choices. |
+| `tooltip.json` | `mu-tooltip` | primitive | Text that describes a control on hover or focus. |
+| `toast.json` | `mu-toast` | component | A live status message with an optional close button. |
 | `editable-form.json` | `mu-editable-form` | component | Up to 20 fields, submitted as one action. |
 | `form-line.json` | in `mu-form-card` | component | One field of a form card, with an optional line number and a read-only flag. |
 | `form-section.json` | in `mu-form-card` | component | A titled group of up to 40 form lines. |
@@ -152,6 +155,18 @@ Call `open()` on a connected element with a valid fill. The browser moves focus 
 Both elements send `mu-dialog-open` after they open and `mu-dialog-close` when the native dialog sends its close event. The drawer opens at the inline end. It opens at the bottom on a narrow screen.
 
 Put a [confirm step](#the-confirm-step) in the body with `mu-action-button`. The action button owns the confirm step and the receipt. See the [seed tray example](../examples/cards/dialogs.html).
+
+## Menu, tooltip and toast
+
+Fill `mu-menu` with the button `label` and an `items` list. Give each item a visible `label` and a unique `name` in lower case with underscores, for example `export_csv`. Enter, Space and Down Arrow open the menu at its first item. Up Arrow opens it at its last item. The arrow keys, Home and End move focus between items. Tab leaves the menu. Escape or a choice closes the menu and returns focus to its button.
+
+The menu sends `mu-menu-select` with `{ name }` when a person chooses an item. Page code uses the name to decide what to do. Use `mu-action-button` for a request with a confirm step or a receipt.
+
+Put one named, focusable control in the default slot of `mu-tooltip`. The fill gives the description in `text`. The element adds the description to the control with `aria-describedby`. The tooltip shows while the control has focus or the pointer is over the control or its tooltip. Escape hides the tooltip and leaves focus where it is.
+
+Call `show()` on a connected `mu-toast` with a valid fill. For an action result, wait for its receipt before you call `show()`. The toast announces the `message` as a status. Set `kind` to `error` to announce an alert. Keep the error or refusal in the page too. A toast without a `close_label` closes after eight seconds. A toast with a `close_label` stays open until the person uses its close button or page code replaces the fill. Focus stays where it is when the toast opens.
+
+Each element sends its `mu-<component>-open` and `mu-<component>-close` events when the browser reports a change in the popover state. The events bubble and cross shadow roots. See the [seed tray notes example](../examples/cards/popovers.html).
 
 ## Actions
 
