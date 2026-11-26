@@ -2,7 +2,7 @@
 // element from the fixed tables below, and each text goes into a text node. Page code owns the link
 // schemes and the first heading level. src/components/rich-text.md gives the rules.
 import { ReadMoreElement, READ_MORE_CSS } from '../primitives/read-more.js';
-import { APPROVAL_MARK_CSS, BADGE_LABEL_CSS, approvalMark } from '../primitives/badge.js';
+import { APPROVAL_MARK_CSS, approvalMark } from '../primitives/badge.js';
 import { copyControl, el, sheet, text } from '../render/dom.js';
 import { parseLinkURL } from '../render/validate.js';
 
@@ -36,7 +36,7 @@ function* runs(blocks) {
 
 export class MuRichText extends ReadMoreElement {
   static component = 'rich-text';
-  static styles = [READ_MORE_CSS, BADGE_LABEL_CSS, APPROVAL_MARK_CSS, sheet(`
+  static styles = [READ_MORE_CSS, APPROVAL_MARK_CSS, sheet(`
     :host { display: block; min-width: 0; }
     .rich {
       color: var(--mu-color-text); font: var(--mu-type-body); overflow-wrap: anywhere;

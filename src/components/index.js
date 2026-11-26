@@ -1,6 +1,6 @@
 // The catalog components: card, action button, editable form, form card, card grid, citation and excerpt.
 import { MuElement } from '../primitives/base.js';
-import { APPROVAL_MARK_CSS, BADGE_LABEL_CSS, approvalMark } from '../primitives/badge.js';
+import { APPROVAL_MARK_CSS, approvalMark } from '../primitives/badge.js';
 import { ReadMoreElement, READ_MORE_CSS } from '../primitives/read-more.js';
 import { define as definePrimitives, FIELDS } from '../primitives/index.js';
 import { ActionState, bindingErrors, isActionValue, isEditType } from '../actions/action.js';
@@ -507,7 +507,7 @@ function approvalAuthor({ type, id, name }) {
 
 export class MuApprovalQueue extends MuElement {
   static component = 'approval-queue';
-  static styles = [BADGE_LABEL_CSS, APPROVAL_MARK_CSS, sheet(`
+  static styles = [APPROVAL_MARK_CSS, sheet(`
     :host { display: block; min-inline-size: 0; color: var(--mu-color-text); font: var(--mu-type-body); overflow-wrap: anywhere; }
     p, ul { margin: 0; }
     [part="label"], [part="title"] { font-weight: var(--mu-type-weight-strong); }
