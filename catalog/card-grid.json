@@ -2,6 +2,18 @@
   "name": "card-grid",
   "description": "A labeled list of cards with optional Expand all and Collapse all controls.",
   "slots": {"citation": {"required": false}},
+  "parts": [
+    {"name": "card-status", "description": "State text in a nested card.", "guardrail": true},
+    {"name": "card-title", "description": "Title in a nested card.", "guardrail": false},
+    {"name": "card-toggle", "description": "Button that expands or collapses a nested card.", "guardrail": true},
+    {"name": "copy", "description": "Button that copies text.", "guardrail": true},
+    {"name": "copy-status", "description": "Result of the copy operation.", "guardrail": true},
+    {"name": "details", "description": "Control and technical details of a refusal.", "guardrail": true},
+    {"name": "empty", "description": "Message that shows when there are no items.", "guardrail": false},
+    {"name": "list", "description": "List of cards.", "guardrail": false},
+    {"name": "next", "description": "Next step after a refusal.", "guardrail": true},
+    {"name": "reason", "description": "Reason for a refusal or an edit error.", "guardrail": true}
+  ],
   "data": {
     "label": {"type": "text", "required": true, "min_length": 1, "size": "line"},
     "cards": {

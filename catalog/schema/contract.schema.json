@@ -21,6 +21,7 @@
         "citation": {"$ref": "#/$defs/slot"}
       }
     },
+    "parts": {"type": "array", "maxItems": 40, "items": {"$ref": "#/$defs/part"}},
     "data": {
       "type": "object",
       "maxProperties": 40,
@@ -65,6 +66,16 @@
   },
   "$defs": {
     "name": {"type": "string", "maxLength": 40, "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$"},
+    "part": {
+      "type": "object",
+      "required": ["name", "description", "guardrail"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {"type": "string", "maxLength": 40, "pattern": "^[a-z0-9-]+$"},
+        "description": {"type": "string", "minLength": 1, "maxLength": 300},
+        "guardrail": {"type": "boolean"}
+      }
+    },
     "field_name": {"type": "string", "maxLength": 40, "pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*$"},
     "label": {"type": "string", "minLength": 1, "maxLength": 80},
     "slot": {

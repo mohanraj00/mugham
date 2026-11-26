@@ -170,6 +170,11 @@ function reaches(catalog, start, goal) {
 export function contractErrors(contract, catalog) {
   const errors = schemaErrors(contract, CONTRACT_SCHEMA, CONTRACT_SCHEMA, '', '(contract)');
   if (errors.length) return errors;
+  const partNames = new Set();
+  (contract.parts ?? []).forEach(({ name }, index) => {
+    if (partNames.has(name)) errors.push(`parts[${index}].name: the part name is not unique`);
+    partNames.add(name);
+  });
   if (!contract.states.includes('default')) errors.push('states: must include default');
   const { accessibility } = contract;
   if (accessibility.role === 'none' && own(accessibility, 'name')) {
