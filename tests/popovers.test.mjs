@@ -221,6 +221,25 @@ test('closing the menu returns focus from an item and keeps focus outside the me
   assert.equal(document.activeElement, other);
 });
 
+test('a menu item click returns focus to the button before the selection event', () => {
+  const element = make('menu', menuData);
+  const trigger = find(element.shadowRoot, 'trigger');
+  const menu = find(element.shadowRoot, 'menu');
+  const [first] = menu.children;
+  let selection;
+  element.addEventListener('mu-menu-select', (event) => {
+    selection = { detail: event.detail, focus: document.activeElement, open: menu.matches(':popover-open') };
+  });
+
+  trigger.click();
+  assert.equal(document.activeElement, first);
+  document.body.focus();
+  first.click();
+
+  assert.equal(document.activeElement, trigger);
+  assert.deepEqual(selection, { detail: { name: 'export_csv' }, focus: trigger, open: false });
+});
+
 test('the tooltip describes its target and opens on hover or focus without moving focus', async () => {
   const element = make('tooltip', tooltipData);
   const target = new TestNode('button');

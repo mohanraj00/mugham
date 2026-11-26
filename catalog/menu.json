@@ -1,6 +1,6 @@
 {
   "name": "menu",
-  "description": "A button that opens a menu of named choices. If the menu closes with focus inside it, focus returns to the button.",
+  "description": "A button that opens a menu of named choices. A selection closes the menu and returns focus to the button before the selection event. If the menu closes with focus inside it, focus returns to the button.",
   "ai_content": false,
   "parts": [
     {"name": "copy", "description": "Button that copies text.", "guardrail": true},

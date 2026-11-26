@@ -193,6 +193,7 @@ export class MuMenu extends MuPopover {
       item.addEventListener('click', () => {
         if (!open(panel)) return;
         this.hidePanel();
+        trigger.focus();
         this.dispatchEvent(new CustomEvent('mu-menu-select', { ...BUBBLES, detail: { name: data.items[index].name } }));
       });
     });
