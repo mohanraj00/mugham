@@ -4,6 +4,46 @@
   "sample-color": {"format": 2, "name": "sample-color", "version": "0.1.0", "kind": "component", "description": "A synthetic example.", "ai_content": false, "field": true, "data": {}, "states": ["default"], "tokens": ["color.text"], "accessibility": {"role": "none", "keyboard": [], "forced_colors": true, "reduced_motion": true}},
   "sample-label": {"format": 2, "name": "sample-label", "version": "0.1.0", "kind": "component", "description": "A synthetic example.", "ai_content": false, "field": false, "data": {}, "states": ["default"], "tokens": ["color.text"], "accessibility": {"role": "none", "keyboard": [], "forced_colors": true, "reduced_motion": true}},
   "sample-form": {"format": 2, "name": "sample-form", "version": "0.1.0", "kind": "component", "description": "A synthetic example.", "ai_content": false, "data": {"fields": {"type": "list", "label": "Fields", "required": true, "max_items": 20, "items": {"type": "component", "label": "Field", "required": true, "field": true}}}, "states": ["default"], "tokens": ["color.text"], "accessibility": {"role": "none", "keyboard": [], "forced_colors": true, "reduced_motion": true}},
+  "breadcrumbs": {
+   "format": 2,
+   "name": "breadcrumbs",
+   "version": "0.1.0",
+   "kind": "component",
+   "description": "A list of links to pages in the path.",
+   "ai_content": false,
+   "data": {
+    "label": {"type": "text", "label": "Label", "required": true, "min_length": 1, "max_length": 80},
+    "items": {
+     "type": "list", "label": "Items", "required": true, "min_items": 1, "max_items": 20,
+     "items": {
+      "type": "record", "label": "Items", "required": true,
+      "fields": {
+       "label": {"type": "text", "label": "Label", "required": true, "min_length": 1, "max_length": 80},
+       "href": {"type": "text", "label": "Href", "required": false, "min_length": 1, "max_length": 2000}
+      }
+     }
+    }
+   },
+   "states": ["default"],
+   "tokens": [],
+   "accessibility": {"role": "navigation", "name": {"field": "label"}, "keyboard": ["Tab", "Shift+Tab", "Enter"], "forced_colors": true, "reduced_motion": true}
+  },
+  "pagination": {
+   "format": 2,
+   "name": "pagination",
+   "version": "0.1.0",
+   "kind": "component",
+   "description": "A set of page buttons.",
+   "ai_content": false,
+   "data": {
+    "label": {"type": "text", "label": "Label", "required": true, "min_length": 1, "max_length": 80},
+    "page": {"type": "integer", "label": "Page", "required": true, "minimum": 1, "maximum": 9007199254740991},
+    "page_count": {"type": "integer", "label": "Page count", "required": true, "minimum": 1, "maximum": 9007199254740991}
+   },
+   "states": ["default"],
+   "tokens": [],
+   "accessibility": {"role": "navigation", "name": {"field": "label"}, "keyboard": ["Tab", "Shift+Tab", "Enter", "Space"], "forced_colors": true, "reduced_motion": true}
+  },
   "date-time-field": {
    "format": 2,
    "name": "date-time-field",
@@ -192,6 +232,87 @@
   }
  },
  "cases": [
+  {
+   "name": "breadcrumbs accept relative paths and an HTTPS address",
+   "fill": {"component": "breadcrumbs", "version": "0.1.0", "data": {"label": "Path", "items": [
+    {"label": "Library", "href": "https://example.org/"},
+    {"label": "Annex", "href": "https://[2001:db8::1]:443/"},
+    {"label": "Staff", "href": "/staff"},
+    {"label": "Loans", "href": "loans/3"},
+    {"label": "Next page", "href": "?page=2"},
+    {"label": "Main", "href": "#main"},
+    {"label": "Current page"}
+   ]}},
+   "errors": []
+  },
+  {
+   "name": "breadcrumbs refuse a javascript address",
+   "fill": {"component": "breadcrumbs", "version": "0.1.0", "data": {"label": "Path", "items": [
+    {"label": "Loans", "href": "javascript:alert(1)"}, {"label": "Current page"}
+   ]}},
+   "errors": ["data.items[0].href: give a relative path or an https address"]
+  },
+  {
+   "name": "breadcrumbs refuse a data address",
+   "fill": {"component": "breadcrumbs", "version": "0.1.0", "data": {"label": "Path", "items": [
+    {"label": "Loans", "href": "data:text/html,x"}, {"label": "Current page"}
+   ]}},
+   "errors": ["data.items[0].href: give a relative path or an https address"]
+  },
+  {
+   "name": "breadcrumbs refuse an HTTP address",
+   "fill": {"component": "breadcrumbs", "version": "0.1.0", "data": {"label": "Path", "items": [
+    {"label": "Loans", "href": "http://example.org/a"}, {"label": "Current page"}
+   ]}},
+   "errors": ["data.items[0].href: give a relative path or an https address"]
+  },
+  {
+   "name": "breadcrumbs refuse a host without a scheme",
+   "fill": {"component": "breadcrumbs", "version": "0.1.0", "data": {"label": "Path", "items": [
+    {"label": "Loans", "href": "//example.org/a"}, {"label": "Current page"}
+   ]}},
+   "errors": ["data.items[0].href: give a relative path or an https address"]
+  },
+  {
+   "name": "breadcrumbs refuse a path with a space",
+   "fill": {"component": "breadcrumbs", "version": "0.1.0", "data": {"label": "Path", "items": [
+    {"label": "Loans", "href": "/staff loans"}, {"label": "Current page"}
+   ]}},
+   "errors": ["data.items[0].href: give a relative path or an https address"]
+  },
+  {
+   "name": "breadcrumbs refuse an HTTPS address with a user name on the last item",
+   "fill": {"component": "breadcrumbs", "version": "0.1.0", "data": {"label": "Path", "items": [
+    {"label": "Loans", "href": "/loans"}, {"label": "Current page", "href": "https://reader@example.org/a"}
+   ]}},
+   "errors": ["data.items[1].href: give a relative path or an https address"]
+  },
+  {
+   "name": "breadcrumbs give link errors in item order",
+   "fill": {"component": "breadcrumbs", "version": "0.1.0", "data": {"label": "Path", "items": [
+    {"label": "Library"},
+    {"label": "Staff", "href": "/staff\\loans"},
+    {"label": "Loans", "href": "/loans\u0085"},
+    {"label": "Shelf", "href": "https://256.0.0.1/"},
+    {"label": "Index", "href": "https://example%2Forg/"},
+    {"label": "Guide", "href": "https://xn--/"},
+    {"label": "Current page", "href": "https://#main"}
+   ]}},
+   "errors": [
+    "data.items[0].href: give a relative path or an https address",
+    "data.items[1].href: give a relative path or an https address",
+    "data.items[2].href: give a relative path or an https address",
+    "data.items[3].href: give a relative path or an https address",
+    "data.items[4].href: give a relative path or an https address",
+    "data.items[5].href: give a relative path or an https address",
+    "data.items[6].href: give a relative path or an https address"
+   ]
+  },
+  {
+   "name": "pagination refuses a page above the page count",
+   "fill": {"component": "pagination", "version": "0.1.0", "data": {"label": "Pages", "page": 3, "page_count": 2}},
+   "errors": ["data.page: must be at most page_count"]
+  },
   {"name": "a component reference accepts a field contract", "fill": {"component": "sample-form", "version": "0.1.0", "data": {"fields": [{"component": "sample-color", "version": "0.1.0", "data": {}}]}}, "errors": []},
   {"name": "a component reference refuses a contract with field false", "fill": {"component": "sample-form", "version": "0.1.0", "data": {"fields": [{"component": "sample-label", "version": "0.1.0", "data": {}}]}}, "errors": ["data.fields[0].component: must be a field"]},
   {"name": "a component reference refuses an undeclared component", "fill": {"component": "sample-form", "version": "0.1.0", "data": {"fields": [{"component": "other", "version": "0.1.0", "data": {}}]}}, "errors": ["data.fields[0].component: no contract has the name other"]},
