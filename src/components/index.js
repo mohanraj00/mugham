@@ -1,5 +1,6 @@
 // The catalog components: card, action button, editable form, form card, card grid, citation and excerpt.
 import { MuElement } from '../primitives/base.js';
+import { APPROVAL_MARK_CSS, approvalMark, badgeLabel } from '../primitives/badge.js';
 import { ReadMoreElement, READ_MORE_CSS } from '../primitives/read-more.js';
 import { define as definePrimitives, FIELDS } from '../primitives/index.js';
 import { ActionState, bindingErrors, isActionValue, isEditType } from '../actions/action.js';
@@ -496,30 +497,32 @@ export class MuActionButton extends ActionElement {
 }
 
 const DECISIONS = Object.freeze({
-  approve: { label: 'Approve', confirm: 'Confirm approval', result: 'Approved' },
-  reject: { label: 'Reject', confirm: 'Confirm rejection', result: 'Rejected' },
+  approve: { label: 'Approve', confirm: 'Confirm approval', result: 'Approved', state: 'approved' },
+  reject: { label: 'Reject', confirm: 'Confirm rejection', result: 'Rejected', state: 'rejected' },
 });
+
+function approvalAuthor({ type, id, name }) {
+  return 'Author: ' + (name ? `${name} (${type}, ${id})` : `${type}, ${id}`);
+}
 
 export class MuApprovalQueue extends MuElement {
   static component = 'approval-queue';
-  static styles = [sheet(`
+  static styles = [APPROVAL_MARK_CSS, sheet(`
     :host { display: block; min-inline-size: 0; color: var(--mu-color-text); font: var(--mu-type-body); overflow-wrap: anywhere; }
     p, ul { margin: 0; }
     [part="label"], [part="title"] { font-weight: var(--mu-type-weight-strong); }
-    [part="authorship"], [part="state"] { font: var(--mu-type-caption); }
+    [part="authorship"], [part="state"], .bound-context { font: var(--mu-type-caption); }
     [part="authorship"] { margin-block-end: var(--mu-space-1); }
     ul { list-style: none; padding: 0; }
     li { border-block-start: 1px solid var(--mu-color-border); padding: var(--mu-space-2); }
     [part="state"] { margin-block: var(--mu-space-1); }
-    li[data-state="done"] [part="state"] { color: var(--mu-color-success); }
-    li[data-state="error"] [part="state"] { color: var(--mu-color-danger); }
+    [part="state"] > [data-badge] { display: inline-block; max-inline-size: 100%; box-sizing: border-box; }
     .decisions { display: flex; flex-wrap: wrap; align-items: start; gap: var(--mu-space-2); }
     [part="announcement"] {
       position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap;
     }
     @media (forced-colors: active) {
       li { border-color: CanvasText; }
-      li[data-state] [part="state"] { color: CanvasText; }
     }
   `)];
 
@@ -541,9 +544,9 @@ export class MuApprovalQueue extends MuElement {
       return [kind, binding];
     });
     for (const [kind, binding] of bindings) entry.actions[kind].action = binding;
-    entry.bound = entry.proposal;
+    entry.bound = this.#snapshot(entry.proposal);
     entry.row.dataset.state = 'default';
-    entry.state.textContent = 'Awaiting decision';
+    entry.state.replaceChildren(badgeLabel('Awaiting decision'));
   }
 
   // Each action checks the id and key of its own request.
@@ -585,8 +588,7 @@ export class MuApprovalQueue extends MuElement {
       announcement: el('div', { part: 'announcement', role: 'status', 'aria-live': 'polite' }),
     };
     const view = this.#view;
-    const { type, id, name } = this.actor;
-    const author = 'Author: ' + (name ? `${name} (${type}, ${id})` : `${type}, ${id}`);
+    const author = approvalAuthor(this.actor);
     if (view.byline.textContent !== author) view.byline.textContent = author;
     if (view.label.textContent !== label) {
       view.label.textContent = label;
@@ -595,7 +597,7 @@ export class MuApprovalQueue extends MuElement {
     const next = new Map();
     for (const item of items) {
       const entry = this.#rows.get(item.id) ?? this.#newItem();
-      entry.proposal = { label, title: item.title, summary: item.summary };
+      entry.proposal = { ...item, label };
       this.#showProposal(entry);
       next.set(item.id, entry);
     }
@@ -603,6 +605,7 @@ export class MuApprovalQueue extends MuElement {
       if (next.has(id)) continue;
       if (entry.row.dataset.state === 'pending') {
         entry.proposal = { ...entry.proposal, label };
+        this.#showProposal(entry);
         next.set(id, entry);
       } else {
         this.#remove(entry);
@@ -622,11 +625,31 @@ export class MuApprovalQueue extends MuElement {
     return view.list.parentNode === this.shadowRoot ? null : [view.label, view.byline, view.list, view.empty, view.announcement];
   }
 
+  #snapshot({ label, title, summary }) {
+    // Add each new proposal value that the queue shows to this snapshot.
+    return { label, title, summary, actor: this.actor };
+  }
+
   #showProposal(entry) {
-    if (entry.row.dataset.state === 'pending') return;
-    const { proposal, bound } = entry;
-    const { title, summary } = proposal;
-    if (bound && ['label', 'title', 'summary'].some((field) => bound[field] !== proposal[field])) {
+    const { bound, context } = entry;
+    const current = this.#snapshot(entry.proposal);
+    if (entry.row.dataset.state === 'pending') {
+      // The list header shows the current label and actor. Keep the bound context on this row.
+      const author = approvalAuthor(bound.actor);
+      const words = [
+        bound.label !== current.label ? bound.label : '',
+        author !== approvalAuthor(current.actor) ? author : '',
+      ].filter(Boolean).join('. ');
+      if (context.textContent !== words) context.textContent = words;
+      context.hidden = !words;
+      return;
+    }
+    if (!context.hidden) {
+      context.hidden = true;
+      context.textContent = '';
+    }
+    const { title, summary } = current;
+    if (bound && JSON.stringify(bound) !== JSON.stringify(current)) {
       this.#unbind(entry);
     }
     if (entry.title.textContent !== title) {
@@ -637,12 +660,14 @@ export class MuApprovalQueue extends MuElement {
   }
 
   #newItem() {
+    const context = el('p', { class: 'bound-context' });
+    context.hidden = true;
     const title = el('p', { part: 'title' });
     const summary = el('p', { part: 'summary' });
-    const state = el('p', { part: 'state' }, 'Unavailable');
+    const state = el('p', { part: 'state' }, badgeLabel('Unavailable'));
     const controls = el('div', { class: 'decisions' });
-    const row = el('li', { part: 'item', 'data-state': 'disabled' }, title, summary, state, controls);
-    const entry = { row, title, summary, state, actions: {}, views: {}, names: [], bound: null, proposal: null };
+    const row = el('li', { part: 'item', 'data-state': 'disabled' }, context, title, summary, state, controls);
+    const entry = { row, context, title, summary, state, actions: {}, views: {}, names: [], bound: null, proposal: null };
     for (const [kind, { label }] of Object.entries(DECISIONS)) {
       const child = document.createElement('mu-action-button');
       child.setAttribute('exportparts', 'button: action-button-button, accept: action-button-accept, cancel: action-button-cancel, confirm: action-button-confirm, copy: action-button-copy, copy-status: action-button-copy-status, exit: action-button-exit, reference: action-button-reference, retry: action-button-retry');
@@ -680,7 +705,8 @@ export class MuApprovalQueue extends MuElement {
     if (entry.row.dataset.state === state && entry.state.textContent === words) return;
     const resolved = entry.row.dataset.state === 'pending' && state !== 'pending';
     entry.row.dataset.state = state;
-    entry.state.textContent = words;
+    entry.state.replaceChildren(state === 'done' ? approvalMark({ state: DECISIONS[kind].state }, words)
+      : badgeLabel(words, state === 'error' ? 'danger' : undefined));
     const { announcement } = this.#view;
     // A receipt can come back in a refusal event listener, before refuse() puts the status back.
     if (this.dataset.state === 'refused' && !announcement.parentNode) this.shadowRoot.append(announcement);
@@ -696,7 +722,7 @@ export class MuApprovalQueue extends MuElement {
       action[BLOCK_ACTION](false);
     }
     entry.row.dataset.state = 'disabled';
-    entry.state.textContent = 'Unavailable';
+    entry.state.replaceChildren(badgeLabel('Unavailable'));
   }
 
   #remove(entry) {

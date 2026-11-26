@@ -30,6 +30,19 @@ A rich text has 0 to 100 block nodes and 2000 inline nodes maximum. A block node
 
 The element makes each element with `createElement` from a fixed table, and it writes each text into a text node. It never parses a string as markup. A node has only the attributes of its contract. A node cannot set a style, a class, an id, an event handler or an address attribute. The validator refuses an unknown node type and an undeclared attribute, and the element shows the refusal as text. A line break in a text shows as a line break.
 
+## Approval marks
+
+Page code reads the state from the application's approval API and calls `setApprovals(list)` after each fill. Each new fill clears the marks. A change of page policy keeps the marks if the fill is still valid, including when the element connects again. A refused fill clears the marks. A fill cannot set a mark. The kit only shows the state. The application decides and enforces each approval.
+
+Each item gives these values.
+
+- `block` is the index of a top-level block in the current fill, starting at zero. Give at most one item per block.
+- `state` is `approved`, `pending` or `rejected`. The mark shows the state in text and has a name such as `Approval: Pending approval`.
+- `by` is optional text that names the approver and has at most 80 characters.
+- `at` is an optional ISO 8601 date and time in UTC, for example `2026-11-26T10:00:00Z`. Give a date and time that exists. Include seconds and the final `Z`. You can give one to three digits for fractional seconds.
+
+A block with no item has no mark. Call `setApprovals([])` to clear all marks. An invalid list also clears all marks. The element keeps the document and sends `mu-refused` with each error and its path in `event.detail.errors`. See the [library newsletter](../../examples/apps/newsletter.html).
+
 ## Links
 
 A link is a button, not an anchor. No element has an address attribute, so the browser cannot follow a link without the kit.
