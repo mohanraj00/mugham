@@ -641,11 +641,23 @@ test('a new proposal title closes confirmation and requires a new binding', () =
   assert.equal(queue.receipt({ key: reject.requests[0].key, ok: true }), true);
   queue.fill = queue.fill;
   assert.equal(words(hold), 'Rejected');
+});
+
+test('a new proposal summary removes the binding of that row', () => {
+  const queue = makeResearch('approval-queue', APPROVALS);
+  bindDecisions(queue, 'hold');
+  bindDecisions(queue, 'list');
+  const [hold, other] = find(queue.shadowRoot, 'list').children;
+  const controls = [decision(hold, 0), decision(hold, 1)];
+  const [held, listed] = APPROVALS.items;
   const summary = 'Keep the book for two days.';
-  queue.fill = researchFill('approval-queue', { ...APPROVALS, items: [{ ...held, title, summary }, listed] });
+  queue.fill = researchFill('approval-queue', { ...APPROVALS, items: [{ ...held, summary }, listed] });
   assert.equal(find(hold, 'summary').textContent, summary);
   assert.equal(words(hold), 'Unavailable');
-  assert.equal(reject.control.getAttribute('aria-disabled'), 'true');
+  assert.equal(words(other), 'Awaiting decision');
+  for (const { control } of controls) assert.equal(control.getAttribute('aria-disabled'), 'true');
+  bindDecisions(queue, 'hold');
+  assert.equal(words(hold), 'Awaiting decision');
 });
 
 test('a new queue label removes the bindings of each row with no pending decision', () => {
@@ -696,6 +708,7 @@ test('a new queue label keeps a pending decision until its receipt', () => {
   assert.equal(find(hold, 'title').textContent, title);
   assert.equal(find(hold, 'summary').textContent, summary);
   assert.equal(words(hold), 'Pending');
+  assert.ok(hold.textContent.includes(APPROVALS.label));
   assert.equal(reject.control.getAttribute('aria-disabled'), 'true');
 
   assert.equal(queue.receipt({ id: request.id, key: request.key, ok: true }), true);
@@ -706,6 +719,69 @@ test('a new queue label keeps a pending decision until its receipt', () => {
   bindDecisions(queue, 'hold');
   assert.equal(words(hold), 'Awaiting decision');
 });
+
+test('a change to the queue actor removes each binding without a pending decision', () => {
+  for (const change of [{ type: 'human' }, { id: 'west-assistant' }, { name: 'West assistant' }]) {
+    const queue = makeResearch('approval-queue', APPROVALS);
+    const authorship = { type: RESEARCHER.type, id: RESEARCHER.id };
+    queue.fill = fill('approval-queue', APPROVALS, { slots: { authorship } });
+    bindDecisions(queue, 'hold');
+    bindDecisions(queue, 'list');
+    queue.actor = { ...RESEARCHER };
+    assert.deepEqual(find(queue.shadowRoot, 'list').children.map(words), ['Awaiting decision', 'Awaiting decision']);
+
+    const actor = { ...RESEARCHER, ...change };
+    queue.actor = actor;
+    queue.fill = fill('approval-queue', APPROVALS, { slots: { authorship: actor } });
+    const rows = find(queue.shadowRoot, 'list').children;
+    assert.deepEqual(rows.map(words), ['Unavailable', 'Unavailable']);
+    for (const row of rows) {
+      for (const index of [0, 1]) assert.equal(decision(row, index).control.getAttribute('aria-disabled'), 'true');
+    }
+    bindDecisions(queue, 'hold');
+    assert.equal(words(rows[0]), 'Awaiting decision');
+  }
+});
+
+for (const end of ['receipt', 'cancel']) {
+  test('a new queue actor keeps a pending decision until ' + end, () => {
+    const queue = makeResearch('approval-queue', APPROVALS);
+    bindDecisions(queue, 'hold');
+    bindDecisions(queue, 'list');
+    const [hold] = find(queue.shadowRoot, 'list').children;
+    const approve = decision(hold, 0);
+    approve.control.click();
+    approve.confirm();
+    const [request] = approve.requests;
+
+    const actor = { type: 'human', id: 'west-reviewer', name: 'West reviewer' };
+    queue.actor = actor;
+    queue.fill = fill('approval-queue', APPROVALS, { slots: { authorship: actor } });
+    const [pending, other] = find(queue.shadowRoot, 'list').children;
+    assert.equal(pending, hold);
+    assert.equal(words(hold), 'Pending');
+    assert.equal(words(other), 'Unavailable');
+    assert.ok(hold.textContent.includes('Author: Catalog assistant (agent, catalog-assistant)'));
+    assert.equal(find(queue.shadowRoot, 'authorship').textContent, 'Author: West reviewer (human, west-reviewer)');
+    approve.source.noReceipt(request.id);
+    find(approve.root, 'retry').click();
+    assert.equal(approve.requests[1].key, request.key);
+
+    if (end === 'receipt') {
+      assert.equal(queue.receipt({ key: request.key, ok: true }), true);
+      assert.equal(find(queue.shadowRoot, 'announcement').textContent, 'Place a hold: Approved');
+    } else {
+      approve.source.noReceipt(approve.requests[1].id);
+      find(approve.root, 'cancel').click();
+    }
+    assert.equal(words(hold), 'Unavailable');
+    assert.ok(!hold.textContent.includes('Catalog assistant'));
+    assert.equal(approve.control.getAttribute('aria-disabled'), 'true');
+    assert.equal(decision(hold, 1).control.getAttribute('aria-disabled'), 'true');
+    bindDecisions(queue, 'hold');
+    assert.equal(words(hold), 'Awaiting decision');
+  });
+}
 
 for (const end of ['receipt', 'cancel']) {
   test('a pending decision keeps its bound text until ' + end, () => {
