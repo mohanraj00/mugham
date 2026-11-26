@@ -43,7 +43,7 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "role": {"enum": ["article", "button", "checkbox", "form", "group", "list", "region", "status", "switch", "textbox", "none"]},
+        "role": {"enum": ["article", "button", "checkbox", "form", "group", "list", "region", "slider", "status", "switch", "textbox", "none"]},
         "name": {
           "oneOf": [
             {
@@ -76,7 +76,9 @@
               "ArrowLeft",
               "ArrowRight",
               "Home",
-              "End"
+              "End",
+              "PageUp",
+              "PageDown"
             ]
           }
         },
@@ -101,6 +103,7 @@
       "oneOf": [
         {"$ref": "#/$defs/text_field"},
         {"$ref": "#/$defs/number_field"},
+        {"$ref": "#/$defs/number_or_pair_field"},
         {"$ref": "#/$defs/boolean_field"},
         {"$ref": "#/$defs/date_field"},
         {"$ref": "#/$defs/enum_field"},
@@ -143,6 +146,17 @@
         "editable": {"type": "boolean"},
         "minimum": {"type": "number"},
         "maximum": {"type": "number"}
+      }
+    },
+    "number_or_pair_field": {
+      "type": "object",
+      "required": ["type"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {"const": "number-or-pair"},
+        "label": {"$ref": "#/$defs/label"},
+        "required": {"type": "boolean"},
+        "editable": {"type": "boolean"}
       }
     },
     "boolean_field": {

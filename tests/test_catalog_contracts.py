@@ -52,6 +52,7 @@ VALID = {
     'date-field': {'name': 'due', 'label': 'Due date', 'value': '2026-12-01', 'earliest': '2026-11-01', 'latest': '2027-02-28'},
     'choice-field': {'name': 'branch', 'label': 'Branch', 'value': 'North', 'choices': ['North', 'South', 'Harbor']},
     'toggle-field': {'name': 'reminder', 'label': 'Send a reminder', 'value': False},
+    'range-field': {'name': 'days', 'label': 'Loan period in days', 'minimum': 7, 'maximum': 28, 'step': 7, 'value': 14},
     'stack': {'label': 'Loan details', 'direction': 'row', 'gap': 'small'},
     'grid': {'label': 'Reading list', 'min_column': 'wide'},
     'fact': FACT['data'],
@@ -136,7 +137,7 @@ class CatalogContractTest(unittest.TestCase):
                          ['data.collapse_controls: must be true or false'])
 
     def test_a_form_accepts_each_input_type_and_no_other_component(self):
-        inputs = ['field', 'long-text-field', 'number-field', 'date-field', 'choice-field', 'toggle-field']
+        inputs = ['field', 'long-text-field', 'number-field', 'date-field', 'choice-field', 'toggle-field', 'range-field']
         form = {'title': 'Loan details', 'submit_label': 'Save', 'fields': [fill(name, VALID[name]) for name in inputs]}
         self.assertEqual(catalog.fill_errors(outer('editable-form', form), CATALOG), [])
         other = {**form, 'fields': [fill('button', VALID['button'])]}
@@ -157,6 +158,35 @@ class CatalogContractTest(unittest.TestCase):
                              ['data.value: must be true or false'])
         self.assertEqual(catalog.fill_errors(outer(name, {**VALID[name], 'display': 'button'}), CATALOG),
                          ['data.display: must be one of checkbox, switch'])
+
+    def test_the_range_field_accepts_numbers_and_ordered_pairs_on_a_step(self):
+        name = 'range-field'
+        contract = CATALOG[name]
+        self.assertEqual(catalog.contract_errors(contract, name + '.json'), [])
+        self.assertTrue(contract['data']['value']['editable'])
+        self.assertEqual(contract['accessibility']['role'], 'slider')
+        self.assertEqual(contract['accessibility']['keyboard'], [
+            'Tab', 'Shift+Tab', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Home', 'End', 'PageUp', 'PageDown'])
+        base = {**VALID[name], 'minimum': -0.05, 'maximum': 0.26, 'step': 0.1}
+        for value in (-0.05, 0.25, [0.05, 0.25], [0.15, 0.15]):
+            with self.subTest(value=value):
+                self.assertEqual(catalog.fill_errors(fill(name, {**base, 'value': value}), CATALOG), [])
+        for changes, reason in [
+            ({'value': [0.05]}, 'value: must be a number or a pair of numbers'),
+            ({'value': [False, 0.05]}, 'value: must be a number or a pair of numbers'),
+            ({'value': -0.1}, 'value: the number is outside the range'),
+            ({'value': [0.05, 0.3]}, 'value[1]: the number is outside the range'),
+            ({'value': 0.05000000000000001}, 'value: the number is off a step'),
+            ({'value': [0.1, 0.25]}, 'value[0]: the number is off a step'),
+            ({'value': [0.15, 0.05]}, 'value: the low value is more than the high value'),
+            ({'step': 0}, 'step: must be more than zero'),
+            ({'maximum': -1}, 'maximum: must be at least the minimum'),
+        ]:
+            with self.subTest(changes=changes):
+                self.assertEqual(catalog.fill_errors(fill(name, {**base, **changes}), CATALOG), ['data.' + reason])
+        form = {**VALID['editable-form'], 'fields': [fill(name, {**base, 'value': 0.12})]}
+        self.assertEqual(catalog.fill_errors(outer('editable-form', form), CATALOG),
+                         ['data.fields[0].data.value: the number is off a step'])
 
     def test_a_form_card_permits_more_than_20_fields(self):
         lines = [fill('form-line', {'field': fill('field', {'name': 'line_%d' % i, 'label': 'Line %d' % i})}) for i in range(25)]

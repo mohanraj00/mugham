@@ -14,6 +14,7 @@ Each element that refuses a fill shows a short reason and the next step. Open `T
 | `date-field.json` | `mu-date-field` | primitive | A labeled input for a date as `YYYY-MM-DD`, with an optional range. |
 | `choice-field.json` | `mu-choice-field` | primitive | A labeled radio group with 1 to 20 choices. |
 | `toggle-field.json` | `mu-toggle-field` | primitive | A labeled checkbox or switch for a yes or no value. |
+| `range-field.json` | `mu-range-field` | primitive | One or two sliders with a number box for each handle. |
 | `stack.json` | `mu-stack` | primitive | A labeled group in one column or one row. |
 | `grid.json` | `mu-grid` | primitive | A labeled group in columns. |
 | `fact.json` | in `mu-card` | component | A label and a value. |
@@ -254,7 +255,7 @@ A field that did not change has no edit. A disabled field has no edit, because t
 
 ### Input types
 
-An editable form accepts six field contracts. Each one has the data fields `name`, `label`, `hint`, `error`, `disabled` and `typed`, and the same states. A typed edit works the same with each input type.
+An editable form accepts seven field contracts. Each one has the data fields `name`, `label`, `hint`, `error`, `disabled` and `typed`, and the same states. A typed edit works the same with each input type.
 
 | Contract | Value | Other data | The request sends |
 |---|---|---|---|
@@ -264,14 +265,19 @@ An editable form accepts six field contracts. Each one has the data fields `name
 | `date-field` | A date as `YYYY-MM-DD`. | `earliest` and `latest`, both optional. | A string, for example `2026-12-01`. |
 | `choice-field` | One of the choices. | `choices`: 1 to 20 unique texts. | The text of the choice. |
 | `toggle-field` | A boolean. The default is `false`. | `display` can be `checkbox` (the default) or `switch`. | `true` or `false`. |
+| `range-field` | A number for one handle, or a pair of numbers for two handles. | `minimum`, `maximum` and a positive `step`, all required. | A number or a pair in low to high order. |
 
 The form refuses a fill in which the data of a field do not agree. Examples are a minimum that is more than the maximum, a value outside the range, and a value that is not one of the choices. The refusal names the field, for example `data.fields[2].data.value: the number is outside the range`.
 
 A person can type a value that the field does not accept, for example a text that is not a number, a date that does not exist, or a value outside the range. Then a submit sends no action. The field shows the reason as text, for example `Give a number from 1 to 12.`, and the focus goes to the field. The reason also shows when the focus leaves the field.
 
-Enter in a one-line field submits the form. Enter in long text adds a line. In a choice, the arrow keys select the next or the previous choice.
+Enter in a text, number or date field submits the form. Enter in long text adds a line. In a choice, the arrow keys select the next or the previous choice.
 
 Tab and Shift+Tab move the focus to or from a checkbox or switch. Space changes its checked state. The switch uses the `switch` role and shows `On` or `Off`. The label stays the same when the state changes.
+
+A range field requires a value. Each value must be in the range and on a step from the minimum. If the maximum is between steps, the last step is the highest value. With two handles, the low value can equal the high value. Each slider gets its limit from the other handle. The group takes its name from the field label.
+
+Tab and Shift+Tab move through the sliders and number boxes in order. On a slider, Up and Right add one step. Down and Left subtract one step. Page Up and Page Down move by ten steps. Home and End move to the first and last available steps of the handle. A valid number edit updates the slider. If a person enters an invalid number, the number box restores the last valid value when the person presses Enter or leaves the box. The field gives the reason and the form waits for a valid edit before it can submit.
 
 The date field is a text input, not the date picker of the browser. Thus it has the same role, the same text and the same keyboard in each browser.
 

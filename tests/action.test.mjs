@@ -219,6 +219,23 @@ const TYPED = { tool: 'library.update_loan', editable: { due_date: 'Due date', n
   editor: { type: 'human', id: 'person-ana' } };
 const TIME = '2026-11-15T09:30:00.000Z';
 
+test('a typed range pair keeps a copy of each value and compares pairs by value', () => {
+  const action = new ActionState();
+  const old = [10, 30];
+  const next = [15, 30];
+  action.bind({ ...TYPED, editable: { price: 'Price range' }, typed: ['price'] });
+  const edit = { field: 'price', type: 'judgment', old_value: old, time: TIME };
+  assert.equal(action.start({ price: [...old] }, false, [edit]), null);
+  assert.equal(action.start({ price: [30, 15] }, false, [edit]), null);
+  const sent = action.start({ price: next }, false, [edit]);
+  old[0] = 12;
+  next[0] = 30;
+  assert.deepEqual(sent.arguments.price, [15, 30]);
+  assert.deepEqual(sent.edits[0].new_value, [15, 30]);
+  assert.deepEqual(sent.edits[0].old_value, [10, 30]);
+  assert.ok(Object.isFrozen(sent.arguments.price) && Object.isFrozen(sent.edits[0].old_value));
+});
+
 test('a typed binding names editable fields and a person as the editor', () => {
   assert.deepEqual(bindingErrors(TYPED), []);
   assert.deepEqual(bindingErrors({ tool: 'library.update_loan', editable: { note: 'Note' }, typed: [] }), []);

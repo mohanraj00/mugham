@@ -3,6 +3,7 @@
 // The validator never changes the fill or the contract.
 import CONTRACT_SCHEMA from '../../catalog/schema/contract.schema.json' with { type: 'json' };
 import FILL_SCHEMA from '../../catalog/schema/fill.schema.json' with { type: 'json' };
+import { isNumberPair, rangeErrors } from './range.js';
 
 const KEYWORDS = new Set(['$schema', '$id', '$defs', '$ref', 'title', 'description', 'type', 'properties', 'required',
   'additionalProperties', 'propertyNames', 'minProperties', 'maxProperties', 'items', 'minItems', 'maxItems',
@@ -218,6 +219,8 @@ function valueErrors(value, field, path, catalog, depth) {
       return [];
     case 'boolean':
       return typeof value === 'boolean' ? [] : [`${path}: must be true or false`];
+    case 'number-or-pair':
+      return Number.isFinite(value) || isNumberPair(value) ? [] : [`${path}: must be a number or a pair of numbers`];
     case 'date':
       return isDate(value) ? [] : [`${path}: must be a date as YYYY-MM-DD`];
     case 'enum':
@@ -251,6 +254,10 @@ export function fillErrors(fill, catalog, path = '', depth = 0) {
   for (const [key, field] of Object.entries(contract.data)) {
     if (own(data, key)) errors.push(...valueErrors(data[key], field, `${prefix}data.${key}`, catalog, depth));
     else if (field.required) errors.push(`${prefix}data.${key}: a required field is missing`);
+  }
+  if (!errors.length && fill.component === 'range-field' && contract.data.value?.type === 'number-or-pair'
+    && [data.minimum, data.maximum, data.step].every(Number.isFinite) && own(data, 'value')) {
+    errors.push(...rangeErrors(data, prefix + 'data.'));
   }
   return [...errors, ...slotErrors(fill, contract, prefix, depth)];
 }

@@ -20,3 +20,16 @@ test('a sample with an undeclared key is refused', () => {
   sample.data.html = '<b>x</b>';
   assert.deepEqual(fillErrors(sample, CATALOG), ['data.html: the contract does not declare this field']);
 });
+
+test('the type text of each contract key has no final period', async () => {
+  const { typeText } = await import('../examples/docs.js');
+  const { CONTRACTS } = await import('../src/render/registry.js');
+  let count = 0;
+  for (const [name, contract] of Object.entries(CONTRACTS)) {
+    for (const [key, field] of Object.entries(contract.data)) {
+      assert.doesNotMatch(typeText(field), /\.$/, `${name}.${key}`);
+      count += 1;
+    }
+  }
+  assert.ok(count > 0);
+});

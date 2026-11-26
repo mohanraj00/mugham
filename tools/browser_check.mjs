@@ -19,6 +19,7 @@ import { reviewQueueChecks } from '../tests/browser/review-queue.js';
 import { snapshotChecks } from '../tests/browser/snapshots.js';
 import { UPLOAD_FILES, uploadExampleChecks, uploadKeyboardChecks } from '../tests/browser/upload.js';
 import { plannedErrors, queueExampleChecks } from '../tests/browser/queue.js';
+import { RANGE_PAGE, rangeExampleChecks } from '../tests/browser/range-field.js';
 
 export const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
 // The upload checks give synthetic files to a file input. The files are in a temporary folder, not in the checkout.
@@ -93,6 +94,9 @@ const EXAMPLES = {
     ['textbox', 'Due date'], ['group', 'Branch'], ['radio', 'Harbor']]],
   'examples/forms/notices.html': [3, 0, [['heading', 'Library notices'], ['form', 'Member M-001'],
     ['switch', 'Send due date reminders'], ['switch', 'Send pickup notices']]],
+  [RANGE_PAGE]: [3, 0, [['form', 'Loan limits'], ['slider', 'Loan period in days'], ['spinbutton', 'Loan period in days number'],
+    ['group', 'Price range'], ['slider', 'Price range Minimum'], ['spinbutton', 'Price range Minimum number'],
+    ['slider', 'Price range Maximum'], ['spinbutton', 'Price range Maximum number']]],
   'examples/forms/membership.html': [2, 0, [['list', 'Thread'], ['article', 'Message from Forms agent, Agent'], ['form', 'Membership form'],
     ['group', 'Household'], ['button', 'Edit Children: 1'], ['button', 'Send changes']]],
   'examples/cards/register.html': [4, 1, [['article', 'Tray A1'], ['list', 'Thread'], ['article', 'Message from Garden helper, Agent'], ['article', 'Tray B2']]],
@@ -423,7 +427,7 @@ export async function pageRules(session, sessionId, where) {
     .map((node) => node.role.value);
   const markup = await evaluate(session, sessionId, `(() => {
     const ROLES = new Set(['alert', 'article', 'button', 'checkbox', 'dialog', 'form', 'grid', 'group', 'heading', 'img', 'link', 'list',
-      'listitem', 'log', 'main', 'navigation', 'none', 'presentation', 'radio', 'radiogroup', 'region', 'status', 'switch', 'textbox']);
+      'listitem', 'log', 'main', 'navigation', 'none', 'presentation', 'radio', 'radiogroup', 'region', 'slider', 'status', 'switch', 'textbox']);
     const VALUES = { 'aria-invalid': ['true', 'false'], 'aria-live': ['off', 'polite', 'assertive'], 'aria-disabled': ['true', 'false'], tabindex: ['-1', '0'] };
     const problems = [];
     const check = (root, label) => {
@@ -1004,6 +1008,7 @@ async function main() {
       report.examples.push(...await pageRules(session, sessionId, page));
     }
     report.keyboard.push(...await noticeSwitchChecks(session, sessionId, base, problems));
+    report.keyboard.push(...await rangeExampleChecks(session, sessionId, base, MODES, { evaluate, open, key }, problems));
     // The fixture of decision 0006 has one defect of each kind. The generic rules must find each one.
     await open(session, sessionId, `${base}/tests/browser/rules.html`);
     for (let i = 0; i < 100 && !await evaluate(session, sessionId, 'window.muRulesReady === true'); i += 1) await sleep(50);

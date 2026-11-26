@@ -35,6 +35,7 @@ A contract is one JSON file in `catalog/`, for example `catalog/card.json`. The 
 | `text` | A string. The kit always shows it as text, never as markup. | `max_length` is necessary. `min_length` is optional. |
 | `number` | A number. | `minimum` and `maximum` are optional. |
 | `integer` | An integer. | `minimum` and `maximum` are optional. |
+| `number-or-pair` | A finite number or an array of two finite numbers. | A field of this type can be editable. |
 | `boolean` | `true` or `false`. | |
 | `date` | A calendar date as `YYYY-MM-DD`. | The date must exist. |
 | `enum` | One string from `values`. | |

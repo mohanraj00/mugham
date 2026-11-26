@@ -152,10 +152,14 @@ export class FieldElement extends MuElement {
   // Shows the reason of a value that is not valid, and moves the focus to the control. Returns false if the value is valid.
   needValue() {
     if (!this.problem) return false;
+    this.showProblem();
+    (this.problemTarget?.() ?? this.#targets[0]).focus();
+    return true;
+  }
+
+  showProblem() {
     this.#shown = true;
     this.#check();
-    this.#targets[0].focus();
-    return true;
   }
 
   // Shows the reason of a refused submit in the edit type group, and moves the focus to the group.
@@ -219,9 +223,7 @@ export class FieldElement extends MuElement {
     for (const target of targets) target.disabled = Boolean(data.disabled);
     // A change commits a value. Then a value that is not valid shows its reason.
     node.addEventListener('change', (event) => {
-      if (!targets.includes(event.target)) return;
-      this.#shown = true;
-      this.#check();
+      if (targets.includes(event.target)) this.showProblem();
     });
     this.#check();
     // A typed field asks for the edit type after a change. A disabled field has no edit.
@@ -494,12 +496,3 @@ export class MuToggleField extends FieldElement {
     return { node: label, targets: [input], labelled: true };
   }
 }
-
-export const FIELDS = Object.freeze({
-  field: ['mu-field', MuField],
-  'long-text-field': ['mu-long-text-field', MuLongTextField],
-  'number-field': ['mu-number-field', MuNumberField],
-  'date-field': ['mu-date-field', MuDateField],
-  'choice-field': ['mu-choice-field', MuChoiceField],
-  'toggle-field': ['mu-toggle-field', MuToggleField],
-});

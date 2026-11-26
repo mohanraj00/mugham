@@ -19,13 +19,14 @@ const VALID = {
   'date-field': { label: 'Due date', value: '2026-12-01', earliest: '2026-11-01', latest: '2027-01-31' },
   'choice-field': { label: 'Branch', value: 'North', choices: ['North', 'South', 'Harbor'] },
   'toggle-field': { label: 'Email notices', value: true },
+  'range-field': { label: 'Loan period in days', minimum: 7, maximum: 28, step: 7, value: 14 },
   stack: { label: 'Loan details' },
   grid: { label: 'Reading list' },
 };
 const TAGS = { text: 'mu-text', button: 'mu-button', field: 'mu-field', 'long-text-field': 'mu-long-text-field',
   'number-field': 'mu-number-field', 'date-field': 'mu-date-field', 'choice-field': 'mu-choice-field',
-  'toggle-field': 'mu-toggle-field', stack: 'mu-stack', grid: 'mu-grid' };
-const INPUTS = ['field', 'long-text-field', 'number-field', 'date-field', 'choice-field', 'toggle-field'];
+  'toggle-field': 'mu-toggle-field', 'range-field': 'mu-range-field', stack: 'mu-stack', grid: 'mu-grid' };
+const INPUTS = ['field', 'long-text-field', 'number-field', 'date-field', 'choice-field', 'toggle-field', 'range-field'];
 const media = (query) => matchMedia(query).matches;
 const stage = document.getElementById('stage');
 
@@ -261,6 +262,62 @@ const reasonOf = (node) => {
   const limit = CATALOG['long-text-field'].data.value.max_length;
   edit(node, 'x'.repeat(limit + 10));
   check('long-text-field: an edit stays in the contract limit', node.value.length === limit && area.maxLength === limit, node.value.length);
+}
+
+{
+  const data = { label: 'Price range', minimum: 0.05, maximum: 0.25, step: 0.1, value: [0.05, 0.25], typed: true,
+    hint: 'Give two prices.' };
+  const node = mount('range-field', data);
+  const root = node.shadowRoot;
+  const sliders = [...root.querySelectorAll('input[type="range"]')];
+  const numbers = [...root.querySelectorAll('input[type="number"]')];
+  const group = root.querySelector('[role="group"]');
+  const type = root.querySelector('[part="edit-type"]');
+  const read = (controls) => JSON.stringify(controls.map((input) => input.valueAsNumber));
+  const set = (input, value) => {
+    input.value = value;
+    input.dispatchEvent(new Event('input'));
+  };
+  let edits = 0;
+  node.addEventListener('mu-edit', (event) => { if (event.detail.field === 'value') edits += 1; });
+  check('range-field: a pair has a named group, two sliders and two number boxes',
+    root.getElementById(group?.getAttribute('aria-labelledby'))?.textContent === 'Price range'
+    && sliders[0].labels[0]?.textContent === 'Price range'
+    && read(sliders) === '[0.05,0.25]' && read(numbers) === read(sliders)
+    && sliders[0].max === '0.25' && sliders[1].min === '0.05' && type.hidden);
+  const offStepMax = mount('range-field', { ...data, maximum: 0.26 });
+  const lastControls = [...offStepMax.shadowRoot.querySelectorAll('input[part="slider"], input[part="number"]')].slice(-2);
+  check('range-field: the controls stop at the last step when the maximum is off a step',
+    lastControls.length === 2 && lastControls.every((input) => input.max === '0.25' && input.valueAsNumber === 0.25));
+  set(numbers[0], '0.15');
+  check('range-field: a number box updates its slider and the other handle limit',
+    read(numbers) === '[0.15,0.25]' && read(sliders) === read(numbers) && sliders[1].min === '0.15' && edits === 1);
+  set(sliders[1], '0.17');
+  check('range-field: a slider value goes to the nearest step and updates its number box',
+    read(sliders) === '[0.15,0.15]' && read(numbers) === read(sliders) && sliders[0].max === '0.15' && edits === 2);
+  for (const [value, reason] of [
+    ['0.1', 'Step size is 0.1. Start at 0.05.'],
+    ['0.25', 'The low value must be at most the high value.'],
+    ['0.35', 'The number is outside the range 0.05 to 0.25.'],
+    ['', 'Give a number.'],
+  ]) {
+    set(numbers[0], value);
+    numbers[0].dispatchEvent(new Event('change', { bubbles: true }));
+    check('range-field: an invalid number box edit keeps the last value and shows the reason',
+      node.problem === reason && read(numbers) === '[0.15,0.15]' && read(sliders) === read(numbers)
+      && JSON.stringify(node.value) === '[0.15,0.15]' && edits === 2
+      && numbers[0].getAttribute('aria-invalid') === 'true' && root.querySelector('[part="problem"]').textContent === node.problem,
+    node.problem);
+  }
+  type.querySelector('input').click();
+  set(numbers[1], '0.25');
+  set(numbers[0], '0.05');
+  check('range-field: the old pair clears the edit type and the invalid state',
+    type.hidden && !node.changed && node.editType === null && node.problem === null && edits === 4);
+  const disabled = mount('range-field', { ...data, disabled: true, error: 'Check these prices.' });
+  check('range-field: each control is disabled and receives the error description',
+    disabled.dataset.state === 'disabled' && [...disabled.shadowRoot.querySelectorAll('input')].every((input) =>
+      input.disabled && input.getAttribute('aria-invalid') === 'true' && input.getAttribute('aria-describedby').split(' ').length === 2));
 }
 
 // A typed edit works with each input type: the old value and the new value have the contract type.

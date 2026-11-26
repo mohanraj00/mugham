@@ -213,6 +213,8 @@ The action button uses the `icon` part in `icon` and `both` displays. Keep the i
 
 The toggle field parts are `target`, `input`, `label` and `state`. Keep the `target` at least 44 by 44 CSS pixels. Keep the `input`, its focus ring and the `label` visible. In switch display, keep the switch border visible in forced colors and the `On` or `Off` text in the `state` part visible in each theme.
 
+The range field parts are `label`, `group`, `handle-label`, `controls`, `slider` and `number`. The `group` and `handle-label` parts show with two handles. Keep each slider next to its number box in `controls`. Keep the labels, slider track and thumb, number box border and focus rings visible in each theme and in forced colors. Keep each `slider` and `number` at least 44 by 44 CSS pixels. Let the field fit at 375 CSS pixels without horizontal scroll.
+
 The text limit parts are `read-more-content` and `read-more-toggle`. Keep the full text in the content part. Keep the compact toggle, its underline and its focus ring visible when the text exceeds the limit. Keep its border visible in forced colors. Do not add a fade or a height animation.
 
 The rich text parts are `rich-text`, `code`, `link` and `target`. Keep the underline and the focus ring of the `link` part. Do not hide the `target` part, because it shows the address that a link opens.

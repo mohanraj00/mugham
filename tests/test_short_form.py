@@ -49,6 +49,17 @@ def without(contract, path):
 
 
 class ShortFormTest(unittest.TestCase):
+    def test_both_contract_forms_give_the_same_roles_and_keys(self):
+        def accessibility(schema):
+            return schema['properties']['accessibility']['properties']
+
+        full = accessibility(catalog.CONTRACT_SCHEMA)
+        short = accessibility(catalog.SHORT_SCHEMA)
+        self.assertEqual(full['role']['enum'], short['role']['enum'])
+        self.assertEqual(full['keyboard']['items']['enum'], short['keyboard']['items']['enum'])
+        self.assertIn('slider', full['role']['enum'])
+        self.assertTrue({'PageUp', 'PageDown'} <= set(full['keyboard']['items']['enum']))
+
     def test_both_contract_forms_accept_checkbox_and_switch_roles(self):
         for role in ('checkbox', 'switch'):
             with self.subTest(role=role):
