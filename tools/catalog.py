@@ -35,6 +35,7 @@ TIME_ZONE = re.compile(r'[A-Za-z_][A-Za-z0-9_+-]*(/[A-Za-z_][A-Za-z0-9_+-]*)+')
 # The code points that String.trim() removes in the browser validator.
 LABEL_SPACE = ('\t\n\v\f\r \u00a0\u1680\u2000\u2001\u2002\u2003\u2004\u2005'
                '\u2006\u2007\u2008\u2009\u200a\u2028\u2029\u202f\u205f\u3000\ufeff')
+PAGE_TEXT_FIELDS = {'empty-state': ('title', 'text'), 'skeleton': ('label',), 'badge': ('text',), 'avatar': ('name',)}
 
 
 def shown(key):
@@ -520,6 +521,10 @@ def fill_errors(fill, catalog, path='', depth=0):
                 errors.append(prefix + 'data.current: must be within labels')
         elif 'value' in data and data['value'] > data['maximum']:
             errors.append(prefix + 'data.value: must be at most maximum')
+    if not errors:
+        for key in PAGE_TEXT_FIELDS.get(fill['component'], ()):
+            if not data[key].strip(LABEL_SPACE):
+                errors.append(prefix + 'data.%s: give text' % key)
     return errors + slot_errors(fill, contract, prefix, depth)
 
 

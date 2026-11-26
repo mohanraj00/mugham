@@ -4,6 +4,8 @@ Each release has an entry. The newest entry is first.
 
 ## Unreleased
 
+- The kit adds an empty state, a loading skeleton, badges and avatars with initials. The library staff example uses them in the top bar and loan search (#128).
+
 - The kit adds wizard steps and a progress bar with a known or unknown value. The library staff example shows a three-step member wizard (#128).
 - The kit adds an app shell with a drawer on phones, breadcrumbs and pagination. The library staff example shows all three (#128).
 - The kit adds tabs and an accordion with slots for page content. The settings example shows a save with a confirm step and a toast (#127).

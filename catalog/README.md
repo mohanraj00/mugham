@@ -393,3 +393,13 @@ Give `mu-pagination` a navigation name, the current `page` and the total `page_c
 Give `mu-steps` a list name in `label`, an ordered list of step names in `labels` and the current index in `current`. The first index is zero. The list shows Done, Current or Next and the position of each step. The current item has `aria-current="step"`. Tab reaches the buttons for done steps. Enter or Space sends `mu-step-change`, which bubbles across shadow roots with `{ index }` in its detail. Page code sets the new fill, shows the step content and moves focus to the new heading.
 
 Give `mu-progress` a name in `label` and a positive number in `maximum`. Use a finite `value` from zero through `maximum` for known progress. Omit `value` for unknown progress. The bar has the same name in both cases. Unknown progress shows a fixed mark if the person asks for reduced motion.
+
+## Empty results and loading
+
+Give `mu-empty-state` a `title` and short `text`. The title is a heading and names the group. To add a control, put a named button or link in the `action` slot and handle it in page code. The page can supply a live region if it needs to announce changes.
+
+Give `mu-skeleton` a loading name in `label` and a whole number from one to six in `lines`. The status has one accessible name. The lines hold space for the content and stay out of the accessibility tree. Remove or hide the skeleton when the content is ready.
+
+Give `mu-badge` a short `text` label and a `tone` of `neutral`, `info`, `success`, `warning` or `danger`. Use text that gives the meaning of the badge in each theme.
+
+Give `mu-avatar` a `name`. The avatar takes the first letter of the first and last words that contain letters. It uses upper case when the letter has a single upper-case letter. If the name has no letter, the avatar shows a question mark. Assistive technology gets the full name. The fill accepts only the name.

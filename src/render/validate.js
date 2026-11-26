@@ -392,6 +392,10 @@ function dataErrors(data, fields, prefix, catalog, depth) {
   return errors;
 }
 
+const PAGE_TEXT_FIELDS = new Map([
+  ['empty-state', ['title', 'text']], ['skeleton', ['label']], ['badge', ['text']], ['avatar', ['name']],
+]);
+
 // catalog maps a component name to its contract. CI validates each contract with tools/catalog.py.
 export function fillErrors(fill, catalog, path = '', depth = 0) {
   const prefix = path ? path + '.' : '';
@@ -438,6 +442,11 @@ export function fillErrors(fill, catalog, path = '', depth = 0) {
       if (data.current >= data.labels.length) errors.push(prefix + 'data.current: must be within labels');
     } else if (own(data, 'value') && data.value > data.maximum) {
       errors.push(prefix + 'data.value: must be at most maximum');
+    }
+  }
+  if (!errors.length) {
+    for (const key of PAGE_TEXT_FIELDS.get(fill.component) ?? []) {
+      if (!data[key].trim()) errors.push(prefix + `data.${key}: give text`);
     }
   }
   return [...errors, ...slotErrors(fill, contract, prefix, depth)];

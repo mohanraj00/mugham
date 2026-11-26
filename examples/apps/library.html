@@ -7,20 +7,33 @@
   <title>Library staff</title>
   <link rel="stylesheet" href="../../src/tokens/tokens.css">
   <link rel="stylesheet" href="../../src/styles/page.css">
+  <link rel="stylesheet" href="library.css">
   <script type="module" src="library.js"></script>
   <script type="module" src="../frame.js"></script>
 </head>
 <body>
   <mu-app-shell id="staff">
     <strong slot="top">Library staff</strong>
+    <mu-avatar slot="top"></mu-avatar>
     <a id="loan-link" slot="side" href="#loans">Loans</a>
     <a slot="side" href="#staff-guide">Staff guide</a>
     <a slot="side" href="#member-wizard">Add a member</a>
     <mu-breadcrumbs></mu-breadcrumbs>
     <section id="loans" aria-labelledby="loans-title">
       <h1 id="loans-title">Loans</h1>
-      <ul id="loan-list" aria-label="Current loans" aria-live="polite"></ul>
-      <mu-pagination></mu-pagination>
+      <form id="loan-search" aria-label="Loan search">
+        <label for="loan-query">Loan title or shelf</label>
+        <div class="search-controls">
+          <input type="text" id="loan-query">
+          <button type="submit" id="search-loans">Search</button>
+        </div>
+      </form>
+      <mu-skeleton id="loan-loading" hidden></mu-skeleton>
+      <ul id="loan-list" aria-label="Current loans" aria-live="polite" hidden></ul>
+      <mu-empty-state id="loan-empty" hidden>
+        <button type="button" id="clear-loan-search" slot="action">Clear search</button>
+      </mu-empty-state>
+      <mu-pagination hidden></mu-pagination>
     </section>
     <section id="staff-guide" aria-labelledby="staff-guide-title">
       <h2 id="staff-guide-title">Staff guide</h2>

@@ -221,6 +221,8 @@ An asterisk marks a guardrail part. Keep it visible when the kit shows it. Run `
 | `mu-action-button` | `accept`\*, `button`, `cancel`\*, `confirm`\*, `copy`\*, `copy-status`\*, `details`\*, `exit`\*, `icon`\*, `next`\*, `reason`\*, `reference`\*, `retry`\*, `status`\*, `tooltip`\* |
 | `mu-action-queue` | `action`, `actions`, `cancel`\*, `copy`\*, `copy-status`\*, `details`\*, `dismiss`\*, `label`, `name`, `next`\*, `queue`, `queued`, `reason`\*, `retry`\*, `state`\*, `summary` |
 | `mu-app-shell` | `copy`\*, `copy-status`\*, `details`\*, `main`\*, `menu`\*, `next`\*, `reason`\*, `side`\*, `skip`\*, `top`\* |
+| `mu-avatar` | `copy`\*, `copy-status`\*, `details`\*, `initials`\*, `next`\*, `reason`\* |
+| `mu-badge` | `copy`\*, `copy-status`\*, `details`\*, `label`\*, `next`\*, `reason`\* |
 | `mu-breadcrumbs` | `copy`\*, `copy-status`\*, `current`\*, `details`\*, `link`\*, `list`\*, `nav`\*, `next`\*, `reason`\*, `separator` |
 | `mu-button` | `button`, `copy`\*, `copy-status`\*, `details`\*, `next`\*, `reason`\* |
 | `mu-card-grid` | `card-status`\*, `card-title`, `card-toggle`\*, `copy`\*, `copy-status`\*, `details`\*, `empty`, `list`, `next`\*, `reason`\* |
@@ -236,6 +238,7 @@ An asterisk marks a guardrail part. Keep it visible when the kit shows it. Run `
 | `mu-drawer` | `body`\*, `close`\*, `copy`\*, `copy-status`\*, `details`\*, `dialog`\*, `next`\*, `reason`\*, `title`\* |
 | `mu-diff` | `after`\*, `authorship`\*, `before`\*, `change`, `changes`, `citation`\*, `copy`\*, `copy-status`\*, `counts`, `details`\*, `diff`, `empty`, `kind`\*, `label`, `locator`\*, `next`\*, `open`\*, `part`, `provenance`\*, `reason`\*, `summary`, `title`, `value`, `version`\*, `versions` |
 | `mu-editable-form` | `accept`\*, `authorship`\*, `button`, `cancel`\*, `citation`\*, `confirm`\*, `copy`\*, `copy-status`\*, `details`\*, `exit`\*, `form`, `locator`\*, `next`\*, `open`\*, `provenance`\*, `reason`\*, `reference`\*, `retry`\*, `status`\* |
+| `mu-empty-state` | `action`\*, `copy`\*, `copy-status`\*, `details`\*, `next`\*, `reason`\*, `text`\*, `title`\* |
 | `mu-excerpt` | `authorship`\*, `citation`\*, `copy`\*, `copy-status`\*, `details`\*, `excerpt`, `locator`\*, `mark`, `next`\*, `open`\*, `passage`, `provenance`\*, `read-more-content`\*, `read-more-toggle`\*, `reason`\*, `span` |
 | `mu-field` | `copy`\*, `copy-status`\*, `details`\*, `edit-type`\*, `input`\*, `label`\*, `next`\*, `problem`\*, `reason`\* |
 | `mu-form-card` | `accept`\*, `authorship`\*, `button`, `cancel`\*, `changed`\*, `citation`\*, `confirm`\*, `copy`\*, `copy-status`\*, `details`\*, `editor`, `exit`\*, `form`, `label`, `line`, `line-number`, `lines`, `locator`\*, `next`\*, `note`\*, `open`\*, `provenance`\*, `read-only`\*, `reason`\*, `reference`\*, `retry`\*, `save`, `section`, `status`\*, `value` |
@@ -250,6 +253,7 @@ An asterisk marks a guardrail part. Keep it visible when the kit shows it. Run `
 | `mu-range-field` | `controls`\*, `copy`\*, `copy-status`\*, `details`\*, `edit-type`\*, `group`\*, `handle-label`\*, `label`\*, `next`\*, `number`\*, `problem`\*, `reason`\*, `slider`\* |
 | `mu-rich-text` | `authorship`\*, `code`, `copy`\*, `copy-status`\*, `details`\*, `empty`, `link`\*, `next`\*, `read-more-content`\*, `read-more-toggle`\*, `reason`\*, `rich-text`, `target`\* |
 | `mu-select-field` | `control`\*, `copy`\*, `copy-status`\*, `details`\*, `edit-type`\*, `label`\*, `listbox`\*, `next`\*, `option`\*, `popup`\*, `problem`\*, `reason`\*, `search`\*, `status`\*, `value`\* |
+| `mu-skeleton` | `copy`\*, `copy-status`\*, `details`\*, `line`\*, `next`\*, `reason`\*, `status`\* |
 | `mu-source-status` | `checked`\*, `copy`\*, `copy-status`\*, `details`\*, `empty`, `label`, `next`\*, `reason`\*, `source`\*, `state`\* |
 | `mu-stack` | `copy`\*, `copy-status`\*, `details`\*, `layout`, `next`\*, `reason`\* |
 | `mu-status` | `authorship`\*, `copy`\*, `copy-status`\*, `details`\*, `label`\*, `next`\*, `reason`\*, `status`\*, `text`\* |
@@ -309,6 +313,12 @@ Let the breadcrumb `list` and pagination `nav` wrap. Keep the current page disti
 Let the wizard `list` wrap and keep each `step`, its `position` and its `state` visible. Give each `back` button a target of at least 44 by 44 CSS pixels and keep its focus ring visible.
 
 Keep the progress `label` and `value` visible. Keep the `bar` edge and fill distinct in forced colors. Keep the `indicator` visible for unknown progress and stop its motion when the person asks for reduced motion.
+
+Keep the empty state `title` and `text` visible. Keep a named control in its `action` slot at least 44 by 44 CSS pixels and keep its focus ring visible.
+
+Keep each skeleton `line` visible in forced colors. Keep the `status` and its accessible name while content loads. Stop the motion of each line when the person asks for reduced motion.
+
+Keep the badge `label` and the avatar `initials` legible in each theme and in forced colors. Keep the badge text visible in each tone.
 
 The image parts are `image`, `box`, `caption` and `dialog`. Keep the box ratio and its loading and failed notices visible. Keep the caption and the full-size close button visible. The `open` part must keep its focus ring.
 
