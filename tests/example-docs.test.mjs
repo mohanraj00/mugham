@@ -33,3 +33,9 @@ test('the type text of each contract key has no final period', async () => {
   }
   assert.ok(count > 0);
 });
+
+test('the docs panel describes a component reference with field: true', async () => {
+  const { typeText } = await import('../examples/docs.js');
+  const fields = CATALOG['editable-form'].data.fields;
+  assert.equal(typeText(fields), 'A list of 20 items maximum. Each item: A fill of a component whose contract has field: true');
+});

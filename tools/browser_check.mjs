@@ -41,7 +41,8 @@ const MODES = {
   light: [{ name: 'prefers-color-scheme', value: 'light' }],
   dark: [{ name: 'prefers-color-scheme', value: 'dark' }],
   'forced-colors': [{ name: 'forced-colors', value: 'active' }],
-  'reduced-motion': [{ name: 'prefers-reduced-motion', value: 'reduce' }],
+  // Give the color scheme too, so that the result does not change with the dark mode of the host.
+  'reduced-motion': [{ name: 'prefers-reduced-motion', value: 'reduce' }, { name: 'prefers-color-scheme', value: 'light' }],
 };
 // Each check page, and the roles and names that its accessibility tree must have in light mode.
 const PAGES = {
