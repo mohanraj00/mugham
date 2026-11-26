@@ -54,6 +54,7 @@ VALID = {
     'toggle-field': {'name': 'reminder', 'label': 'Send a reminder', 'value': False},
     'range-field': {'name': 'days', 'label': 'Loan period in days', 'minimum': 7, 'maximum': 28, 'step': 7, 'value': 14},
     'select-field': {'name': 'branch', 'label': 'Pickup branch', 'value': 'North', 'choices': ['North', 'South']},
+    'multi-choice-field': {'name': 'plants', 'label': 'Plants', 'value': ['Mist fern'], 'choices': ['Mist fern', 'Dune bell']},
     'stack': {'label': 'Loan details', 'direction': 'row', 'gap': 'small'},
     'grid': {'label': 'Reading list', 'min_column': 'wide'},
     'fact': FACT['data'],
@@ -138,7 +139,7 @@ class CatalogContractTest(unittest.TestCase):
                          ['data.collapse_controls: must be true or false'])
 
     def test_a_form_accepts_each_input_type_and_no_other_component(self):
-        inputs = ['field', 'long-text-field', 'number-field', 'date-field', 'choice-field', 'toggle-field', 'range-field', 'select-field']
+        inputs = ['field', 'long-text-field', 'number-field', 'date-field', 'choice-field', 'toggle-field', 'range-field', 'select-field', 'multi-choice-field']
         form = {'title': 'Loan details', 'submit_label': 'Save', 'fields': [fill(name, VALID[name]) for name in inputs]}
         self.assertEqual(catalog.fill_errors(outer('editable-form', form), CATALOG), [])
         other = {**form, 'fields': [fill('button', VALID['button'])]}
@@ -188,6 +189,35 @@ class CatalogContractTest(unittest.TestCase):
         form = {**VALID['editable-form'], 'fields': [fill(name, {**base, 'value': 0.12})]}
         self.assertEqual(catalog.fill_errors(outer('editable-form', form), CATALOG),
                          ['data.fields[0].data.value: the number is off a step'])
+
+    def test_the_multi_choice_schema_and_fill_require_unique_ordered_choices_within_limits(self):
+        name = 'multi-choice-field'
+        contract = CATALOG[name]
+        self.assertEqual(catalog.contract_errors(contract, name + '.json'), [])
+        self.assertEqual(contract['accessibility']['role'], 'group')
+        self.assertEqual(contract['accessibility']['name'], {'field': 'label'})
+        self.assertTrue(contract['data']['value']['editable'])
+        base = VALID[name]
+        choices = ['Plant %d' % number for number in range(500)]
+        for data in (base, {**base, 'choices': choices, 'value': choices, 'min_items': 500},
+                     {**base, 'value': [], 'max_items': 0}, {'label': 'Plants', 'choices': choices}):
+            self.assertEqual(catalog.fill_errors(fill(name, data), CATALOG), [])
+        for changes, error in [
+            ({'value': ['Other']}, 'value[0]: the value is not one of the choices'),
+            ({'value': ['Mist fern', 'Mist fern']}, 'value: the items are not unique'),
+            ({'value': ['Dune bell', 'Mist fern']}, 'value: use the order of the choices'),
+            ({'min_items': 2}, 'value: fewer than 2 items'),
+            ({'max_items': 0}, 'value: more than 0 items'),
+            ({'min_items': 2, 'max_items': 1}, 'min_items: must be at most max_items'),
+            ({'min_items': -1}, 'min_items: less than the minimum 0'),
+            ({'choices': []}, 'choices: fewer than 1 items'),
+            ({'choices': ['Mist fern', 'Mist fern']}, 'choices: the items are not unique'),
+        ]:
+            with self.subTest(changes=changes):
+                self.assertEqual(catalog.fill_errors(fill(name, {**base, **changes}), CATALOG), ['data.' + error])
+        form = {**VALID['editable-form'], 'fields': [fill(name, {**base, 'min_items': 2})]}
+        self.assertEqual(catalog.fill_errors(outer('editable-form', form), CATALOG),
+                         ['data.fields[0].data.value: fewer than 2 items'])
 
     def test_the_select_field_requires_distinct_choices_and_a_matching_value(self):
         name = 'select-field'

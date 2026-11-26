@@ -14,6 +14,8 @@ const RECORD_VERSION = 1;
 const REQUIRED_KEYS = ['key', 'principal', 'owner', 'order', 'tool', 'arguments', 'label', 'queued', 'tries', 'state', 'message'];
 const RECORD_KEYS = new Set([...REQUIRED_KEYS, 'version', 'edits']);
 const MAX_ACTIONS = 100;
+const MAX_ITEMS = 500;
+const MAX_TEXT = 80;
 const MAX_RECORD = 200000;
 const MAX_LABEL = 120;
 const MAX_PRINCIPAL = 128;
@@ -37,7 +39,6 @@ const isPlain = (value) => value !== null && typeof value === 'object' && !Array
 const isScalar = (value) => typeof value === 'string' || typeof value === 'boolean' || (typeof value === 'number' && Number.isFinite(value));
 const isOrderedPair = (value) => Array.isArray(value) && value.length === 2 && Object.hasOwn(value, 0) && Object.hasOwn(value, 1)
   && Number.isFinite(value[0]) && Number.isFinite(value[1]) && value[0] <= value[1];
-const copyPair = (value) => Object.freeze([value[0], value[1]]);
 const isCount = (value) => Number.isSafeInteger(value) && value >= 0;
 const isPrincipal = (value) => typeof value === 'string' && value.length >= 1 && value.length <= MAX_PRINCIPAL;
 const shortText = (value, max) => typeof value === 'string' && value.length <= max * 2 && [...value].length <= max;
@@ -69,10 +70,25 @@ export function receiptOf(value, request, ids) {
   return receipt;
 }
 
-// Copy each pair so that the page cannot change the arguments that wait in the queue.
-function copyArgs(args) {
-  return Object.freeze(Object.fromEntries(Object.entries(args)
-    .map(([name, value]) => [name, Array.isArray(value) ? copyPair(value) : value])));
+// The action path and the queue use the same rules for text lists and copy each array before use.
+export function isTextList(value) {
+  if (!Array.isArray(value) || value.length > MAX_ITEMS) return false;
+  for (let index = 0; index < value.length; index += 1) {
+    if (!Object.hasOwn(value, index)) return false;
+    const item = value[index];
+    if (typeof item !== 'string' || item.length > MAX_TEXT * 2 || [...item].length > MAX_TEXT) return false;
+  }
+  return true;
+}
+
+export function copyValue(value) {
+  if (!Array.isArray(value)) return value;
+  // Copy only the indexed entries of an array that passed the value check.
+  return Object.freeze(Array.from({ length: value.length }, (_, index) => value[index]));
+}
+
+export function copyArgs(args) {
+  return Object.freeze(Object.fromEntries(Object.entries(args).map(([name, value]) => [name, copyValue(value)])));
 }
 
 // A deep copy of the typed edits of a request, or null.
@@ -84,7 +100,7 @@ function editsOf(edits) {
     const item = {};
     for (const [name, value] of Object.entries(edit)) {
       if (isScalar(value)) item[name] = value;
-      else if ((name === 'old_value' || name === 'new_value') && isOrderedPair(value)) item[name] = copyPair(value);
+      else if ((name === 'old_value' || name === 'new_value') && (isOrderedPair(value) || isTextList(value))) item[name] = copyValue(value);
       else if (isPlain(value) && Object.values(value).every(isScalar)) item[name] = { ...value };
       else return null;
     }
@@ -101,7 +117,7 @@ function recordError(record) {
   const { key, principal, owner, order, tool, arguments: args, label, queued, tries, state, message } = record;
   if (typeof key !== 'string' || !ID.test(key)) return 'The request has no valid key.';
   if (typeof tool !== 'string' || tool.length > 80 || !TOOL.test(tool)) return 'The tool name is not valid.';
-  if (!isPlain(args) || !Object.values(args).every((value) => isScalar(value) || isOrderedPair(value))) {
+  if (!isPlain(args) || !Object.values(args).every((value) => isScalar(value) || isOrderedPair(value) || isTextList(value))) {
     return 'The arguments are not valid.';
   }
   const secret = Object.keys(args).find((name) => CREDENTIAL.test(name));

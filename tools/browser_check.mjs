@@ -20,6 +20,7 @@ import { snapshotChecks } from '../tests/browser/snapshots.js';
 import { UPLOAD_FILES, uploadExampleChecks, uploadKeyboardChecks } from '../tests/browser/upload.js';
 import { plannedErrors, queueExampleChecks } from '../tests/browser/queue.js';
 import { RANGE_PAGE, rangeExampleChecks } from '../tests/browser/range-field.js';
+import { MULTI_CHOICE_PAGE, multiChoiceExampleChecks } from '../tests/browser/multi-choice-field.js';
 import { SELECT_PAGE, selectExampleChecks } from '../tests/browser/select-field.js';
 
 export const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
@@ -98,6 +99,8 @@ const EXAMPLES = {
   [RANGE_PAGE]: [3, 0, [['form', 'Loan limits'], ['slider', 'Loan period in days'], ['spinbutton', 'Loan period in days number'],
     ['group', 'Price range'], ['slider', 'Price range Minimum'], ['spinbutton', 'Price range Minimum number'],
     ['slider', 'Price range Maximum'], ['spinbutton', 'Price range Maximum number']]],
+  [MULTI_CHOICE_PAGE]: [3, 0, [['form', 'Garden bed'], ['group', 'Sun levels'], ['checkbox', 'Full sun'],
+    ['combobox', 'Plants'], ['button', 'Remove Mist fern']]],
   [SELECT_PAGE]: [2, 0, [['form', 'Pickup details'], ['combobox', 'Pickup branch']]],
   'examples/forms/membership.html': [2, 0, [['list', 'Thread'], ['article', 'Message from Forms agent, Agent'], ['form', 'Membership form'],
     ['group', 'Household'], ['button', 'Edit Children: 1'], ['button', 'Send changes']]],
@@ -421,7 +424,7 @@ async function axErrors(session, sessionId, expected, where) {
 // The generic rules of decision 0006. They cover the risks of the axe-core rules that apply to the markup of the kit.
 // Each control in the accessibility tree has a name. In each root, an id is unique and each id reference finds its
 // target. Each role, each value of an ARIA attribute and each tabindex is valid. A tabindex above 0 changes the focus order.
-const CONTROLS = new Set(['button', 'checkbox', 'combobox', 'DisclosureTriangle', 'link', 'listbox', 'menuitem', 'radio',
+const CONTROLS = new Set(['button', 'checkbox', 'combobox', 'DisclosureTriangle', 'link', 'listbox', 'menuitem', 'option', 'radio',
   'searchbox', 'slider', 'spinbutton', 'switch', 'tab', 'textbox']);
 export async function pageRules(session, sessionId, where) {
   const { nodes } = await session.send('Accessibility.getFullAXTree', {}, sessionId);
@@ -432,7 +435,7 @@ export async function pageRules(session, sessionId, where) {
       'listbox', 'listitem', 'log', 'main', 'navigation', 'none', 'option', 'presentation', 'radio', 'radiogroup', 'region', 'slider', 'status', 'switch', 'textbox']);
     const BOOLEAN = ['true', 'false'];
     const VALUES = { 'aria-invalid': BOOLEAN, 'aria-live': ['off', 'polite', 'assertive'], 'aria-disabled': BOOLEAN,
-      'aria-expanded': BOOLEAN, 'aria-selected': BOOLEAN, 'aria-autocomplete': ['none', 'inline', 'list', 'both'], tabindex: ['-1', '0'] };
+      'aria-expanded': BOOLEAN, 'aria-selected': BOOLEAN, 'aria-multiselectable': BOOLEAN, 'aria-autocomplete': ['none', 'inline', 'list', 'both'], tabindex: ['-1', '0'] };
     const REFERENCES = ['aria-describedby', 'aria-labelledby', 'aria-controls', 'aria-activedescendant', 'for'];
     const problems = [];
     const check = (root, label) => {
@@ -473,7 +476,7 @@ async function touchTargetProblems(session, sessionId, includePage = false) {
     const problems = [];
     const join = (a, b) => ({ width: Math.max(a.right, b.right) - Math.min(a.left, b.left), height: Math.max(a.bottom, b.bottom) - Math.min(a.top, b.top) });
     const check = (root, label) => {
-      for (const node of root.querySelectorAll('button, input, textarea, select, summary, td[part="cell"]')) {
+      for (const node of root.querySelectorAll('button, input, textarea, select, summary, td[part="cell"], [role="option"]')) {
         if (!node.getClientRects().length || node.matches('[part="link"]') || (node.matches('input') && node.closest('td[part="cell"]'))) continue;
         let box = node.getBoundingClientRect();
         const text = node.matches('input[type="radio"], input[type="checkbox"]') && node.id ? root.querySelector('label[for="' + node.id + '"]') : null;
@@ -1015,13 +1018,14 @@ async function main() {
     report.keyboard.push(...await noticeSwitchChecks(session, sessionId, base, problems));
     report.keyboard.push(...await rangeExampleChecks(session, sessionId, base, MODES, { evaluate, open, key }, problems));
     report.keyboard.push(...await selectExampleChecks(session, sessionId, base, MODES, { evaluate, open, key, pageRules }, problems));
+    report.keyboard.push(...await multiChoiceExampleChecks(session, sessionId, base, MODES, { evaluate, open, key, pageRules }, problems));
     // The fixture of decision 0006 has one defect of each kind. The generic rules must find each one.
     await open(session, sessionId, `${base}/tests/browser/rules.html`);
     for (let i = 0; i < 100 && !await evaluate(session, sessionId, 'window.muRulesReady === true'); i += 1) await sleep(50);
     const [names, markup, targets] = await pageRules(session, sessionId, 'tests/browser/rules.html');
     const found = markup.detail.split('; ');
     const wanted = ['document: the id twice shows 2 times', 'document: input refers to the missing id nowhere',
-      'document: the role bogus is not known', 'document: aria-live="loud"', 'document: tabindex="3"', 'div: label refers to the missing id missing'];
+      'document: the role bogus is not known', 'document: aria-live="loud"', 'document: aria-multiselectable="yes"', 'document: tabindex="3"', 'div: label refers to the missing id missing'];
     report.examples.push({ page: 'tests/browser/rules.html', step: 'the generic rules find each defect of the fixture',
       ok: !names.ok && names.detail === 'button' && !markup.ok && found.length === wanted.length && wanted.every((item) => found.includes(item))
         && !targets.ok && targets.detail === 'div: button Go is 20 by 20',

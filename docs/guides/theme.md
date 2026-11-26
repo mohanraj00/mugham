@@ -215,6 +215,10 @@ The toggle field parts are `target`, `input`, `label` and `state`. Keep the `tar
 
 The select field parts are `label`, `control`, `value`, `popup`, `search`, `listbox`, `option`, `status` and `problem`. Keep the `control`, `search` and each `option` at least 44 by 44 CSS pixels. Keep the value, the focus rings and the active and selected options distinct in each theme and in forced colors. Let the listbox scroll inside the popup. Keep the status visible when the search has no match.
 
+The multi-choice field parts shared by both displays are `label`, `group` and `problem`. The short display adds `checkbox-label` and `checkbox`. Keep the labels and native check marks visible. The tag picker adds `tags`, `tag`, `tag-text`, `remove`, `search`, `popup`, `listbox`, `option` and `status`. Let tags wrap and let the listbox scroll within the popup. Keep the selection check marks, the active option ring and the search status visible.
+
+Keep each `checkbox`, `remove`, `search` and `option` at least 44 by 44 CSS pixels. Keep each focus ring visible, also in forced colors. Let the field fit at 375 CSS pixels without horizontal scroll. The `edit-type` and `reason` parts use the shared rules for typed fields.
+
 The range field parts are `label`, `group`, `handle-label`, `controls`, `slider` and `number`. The `group` and `handle-label` parts show with two handles. Keep each slider next to its number box in `controls`. Keep the labels, slider track and thumb, number box border and focus rings visible in each theme and in forced colors. Keep each `slider` and `number` at least 44 by 44 CSS pixels. Let the field fit at 375 CSS pixels without horizontal scroll.
 
 The text limit parts are `read-more-content` and `read-more-toggle`. Keep the full text in the content part. Keep the compact toggle, its underline and its focus ring visible when the text exceeds the limit. Keep its border visible in forced colors. Do not add a fade or a height animation.

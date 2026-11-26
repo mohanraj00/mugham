@@ -4,6 +4,7 @@ Each release has an entry. The newest entry is first.
 
 ## Unreleased
 
+- An editable form accepts multiple choices as checkboxes or a searchable tag picker and sends the selected texts as a list (#121).
 - An editable form accepts a select field with up to 500 choices (#120). A list of more than seven choices has a search box.
 - An editable form accepts a range field with one or two slider handles and a number box for each handle (#123). The form sends a number or a pair of numbers.
 - A bench measures long threads in Chrome. The browser check applies a render time limit to the 500-message case (#131).

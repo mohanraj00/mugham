@@ -2,7 +2,7 @@
 // No function here parses a string as markup. tests/test_sinks.py refuses markup sinks in src/.
 const ATTRIBUTES = new Set(['id', 'class', 'part', 'role', 'type', 'for', 'name', 'autocomplete', 'tabindex',
   'aria-label', 'aria-describedby', 'aria-invalid', 'aria-live', 'aria-disabled', 'data-state', 'scope', 'aria-sort', 'aria-hidden',
-  'aria-labelledby', 'aria-expanded', 'aria-controls', 'aria-readonly', 'aria-autocomplete', 'aria-selected']);
+  'aria-labelledby', 'aria-expanded', 'aria-controls', 'aria-readonly', 'aria-autocomplete', 'aria-selected', 'aria-multiselectable']);
 
 export function text(value) {
   return document.createTextNode(String(value));

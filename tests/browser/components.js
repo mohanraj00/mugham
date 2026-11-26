@@ -1181,7 +1181,7 @@ const inputOf = (node, name) => {
     && refusedText(choice).includes('data.fields[0].data.value: the value is not one of the choices'), refusedText(choice));
   const other = mount('editable-form', { ...INPUT_FORM, fields: [fill('button', { label: 'Shelf code' })] });
   check('input form: refuses a component that the form does not name', other.dataset.state === 'refused'
-    && refusedText(other).includes('data.fields[0].component: must be field or long-text-field or number-field or date-field or choice-field or toggle-field or range-field or select-field'),
+    && refusedText(other).includes('data.fields[0].component: must be field or long-text-field or number-field or date-field or choice-field or toggle-field or range-field or select-field or multi-choice-field'),
   refusedText(other));
 }
 
