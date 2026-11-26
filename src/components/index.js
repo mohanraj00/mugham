@@ -13,6 +13,8 @@ import { MuTable } from './table.js';
 export { MuTable } from './table.js';
 import { MuDialog, MuDrawer } from './dialog.js';
 export { MuDialog, MuDrawer } from './dialog.js';
+import { MuMenu, MuTooltip, MuToast } from './popovers.js';
+export { MuMenu, MuTooltip, MuToast } from './popovers.js';
 import { MuStatus } from './status.js';
 export { MuStatus } from './status.js';
 import { MuImage } from './image.js';
@@ -1514,6 +1516,7 @@ export function define(registry = customElements) {
   for (const [name, element] of [['mu-action-button', MuActionButton], ['mu-card', MuCard],
     ['mu-card-grid', MuCardGrid], ['mu-editable-form', MuEditableForm], ['mu-form-card', MuFormCard], ['mu-citation', MuCitation], ['mu-diff', MuDiff],
     ['mu-dialog', MuDialog], ['mu-drawer', MuDrawer],
+    ['mu-menu', MuMenu], ['mu-tooltip', MuTooltip], ['mu-toast', MuToast],
     ['mu-excerpt', MuExcerpt], ['mu-table', MuTable], ['mu-status', MuStatus], ['mu-source-status', MuSourceStatus], ['mu-action-queue', MuActionQueue], ['mu-image', MuImage], ['mu-chart', MuChart],
     ['mu-rich-text', MuRichText], ['mu-data-grid', MuDataGrid], ['mu-upload', MuUpload]]) {
     if (!registry.get(name)) registry.define(name, element);

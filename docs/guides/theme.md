@@ -236,6 +236,7 @@ An asterisk marks a guardrail part. Keep it visible when the kit shows it. Run `
 | `mu-grid` | `copy`\*, `copy-status`\*, `details`\*, `layout`, `next`\*, `reason`\* |
 | `mu-image` | `authorship`\*, `box`\*, `caption`\*, `copy`\*, `copy-status`\*, `details`\*, `dialog`\*, `image`, `next`\*, `open`\*, `reason`\*, `status`\* |
 | `mu-long-text-field` | `copy`\*, `copy-status`\*, `details`\*, `edit-type`\*, `input`\*, `label`\*, `next`\*, `problem`\*, `reason`\* |
+| `mu-menu` | `copy`\*, `copy-status`\*, `details`\*, `item`\*, `menu`\*, `next`\*, `reason`\*, `trigger`\* |
 | `mu-multi-choice-field` | `checkbox`\*, `checkbox-label`\*, `copy`\*, `copy-status`\*, `details`\*, `edit-type`\*, `group`\*, `label`\*, `listbox`\*, `next`\*, `option`\*, `popup`\*, `problem`\*, `reason`\*, `remove`\*, `search`\*, `status`\*, `tag`, `tag-text`\*, `tags` |
 | `mu-number-field` | `copy`\*, `copy-status`\*, `details`\*, `edit-type`\*, `input`\*, `label`\*, `next`\*, `problem`\*, `reason`\* |
 | `mu-range-field` | `controls`\*, `copy`\*, `copy-status`\*, `details`\*, `edit-type`\*, `group`\*, `handle-label`\*, `label`\*, `next`\*, `number`\*, `problem`\*, `reason`\*, `slider`\* |
@@ -248,7 +249,9 @@ An asterisk marks a guardrail part. Keep it visible when the kit shows it. Run `
 | `mu-text` | `copy`\*, `copy-status`\*, `details`\*, `next`\*, `read-more-content`\*, `read-more-toggle`\*, `reason`\*, `text` |
 | `mu-thread` | `copy`\*, `copy-status`\*, `details`\*, `list`, `next`\*, `read-more-content`\*, `read-more-toggle`\*, `reason`\*, `source`\*, `state`\*, `stream`\* |
 | `mu-time-field` | `copy`\*, `copy-status`\*, `details`\*, `edit-type`\*, `input`\*, `label`\*, `next`\*, `problem`\*, `reason`\* |
+| `mu-toast` | `close`\*, `copy`\*, `copy-status`\*, `details`\*, `message`\*, `next`\*, `reason`\*, `toast`\* |
 | `mu-toggle-field` | `copy`\*, `copy-status`\*, `details`\*, `edit-type`\*, `input`\*, `label`\*, `next`\*, `problem`\*, `reason`\*, `state`\*, `target` |
+| `mu-tooltip` | `copy`\*, `copy-status`\*, `details`\*, `next`\*, `reason`\*, `tooltip`\* |
 | `mu-upload` | `authorship`\*, `cancel`\*, `choose`, `copy`\*, `copy-status`\*, `details`\*, `drop`, `file`, `files`, `help`, `label`, `limits`\*, `name`, `next`\*, `problems`\*, `reason`\*, `reference`\*, `remove`, `retry`\*, `send`, `size`, `state`\*, `status`\*, `upload` |
 
 ### Exported parts
@@ -280,6 +283,12 @@ Each rule protects a principle of the [constitution](../../CONSTITUTION.md#princ
 A page can style these parts for layout, for example a margin or a width, if it keeps each rule above: `actions`, `button`, `card`, `choices`, `empty`, `excerpt`, `facts`, `form`, `input`, `label`, `layout`, `list`, `mark`, `passage`, `quote`, `span`, `table` and `text`. The form card adds the layout parts `section`, `lines`, `line`, `line-number`, `value`, `editor` and `save`. The diff adds the layout parts `diff`, `title`, `versions`, `counts`, `summary`, `changes`, `change` and `value`. `seed-tray` in [examples/cards/register.js](../../examples/cards/register.js) shows that an application element can add its own part, for example `tray`.
 
 Keep the `dialog`, `title`, `body` and `close` parts of a dialog or drawer visible while it is open. Keep the close button at least 44 by 44 CSS pixels and keep its focus ring visible. Let the browser hide the modal when it is closed.
+
+Keep the menu `trigger` and each `item` at least 44 by 44 CSS pixels. Keep their focus rings visible. Let the `menu` scroll when it is too tall for the available space.
+
+Keep the `tooltip` text and border visible while it is open. Leave space for it above or below the target. Keep the target and its focus ring visible.
+
+Keep the `toast` and its `message` visible while the toast is open. If it has a `close` button, keep the button at least 44 by 44 CSS pixels and keep its focus ring visible.
 
 The image parts are `image`, `box`, `caption` and `dialog`. Keep the box ratio and its loading and failed notices visible. Keep the caption and the full-size close button visible. The `open` part must keep its focus ring.
 

@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; object-src 'none'; base-uri 'none'">
+  <title>Mugham menu, tooltip and toast</title>
+  <link rel="stylesheet" href="../../src/tokens/tokens.css">
+  <link rel="stylesheet" href="../../src/styles/page.css">
+  <link rel="stylesheet" href="../page.css">
+  <script type="module" src="popovers.js"></script>
+  <script type="module" src="../frame.js"></script>
+</head>
+<body>
+  <main id="main">
+    <h1>Seed tray notes</h1>
+    <p id="options"></p>
+    <p id="tray-summary">Tray A3 holds dune bell seeds.</p>
+    <p id="help"><button id="tray-help" type="button">About this tray</button></p>
+    <p>
+      <button id="show-toast" type="button">Save note</button>
+      <button id="show-error" type="button">Try a failed save</button>
+    </p>
+    <p id="save-result"></p>
+  </main>
+</body>
+</html>

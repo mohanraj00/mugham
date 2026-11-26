@@ -4,6 +4,7 @@ Each release has an entry. The newest entry is first.
 
 ## Unreleased
 
+- The kit adds a menu for page choices, a tooltip for help text and a toast for status messages (#127).
 - The kit adds a dialog and a drawer with page content, Escape and focus return (#127).
 - An editable form accepts a registered field that follows the kit field protocol (#125). The examples show a color field and a contact card made from kit components.
 - The kit adds new color, elevation, radius and easing tokens, with neutral, high contrast and compact presets in light and dark modes (#126). The component gallery shows each preset.

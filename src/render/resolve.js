@@ -37,6 +37,9 @@ function resolvedField(key, field, path, defaults, errors, tier = 'field') {
       else if (!own(field, 'max_length')) full.push(['max_length', defaults.sizes[value]]);
     } else if (name === 'items') {
       full.push(['items', resolvedField(key, value, path + '.items', defaults, errors, 'item')]);
+    } else if (name === 'fields') {
+      full.push(['fields', Object.fromEntries(Object.entries(value).map(([key, field]) =>
+        [key, resolvedField(key, field, path + '.fields.' + key, defaults, errors)]))]);
     } else {
       full.push([name, value]);
     }

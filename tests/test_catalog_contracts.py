@@ -68,6 +68,9 @@ VALID = {
     'action-button': {'label': 'Renew', 'description': 'Renew the loan for two weeks.'},
     'dialog': {'title': 'Release tray A3', 'close_label': 'Close dialog'},
     'drawer': {'title': 'Tray details', 'close_label': 'Close drawer'},
+    'menu': {'label': 'Tray options', 'items': [{'label': 'Export CSV', 'name': 'export_csv'}]},
+    'tooltip': {'text': 'Each tray holds 12 cells.'},
+    'toast': {'message': 'Tray note saved.', 'kind': 'status', 'close_label': 'Close message'},
     'editable-form': {'title': 'Loan details', 'submit_label': 'Save', 'fields': [fill('field', {'name': 'shelf', 'label': 'Shelf code'})]},
     'card-grid': {'label': 'Loans', 'cards': [CARD]},
     'form-line': {'line': '2.1', 'field': fill('number-field', {'name': 'adults', 'label': 'Adults', 'value': 2})},
@@ -108,6 +111,45 @@ VALID = {
 
 
 class CatalogContractTest(unittest.TestCase):
+    def test_popover_contracts_declare_roles_keys_and_parts(self):
+        expected = {
+            'menu': ('menu', {'field': 'label'}, ['Tab', 'Shift+Tab', 'Enter', 'Space', 'Escape',
+                                                  'ArrowUp', 'ArrowDown', 'Home', 'End'], {'menu', 'item', 'trigger'}),
+            'tooltip': ('tooltip', {'field': 'text'}, ['Tab', 'Shift+Tab', 'Escape'], {'tooltip'}),
+            'toast': ('status', {'text': 'Notification'}, ['Tab', 'Shift+Tab', 'Enter', 'Space'],
+                      {'toast', 'message', 'close'}),
+        }
+        for name, (role, accessible_name, keyboard, parts) in expected.items():
+            with self.subTest(component=name):
+                contract = CATALOG[name]
+                self.assertEqual(catalog.contract_errors(contract, name + '.json'), [])
+                self.assertEqual(contract['states'], ['default', 'open', 'refused'])
+                self.assertEqual(contract['accessibility'], {
+                    'role': role, 'name': accessible_name, 'keyboard': keyboard,
+                    'forced_colors': True, 'reduced_motion': True,
+                })
+                self.assertTrue(parts <= {part['name'] for part in contract['parts'] if part['guardrail']})
+                self.assertFalse(contract['ai_content'])
+
+    def test_menu_items_have_two_scalar_fields(self):
+        data = VALID['menu']
+        for item, field in [
+            ({'label': 'Export CSV'}, 'name'),
+            ({'label': 'Export CSV', 'name': 'Export-CSV'}, 'name'),
+            ({'label': 'Export CSV', 'name': 'export_csv\n'}, 'name'),
+            ({'label': CARD, 'name': 'export_csv'}, 'label'),
+            ({**data['items'][0], 'action': 'tray.export'}, 'action'),
+        ]:
+            with self.subTest(item=item):
+                errors = catalog.fill_errors(fill('menu', {**data, 'items': [item]}), CATALOG)
+                self.assertTrue(any(error.startswith(f'data.items[0].{field}:') for error in errors), errors)
+
+    def test_menu_item_with_too_many_fields_gets_one_error(self):
+        data = VALID['menu']
+        item = {**data['items'][0], **{f'extra_{index}': 'Extra text' for index in range(40)}}
+        self.assertEqual(catalog.fill_errors(fill('menu', {**data, 'items': [item]}), CATALOG),
+                         ['data.items[0]: more than 40 keys'])
+
     def test_modal_contracts_declare_the_name_keys_and_scalar_fields(self):
         for name in ('dialog', 'drawer'):
             with self.subTest(component=name):

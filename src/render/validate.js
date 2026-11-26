@@ -141,10 +141,15 @@ export function schemaErrors(value, schema, root = schema, path = '', label = '(
   return errors;
 }
 
-// Each field of a contract, with the items of a list. The contract must agree with the schema.
+// Each field of a contract, with the items of a list and the fields of a record.
 function fieldsOf(contract) {
-  return Object.entries(contract.data).flatMap(([name, field]) =>
-    field.type === 'list' ? [['data.' + name, field], [`data.${name}.items`, field.items]] : [['data.' + name, field]]);
+  return Object.entries(contract.data).flatMap(([name, field]) => {
+    const path = 'data.' + name;
+    if (field.type !== 'list') return [[path, field]];
+    const item = path + '.items';
+    return [[path, field], [item, field.items],
+      ...Object.entries(field.items.fields ?? {}).map(([key, nested]) => [item + '.fields.' + key, nested])];
+  });
 }
 
 // The component names that a component field accepts: its name, or each item of its names.
@@ -275,6 +280,7 @@ function valueErrors(value, field, path, catalog, depth) {
       if (typeof value !== 'string') return [`${path}: must be a string`];
       if (length(value, field.max_length) > field.max_length) return [`${path}: more than ${field.max_length} characters`];
       if (length(value, field.max_length) < (field.min_length ?? 0)) return [`${path}: fewer than ${field.min_length} characters`];
+      if (field.format === 'name') return schemaErrors(value, CONTRACT_SCHEMA.$defs.field_name, CONTRACT_SCHEMA, path);
       return [];
     case 'number':
     case 'integer':
@@ -303,6 +309,8 @@ function valueErrors(value, field, path, catalog, depth) {
       }
       return errors;
     }
+    case 'record':
+      return isObject(value) ? dataErrors(value, field.fields, path + '.', catalog, depth) : [path + ': must be an object'];
     case 'component':
       if (isObject(value)) {
         const name = value.component;
@@ -339,23 +347,32 @@ function multiChoiceErrors({ choices, value = [], ...limits }, prefix) {
   return [];
 }
 
+function dataErrors(data, fields, prefix, catalog, depth) {
+  const keys = Object.keys(data);
+  const max = FILL_SCHEMA.properties.data.maxProperties;
+  if (keys.length > max) return [`${prefix.slice(0, -1)}: more than ${max} keys`];
+  const errors = [];
+  for (const key of keys) {
+    if (!own(fields, key)) errors.push(`${prefix}${shown(key)}: the contract does not declare this field`);
+  }
+  for (const [key, field] of Object.entries(fields)) {
+    if (own(data, key)) errors.push(...valueErrors(data[key], field, prefix + key, catalog, depth));
+    else if (field.required) errors.push(`${prefix}${key}: a required field is missing`);
+  }
+  return errors;
+}
+
 // catalog maps a component name to its contract. CI validates each contract with tools/catalog.py.
 export function fillErrors(fill, catalog, path = '', depth = 0) {
   const prefix = path ? path + '.' : '';
   if (depth > MAX_DEPTH) return [`${path || '(fill)'}: the fill is nested too deep`];
-  const errors = schemaErrors(fill, FILL_SCHEMA, FILL_SCHEMA, path, '(fill)');
-  if (errors.length) return errors;
+  const schema = schemaErrors(fill, FILL_SCHEMA, FILL_SCHEMA, path, '(fill)');
+  if (schema.length) return schema;
   const contract = own(catalog, fill.component) ? catalog[fill.component] : undefined;
   if (contract === undefined) return [`${prefix}component: no contract has the name ${fill.component}`];
   if (fill.version !== contract.version) return [`${prefix}version: must be ${contract.version}`];
   const data = fill.data;
-  for (const key of Object.keys(data)) {
-    if (!own(contract.data, key)) errors.push(`${prefix}data.${shown(key)}: the contract does not declare this field`);
-  }
-  for (const [key, field] of Object.entries(contract.data)) {
-    if (own(data, key)) errors.push(...valueErrors(data[key], field, `${prefix}data.${key}`, catalog, depth));
-    else if (field.required) errors.push(`${prefix}data.${key}: a required field is missing`);
-  }
+  const errors = dataErrors(data, contract.data, prefix + 'data.', catalog, depth);
   if (!errors.length && fill.component === 'range-field' && contract.data.value?.type === 'number-or-pair'
     && [data.minimum, data.maximum, data.step].every(Number.isFinite) && own(data, 'value')) {
     errors.push(...rangeErrors(data, prefix + 'data.'));
