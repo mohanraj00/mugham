@@ -648,6 +648,65 @@ test('a new proposal title closes confirmation and requires a new binding', () =
   assert.equal(reject.control.getAttribute('aria-disabled'), 'true');
 });
 
+test('a new queue label removes the bindings of each row with no pending decision', () => {
+  const queue = makeResearch('approval-queue', APPROVALS);
+  bindDecisions(queue, 'hold');
+  bindDecisions(queue, 'list');
+  const list = find(queue.shadowRoot, 'list');
+  const [hold, listed] = list.children;
+  const approve = decision(hold, 0);
+  const controls = [approve, decision(hold, 1), decision(listed, 0), decision(listed, 1)];
+  approve.control.click();
+  assert.equal(words(hold), 'Confirm approval');
+
+  const label = 'West branch approvals';
+  queue.fill = researchFill('approval-queue', { ...APPROVALS, label });
+  assert.equal(find(queue.shadowRoot, 'label').textContent, label);
+  assert.equal(list.getAttribute('aria-label'), label);
+  assert.deepEqual(list.children.map(words), ['Unavailable', 'Unavailable']);
+  for (const { root, control, requests } of controls) {
+    assert.equal(control.getAttribute('aria-disabled'), 'true');
+    control.click();
+    assert.equal(find(root, 'confirm'), undefined);
+    assert.deepEqual(requests, []);
+  }
+
+  bindDecisions(queue, 'hold');
+  assert.deepEqual(list.children.map(words), ['Awaiting decision', 'Unavailable']);
+  approve.control.click();
+  approve.confirm();
+  const [request] = approve.requests;
+  assert.equal(request.tool, 'catalog.approve');
+  assert.equal(queue.receipt({ key: request.key, ok: true }), true);
+  assert.equal(words(hold), 'Approved');
+});
+
+test('a new queue label keeps a pending decision until its receipt', () => {
+  const queue = makeResearch('approval-queue', APPROVALS);
+  bindDecisions(queue, 'hold');
+  const [hold] = find(queue.shadowRoot, 'list').children;
+  const approve = decision(hold, 0);
+  const reject = decision(hold, 1);
+  approve.control.click();
+  approve.confirm();
+  const [request] = approve.requests;
+
+  queue.fill = researchFill('approval-queue', { ...APPROVALS, label: 'West branch approvals' });
+  const { title, summary } = APPROVALS.items[0];
+  assert.equal(find(hold, 'title').textContent, title);
+  assert.equal(find(hold, 'summary').textContent, summary);
+  assert.equal(words(hold), 'Pending');
+  assert.equal(reject.control.getAttribute('aria-disabled'), 'true');
+
+  assert.equal(queue.receipt({ id: request.id, key: request.key, ok: true }), true);
+  assert.equal(find(queue.shadowRoot, 'announcement').textContent, title + ': Approved');
+  assert.equal(words(hold), 'Unavailable');
+  assert.equal(approve.control.getAttribute('aria-disabled'), 'true');
+  assert.equal(reject.control.getAttribute('aria-disabled'), 'true');
+  bindDecisions(queue, 'hold');
+  assert.equal(words(hold), 'Awaiting decision');
+});
+
 for (const end of ['receipt', 'cancel']) {
   test('a pending decision keeps its bound text until ' + end, () => {
     const queue = makeResearch('approval-queue', APPROVALS);

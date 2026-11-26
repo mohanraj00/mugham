@@ -595,13 +595,14 @@ export class MuApprovalQueue extends MuElement {
     const next = new Map();
     for (const item of items) {
       const entry = this.#rows.get(item.id) ?? this.#newItem();
-      entry.proposal = { title: item.title, summary: item.summary };
+      entry.proposal = { label, title: item.title, summary: item.summary };
       this.#showProposal(entry);
       next.set(item.id, entry);
     }
     for (const [id, entry] of this.#rows) {
       if (next.has(id)) continue;
       if (entry.row.dataset.state === 'pending') {
+        entry.proposal = { ...entry.proposal, label };
         next.set(id, entry);
       } else {
         this.#remove(entry);
@@ -623,8 +624,11 @@ export class MuApprovalQueue extends MuElement {
 
   #showProposal(entry) {
     if (entry.row.dataset.state === 'pending') return;
-    const { title, summary } = entry.proposal;
-    if (entry.bound && (entry.bound.title !== title || entry.bound.summary !== summary)) this.#unbind(entry);
+    const { proposal, bound } = entry;
+    const { title, summary } = proposal;
+    if (bound && ['label', 'title', 'summary'].some((field) => bound[field] !== proposal[field])) {
+      this.#unbind(entry);
+    }
     if (entry.title.textContent !== title) {
       entry.title.textContent = title;
       for (const name of entry.names) name.textContent = title;
