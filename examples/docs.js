@@ -15,7 +15,9 @@ const el = (tag, props = {}, ...children) => {
 const code = (text) => el('code', {}, text);
 // A doc link goes to the page of the repository that shows the Markdown file. The local servers do not show Markdown.
 const link = (target) => el('a', { href: new URL(target.path, DOCS.repository).href }, target.text);
-const targets = (field) => (own(field, 'names') ? field.names : [field.name]);
+// A reference with field: true names no contract. It accepts each contract with the same flag, and the page lists
+// the fields that it uses as its own components.
+const targets = (field) => (field.field === true ? [] : own(field, 'names') ? field.names : [field.name]);
 
 // The type of a field as text, with its limits.
 export function typeText(field) {
@@ -33,7 +35,8 @@ export function typeText(field) {
     case 'enum': return `One of: ${field.values.join(', ')}`;
     case 'number-or-pair': return 'A number or a pair of numbers';
     case 'list': return `A list of ${field.max_items} items maximum. Each item: ${typeText(field.items)}`;
-    case 'component': return `A fill of ${targets(field).join(' or ')}`;
+    case 'component': return field.field === true ? 'A fill of a component whose contract has field: true'
+      : `A fill of ${targets(field).join(' or ')}`;
     default: return field.type;
   }
 }
