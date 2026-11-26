@@ -106,7 +106,7 @@ const EXAMPLES = {
   [DIALOG_PAGE]: [3, 0, [['button', 'Open dialog'], ['button', 'Open drawer']]],
   [POPOVER_PAGE]: [3, 0, [['button', 'Tray options'], ['button', 'About this tray'], ['button', 'Save note']]],
   [SETTINGS_PAGE]: [6, 0, [['tablist', 'Settings'], ['tab', 'General'], ['tabpanel', 'General']]],
-  [LIBRARY_PAGE]: [4, 0, [['main', ''], ['navigation', 'Breadcrumbs'], ['navigation', 'Loan pages']]],
+  [LIBRARY_PAGE]: [13, 0, [['main', ''], ['navigation', 'Breadcrumbs'], ['navigation', 'Loan pages'], ['list', 'Member steps'], ['progressbar', 'Wizard progress']]],
   [RANGE_PAGE]: [3, 0, [['form', 'Loan limits'], ['slider', 'Loan period in days'], ['spinbutton', 'Loan period in days number'],
     ['group', 'Price range'], ['slider', 'Price range Minimum'], ['spinbutton', 'Price range Minimum number'],
     ['slider', 'Price range Maximum'], ['spinbutton', 'Price range Maximum number']]],
