@@ -61,6 +61,7 @@ The kit tokens in `src/tokens/tokens.json` take their values from [tokens.json](
 | Kit token | Brand token |
 | --- | --- |
 | `color.surface` | `surface` |
+| `color.surface-subtle` | `surface-raised` |
 | `color.page` | `bg` |
 | `color.text` | `ink` |
 | `color.text-muted` | `ink-muted` |

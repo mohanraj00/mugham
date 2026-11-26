@@ -15,6 +15,8 @@ Each release has an entry. The newest entry is first.
 - An editable form accepts multiple choices as checkboxes or a searchable tag picker and sends the selected texts as a list (#121).
 - An editable form accepts a select field with up to 500 choices (#120). A list of more than seven choices has a search box.
 - An editable form accepts a range field with one or two slider handles and a number box for each handle (#123). The form sends a number or a pair of numbers.
+- A bench measures long threads in Chrome. The browser check applies a render time limit to the 500-message case (#131).
+- Cards in a thread use a subtle surface and keep their article labels (#134). Fact labels and values align on the baseline. The author line shows the name first. When the author is the message actor, the visible line is shorter and a screen reader reads the full author. In a message of an agent, the thread refuses a card whose bound author is a person.
 - The contract schemas accept the `checkbox` and `switch` roles (#150). The toggle field declares `checkbox` and uses its label as its accessible name.
 - Data grids and uploads offer `Retry` and `Cancel` after a try with no receipt (#138). A queued grid change also offers `Cancel`. Cancel keeps the grid edit as `Changed`. Each retry keeps the same key and uses a new id. The offline queue refuses requests with files.
 - An editable form accepts a yes or no field as a checkbox or a switch (#122). The switch shows `On` or `Off`. The form sends `true` or `false`.

@@ -215,7 +215,7 @@ python3 tools/serve.py
 python3 tools/thread_server.py
 ```
 
-   The server prints the URL of the example. Open that URL. The default port is 8765. If that port is in use, the server takes a free port and prints its URL. To choose the port, use `python3 tools/thread_server.py --port 8766`. If a port that you chose is in use, the server prints one line that names the port and exits with an error. Then choose a different port. Two people and two agents talk about a loan. The thread refuses one undeclared component. The Renew action shows `Done` only after the receipt comes back.
+   The server prints the URL of the example. Open that URL. The default port is 8765. If that port is in use, the server takes a free port and prints its URL. To choose the port, use `python3 tools/thread_server.py --port 8766`. If a port that you chose is in use, the server prints one line that names the port and exits with an error. Then choose a different port. Two people and two agents talk about a loan. The loan card uses the short author line. The rules card shows a different author in full. The thread refuses one undeclared component. The Renew action shows `Done` only after the receipt comes back.
 
 6. For the example apps, start the fixture API of the apps. It prints the URL of each app. The default port is 8770. If that port is in use, the server takes a free port.
 
@@ -256,6 +256,8 @@ To use the kit in your own page, serve `src/` and `catalog/` from one origin, lo
 Each release has the archive `mugham.tar` and its `mugham.tar.sha256` file as release assets. Two builds of the same source give the same bytes. The release publishes no package ([decision 0004](docs/decisions/0004-package.md)).
 
 Run the project checks with `make check`. The checks need Python 3, Node.js and Chrome.
+
+The browser check also runs the long thread bench. [Long thread bench](src/thread/README.md#long-thread-bench) gives the command, the 16 ms target and the 16 ms CI margin.
 
 ## Limits
 
