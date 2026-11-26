@@ -4,6 +4,9 @@ import { createKit, fill, onAction } from '../../src/kit.js';
 import { el, sheet } from '../../src/render/dom.js';
 import COLOR_FIELD from './color-field.json' with { type: 'json' };
 
+// The contract gives each color a name. The select shows a label for each name.
+const COLOR_LABELS = { rain_blue: 'Rain blue', reed_green: 'Reed green', clay_red: 'Clay red' };
+
 const CSS = sheet(`
   select {
     min-block-size: 44px; min-inline-size: 44px; max-inline-size: 100%;
@@ -33,7 +36,11 @@ class ColorField extends FieldElement {
   control(data, id) {
     const placeholder = el('option', {}, 'Choose a color');
     placeholder.value = '';
-    const choices = COLOR_FIELD.data.value.values.map((color) => el('option', {}, color));
+    const choices = COLOR_FIELD.data.value.values.map((color) => {
+      const option = el('option', {}, COLOR_LABELS[color]);
+      option.value = color;
+      return option;
+    });
     const select = el('select', { id }, placeholder, ...choices);
     select.required = true;
     select.value = data.value ?? '';

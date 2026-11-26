@@ -80,7 +80,7 @@ export async function colorExampleChecks(session, sessionId, base, modes, { eval
         const blocked = log.textContent === '' && select.getAttribute('aria-invalid') === 'true'
           && select.getAttribute('aria-describedby')?.split(' ').includes(problem.id) && field.activeElement === select;
         const error = problem.textContent;
-        select.value = 'Reed green';
+        select.value = 'reed_green';
         select.dispatchEvent(new Event('change', { bubbles: true }));
         submit.click();
         await new Promise((done) => requestAnimationFrame(done));
@@ -89,7 +89,7 @@ export async function colorExampleChecks(session, sessionId, base, modes, { eval
       })()`);
       check(mode, 'the form shows the missing color error and sends the selected color after correction',
         result.blocked && result.error === 'Choose a label color.' && result.cleared
-        && JSON.stringify(result.args) === '{"color":"Reed green"}' && result.state === 'done', result);
+        && JSON.stringify(result.args) === '{"color":"reed_green"}' && result.state === 'done', result);
     }
   } finally {
     await session.send('Emulation.setEmulatedMedia', { features: modes.light }, sessionId);

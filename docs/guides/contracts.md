@@ -215,7 +215,7 @@ For an invalid value, the form shows `validationMessage` and focuses the field. 
 
 The [color example](../../examples/forms/colors.html) registers a [field contract](../../examples/forms/color-field.json) with three fixed colors. Its [element](../../examples/forms/colors.js) extends `FieldElement` from `src/primitives/index.js`. That class supplies the protocol, the label and the error display. The example supplies a native select, reads the selected value and calls `changedValue()` when the selection changes. An element can also extend `MuElement` and supply the properties and event itself.
 
-Press **Save label** before you choose a color. The field shows **Choose a label color.** and the select takes focus. Choose **Reed green** and press **Save label** again. The request shows `{"color":"Reed green"}`, and the form shows **Done** after the receipt.
+Press **Save label** before you choose a color. The field shows **Choose a label color.** and the select takes focus. Choose **Reed green** and press **Save label** again. The request shows `{"color":"reed_green"}`, and the form shows **Done** after the receipt.
 
 ## A composite contact card
 

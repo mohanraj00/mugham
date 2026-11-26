@@ -6,7 +6,7 @@
   "data": {
     "name": {"type": "text", "required": true, "min_length": 1, "size": "short"},
     "label": {"type": "text", "required": true, "min_length": 1, "size": "line"},
-    "value": {"type": "enum", "values": ["Rain blue", "Reed green", "Clay red"], "editable": true},
+    "value": {"type": "enum", "values": ["rain_blue", "reed_green", "clay_red"], "editable": true},
     "disabled": {"type": "boolean"}
   },
   "states": ["+disabled", "+error"],

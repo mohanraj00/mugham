@@ -730,18 +730,21 @@ export class MuEditableForm extends ActionElement {
       return;
     }
     const edits = this.action.typed.length ? [] : undefined;
-    for (const { node, data, initial, editedAt } of this.#fields) {
-      if (!Object.hasOwn(values, data.name)) continue;
+    const sent = this.#fields.filter(({ data }) => Object.hasOwn(values, data.name));
+    // Each value must be valid before a field asks for an edit type, so the first wrong value takes the focus.
+    for (const { node, data } of sent) {
       const message = node.validationMessage;
       if (typeof message === 'string' && message) {
         this.#showError(message, node, 'reportValidity');
         return;
       }
-      const value = values[data.name];
-      if (typeof message !== 'string' || !isActionValue(value)) {
+      if (typeof message !== 'string' || !isActionValue(values[data.name])) {
         this.#showError(`${data.label}: the value is not valid for the action.`, node);
         return;
       }
+    }
+    for (const { node, data, initial, editedAt } of sent) {
+      const value = values[data.name];
       if (!data.typed || sameFieldValue(initial, value)) continue;
       if (initial === undefined) {
         this.#showError(`${data.label}: the initial value is not valid for the action.`, node);
@@ -780,7 +783,7 @@ export class MuEditableForm extends ActionElement {
     const submit = el('button', { type: 'submit', part: 'button' }, data.submit_label);
     const form = el('form', { 'aria-label': data.title, part: 'form' },
       el('p', { class: 'title' }, data.title), provenance(this.fill.slots), ...this.#fields.map(({ node }) => node),
-      el('div', {}, submit, this.#error), ...this.attach(submit, status));
+      el('div', {}, submit), ...this.attach(submit, status), this.#error);
     // An edit after done makes the values new, so the form can save again.
     form.addEventListener('mu-edit', () => {
       this.#error.textContent = '';

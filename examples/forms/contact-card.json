@@ -5,7 +5,7 @@
   "data": {
     "title": {"type": "text", "required": true, "min_length": 1, "size": "title"},
     "contact_name": {"type": "text", "size": "long"},
-    "method": {"type": "enum", "required": true, "values": ["Email", "Phone"]}
+    "method": {"type": "text", "required": true, "min_length": 1, "size": "short"}
   },
   "tokens": ["color.surface", "color.text", "color.border", "space.3", "space.4", "radius.2", "type.body", "type.heading-2"],
   "accessibility": {"role": "article", "name": {"field": "title"}, "keyboard": ["Tab", "Shift+Tab", "ArrowUp", "ArrowDown", "Enter", "Space"]}

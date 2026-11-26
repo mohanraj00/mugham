@@ -3,6 +3,8 @@ import { mount, onAction } from '../../src/kit.js';
 import { EDGE, el, sheet } from '../../src/render/dom.js';
 import CONTACT_CARD from './contact-card.json' with { type: 'json' };
 
+const METHODS = ['Email', 'Phone'];
+
 const CSS = sheet(`
   :host { display: block; }
   article {
@@ -20,7 +22,7 @@ class ContactCard extends MuElement {
 
   render(data) {
     const name = mount('field', { label: 'Contact name', value: data.contact_name ?? '' });
-    const method = mount('choice-field', { label: 'Contact method', value: data.method, choices: CONTACT_CARD.data.method.values });
+    const method = mount('choice-field', { label: 'Contact method', value: data.method, choices: METHODS });
     const save = mount('action-button', { label: 'Save contact' });
     const refreshAction = () => {
       if (save.action.state === 'pending') return;
