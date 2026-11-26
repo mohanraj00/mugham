@@ -413,7 +413,11 @@ Tab reaches the buttons. Enter or Space opens the confirm step and puts the focu
 
 Use `onAction(queue, handler)` to send each request and return its receipt. An application that listens for `mu-action` directly can give the receipt to `queue.receipt(value)`. Each decision shows `Approved` or `Rejected` only after a matching receipt with `ok: true`. A failed receipt shows the reason and permits a new confirmed request. A retry after no receipt keeps the same key and gets a new request id.
 
-Use the same id for a new fill of the same proposal. Its action state, pending request and focus stay. Use a new id and binding for a different proposal. A polite status gives each change to the decision state. See [Library research](../examples/apps/research.html).
+Use the same id for a new fill of the same proposal. If the title and summary stay the same, the row keeps its action state and focus. A change to either field closes any open confirm step and removes the binding. The row shows the new text and `Unavailable`, with both controls disabled. Call `bind()` again to enable them. A done row keeps its result until the binding is removed.
+
+A pending row keeps its bound title and summary until a receipt or cancel ends the decision. The queue then applies the last title and summary it received for that id. A fill that omits a pending row keeps it through the end of the decision. The first later fill that omits the row removes it. An omitted row with only an open confirm step closes the step and goes away at once.
+
+A refused fill hides the list and keeps pending rows and their keys. A receipt can still end a kept decision. The next valid fill uses the same row for the same id and applies the same rules for omitted rows. A polite status announces the result of a kept decision with its bound title, also during a refusal. See [Library research](../examples/apps/research.html).
 
 ## Empty results and loading
 

@@ -529,7 +529,7 @@ export class MuApprovalQueue extends MuElement {
   // Bind only proposals that the application accepts. Each control uses a separate action binding.
   bind(id, decisions) {
     const entry = this.#rows.get(id);
-    if (!entry || entry.bound) throw new TypeError('bind: give the id of an item with no binding');
+    if (!this.fill || !entry || entry.bound) throw new TypeError('bind: give the id of an item with no binding');
     const bindings = Object.entries(DECISIONS).map(([kind, { label }]) => {
       const binding = { ...decisions?.[kind], label };
       if (!binding.confirm) throw new TypeError('bind: give a confirm step for ' + label);
@@ -541,7 +541,7 @@ export class MuApprovalQueue extends MuElement {
       return [kind, binding];
     });
     for (const [kind, binding] of bindings) entry.actions[kind].action = binding;
-    entry.bound = true;
+    entry.bound = entry.proposal;
     entry.row.dataset.state = 'default';
     entry.state.textContent = 'Awaiting decision';
   }
@@ -555,18 +555,28 @@ export class MuApprovalQueue extends MuElement {
   }
 
   state({ items }) {
-    return items.length ? 'default' : 'empty';
+    if (items.length || [...this.#rows.values()].some(({ row }) => row.dataset.state === 'pending')) return 'default';
+    return 'empty';
   }
 
   refuse(errors) {
-    for (const entry of this.#rows.values()) this.#remove(entry);
-    this.#rows.clear();
-    this.#view = null;
+    // Keep decisions that were pending at the first refusal until the next valid fill.
+    if (this.fill) {
+      for (const [id, entry] of this.#rows) {
+        if (entry.row.dataset.state === 'pending') continue;
+        this.#remove(entry);
+        this.#rows.delete(id);
+      }
+    }
+    if (this.#rows.size === 0) this.#view = null;
     super.refuse(errors);
+    const announcement = this.#view?.announcement;
+    if (this.dataset.state === 'refused' && announcement && !announcement.parentNode) {
+      this.shadowRoot.append(announcement);
+    }
   }
 
   render({ label, items }) {
-    const firstFill = this.#view === null;
     this.#view ??= {
       label: el('p', { part: 'label' }),
       byline: el('p', { part: 'authorship' }),
@@ -582,21 +592,22 @@ export class MuApprovalQueue extends MuElement {
       view.label.textContent = label;
       view.list.setAttribute('aria-label', label);
     }
-    view.empty.hidden = items.length > 0;
-
     const next = new Map();
     for (const item of items) {
       const entry = this.#rows.get(item.id) ?? this.#newItem();
-      if (entry.title.textContent !== item.title) {
-        entry.title.textContent = item.title;
-        for (const name of entry.names) name.textContent = item.title;
-      }
-      if (entry.summary.textContent !== item.summary) entry.summary.textContent = item.summary;
+      entry.proposal = { title: item.title, summary: item.summary };
+      this.#showProposal(entry);
       next.set(item.id, entry);
     }
     for (const [id, entry] of this.#rows) {
-      if (!next.has(id)) this.#remove(entry);
+      if (next.has(id)) continue;
+      if (entry.row.dataset.state === 'pending') {
+        next.set(id, entry);
+      } else {
+        this.#remove(entry);
+      }
     }
+    view.empty.hidden = next.size > 0;
     const active = this.shadowRoot.activeElement;
     let before = null;
     for (const { row } of [...next.values()].reverse()) {
@@ -607,7 +618,18 @@ export class MuApprovalQueue extends MuElement {
       before = row;
     }
     this.#rows = next;
-    return firstFill ? [view.label, view.byline, view.list, view.empty, view.announcement] : null;
+    return view.list.parentNode === this.shadowRoot ? null : [view.label, view.byline, view.list, view.empty, view.announcement];
+  }
+
+  #showProposal(entry) {
+    if (entry.row.dataset.state === 'pending') return;
+    const { title, summary } = entry.proposal;
+    if (entry.bound && (entry.bound.title !== title || entry.bound.summary !== summary)) this.#unbind(entry);
+    if (entry.title.textContent !== title) {
+      entry.title.textContent = title;
+      for (const name of entry.names) name.textContent = title;
+    }
+    if (entry.summary.textContent !== summary) entry.summary.textContent = summary;
   }
 
   #newItem() {
@@ -616,7 +638,7 @@ export class MuApprovalQueue extends MuElement {
     const state = el('p', { part: 'state' }, 'Unavailable');
     const controls = el('div', { class: 'decisions' });
     const row = el('li', { part: 'item', 'data-state': 'disabled' }, title, summary, state, controls);
-    const entry = { row, title, summary, state, actions: {}, views: {}, names: [], bound: false };
+    const entry = { row, title, summary, state, actions: {}, views: {}, names: [], bound: null, proposal: null };
     for (const [kind, { label }] of Object.entries(DECISIONS)) {
       const child = document.createElement('mu-action-button');
       child.setAttribute('exportparts', 'button: action-button-button, accept: action-button-accept, cancel: action-button-cancel, confirm: action-button-confirm, copy: action-button-copy, copy-status: action-button-copy-status, exit: action-button-exit, reference: action-button-reference, retry: action-button-retry');
@@ -652,15 +674,29 @@ export class MuApprovalQueue extends MuElement {
     if (state === 'done') words = DECISIONS[kind].result + words.slice(STATUS.done.length);
     if (!words) words = 'Awaiting decision';
     if (entry.row.dataset.state === state && entry.state.textContent === words) return;
+    const resolved = entry.row.dataset.state === 'pending' && state !== 'pending';
     entry.row.dataset.state = state;
     entry.state.textContent = words;
-    this.#view.announcement.textContent = `${entry.title.textContent}: ${words}`;
+    const { announcement } = this.#view;
+    // A receipt can come back in a refusal event listener, before refuse() puts the status back.
+    if (this.dataset.state === 'refused' && !announcement.parentNode) this.shadowRoot.append(announcement);
+    announcement.textContent = `${entry.bound.title}: ${words}`;
+    if (resolved) this.#showProposal(entry);
+  }
+
+  #unbind(entry) {
+    if (!entry.bound) return;
+    entry.bound = null;
+    for (const action of Object.values(entry.actions)) {
+      action.action = null;
+      action[BLOCK_ACTION](false);
+    }
+    entry.row.dataset.state = 'disabled';
+    entry.state.textContent = 'Unavailable';
   }
 
   #remove(entry) {
-    entry.bound = false;
-    entry.actions.approve.action = null;
-    entry.actions.reject.action = null;
+    this.#unbind(entry);
     entry.row.remove();
   }
 }

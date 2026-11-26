@@ -1,6 +1,6 @@
 {
   "name": "approval-queue",
-  "description": "A named list of proposals with unique ids. The application binds the approve and reject actions of each proposal. The list shows the state of each item and gives changes in a polite status. Each decision needs its own receipt. A new fill keeps the actions and focus of items with the same id.",
+  "description": "A named list of proposals with unique ids. A new title or summary requires a new binding after any pending decision ends. Pending decisions keep their bound text and key across omitted items and refused fills. A polite status gives each receipt result.",
   "parts": [
     {"name": "action-button-accept", "description": "Button that confirms a decision.", "guardrail": true},
     {"name": "action-button-button", "description": "Button that starts an approval or a rejection.", "guardrail": false},

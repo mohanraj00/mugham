@@ -596,20 +596,168 @@ test('a new approval fill keeps the focused control, pending action and state by
   const cancel = find(reject.root, 'cancel');
   const announced = live.children[0];
   const [held, listed] = APPROVALS.items;
-  queue.fill = researchFill('approval-queue', { ...APPROVALS, items: [
-    { ...listed, title: 'Add the title to the list' }, { ...held, summary: 'Keep the book for two days.' },
-  ] });
+  queue.fill = researchFill('approval-queue', { ...APPROVALS, items: [listed, held] });
   assert.deepEqual(list.children, [other, hold]);
   assert.equal(reject.root.activeElement, cancel);
   assert.equal(queue.shadowRoot.activeElement, reject.source);
-  assert.equal(find(other, 'title').textContent, 'Add the title to the list');
-  assert.equal(find(hold, 'summary').textContent, 'Keep the book for two days.');
+  assert.equal(find(other, 'title').textContent, listed.title);
+  assert.equal(find(hold, 'summary').textContent, held.summary);
   assert.deepEqual([words(other), words(hold)], ['Confirm rejection', 'Pending']);
   assert.equal(live.children[0], announced);
   assert.equal(queue.receipt({ key: approve.requests[0].key, ok: true }), true);
   assert.equal(words(hold), 'Approved');
   assert.equal(reject.root.activeElement, cancel);
   find(reject.root, 'cancel').click();
+});
+
+test('a new proposal title closes confirmation and requires a new binding', () => {
+  const queue = makeResearch('approval-queue', APPROVALS);
+  bindDecisions(queue, 'hold');
+  const [hold] = find(queue.shadowRoot, 'list').children;
+  const approve = decision(hold, 0);
+  const reject = decision(hold, 1);
+  approve.control.click();
+  assert.ok(find(approve.root, 'confirm'));
+
+  const [held, listed] = APPROVALS.items;
+  const title = 'Place a hold at the west branch';
+  queue.fill = researchFill('approval-queue', { ...APPROVALS, items: [{ ...held, title }, listed] });
+  assert.equal(find(hold, 'title').textContent, title);
+  assert.equal(words(hold), 'Unavailable');
+  assert.equal(find(approve.root, 'confirm'), undefined);
+  for (const { root, control, requests } of [approve, reject]) {
+    assert.equal(root.children.find((node) => node.id === 'proposal-title').textContent, title);
+    assert.equal(control.getAttribute('aria-disabled'), 'true');
+    control.click();
+    assert.equal(find(root, 'confirm'), undefined);
+    assert.deepEqual(requests, []);
+  }
+  bindDecisions(queue, 'hold');
+  assert.equal(words(hold), 'Awaiting decision');
+  assert.equal(reject.control.getAttribute('aria-disabled'), 'false');
+  reject.control.click();
+  reject.confirm();
+  assert.equal(reject.requests[0].tool, 'catalog.reject');
+  assert.equal(queue.receipt({ key: reject.requests[0].key, ok: true }), true);
+  queue.fill = queue.fill;
+  assert.equal(words(hold), 'Rejected');
+  const summary = 'Keep the book for two days.';
+  queue.fill = researchFill('approval-queue', { ...APPROVALS, items: [{ ...held, title, summary }, listed] });
+  assert.equal(find(hold, 'summary').textContent, summary);
+  assert.equal(words(hold), 'Unavailable');
+  assert.equal(reject.control.getAttribute('aria-disabled'), 'true');
+});
+
+for (const end of ['receipt', 'cancel']) {
+  test('a pending decision keeps its bound text until ' + end, () => {
+    const queue = makeResearch('approval-queue', APPROVALS);
+    bindDecisions(queue, 'hold');
+    const [hold] = find(queue.shadowRoot, 'list').children;
+    const live = find(queue.shadowRoot, 'announcement');
+    const approve = decision(hold, 0);
+    const reject = decision(hold, 1);
+    approve.control.click();
+    approve.confirm();
+    const [request] = approve.requests;
+    const [held, listed] = APPROVALS.items;
+    const title = 'Place a hold at the west branch';
+    const summary = 'Keep the book for two days.';
+    queue.fill = researchFill('approval-queue', { ...APPROVALS, items: [{ ...held, title }, listed] });
+    queue.fill = researchFill('approval-queue', { ...APPROVALS, items: [{ ...held, title, summary }, listed] });
+    assert.equal(find(hold, 'title').textContent, held.title);
+    assert.equal(find(hold, 'summary').textContent, held.summary);
+    assert.equal(approve.root.children.find((node) => node.id === 'proposal-title').textContent, held.title);
+    assert.equal(words(hold), 'Pending');
+    assert.equal(live.textContent, held.title + ': Pending');
+
+    if (end === 'receipt') {
+      assert.equal(queue.receipt({ key: request.key, ok: true }), true);
+      assert.equal(live.textContent, held.title + ': Approved');
+    } else {
+      approve.source.noReceipt(request.id);
+      find(approve.root, 'cancel').click();
+      assert.equal(queue.receipt({ key: request.key, ok: true }), false);
+    }
+    assert.equal(find(hold, 'title').textContent, title);
+    assert.equal(find(hold, 'summary').textContent, summary);
+    assert.equal(words(hold), 'Unavailable');
+    assert.equal(approve.control.getAttribute('aria-disabled'), 'true');
+    assert.equal(reject.control.getAttribute('aria-disabled'), 'true');
+    bindDecisions(queue, 'hold');
+    assert.equal(words(hold), 'Awaiting decision');
+  });
+}
+
+test('a fill that omits a pending row keeps it until a later fill after its receipt', () => {
+  const queue = makeResearch('approval-queue', APPROVALS);
+  bindDecisions(queue, 'hold');
+  const list = find(queue.shadowRoot, 'list');
+  const [hold] = list.children;
+  const approve = decision(hold, 0);
+  approve.control.click();
+  approve.confirm();
+  const omitted = researchFill('approval-queue', { ...APPROVALS, items: [] });
+  queue.fill = omitted;
+  assert.deepEqual(list.children, [hold]);
+  assert.equal(queue.dataset.state, 'default');
+  assert.equal(find(queue.shadowRoot, 'empty').hidden, true);
+  assert.equal(find(hold, 'title').textContent, APPROVALS.items[0].title);
+  assert.equal(find(hold, 'summary').textContent, APPROVALS.items[0].summary);
+  assert.equal(words(hold), 'Pending');
+  assert.equal(queue.receipt({ key: approve.requests[0].key, ok: true }), true);
+  assert.deepEqual(list.children, [hold]);
+  assert.equal(words(hold), 'Approved');
+  assert.equal(find(queue.shadowRoot, 'announcement').textContent, 'Place a hold: Approved');
+  queue.fill = omitted;
+  assert.deepEqual(list.children, []);
+  assert.equal(queue.dataset.state, 'empty');
+  assert.equal(find(queue.shadowRoot, 'empty').hidden, false);
+});
+
+test('a refused fill keeps pending rows, their keys and their receipt results', () => {
+  const queue = makeResearch('approval-queue', APPROVALS);
+  bindDecisions(queue, 'hold');
+  bindDecisions(queue, 'list');
+  const [hold, listed] = find(queue.shadowRoot, 'list').children;
+  const approve = decision(hold, 0);
+  const reject = decision(listed, 1);
+  approve.control.click();
+  approve.confirm();
+  reject.control.click();
+  reject.confirm();
+  const [approval] = approve.requests;
+  const [rejection] = reject.requests;
+
+  queue.fill = null;
+  assert.equal(queue.dataset.state, 'refused');
+  assert.equal(find(queue.shadowRoot, 'list'), undefined);
+  assert.equal(queue.receipt({ key: approval.key, ok: true }), true);
+  assert.equal(find(queue.shadowRoot, 'announcement').textContent, 'Place a hold: Approved');
+  queue.fill = null;
+  queue.fill = researchFill('approval-queue', APPROVALS);
+  assert.deepEqual(find(queue.shadowRoot, 'list').children, [hold, listed]);
+  assert.deepEqual([words(hold), words(listed)], ['Approved', 'Pending']);
+  reject.source.noReceipt(rejection.id);
+  find(reject.root, 'retry').click();
+  const retry = reject.requests[1];
+  assert.notEqual(retry.id, rejection.id);
+  assert.equal(retry.key, rejection.key);
+  assert.equal(queue.receipt({ key: retry.key, ok: true }), true);
+  assert.equal(words(listed), 'Rejected');
+});
+
+test('a fill that omits a row closes its open confirm step and removes the row', () => {
+  const queue = makeResearch('approval-queue', APPROVALS);
+  bindDecisions(queue, 'hold');
+  const list = find(queue.shadowRoot, 'list');
+  const [hold, other] = list.children;
+  const approve = decision(hold, 0);
+  approve.control.click();
+  assert.ok(find(approve.root, 'confirm'));
+  queue.fill = researchFill('approval-queue', { ...APPROVALS, items: [APPROVALS.items[1]] });
+  assert.deepEqual(list.children, [other]);
+  assert.equal(find(approve.root, 'confirm'), undefined);
+  assert.deepEqual(approve.requests, []);
 });
 
 test('run steps show an ordered list, the states and optional details as text', () => {
