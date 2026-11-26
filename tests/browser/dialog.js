@@ -49,7 +49,12 @@ export async function dialogExampleChecks(session, sessionId, base, modes, { eva
   const steps = [];
   const page = (expression) => evaluate(session, sessionId, expression);
   const read = (name) => page(`(${readModal})(${JSON.stringify(name)})`);
-  const press = (name, code, number, text) => key(session, sessionId, name, code, number, text);
+  // In headless Chrome, a key event for Escape makes the page hidden, and a hidden page stops its animation frames.
+  // Bring the page to the front again after each Escape.
+  const press = async (name, code, number, text) => {
+    await key(session, sessionId, name, code, number, text);
+    if (name === 'Escape') await session.send('Page.bringToFront', {}, sessionId);
+  };
   const enter = () => press('Enter', 'Enter', 13, '\r');
   const tab = () => press('Tab', 'Tab', 9);
   const backTab = async () => {
@@ -63,7 +68,7 @@ export async function dialogExampleChecks(session, sessionId, base, modes, { eva
     const end = performance.now() + 5000;
     function check() {
       if (${expression}) done(true);
-      else if (performance.now() < end) requestAnimationFrame(check);
+      else if (performance.now() < end) setTimeout(check, 16);
       else fail(new Error('The modal example did not reach the expected state.'));
     }
     check();
