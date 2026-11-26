@@ -20,4 +20,4 @@ Tab moves into the format toolbar, then into the editable area. In the toolbar, 
 
 Use the link control to enter a full address. The page must permit its scheme. Press Escape to close the address control and return to the editable area. Select a link and press Link again to remove it. A click in the editable text does not open a link.
 
-The editor reads paste and drop as data. It keeps supported blocks and text. It drops unsafe elements and uses only link addresses that the page permits. An edit that exceeds a limit leaves the last valid value in place and shows a message below the editor.
+The editor reads paste and drop as data. It keeps supported blocks and text. It drops unsafe elements and uses only link addresses that the page permits. In a page with a Content Security Policy, the browser can report a violation for an inline event handler attribute, which the editor discards from the pasted HTML without running the handler. An edit that exceeds a limit leaves the last valid value in place and shows a message below the editor.

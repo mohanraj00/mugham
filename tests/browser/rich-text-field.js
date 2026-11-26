@@ -1,5 +1,17 @@
 export const RICH_TEXT_FIELD_PAGE = 'examples/apps/library-note.html';
 
+const INLINE_HANDLER_REPORT = "Executing inline event handler violates the following Content Security Policy directive 'script-src 'self''."
+  + " Either the 'unsafe-inline' keyword, a hash ('sha256-...'), or a nonce ('nonce-...') is required to enable inline execution."
+  + " Note that hashes do not apply to event handlers, style attributes and javascript: navigations unless the 'unsafe-hashes' keyword is present."
+  + ' The action has been blocked.';
+
+function plannedErrors(problems, start) {
+  const added = problems.splice(start);
+  const other = added.filter((text) => text !== INLINE_HANDLER_REPORT);
+  problems.push(...other);
+  return { count: added.length - other.length, other };
+}
+
 function toolbarState() {
   const root = document.querySelector('mu-editable-form').shadowRoot.querySelector('mu-rich-text-field').shadowRoot;
   const toolbar = root.querySelector('[part="toolbar"]');
@@ -148,38 +160,6 @@ async function exerciseEditor() {
   const native = new InputEvent('beforeinput', { inputType: 'formatBold', bubbles: true, cancelable: true });
   check(!editor().dispatchEvent(native) && checkMark('strong'), 'The editor did not handle the native bold command.');
 
-  const paste = (html, plain, type = 'paste') => {
-    const data = new DataTransfer();
-    data.setData('text/html', html);
-    data.setData('text/plain', plain);
-    return !editor().dispatchEvent(type === 'paste'
-      ? new ClipboardEvent('paste', { clipboardData: data, cancelable: true, bubbles: true })
-      : new DragEvent('drop', { dataTransfer: data, cancelable: true, bubbles: true }));
-  };
-  reset();
-  select(lastText(0));
-  const html = '<script>window.noteScriptExecuted = true</script><style>p{color:red}</style>'
-    + '<iframe></iframe><img onerror="window.noteScriptExecuted = true"><p onclick="window.noteScriptExecuted = true" style="color:red">'
-    + '<strong>Safe text</strong> <a href="javascript:ignored">Script link</a> <a href="data:text/plain,ignored">Data link</a></p>';
-  check(paste(html, 'Fallback'), 'The paste default action was not canceled.');
-  const pasted = JSON.stringify(field.value);
-  check(valid() && editor().textContent === 'Safe text Script link Data link'
-    && !editor().querySelector('script,style,iframe,img,[onclick],[onerror],[style],[href],a')
-    && !pasted.includes('javascript:') && !pasted.includes('data:text') && !pasted.includes('<script>')
-    && !window.noteScriptExecuted, 'The paste kept an unsafe element, attribute, address or text.');
-  const prior = JSON.stringify(field.value);
-  check(paste('<div>'.repeat(40) + 'Deep' + '</div>'.repeat(40), '')
-    && root.querySelector('[part="status"]').textContent && JSON.stringify(field.value) === prior,
-  'The deep paste did not keep the previous value.');
-  check(paste('x'.repeat(262145), '') && root.querySelector('[part="status"]').textContent && JSON.stringify(field.value) === prior,
-    'The large paste did not keep the previous value.');
-  check(paste('', 'x'.repeat(2001)) && root.querySelector('[part="status"]').textContent && JSON.stringify(field.value) === prior,
-    'The paste that exceeded the span limit did not keep the previous value.');
-  reset();
-  select(lastText(0));
-  check(paste('<em>Drop text</em>', '', 'drop') && checkMark('emphasis') && editor().textContent === 'Drop text',
-    'The drop did not cancel the default action and use the same data walk.');
-
   reset();
   const div = document.createElement('div');
   const font = document.createElement('font');
@@ -197,6 +177,57 @@ async function exerciseEditor() {
   const request = document.querySelector('#saved-note').textContent;
   check(form.dataset.state === 'done' && JSON.stringify(JSON.parse(request)) === JSON.stringify(field.value),
     'The form did not send the edited rich text value and accept the receipt.');
+  return failures;
+}
+
+async function exercisePasteAndDrop() {
+  const { richTextValueErrors } = await import('/src/render/rich-text.js');
+  const form = document.querySelector('mu-editable-form');
+  const field = form.shadowRoot.querySelector('mu-rich-text-field');
+  const root = field.shadowRoot;
+  const editor = () => root.querySelector('[part="input"]');
+  const selectNote = () => {
+    field.fill = form.fill.data.fields[0];
+    editor().focus();
+    const range = document.createRange();
+    range.selectNodeContents(editor().querySelector('p').firstChild);
+    const selection = root.getSelection?.() ?? document.getSelection();
+    selection.removeAllRanges();
+    selection.addRange(range);
+  };
+  const valid = () => richTextValueErrors(field.value).length === 0;
+  const failures = [];
+  const check = (condition, message) => { if (!condition) failures.push(message); };
+  const paste = (html, plain, type = 'paste') => {
+    const data = new DataTransfer();
+    data.setData('text/html', html);
+    data.setData('text/plain', plain);
+    return !editor().dispatchEvent(type === 'paste'
+      ? new ClipboardEvent('paste', { clipboardData: data, cancelable: true, bubbles: true })
+      : new DragEvent('drop', { dataTransfer: data, cancelable: true, bubbles: true }));
+  };
+  selectNote();
+  const html = '<script>window.noteScriptExecuted = true</script><style>p{color:red}</style>'
+    + '<iframe></iframe><img onerror="window.noteScriptExecuted = true"><p onclick="window.noteScriptExecuted = true" style="color:red">'
+    + '<strong>Safe text</strong> <a href="javascript:ignored">Script link</a> <a href="data:text/plain,ignored">Data link</a></p>';
+  check(paste(html, 'Fallback'), 'The paste default action was not canceled.');
+  const pasted = JSON.stringify(field.value);
+  check(valid() && editor().textContent === 'Safe text Script link Data link'
+    && !editor().querySelector('script,style,iframe,img,[onclick],[onerror],[style],[href],a')
+    && !pasted.includes('javascript:') && !pasted.includes('data:text') && !pasted.includes('<script>'),
+  'The paste kept an unsafe element, attribute, address or text.');
+  const prior = JSON.stringify(field.value);
+  check(paste('<div>'.repeat(40) + 'Deep' + '</div>'.repeat(40), '')
+    && root.querySelector('[part="status"]').textContent && JSON.stringify(field.value) === prior,
+  'The deep paste did not keep the previous value.');
+  check(paste('x'.repeat(262145), '') && root.querySelector('[part="status"]').textContent && JSON.stringify(field.value) === prior,
+    'The large paste did not keep the previous value.');
+  check(paste('', 'x'.repeat(2001)) && root.querySelector('[part="status"]').textContent && JSON.stringify(field.value) === prior,
+    'The paste that exceeded the span limit did not keep the previous value.');
+  selectNote();
+  check(paste('<em>Drop text</em>', '', 'drop') && valid()
+    && field.value.data.blocks[0]?.data.content[0]?.data.mark === 'emphasis' && editor().textContent === 'Drop text',
+    'The drop did not cancel the default action and use the same data walk.');
   return failures;
 }
 
@@ -269,8 +300,26 @@ export async function richTextFieldChecks(session, sessionId, base, modes, { ope
             'A target, color, media setting, motion value or page width is incorrect.', first);
           steps.push(...await withLimit(() => pageRules(session, sessionId, RICH_TEXT_FIELD_PAGE + ' at ' + view), 'Check the page rules'));
 
+          const start = problems.length;
+          const policyFailures = [];
+          try {
+            const errors = await page(exercisePasteAndDrop);
+            check(view, 'paste and drop keep only the permitted data', errors.length === 0,
+              'Paste or drop gave a different result.', errors);
+            if (await page(() => 'noteScriptExecuted' in window)) {
+              policyFailures.push('An inline script or event handler ran.');
+            }
+          } catch (error) {
+            policyFailures.push(String(error));
+          }
+          const { count, other } = plannedErrors(problems, start);
+          if (count === 0) policyFailures.push('The browser did not give a planned policy report.');
+          if (other.length > 0) policyFailures.push('Paste or drop gave an unexpected page error.');
+          check(view, 'a paste of inline handlers makes only the planned policy reports and no handler runs',
+            policyFailures.length === 0, policyFailures.join(' '), { count, other });
+
           const errors = await page(exerciseEditor);
-          check(view, 'formats, shortcuts, paste, drop, input repair and form submit work',
+          check(view, 'formats, shortcuts, input repair and form submit work',
             errors.length === 0, 'An editor action gave a different result.', errors);
         } catch (error) {
           check(view, 'complete the editor checks', false, String(error));
