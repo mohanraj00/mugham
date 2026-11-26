@@ -5,6 +5,7 @@ import { CATALOG } from '../src/render/catalog.js';
 import { contractErrors, fillErrors } from '../src/render/validate.js';
 import { readRichTree, readRichTransfer } from '../src/primitives/rich-text-field-model.js';
 import { richTextValueErrors } from '../src/render/rich-text.js';
+import { isPlannedPolicyReport, richTextFieldChecks } from './browser/rich-text-field.js';
 
 const fill = (component, data) => ({ component, version: '0.1.0', data });
 const span = (text, mark) => fill('rich-span', mark ? { text, mark } : { text });
@@ -111,4 +112,87 @@ test('the editable tree uses the same walk and retains the text of browser-made 
   valid(readRichTree(body(tag('p', tag('a', text('Rules')))), {
     editorLink: () => 'https://example.org/rules',
   }), rich(paragraph(fill('rich-link', { text: 'Rules', url: 'https://example.org/rules' }))));
+});
+
+const policyReport = {
+  source: 'security',
+  level: 'error',
+  text: "Executing inline event handler violates the following Content Security Policy directive 'script-src 'self''."
+    + " Either the 'unsafe-inline' keyword, a hash ('sha256-...'), or a nonce ('nonce-...') is required to enable inline execution."
+    + " Note that hashes do not apply to event handlers, style attributes and javascript: navigations unless the 'unsafe-hashes' keyword is present."
+    + ' The action has been blocked.',
+  stackTrace: { callFrames: [{ url: 'http://127.0.0.1:8000/src/primitives/rich-text-field-model.js' }] },
+};
+const otherScript = 'http://127.0.0.1:8000/examples/apps/library-note.js';
+const otherReport = {
+  ...policyReport,
+  stackTrace: { callFrames: [{ url: otherScript }, ...policyReport.stackTrace.callFrames] },
+};
+
+test('a planned policy report has the exact source, level, text and first script URL', () => {
+  assert.equal(isPlannedPolicyReport(policyReport), true);
+  for (const [name, entry] of [
+    ['a different first script URL', otherReport],
+    ['a different source', { ...policyReport, source: 'javascript' }],
+    ['a different directive', { ...policyReport, text: policyReport.text.replace('script-src', 'style-src') }],
+    ['different text with the same directive', { ...policyReport, text: policyReport.text + ' Extra text.' }],
+    ['a warning', { ...policyReport, level: 'warning' }],
+    ['no stack trace', { ...policyReport, stackTrace: undefined }],
+    ['no frame URL', { ...policyReport, stackTrace: { callFrames: [{}] } }],
+    ['a page error', { text: 'Uncaught Error: The page failed.', url: otherScript }],
+  ]) {
+    assert.equal(isPlannedPolicyReport(entry), false, name);
+  }
+});
+
+test('an unplanned report fails the paste check and stays in the page errors', async () => {
+  const pageError = 'Uncaught Error: The page failed.';
+  const problems = [policyReport.text];
+  const listenerCounts = [];
+  const sessionId = 'note';
+  const recordPageError = (event) => {
+    if (event.sessionId !== sessionId) return;
+    problems.push(event.params.entry?.text ?? event.params.exceptionDetails.text);
+  };
+  let width;
+  const session = {
+    listeners: [recordPageError],
+    send(method, params) {
+      if (method === 'Emulation.setDeviceMetricsOverride') width = params.width;
+    },
+  };
+  const emit = (method, params) => {
+    for (const listener of session.listeners) listener({ sessionId, method, params });
+  };
+  const steps = await richTextFieldChecks(session, sessionId, 'http://127.0.0.1:8000', { light: [] }, {
+    open() {},
+    key() {},
+    pageRules: () => [],
+    evaluate(_session, _id, expression) {
+      if (expression.startsWith('(async function exercisePasteAndDrop(')) {
+        listenerCounts.push(session.listeners.length);
+        emit('Log.entryAdded', { entry: policyReport });
+        if (width === 1280) {
+          emit('Log.entryAdded', { entry: otherReport });
+          emit('Runtime.exceptionThrown', { exceptionDetails: { text: pageError, url: otherScript } });
+        }
+        return [];
+      }
+      if (expression.startsWith('(async function exerciseEditor(')) {
+        listenerCounts.push(session.listeners.length);
+        return [];
+      }
+      if (expression.includes("'noteScriptExecuted' in window")) return false;
+      return { tabStops: [] };
+    },
+  }, problems);
+  const pasteSteps = steps.filter(({ step }) => step.endsWith('planned policy reports and no handler runs'));
+  assert.deepEqual(pasteSteps.map(({ ok }) => ok), [true, false]);
+  assert.deepEqual(JSON.parse(pasteSteps[1].detail).detail, {
+    count: 1,
+    other: [{ text: otherReport.text, url: otherScript }, { text: pageError, url: otherScript }],
+  });
+  assert.deepEqual(problems, [policyReport.text, otherReport.text, pageError]);
+  assert.deepEqual(listenerCounts, [2, 1, 2, 1]);
+  assert.deepEqual(session.listeners, [recordPageError]);
 });

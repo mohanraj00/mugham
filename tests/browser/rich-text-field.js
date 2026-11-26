@@ -5,11 +5,32 @@ const INLINE_HANDLER_REPORT = "Executing inline event handler violates the follo
   + " Note that hashes do not apply to event handlers, style attributes and javascript: navigations unless the 'unsafe-hashes' keyword is present."
   + ' The action has been blocked.';
 
-function plannedErrors(problems, start) {
+export function isPlannedPolicyReport(entry) {
+  const url = entry?.stackTrace?.callFrames?.[0]?.url;
+  return entry?.source === 'security' && entry.level === 'error' && entry.text === INLINE_HANDLER_REPORT
+    && typeof url === 'string' && url.endsWith('/src/primitives/rich-text-field-model.js');
+}
+
+function plannedErrors(entries, problems, start) {
+  let count = 0;
+  const other = [];
+  for (const entry of entries) {
+    if (isPlannedPolicyReport(entry)) {
+      count += 1;
+    } else {
+      other.push({
+        text: entry.exception?.description || entry.text || 'Text is missing.',
+        url: entry.stackTrace?.callFrames?.[0]?.url || entry.url || 'URL is missing.',
+      });
+    }
+  }
+  let toRemove = count;
   const added = problems.splice(start);
-  const other = added.filter((text) => text !== INLINE_HANDLER_REPORT);
-  problems.push(...other);
-  return { count: added.length - other.length, other };
+  for (const text of added) {
+    if (toRemove > 0 && text === INLINE_HANDLER_REPORT) toRemove -= 1;
+    else problems.push(text);
+  }
+  return { count, other };
 }
 
 function toolbarState() {
@@ -301,7 +322,16 @@ export async function richTextFieldChecks(session, sessionId, base, modes, { ope
           steps.push(...await withLimit(() => pageRules(session, sessionId, RICH_TEXT_FIELD_PAGE + ' at ' + view), 'Check the page rules'));
 
           const start = problems.length;
+          const entries = [];
           const policyFailures = [];
+          const recordError = (message) => {
+            if (message.sessionId !== sessionId) return;
+            if (message.method === 'Log.entryAdded' && message.params.entry.level === 'error') {
+              entries.push(message.params.entry);
+            }
+            if (message.method === 'Runtime.exceptionThrown') entries.push(message.params.exceptionDetails);
+          };
+          session.listeners.push(recordError);
           try {
             const errors = await page(exercisePasteAndDrop);
             check(view, 'paste and drop keep only the permitted data', errors.length === 0,
@@ -311,8 +341,10 @@ export async function richTextFieldChecks(session, sessionId, base, modes, { ope
             }
           } catch (error) {
             policyFailures.push(String(error));
+          } finally {
+            session.listeners = session.listeners.filter((listener) => listener !== recordError);
           }
-          const { count, other } = plannedErrors(problems, start);
+          const { count, other } = plannedErrors(entries, problems, start);
           if (count === 0) policyFailures.push('The browser did not give a planned policy report.');
           if (other.length > 0) policyFailures.push('Paste or drop gave an unexpected page error.');
           check(view, 'a paste of inline handlers makes only the planned policy reports and no handler runs',
