@@ -25,6 +25,7 @@ Each element that refuses a fill shows a short reason and the next step. Open `T
 | `fact.json` | in `mu-card` | component | A label and a value. |
 | `card.json` | `mu-card` | component | A title, a summary, a date and up to six facts, with optional collapse. See [Card rules](../src/components/card.md). |
 | `action-button.json` | `mu-action-button` | component | A button for one action. |
+| `approval-queue.json` | `mu-approval-queue` | component | Agent proposals with actions to approve or reject each item. |
 | `menu.json` | `mu-menu` | component | A button and a list of named choices. |
 | `tooltip.json` | `mu-tooltip` | primitive | Text that describes a control on hover or focus. |
 | `toast.json` | `mu-toast` | component | A live status message with an optional close button. |
@@ -401,6 +402,22 @@ Give `mu-run-steps` a list name in `label` and an ordered list in `steps`. Each 
 Give `mu-plan` a list name in `label` and a list in `tasks`. Each task has a unique `id`, a `name` and a `state` of `pending`, `in_progress`, `done`, `failed` or `skipped`.
 
 Bind the actor before you set the fill. Keep each step or task id when you set a new fill. A new fill keeps the open disclosure and focus for a step with the same id while it has details. Each list shows states as text. A polite status gives each state change for an existing id after the first fill. See [Library research](../examples/apps/research.html).
+
+## Approval queue
+
+Set the actor of `mu-approval-queue` before you set its fill. Give the list a `label` and up to 20 `items`. Give each item a unique `id`, a `title` and a short `summary`. The element shows the title and summary as text.
+
+After you set the fill, call `queue.bind(id, { approve, reject })` for each proposal that the application accepts. Each decision has an [action binding](#actions) with a `tool`, fixed `arguments` as needed and a required `confirm` step. Identify the target of the decision in the confirm message. The queue gives the labels of the two buttons. A proposal without bindings shows `Unavailable`.
+
+Tab reaches the buttons. Enter or Space opens the confirm step and puts the focus on Cancel. Escape closes the step and puts the focus back on the same button. After confirmation, the other action of the proposal stays disabled while the request is pending. Other proposals stay available.
+
+Use `onAction(queue, handler)` to send each request and return its receipt. An application that listens for `mu-action` directly can give the receipt to `queue.receipt(value)`. Each decision shows `Approved` or `Rejected` only after a matching receipt with `ok: true`. A failed receipt shows the reason and permits a new confirmed request. A retry after no receipt keeps the same key and gets a new request id.
+
+Use the same id for a new fill of the same proposal. If the list label, title and summary stay the same, the row keeps its action state and focus. A change to the list label removes the bindings of all rows without a pending decision. A change to a title or summary removes the binding of that row if it has no pending decision. When the queue removes a binding, it closes any open confirm step and shows `Unavailable` with both controls disabled. Call `bind()` again to enable them. A done row keeps its result until the binding is removed.
+
+A pending row keeps its bound title and summary until a receipt or cancel ends the decision. The queue then applies the last title and summary it received for that id. If the current list label, title or summary differs from the bound value, the queue removes the binding. A fill that omits a pending row keeps it through the end of the decision. The first later fill that omits the row removes it. An omitted row with only an open confirm step closes the step and goes away at once.
+
+A refused fill hides the list and keeps pending rows and their keys. A receipt can still end a kept decision. The next valid fill uses the same row for the same id and applies the same rules for omitted rows. A polite status announces the result of a kept decision with its bound title, also during a refusal. See [Library research](../examples/apps/research.html).
 
 ## Empty results and loading
 

@@ -127,6 +127,7 @@ Each component has a contract file in [catalog/](catalog/README.md). The contrac
 | `mu-steps` | An ordered list that shows the position and state of each wizard step. | [steps.json](catalog/steps.json) |
 | `mu-run-steps` | An ordered list of agent run steps with states and optional tool details. | [run-steps.json](catalog/run-steps.json) |
 | `mu-plan` | A list of agent tasks with their states. | [plan.json](catalog/plan.json) |
+| `mu-approval-queue` | A list of agent proposals with a confirm step and a receipt for each decision. | [approval-queue.json](catalog/approval-queue.json) |
 | `mu-progress` | A named bar with a known or unknown value. | [progress.json](catalog/progress.json) |
 | `mu-empty-state` | A heading and short text for an empty result, with a slot for a page control. | [empty-state.json](catalog/empty-state.json) |
 | `mu-skeleton` | A named loading status with lines that hold space for content. | [skeleton.json](catalog/skeleton.json) |

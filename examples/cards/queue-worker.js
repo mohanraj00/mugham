@@ -22,7 +22,7 @@ const SRC = [
   'render/validate.js', 'styles/page.css', 'thread/index.js', 'tokens/tokens.css',
 ];
 const CATALOG = [
-  'accordion.json', 'action-button.json', 'action-queue.json', 'app-shell.json', 'avatar.json', 'badge.json', 'breadcrumbs.json', 'button.json', 'card-grid.json', 'card.json', 'chart-series.json',
+  'accordion.json', 'action-button.json', 'action-queue.json', 'app-shell.json', 'approval-queue.json', 'avatar.json', 'badge.json', 'breadcrumbs.json', 'button.json', 'card-grid.json', 'card.json', 'chart-series.json',
   'chart.json', 'choice-cell.json', 'choice-field.json', 'citation.json', 'data-grid-column.json',
   'data-grid-row.json', 'data-grid.json', 'date-cell.json', 'date-field.json', 'date-range-field.json', 'date-time-field.json', 'diff-change.json',
   'diff-part.json', 'diff.json', 'dialog.json', 'drawer.json', 'editable-form.json', 'empty-state.json', 'excerpt.json', 'fact.json', 'field.json',
@@ -34,5 +34,5 @@ const CATALOG = [
   'tabs.json', 'text-cell.json', 'text.json', 'time-field.json', 'toast.json', 'toggle-field.json', 'tooltip.json', 'upload.json',
 ];
 
-mughamOffline.serve(self, { version: 'queue-example-16', files: [...PAGE, ...EXAMPLES.map((name) => '../' + name),
+mughamOffline.serve(self, { version: 'queue-example-17', files: [...PAGE, ...EXAMPLES.map((name) => '../' + name),
   ...SRC.map((name) => '../../src/' + name), ...CATALOG.map((name) => '../../catalog/' + name)] });

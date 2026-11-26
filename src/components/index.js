@@ -2,7 +2,7 @@
 import { MuElement } from '../primitives/base.js';
 import { ReadMoreElement, READ_MORE_CSS } from '../primitives/read-more.js';
 import { define as definePrimitives, FIELDS } from '../primitives/index.js';
-import { ActionState, isActionValue, isEditType } from '../actions/action.js';
+import { ActionState, bindingErrors, isActionValue, isEditType } from '../actions/action.js';
 import { copyValue } from '../offline/queue.js';
 import { PATIENCE, patienceOf, ReceiptTimer } from './pending.js';
 import { EDGE, LIFT, el, icon, setDisclosure, sheet } from '../render/dom.js';
@@ -88,7 +88,7 @@ const CARD_CSS = sheet(`
 const ACTION_CSS = sheet(`
   :host { display: inline-flex; flex-direction: column; gap: var(--mu-space-1); max-inline-size: 100%; }
   button {
-    font: var(--mu-type-body); min-height: 2.75rem; min-width: 2.75rem; padding: var(--mu-space-2) var(--mu-space-3);
+    font: var(--mu-type-body); min-height: max(44px, 2.75rem); min-width: max(44px, 2.75rem); padding: var(--mu-space-2) var(--mu-space-3);
     border-radius: var(--mu-radius-2); border: 1px solid var(--mu-color-accent);
     background: var(--mu-color-accent); color: var(--mu-color-on-accent); cursor: pointer;
   }
@@ -109,10 +109,11 @@ const ACTION_CSS = sheet(`
   .result { display: flex; flex-direction: column; gap: var(--mu-space-1); }
   .copy { border-radius: var(--mu-radius-2); }
   .step { display: flex; flex-wrap: wrap; align-items: center; gap: var(--mu-space-2); }
-  .step p { flex-basis: 100%; margin: 0; }
+  .step p { flex-basis: 100%; min-inline-size: 0; margin: 0; overflow-wrap: anywhere; }
   .step button[part="cancel"] { background: transparent; color: var(--mu-color-accent); }
   @media (forced-colors: active) {
     button { background: ButtonFace; color: ButtonText; border-color: ButtonText; forced-color-adjust: none; }
+    .step button[part="cancel"] { background: ButtonFace; color: ButtonText; }
     .status, .status.done, .status.error { color: CanvasText; }
     .action-tooltip { background: Canvas; color: CanvasText; border-color: CanvasText; }
   }
@@ -165,6 +166,8 @@ function openLocator(source, locator) {
 const STALE = 'Saved the values from before your last edit. Save again to send the edit.';
 // The text of each state. A pending action never shows as done.
 const STATUS = { default: '', disabled: '', confirm: '', pending: 'Pending', done: 'Done', error: 'Not done' };
+const APPROVAL_CONTROL = Symbol('approval control');
+const BLOCK_ACTION = Symbol('block action');
 
 // Shared code for a component with one action. The application binds the tool with the action property
 // and gives the receipt with receipt(). The element sends a mu-action event with the request.
@@ -180,6 +183,7 @@ class ActionElement extends MuElement {
   #exit = '';
   #timer = new ReceiptTimer();
   #patience = PATIENCE;
+  #blocked = false;
 
   // The state of the action can only be read. Only bind(), start() and receipt() change it.
   get action() {
@@ -292,7 +296,7 @@ class ActionElement extends MuElement {
   // The started function runs only for an accepted request, before the element sends the event.
   // If the binding has a confirm step, the element shows it first and sends the action only after a person confirms.
   send(extra, started, edits) {
-    if (this.dataset.state === 'refused' || !this.fill || this.#asking) return;
+    if (this.dataset.state === 'refused' || !this.fill || this.#asking || this.#blocked) return;
     const state = this.#action.state;
     if (state !== 'default' && state !== 'error') return;
     const confirm = this.#action.confirm;
@@ -302,11 +306,14 @@ class ActionElement extends MuElement {
     }
     const cancel = el('button', { type: 'button', part: 'cancel' }, 'Cancel');
     const accept = el('button', { type: 'button', part: 'accept' }, confirm.label);
+    const nameControl = this[APPROVAL_CONTROL]?.nameControl;
+    nameControl?.(cancel, 'Cancel');
+    nameControl?.(accept, confirm.label);
     const step = el('div', { class: 'step', role: 'group', 'aria-label': confirm.message, part: 'confirm' },
       el('p', {}, confirm.message), cancel, accept);
     cancel.addEventListener('click', () => this.#close());
     accept.addEventListener('click', () => {
-      this.#close();
+      this.#close(false);
       this.#start(extra, started, true, edits);
     });
     step.addEventListener('keydown', (event) => {
@@ -322,12 +329,12 @@ class ActionElement extends MuElement {
   }
 
   // Closes the confirm step. If the focus was in the step, it goes back to the action control.
-  #close() {
+  #close(update = true) {
     if (!this.#asking) return;
     const focused = this.#asking.contains(this.shadowRoot?.activeElement);
     this.#asking = null;
     this.#area.replaceChildren();
-    this.#update();
+    if (update) this.#update();
     if (focused) this.#control.focus();
   }
 
@@ -375,6 +382,9 @@ class ActionElement extends MuElement {
     const name = this.fill.data[this.constructor.labelField];
     const retry = kind === 'stalled' ? el('button', { type: 'button', part: 'retry', 'aria-label': `Retry ${name}` }, 'Retry') : null;
     const cancel = el('button', { type: 'button', part: 'cancel', 'aria-label': `Cancel ${name}` }, 'Cancel');
+    const nameControl = this[APPROVAL_CONTROL]?.nameControl;
+    if (retry) nameControl?.(retry, 'Retry ' + name);
+    nameControl?.(cancel, 'Cancel ' + name);
     retry?.addEventListener('click', () => this.#retry());
     cancel.addEventListener('click', () => this.#cancel());
     this.#area.replaceChildren(el('div', { class: 'step', role: 'group', 'aria-label': `Pending: ${name}`, part: 'exit' }, retry, cancel));
@@ -391,16 +401,29 @@ class ActionElement extends MuElement {
     else delete this.dataset.wait;
     this.#exits(wait);
     this.#timer.watch(wait, this.#patience, () => this.hold({ key: this.#action.key, wait: 'stalled' }));
-    this.#control.dataset.state = state;
-    this.#control.setAttribute('aria-disabled', state === 'default' || state === 'error' ? 'false' : 'true');
+    this.#updateControl(state);
+    const words = [STATUS[state], state === 'confirm' ? '' : this.#action.message].filter(Boolean).join(': ');
+    if (this.#status) {
+      this.#status.className = 'status ' + state;
+      this.#status.textContent = words;
+    }
+    showReference(this.#reference, state === 'confirm' ? '' : this.#action.reference, this[APPROVAL_CONTROL]?.nameControl);
+    this.updated(state, words);
+  }
+
+  [BLOCK_ACTION](blocked) {
+    this.#blocked = blocked;
+    this.#updateControl(this.dataset.state);
+  }
+
+  #updateControl(state) {
+    if (!this.#control) return;
+    const enabled = !this.#blocked && (state === 'default' || state === 'error');
+    this.#control.dataset.state = this.#blocked ? 'disabled' : state;
+    this.#control.setAttribute('aria-disabled', enabled ? 'false' : 'true');
     // A pending action is busy until its receipt comes back. The control accepts no second press.
     if (state === 'pending') this.#control.setAttribute('aria-busy', 'true');
     else this.#control.removeAttribute('aria-busy');
-    const words = [STATUS[state], state === 'confirm' ? '' : this.#action.message].filter(Boolean).join(': ');
-    this.#status.className = 'status ' + state;
-    this.#status.textContent = words;
-    showReference(this.#reference, state === 'confirm' ? '' : this.#action.reference);
-    this.updated(state);
   }
 }
 
@@ -426,19 +449,22 @@ export class MuActionButton extends ActionElement {
   }
 
   render(data) {
-    const status = el('span', { class: 'status', role: 'status', 'aria-live': 'polite', part: 'status' });
+    const approval = this[APPROVAL_CONTROL];
+    const status = approval ? null : el('span', { class: 'status', role: 'status', 'aria-live': 'polite', part: 'status' });
     const display = data.icon ? data.display ?? 'text' : 'text';
     const iconOnly = display === 'icon';
     this.#graphic = display === 'text' ? null : icon(data.icon);
     this.#doneGraphic = this.#graphic ? icon('check') : null;
     const button = el('button', { type: 'button', part: 'button', class: this.#graphic ? 'with-icon' : null,
       'aria-label': iconOnly ? data.label : null }, this.#graphic, iconOnly ? null : data.label);
+    approval?.nameControl(button, data.label);
     button.addEventListener('click', () => this.send());
-    return [iconOnly ? this.#withTooltip(button, data.label) : button,
+    return [approval?.title, iconOnly ? this.#withTooltip(button, data.label) : button,
       data.description ? el('span', { class: 'muted' }, data.description) : null, ...this.attach(button, status)];
   }
 
-  updated(state) {
+  updated(state, words) {
+    this[APPROVAL_CONTROL]?.changed(state, words);
     if (!this.#graphic) return;
     if (state === 'done') this.#graphic.replaceWith(this.#doneGraphic);
     else this.#doneGraphic.replaceWith(this.#graphic);
@@ -466,6 +492,216 @@ export class MuActionButton extends ActionElement {
       show('focus', false);
     });
     return control;
+  }
+}
+
+const DECISIONS = Object.freeze({
+  approve: { label: 'Approve', confirm: 'Confirm approval', result: 'Approved' },
+  reject: { label: 'Reject', confirm: 'Confirm rejection', result: 'Rejected' },
+});
+
+export class MuApprovalQueue extends MuElement {
+  static component = 'approval-queue';
+  static styles = [sheet(`
+    :host { display: block; min-inline-size: 0; color: var(--mu-color-text); font: var(--mu-type-body); overflow-wrap: anywhere; }
+    p, ul { margin: 0; }
+    [part="label"], [part="title"] { font-weight: var(--mu-type-weight-strong); }
+    [part="authorship"], [part="state"] { font: var(--mu-type-caption); }
+    [part="authorship"] { margin-block-end: var(--mu-space-1); }
+    ul { list-style: none; padding: 0; }
+    li { border-block-start: 1px solid var(--mu-color-border); padding: var(--mu-space-2); }
+    [part="state"] { margin-block: var(--mu-space-1); }
+    li[data-state="done"] [part="state"] { color: var(--mu-color-success); }
+    li[data-state="error"] [part="state"] { color: var(--mu-color-danger); }
+    .decisions { display: flex; flex-wrap: wrap; align-items: start; gap: var(--mu-space-2); }
+    [part="announcement"] {
+      position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+    }
+    @media (forced-colors: active) {
+      li { border-color: CanvasText; }
+      li[data-state] [part="state"] { color: CanvasText; }
+    }
+  `)];
+
+  #view = null;
+  #rows = new Map();
+
+  // Bind only proposals that the application accepts. Each control uses a separate action binding.
+  bind(id, decisions) {
+    const entry = this.#rows.get(id);
+    if (!this.fill || !entry || entry.bound) throw new TypeError('bind: give the id of an item with no binding');
+    const bindings = Object.entries(DECISIONS).map(([kind, { label }]) => {
+      const binding = { ...decisions?.[kind], label };
+      if (!binding.confirm) throw new TypeError('bind: give a confirm step for ' + label);
+      if (binding.icon !== undefined || binding.display !== undefined || binding.description !== undefined) {
+        throw new TypeError('bind: the queue gives the text of the control');
+      }
+      const errors = bindingErrors(binding);
+      if (errors.length) throw new TypeError('bind: ' + errors.join('; '));
+      return [kind, binding];
+    });
+    for (const [kind, binding] of bindings) entry.actions[kind].action = binding;
+    entry.bound = entry.proposal;
+    entry.row.dataset.state = 'default';
+    entry.state.textContent = 'Awaiting decision';
+  }
+
+  // Each action checks the id and key of its own request.
+  receipt(value) {
+    for (const { actions } of this.#rows.values()) {
+      if (actions.approve.receipt(value) || actions.reject.receipt(value)) return true;
+    }
+    return false;
+  }
+
+  state({ items }) {
+    if (items.length || [...this.#rows.values()].some(({ row }) => row.dataset.state === 'pending')) return 'default';
+    return 'empty';
+  }
+
+  refuse(errors) {
+    // Keep decisions that were pending at the first refusal until the next valid fill.
+    if (this.fill) {
+      for (const [id, entry] of this.#rows) {
+        if (entry.row.dataset.state === 'pending') continue;
+        this.#remove(entry);
+        this.#rows.delete(id);
+      }
+    }
+    if (this.#rows.size === 0) this.#view = null;
+    super.refuse(errors);
+    const announcement = this.#view?.announcement;
+    if (this.dataset.state === 'refused' && announcement && !announcement.parentNode) {
+      this.shadowRoot.append(announcement);
+    }
+  }
+
+  render({ label, items }) {
+    this.#view ??= {
+      label: el('p', { part: 'label' }),
+      byline: el('p', { part: 'authorship' }),
+      list: el('ul', { part: 'list', role: 'list' }),
+      empty: el('p', { part: 'empty' }, 'No items need a decision. Check again later.'),
+      announcement: el('div', { part: 'announcement', role: 'status', 'aria-live': 'polite' }),
+    };
+    const view = this.#view;
+    const { type, id, name } = this.actor;
+    const author = 'Author: ' + (name ? `${name} (${type}, ${id})` : `${type}, ${id}`);
+    if (view.byline.textContent !== author) view.byline.textContent = author;
+    if (view.label.textContent !== label) {
+      view.label.textContent = label;
+      view.list.setAttribute('aria-label', label);
+    }
+    const next = new Map();
+    for (const item of items) {
+      const entry = this.#rows.get(item.id) ?? this.#newItem();
+      entry.proposal = { label, title: item.title, summary: item.summary };
+      this.#showProposal(entry);
+      next.set(item.id, entry);
+    }
+    for (const [id, entry] of this.#rows) {
+      if (next.has(id)) continue;
+      if (entry.row.dataset.state === 'pending') {
+        entry.proposal = { ...entry.proposal, label };
+        next.set(id, entry);
+      } else {
+        this.#remove(entry);
+      }
+    }
+    view.empty.hidden = next.size > 0;
+    const active = this.shadowRoot.activeElement;
+    let before = null;
+    for (const { row } of [...next.values()].reverse()) {
+      // Move other rows around the focused row to keep focus in its action.
+      if ((!active || !row.contains(active)) && (row.parentNode !== view.list || row.nextElementSibling !== before)) {
+        view.list.insertBefore(row, before);
+      }
+      before = row;
+    }
+    this.#rows = next;
+    return view.list.parentNode === this.shadowRoot ? null : [view.label, view.byline, view.list, view.empty, view.announcement];
+  }
+
+  #showProposal(entry) {
+    if (entry.row.dataset.state === 'pending') return;
+    const { proposal, bound } = entry;
+    const { title, summary } = proposal;
+    if (bound && ['label', 'title', 'summary'].some((field) => bound[field] !== proposal[field])) {
+      this.#unbind(entry);
+    }
+    if (entry.title.textContent !== title) {
+      entry.title.textContent = title;
+      for (const name of entry.names) name.textContent = title;
+    }
+    if (entry.summary.textContent !== summary) entry.summary.textContent = summary;
+  }
+
+  #newItem() {
+    const title = el('p', { part: 'title' });
+    const summary = el('p', { part: 'summary' });
+    const state = el('p', { part: 'state' }, 'Unavailable');
+    const controls = el('div', { class: 'decisions' });
+    const row = el('li', { part: 'item', 'data-state': 'disabled' }, title, summary, state, controls);
+    const entry = { row, title, summary, state, actions: {}, views: {}, names: [], bound: null, proposal: null };
+    for (const [kind, { label }] of Object.entries(DECISIONS)) {
+      const child = document.createElement('mu-action-button');
+      child.setAttribute('exportparts', 'button: action-button-button, accept: action-button-accept, cancel: action-button-cancel, confirm: action-button-confirm, copy: action-button-copy, copy-status: action-button-copy-status, exit: action-button-exit, reference: action-button-reference, retry: action-button-retry');
+      const name = el('span', { id: 'proposal-title' });
+      name.hidden = true;
+      child[APPROVAL_CONTROL] = {
+        title: name,
+        // Start the name with the visible button label, then add the proposal title.
+        nameControl(control, label) {
+          control.id = 'decision-' + control.getAttribute('part');
+          control.setAttribute('aria-label', label + ':');
+          control.setAttribute('aria-labelledby', control.id + ' ' + name.id);
+        },
+        changed: (state, words) => this.#changed(entry, kind, state, words),
+      };
+      child.fill = { component: 'action-button', version: '0.1.0', data: { label } };
+      entry.actions[kind] = child;
+      entry.names.push(name);
+      controls.append(child);
+    }
+    return entry;
+  }
+
+  #changed(entry, kind, state, words) {
+    entry.views[kind] = { state, words };
+    if (!entry.bound) return;
+    const other = kind === 'approve' ? 'reject' : 'approve';
+    entry.actions[other][BLOCK_ACTION](state === 'confirm' || state === 'pending' || state === 'done');
+    if (state === 'default' && !words && entry.views[other].state === 'error') {
+      ({ state, words } = entry.views[other]);
+    }
+    if (state === 'confirm') words = DECISIONS[kind].confirm;
+    if (state === 'done') words = DECISIONS[kind].result + words.slice(STATUS.done.length);
+    if (!words) words = 'Awaiting decision';
+    if (entry.row.dataset.state === state && entry.state.textContent === words) return;
+    const resolved = entry.row.dataset.state === 'pending' && state !== 'pending';
+    entry.row.dataset.state = state;
+    entry.state.textContent = words;
+    const { announcement } = this.#view;
+    // A receipt can come back in a refusal event listener, before refuse() puts the status back.
+    if (this.dataset.state === 'refused' && !announcement.parentNode) this.shadowRoot.append(announcement);
+    announcement.textContent = `${entry.bound.title}: ${words}`;
+    if (resolved) this.#showProposal(entry);
+  }
+
+  #unbind(entry) {
+    if (!entry.bound) return;
+    entry.bound = null;
+    for (const action of Object.values(entry.actions)) {
+      action.action = null;
+      action[BLOCK_ACTION](false);
+    }
+    entry.row.dataset.state = 'disabled';
+    entry.state.textContent = 'Unavailable';
+  }
+
+  #remove(entry) {
+    this.#unbind(entry);
+    entry.row.remove();
   }
 }
 
@@ -1557,7 +1793,7 @@ export function define(registry = customElements) {
     ['mu-tabs', MuTabs], ['mu-accordion', MuAccordion],
     ['mu-app-shell', MuAppShell], ['mu-breadcrumbs', MuBreadcrumbs], ['mu-pagination', MuPagination],
     ['mu-steps', MuSteps], ['mu-progress', MuProgress],
-    ['mu-run-steps', MuRunSteps], ['mu-plan', MuPlan],
+    ['mu-run-steps', MuRunSteps], ['mu-plan', MuPlan], ['mu-approval-queue', MuApprovalQueue],
     ['mu-empty-state', MuEmptyState], ['mu-skeleton', MuSkeleton], ['mu-badge', MuBadge], ['mu-avatar', MuAvatar],
     ['mu-excerpt', MuExcerpt], ['mu-table', MuTable], ['mu-status', MuStatus], ['mu-source-status', MuSourceStatus], ['mu-action-queue', MuActionQueue], ['mu-image', MuImage], ['mu-chart', MuChart],
     ['mu-rich-text', MuRichText], ['mu-data-grid', MuDataGrid], ['mu-upload', MuUpload]]) {

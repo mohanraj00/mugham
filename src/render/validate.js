@@ -392,6 +392,12 @@ function dataErrors(data, fields, prefix, catalog, depth) {
   return errors;
 }
 
+const WORK_ITEMS = new Map([
+  ['run-steps', ['steps', 'name']],
+  ['plan', ['tasks', 'name']],
+  ['approval-queue', ['items', 'title', 'summary']],
+]);
+
 const PAGE_TEXT_FIELDS = new Map([
   ['empty-state', ['title', 'text']], ['skeleton', ['label']], ['badge', ['text']], ['avatar', ['name']],
 ]);
@@ -444,8 +450,9 @@ export function fillErrors(fill, catalog, path = '', depth = 0) {
       errors.push(prefix + 'data.value: must be at most maximum');
     }
   }
-  if (!errors.length && (fill.component === 'run-steps' || fill.component === 'plan')) {
-    const key = fill.component === 'run-steps' ? 'steps' : 'tasks';
+  const workItems = WORK_ITEMS.get(fill.component);
+  if (!errors.length && workItems) {
+    const [key, ...fields] = workItems;
     if (!data.label.trim()) errors.push(prefix + 'data.label: give text');
     const ids = new Set();
     for (const [index, item] of data[key].entries()) {
@@ -453,7 +460,9 @@ export function fillErrors(fill, catalog, path = '', depth = 0) {
       if (!item.id.trim()) errors.push(at + 'id: give text');
       else if (ids.has(item.id)) errors.push(at + 'id: must be unique');
       ids.add(item.id);
-      if (!item.name.trim()) errors.push(at + 'name: give text');
+      for (const field of fields) {
+        if (!item[field].trim()) errors.push(at + field + ': give text');
+      }
       if (key === 'steps' && ['tool_name', 'tool_arguments', 'tool_result'].some((field) => own(item, field))
         && !(own(item, 'tool_name') && item.tool_name.trim())) errors.push(at + 'tool_name: give a name for the tool call');
     }
