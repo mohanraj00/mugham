@@ -65,7 +65,8 @@ const PAGES = {
     ['button', 'Icon keyboard target'], ['button', 'Text display'], ['button', 'Text and icon display'],
     ...['check', 'cross', 'edit', 'delete', 'send', 'retry'].map((name) => ['button', 'Test icon ' + name])],
   'tests/browser/thread.html': [['button', 'Keyboard target'], ['list', 'Thread'], ['article', 'Message from Robin, Person'],
-    ['article', 'Message from Renewal agent, Agent']],
+    ['article', 'Message from Renewal agent, Agent'], ['article', 'Weather at sea'], ['article', 'Renewal rules'],
+    ['StaticText', 'Author: Catalog agent (agent, a-catalog)'], ['StaticText', 'Author: agent, a-catalog']],
   'tests/browser/register.html': [['button', 'Keyboard target'], ['article', 'Plot 4'], ['article', 'Plot 7']],
   'tests/browser/states.html': [['button', 'Keyboard target'], ['button', 'Collapse Field guide to moss'], ['button', 'Expand Rivers and deltas'],
     ['button', 'Expand all'], ['button', 'Copy code'], ['button', 'Copy reference'], ['radio', 'South'], ['columnheader', 'Plot']],
@@ -142,7 +143,13 @@ export function serve() {
     response.writeHead(200, { 'content-type': TYPES[extname(file)] + '; charset=utf-8', 'cache-control': 'no-store' });
     response.end(readFileSync(file));
   });
-  return new Promise((done) => server.listen(0, '127.0.0.1', () => done(server)));
+  return new Promise((done, fail) => {
+    server.once('error', fail);
+    server.listen(0, '127.0.0.1', () => {
+      server.off('error', fail);
+      done(server);
+    });
+  });
 }
 
 class Session {
@@ -529,10 +536,12 @@ async function threadExample(session, sessionId, report) {
       const root = thread?.shadowRoot;
       if (!root) return null;
       const button = root.querySelector('mu-action-button');
+      const [loan, rules] = [...root.querySelectorAll('mu-card')].map((card) => card.shadowRoot);
       return { state: thread.dataset.state,
         actors: [...root.querySelectorAll('li.message .actor')].map((node) => node.textContent),
         refusals: [...root.querySelectorAll('.refusal [part="details"] > div')].map((node) => node.textContent),
-        card: root.querySelector('mu-card')?.shadowRoot.textContent || '',
+        card: loan?.textContent || '',
+        rulesAuthor: rules?.querySelector('[part="authorship"]')?.textContent,
         action: button?.dataset.state, status: button?.shadowRoot.querySelector('.status').textContent,
         reference: button?.shadowRoot.querySelector('[part="reference"]')?.textContent };
     })()`);
@@ -549,6 +558,15 @@ async function threadExample(session, sessionId, report) {
     step('two people and two agents', ['Robin Person', 'Sam Person', 'Catalog agent Agent', 'Renewal agent Agent'].every((name) => actors.has(name)), value.actors);
     step('the undeclared component is refused', value.refusals.length === 1 && value.refusals[0].includes('banner'), value.refusals);
     step('the streamed card shows its last snapshot', value.card.includes('Renewals') && value.card.includes('1 of 3'), value.card);
+    step('the loan card uses the short author line', value.card.includes('Author: same as the message'), value.card);
+    step('the rules card gives the different author in full', value.rulesAuthor === 'Author: Renewal agent (agent, a-renew)', value.rulesAuthor);
+    for (const [mode, color] of [['light', 'rgb(239, 242, 245)'], ['dark', 'rgb(31, 36, 43)']]) {
+      await session.send('Emulation.setEmulatedMedia', { features: MODES[mode] }, sessionId);
+      const surfaces = await evaluate(session, sessionId, `[...document.querySelector('mu-thread').shadowRoot.querySelectorAll('mu-card')]
+        .map((card) => getComputedStyle(card.shadowRoot.querySelector('article')).backgroundColor)`);
+      step(`the cards use the subtle surface in ${mode}`, surfaces.length === 2 && surfaces.every((surface) => surface === color), surfaces);
+    }
+    await session.send('Emulation.setEmulatedMedia', { features: MODES.light }, sessionId);
     step('the action waits for a person', value.action === 'default', value);
     // The click and the read run in one task, before the response of the API can come back.
     const pending = await evaluate(session, sessionId, `(() => {
@@ -564,7 +582,9 @@ async function threadExample(session, sessionId, report) {
     step('the receipt of the API makes the action done', value.action === 'done' && value.status.startsWith('Done:')
       && /^Reference: R-\d{4}$/.test(value.reference), value);
     report.accessibility.push(...await axErrors(session, sessionId, [['list', 'Thread'], ['article', 'Message from Robin, Person'],
-      ['article', 'Message from Catalog agent, Agent'], ['article', 'Message from Renewal agent, Agent'], ['button', 'Renew']], page));
+      ['article', 'Message from Catalog agent, Agent'], ['article', 'Message from Renewal agent, Agent'],
+      ['article', 'Field guide to moss'], ['article', 'Renewal rules'], ['StaticText', 'Author: Catalog agent (agent, a-catalog)'],
+      ['button', 'Renew']], page));
   } finally {
     server.kill();
   }
@@ -753,13 +773,20 @@ async function main() {
   const base = `http://127.0.0.1:${server.address().port}`;
   const profile = mkdtempSync(join(tmpdir(), 'mugham-chrome-'));
   const report = { passed: false, chrome: '', pages: {}, accessibility: [], keyboard: [], examples: [], errors: [],
-    scope: 'Headless Chrome on this machine: the check pages in four media modes, the accessibility tree, the keyboard, the example pages, and the example apps in the light theme, the dark theme and at the phone width. It also checks each example in compact density at 375 CSS pixels, in the light and dark themes. No screen reader.' };
+    scope: 'Headless Chrome on this machine: the long thread bench, the check pages in four media modes, the accessibility tree, the keyboard, the example pages, and the example apps in the light theme, the dark theme and at the phone width. It also checks each example in compact density at 375 CSS pixels, in the light and dark themes. No screen reader.' };
   let chrome;
   try {
     const started = await startChrome(profile);
     chrome = started.chrome;
     const session = started.session;
     report.chrome = (await session.send('Browser.getVersion')).product;
+    try {
+      const { runThreadBench } = await import('./thread_bench.mjs');
+      report.threadBench = await runThreadBench(session, base);
+      report.errors.push(...report.threadBench.errors);
+    } catch (error) {
+      report.errors.push(`Thread bench: ${error.message}`);
+    }
     const { targetId } = await session.send('Target.createTarget', { url: 'about:blank' });
     const { sessionId } = await session.send('Target.attachToTarget', { targetId, flatten: true });
     const problems = [];

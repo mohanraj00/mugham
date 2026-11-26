@@ -141,7 +141,7 @@ Expected result:
 
 1. Each message shows while its text streams. A message shows `Partial` until its end event.
 2. The thread shows a message from `Robin, Person` and four messages from `Loan helper, Agent`.
-3. One agent message shows the card `A short history of maps` with `Author: agent agent-loans (Loan helper)`.
+3. One agent message shows the card `A short history of maps` with `Author: same as the message`. A screen reader reads `Author: Loan helper (agent, agent-loans)`.
 4. The fill of the undeclared component `banner` shows as a refusal, as text.
 5. A press on `Renew` in the thread shows `Pending`. After the receipt, it shows `Done: The loan is renewed.` and `Reference: R-0002`.
 6. At the end of the source, `thread.state` is `ended`.

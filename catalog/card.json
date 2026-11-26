@@ -1,6 +1,6 @@
 {
   "name": "card",
-  "description": "A card with a title, optional details and an optional collapse control.",
+  "description": "A labeled card with a title, optional details and an optional collapse control. Each fact label and its value align on the baseline. In a thread, the card uses a subtle surface. If the author is the message actor, the visible line is shorter and a screen reader reads the full author.",
   "slots": {"citation": {"required": false}},
   "data": {
     "title": {"type": "text", "required": true, "min_length": 1, "size": "title"},
@@ -15,7 +15,7 @@
   },
   "states": ["+expanded", "+collapsed"],
   "tokens": [
-    "color.surface", "color.text", "color.text-muted", "color.border", "space.2", "space.3", "space.4", "radius.2",
+    "color.surface", "color.surface-subtle", "color.text", "color.text-muted", "color.border", "space.2", "space.3", "space.4", "radius.2",
     "type.body", "type.caption", "type.weight-strong", "color.focus"
   ],
   "accessibility": {"role": "article", "name": {"field": "title"}, "keyboard": ["Tab", "Enter", "Space"]}
