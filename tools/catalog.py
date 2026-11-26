@@ -372,6 +372,24 @@ def is_date(value):
         return False
 
 
+# Use the same code points and grammar as navigationHref in src/render/validate.js.
+NAVIGATION_FORBIDDEN = re.compile(r'[\x00-\x20\x7f-\x9f\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff\\]')
+NAVIGATION_HTTPS = re.compile(r'https://([^:/?#]+)(?::([0-9]{1,5}))?(?:[/?#].*)?', re.IGNORECASE | re.ASCII)
+DNS_LABEL = re.compile(r'[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?')
+
+
+def is_navigation_href(value):
+    if not isinstance(value, str) or not value or NAVIGATION_FORBIDDEN.search(value):
+        return False
+    address = NAVIGATION_HTTPS.fullmatch(value)
+    if not address:
+        return not (value.startswith('//') or re.match(r'[A-Za-z][A-Za-z0-9+.-]*:', value))
+    host, port = address.groups()
+    if re.fullmatch(r'[0-9.]+', host) or not all(DNS_LABEL.fullmatch(label) for label in host.split('.')):
+        return False
+    return port is None or int(port) <= 65535
+
+
 def value_errors(value, field, path, catalog, depth):
     kind = field['type']
     if kind == 'text':
@@ -479,6 +497,13 @@ def fill_errors(fill, catalog, path='', depth=0):
         errors += multi_choice_errors(data, prefix + 'data.')
     if not errors and fill['component'] in ('date-range-field', 'time-field', 'date-time-field'):
         errors += date_and_time_errors(fill['component'], data, prefix + 'data.')
+    if not errors and fill['component'] == 'breadcrumbs':
+        items = data['items']
+        for index, item in enumerate(items):
+            if (index < len(items) - 1 or 'href' in item) and not is_navigation_href(item.get('href')):
+                errors.append(prefix + 'data.items[%d].href: give a relative path or an https address' % index)
+    if not errors and fill['component'] == 'pagination' and data['page'] > data['page_count']:
+        errors.append(prefix + 'data.page: must be at most page_count')
     return errors + slot_errors(fill, contract, prefix, depth)
 
 

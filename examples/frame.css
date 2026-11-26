@@ -17,7 +17,7 @@
 @media (min-width: 72rem) {
   body.has-docs { display: grid; grid-template-columns: minmax(0, 1fr) 24rem; align-content: start; }
   body.has-docs > header { grid-column: 1 / -1; }
-  body.has-docs > main { grid-column: 1; }
+  body.has-docs > :is(main, mu-app-shell) { grid-column: 1; }
   body.has-docs > .example-docs {
     grid-column: 2; padding: var(--mu-space-4); border-block-start: 0; border-inline-start: 1px solid var(--mu-color-border-subtle);
     position: sticky; inset-block-start: 0; max-height: 100vh; overflow-y: auto;

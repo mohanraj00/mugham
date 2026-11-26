@@ -332,6 +332,36 @@ export function multiChoiceCountLimit(count, { min_items = 0, max_items = 500 })
   return null;
 }
 
+// Parse a link under the scheme policy of its component. A web address has a host and no credentials.
+export function parseLinkURL(value, schemes, base) {
+  let url;
+  try {
+    url = new URL(value, base);
+  } catch {
+    return null;
+  }
+  if (!schemes.includes(url.protocol)) return null;
+  // A mail link has an address only. It cannot set a subject, a body or a second receiver.
+  if (url.protocol === 'mailto:') return url.pathname && !url.search && !url.hash ? url : null;
+  return url.hostname && !url.username && !url.password ? url : null;
+}
+
+// Use the same code points and grammar as is_navigation_href in tools/catalog.py.
+const NAVIGATION_FORBIDDEN = /[\x00-\x20\x7f-\x9f\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff\\]/;
+const NAVIGATION_HTTPS = /^https:\/\/([^:/?#]+)(?::([0-9]{1,5}))?(?:[/?#].*)?$/i;
+const DNS_LABEL = /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?$/;
+
+export function navigationHref(value) {
+  if (typeof value !== 'string' || !value || NAVIGATION_FORBIDDEN.test(value)) return null;
+  const address = NAVIGATION_HTTPS.exec(value);
+  if (!address) {
+    return value.startsWith('//') || /^[A-Za-z][A-Za-z0-9+.-]*:/.test(value) ? null : value;
+  }
+  const [, host, port] = address;
+  if (/^[0-9.]+$/.test(host) || !host.split('.').every((label) => DNS_LABEL.test(label))) return null;
+  return port === undefined || Number(port) <= 65535 ? value : null;
+}
+
 function multiChoiceErrors({ choices, value = [], ...limits }, prefix) {
   if (limits.min_items > limits.max_items) return [prefix + 'min_items: must be at most max_items'];
   const limit = multiChoiceCountLimit(value.length, limits);
@@ -388,6 +418,16 @@ export function fillErrors(fill, catalog, path = '', depth = 0) {
   }
   if (!errors.length && ['date-range-field', 'time-field', 'date-time-field'].includes(fill.component)) {
     errors.push(...dateAndTimeErrors(fill.component, data, prefix + 'data.'));
+  }
+  if (!errors.length && fill.component === 'breadcrumbs') {
+    for (const [index, { href }] of data.items.entries()) {
+      if ((index < data.items.length - 1 || href !== undefined) && navigationHref(href) === null) {
+        errors.push(prefix + `data.items[${index}].href: give a relative path or an https address`);
+      }
+    }
+  }
+  if (!errors.length && fill.component === 'pagination' && data.page > data.page_count) {
+    errors.push(prefix + 'data.page: must be at most page_count');
   }
   return [...errors, ...slotErrors(fill, contract, prefix, depth)];
 }

@@ -70,6 +70,6 @@ if (typeof document !== 'undefined') {
   const example = EXAMPLES.find((item) => item.path === pathOf(location.href));
   if (example) {
     document.body.classList.add('has-docs');
-    (document.querySelector('body > main') ?? document.body.lastElementChild).after(panel(example));
+    (document.querySelector('body > :is(main, mu-app-shell)') ?? document.body.lastElementChild).after(panel(example));
   }
 }

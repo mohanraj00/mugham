@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; object-src 'none'; base-uri 'none'">
+  <title>Library staff</title>
+  <link rel="stylesheet" href="../../src/tokens/tokens.css">
+  <link rel="stylesheet" href="../../src/styles/page.css">
+  <script type="module" src="library.js"></script>
+  <script type="module" src="../frame.js"></script>
+</head>
+<body>
+  <mu-app-shell id="staff">
+    <strong slot="top">Library staff</strong>
+    <a id="loan-link" slot="side" href="#loans">Loans</a>
+    <a slot="side" href="#staff-guide">Staff guide</a>
+    <mu-breadcrumbs></mu-breadcrumbs>
+    <section id="loans" aria-labelledby="loans-title">
+      <h1 id="loans-title">Loans</h1>
+      <ul id="loan-list" aria-label="Current loans" aria-live="polite"></ul>
+      <mu-pagination></mu-pagination>
+    </section>
+    <section id="staff-guide" aria-labelledby="staff-guide-title">
+      <h2 id="staff-guide-title">Staff guide</h2>
+      <p>Check the shelf code before you return a book.</p>
+    </section>
+  </mu-app-shell>
+</body>
+</html>

@@ -28,6 +28,23 @@ const records = document.getElementById('records');
 const evidence = document.getElementById('evidence');
 const conversation = document.getElementById('thread');
 
+const shell = mount('app-shell', {
+  nav_label: 'Gallery sections', menu_label: 'Menu', close_label: 'Close menu', skip_label: 'Skip to tray notes',
+}, { parent: cards });
+mount('text', { text: 'Seed trays' }, { parent: shell, slot: 'top' });
+const catalogLink = document.createElement('a');
+catalogLink.href = '#cards';
+catalogLink.slot = 'side';
+catalogLink.textContent = 'Tray notes';
+shell.append(catalogLink);
+mount('breadcrumbs', { label: 'Tray path', items: [
+  { label: 'Seed trays', href: '#cards' }, { label: 'Tray notes' },
+] }, { parent: shell });
+const pages = mount('pagination', { label: 'Tray pages', page: 2, page_count: 12 }, { parent: shell });
+pages.addEventListener('mu-page-change', ({ detail: { page } }) => {
+  pages.fill = fill('pagination', { label: 'Tray pages', page, page_count: 12 });
+});
+
 const plot = (title, shelf) => ({ title, facts: [fill('fact', { label: 'Shelf', value: shelf })] });
 mount('card-grid', { label: 'Seed trays', cards: [
   fill('card', plot('Rain bell', 'A2')),

@@ -40,6 +40,8 @@ const FRAME = `(() => {
 // Open each part of the docs panel, then read it. The keys of each part must be the keys of the contract in the
 // registry of the page. used has each component that an element of the page shows, in each shadow root.
 const PANEL = `(async () => {
+  const main = document.querySelector('body > :is(main, mu-app-shell)');
+  if (!main) return { problem: 'The body has no main or mu-app-shell element as a direct child.' };
   const aside = document.querySelector('body > aside.example-docs');
   if (!aside) return null;
   const parts = [...aside.querySelectorAll(':scope > details')];
@@ -53,11 +55,11 @@ const PANEL = `(async () => {
     if (node.shadowRoot) walk(node.shadowRoot);
   } };
   walk(document);
-  const main = document.querySelector('body > main').getBoundingClientRect();
+  const content = main.getBoundingClientRect();
   const box = aside.getBoundingClientRect();
   return {
     used: [...used], missing: [...aside.querySelectorAll('[data-missing]')].map((node) => node.dataset.missing),
-    beside: box.left >= main.right - 1 && box.top < main.bottom, below: box.top >= main.bottom - 1,
+    beside: box.left >= content.right - 1 && box.top < content.bottom, below: box.top >= content.bottom - 1,
     parts: parts.map((part) => {
       const name = part.dataset.component;
       const element = part.querySelector('summary code').textContent;
@@ -194,14 +196,16 @@ export async function exampleIndexChecks(session, sessionId, base, { evaluate, o
       if (frame?.need) noted += 1;
 
       // The docs panel. A wide screen shows it next to the example, and a narrow screen shows it below.
-      const wide = index === 0 || example.path === 'apps/support/';
+      const wide = index === 0 || example.path === 'apps/support/' || example.path === 'apps/library.html';
       if (wide) await session.send('Emulation.setDeviceMetricsOverride', { width: 1280, height: 800, deviceScaleFactor: 1, mobile: false }, sessionId);
       const panel = await evaluate(session, sessionId, PANEL);
+      const parts = panel?.parts;
+      const names = parts?.map((part) => part.name);
       step(where, 'the docs panel has one part for each component of the page, and no doc is missing',
-        panel !== null && JSON.stringify(panel.parts.map((part) => part.name)) === JSON.stringify(example.components)
+        parts && JSON.stringify(names) === JSON.stringify(example.components)
           && panel.missing.length === 0 && panel.used.every((name) => example.components.includes(name)),
-        panel && { parts: panel.parts.map((part) => part.name), missing: panel.missing, used: panel.used });
-      for (const part of panel?.parts ?? []) {
+        panel?.problem ?? (parts ? { parts: names, missing: panel.missing, used: panel.used } : null));
+      for (const part of parts ?? []) {
         const docs = docsOf(part.name);
         const links = [docs.doc.path, DOCS.guides[docs.guide].path].map((path) => DOCS.repository + path);
         step(where, `the part of ${part.name} gives the element, the keys of the contract, the events, the actions, the sample and the links`,
@@ -213,10 +217,12 @@ export async function exampleIndexChecks(session, sessionId, base, { evaluate, o
             && JSON.stringify(part.links) === JSON.stringify(links), part);
       }
       if (wide) {
-        step(where, 'a wide screen shows the docs panel next to the example', panel?.beside === true, { beside: panel?.beside });
+        step(where, 'a wide screen shows the docs panel next to the example', panel?.beside === true,
+          panel?.problem ?? { beside: panel?.beside });
         await session.send('Emulation.setDeviceMetricsOverride', PHONE, sessionId);
         const narrow = await evaluate(session, sessionId, PANEL);
-        step(where, 'a narrow screen shows the docs panel below the example', narrow?.below === true, { below: narrow?.below });
+        step(where, 'a narrow screen shows the docs panel below the example', narrow?.below === true,
+          narrow?.problem ?? { below: narrow?.below });
         await session.send('Emulation.clearDeviceMetricsOverride', {}, sessionId);
       }
       if (example.path === 'tables/density.html') {

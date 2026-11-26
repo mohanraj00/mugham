@@ -44,6 +44,10 @@ def outer(name, data):
 
 
 VALID = {
+    'app-shell': {'nav_label': 'Library sections', 'menu_label': 'Menu', 'close_label': 'Close menu',
+                  'skip_label': 'Skip to main content'},
+    'breadcrumbs': {'label': 'Breadcrumbs', 'items': [{'label': 'Desk', 'href': './desk'}, {'label': 'Loans'}]},
+    'pagination': {'label': 'Loan pages', 'page': 2, 'page_count': 12},
     'text': {'text': 'Weather at sea', 'variant': 'caption'},
     'button': {'label': 'Renew', 'emphasis': 'secondary', 'disabled': False},
     'field': {'name': 'shelf', 'label': 'Shelf code', 'value': 'B-14', 'hint': 'A letter and a number.'},
@@ -113,6 +117,37 @@ VALID = {
 
 
 class CatalogContractTest(unittest.TestCase):
+    def test_navigation_contracts_declare_roles_keys_and_parts(self):
+        expected = {
+            'app-shell': ('nav_label', ['Tab', 'Shift+Tab', 'Enter', 'Space', 'Escape'],
+                          {'top', 'side', 'main', 'menu', 'skip'}),
+            'breadcrumbs': ('label', ['Tab', 'Shift+Tab', 'Enter'], {'nav', 'list', 'link', 'current'}),
+            'pagination': ('label', ['Tab', 'Shift+Tab', 'Enter', 'Space'],
+                           {'nav', 'page', 'previous-page', 'next-page'}),
+        }
+        for name, (label, keyboard, parts) in expected.items():
+            with self.subTest(component=name):
+                contract = CATALOG[name]
+                self.assertEqual(catalog.contract_errors(contract, name + '.json'), [])
+                self.assertFalse(contract['ai_content'])
+                self.assertEqual(contract['states'], ['default', 'refused'])
+                self.assertEqual(contract['accessibility'], {
+                    'role': 'navigation', 'name': {'field': label}, 'keyboard': keyboard,
+                    'forced_colors': True, 'reduced_motion': True,
+                })
+                self.assertTrue(parts <= {part['name'] for part in contract['parts'] if part['guardrail']})
+        for name, data, field in [
+            ('app-shell', {'close_label': ''}, 'close_label'),
+            ('breadcrumbs', {'items': [{'label': 'Desk', 'href': {'path': '/desk'}}]}, 'items[0].href'),
+            ('pagination', {'page': 1.5}, 'page'),
+            ('pagination', {'page': 13}, 'page'),
+            ('pagination', {'page_count': 0}, 'page_count'),
+        ]:
+            with self.subTest(component=name, data=data):
+                errors = catalog.fill_errors(fill(name, {**VALID[name], **data}), CATALOG)
+                self.assertEqual(len(errors), 1)
+                self.assertTrue(errors[0].startswith(f'data.{field}:'), errors)
+
     def test_panel_contracts_declare_roles_keys_and_scalar_records(self):
         expected = {
             'tabs': ('tabs', 'tablist', ['Tab', 'Shift+Tab', 'Enter', 'Space', 'ArrowLeft', 'ArrowRight', 'Home', 'End'],

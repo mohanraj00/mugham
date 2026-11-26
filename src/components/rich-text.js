@@ -3,6 +3,7 @@
 // schemes and the first heading level. src/components/rich-text.md gives the rules.
 import { ReadMoreElement, READ_MORE_CSS } from '../primitives/read-more.js';
 import { copyControl, el, sheet, text } from '../render/dom.js';
+import { parseLinkURL } from '../render/validate.js';
 
 // The schemes that page code can permit. No other scheme can open.
 const SCHEMES = Object.freeze(['https:', 'http:', 'mailto:']);
@@ -17,20 +18,6 @@ let first = 2;
 // The number of the current page policy. An element renders again if its render used an older policy.
 let policy = 0;
 const connected = new Set();
-
-// The target of a link, or null if the page does not permit it. The kit opens only the parsed address.
-function linkURL(value) {
-  let url;
-  try {
-    url = new URL(value);
-  } catch {
-    return null;
-  }
-  if (!schemes.includes(url.protocol)) return null;
-  // A mail link has an address only. It cannot set a subject, a body or a second receiver.
-  if (url.protocol === 'mailto:') return url.pathname && !url.search && !url.hash ? url : null;
-  return url.hostname && !url.username && !url.password ? url : null;
-}
 
 // The inline content of each paragraph, heading, list item and quote paragraph, with its path in the fill.
 function* runs(blocks) {
@@ -161,7 +148,7 @@ export class MuRichText extends ReadMoreElement {
       count += content.length;
       if (count > MAX_INLINE) return [`data.blocks: more than ${MAX_INLINE} inline nodes`];
       for (const [index, node] of content.entries()) {
-        if (node.component === 'rich-link' && !linkURL(node.data.url)) {
+        if (node.component === 'rich-link' && !parseLinkURL(node.data.url, schemes)) {
           return [`${at}.content[${index}].data.url: the page does not permit this link`];
         }
       }
@@ -218,7 +205,7 @@ export class MuRichText extends ReadMoreElement {
   // A link is a button, and no element has an address attribute. The target shows as text on hover and
   // on focus. The target opens only after a person presses the button, and the application can cancel it.
   #link(data) {
-    const url = linkURL(data.url);
+    const url = parseLinkURL(data.url, schemes);
     if (!url) return text(data.text);
     const id = `target-${++this.#targets}`;
     const target = el('span', { class: 'target', id, part: 'target' }, `Opens ${url.href}`);
@@ -242,7 +229,7 @@ export class MuRichText extends ReadMoreElement {
     });
     button.addEventListener('click', () => {
       // Check the policy again at the only sink.
-      const now = linkURL(data.url);
+      const now = parseLinkURL(data.url, schemes);
       if (!now) {
         this.fill = this.fill;
         return;
