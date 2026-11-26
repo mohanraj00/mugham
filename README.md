@@ -119,6 +119,8 @@ Each component has a contract file in [catalog/](catalog/README.md). The contrac
 | `mu-menu` | A button that opens a list of named choices for the page. | [menu.json](catalog/menu.json) |
 | `mu-tooltip` | Text that describes a control on hover or focus. | [tooltip.json](catalog/tooltip.json) |
 | `mu-toast` | A live status message with an optional close button. | [toast.json](catalog/toast.json) |
+| `mu-tabs` | Selects one panel of page content from a list of named tabs. | [tabs.json](catalog/tabs.json) |
+| `mu-accordion` | Opens and closes independent sections of page content. | [accordion.json](catalog/accordion.json) |
 | `mu-editable-form` | Up to 20 kit or registered fields. A person edits the values and submits them as one action. | [editable-form.json](catalog/editable-form.json) |
 | `mu-form-card` | A long form in sections, as labels and values. A person edits one field in place and sends the changes as one action. Some fields are read-only. | [form-card.json](catalog/form-card.json) |
 | `mu-card-grid` | A labeled list of cards in columns of equal width. | [card-grid.json](catalog/card-grid.json) |
@@ -178,6 +180,7 @@ python3 tools/serve.py
    - `http://localhost:8000/examples/cards/primitives.html`: each primitive.
    - `http://localhost:8000/examples/cards/loans.html`: a card, an action button, a card grid and a form.
    - `http://localhost:8000/examples/cards/dialogs.html`: a seed tray reservation with a confirm step and a drawer with tray details.
+   - `http://localhost:8000/examples/cards/settings.html`: settings in tabs and an accordion, with a confirm step and a toast after a save.
    - `http://localhost:8000/examples/cards/popovers.html`: tray choices, help text and a message after a note save.
    - `http://localhost:8000/examples/cards/approval-icons.html`: a request card with buttons to approve or reject the request.
    - `http://localhost:8000/examples/forms/inputs.html`: a form with text, long text, a number, a date and a choice.

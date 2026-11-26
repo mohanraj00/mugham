@@ -214,6 +214,7 @@ An asterisk marks a guardrail part. Keep it visible when the kit shows it. Run `
 
 | Element | Parts |
 |---|---|
+| `mu-accordion` | `copy`\*, `copy-status`\*, `details`\*, `heading`\*, `next`\*, `panel`\*, `reason`\*, `toggle`\* |
 | `mu-action-button` | `accept`\*, `button`, `cancel`\*, `confirm`\*, `copy`\*, `copy-status`\*, `details`\*, `exit`\*, `icon`\*, `next`\*, `reason`\*, `reference`\*, `retry`\*, `status`\*, `tooltip`\* |
 | `mu-action-queue` | `action`, `actions`, `cancel`\*, `copy`\*, `copy-status`\*, `details`\*, `dismiss`\*, `label`, `name`, `next`\*, `queue`, `queued`, `reason`\*, `retry`\*, `state`\*, `summary` |
 | `mu-button` | `button`, `copy`\*, `copy-status`\*, `details`\*, `next`\*, `reason`\* |
@@ -246,6 +247,7 @@ An asterisk marks a guardrail part. Keep it visible when the kit shows it. Run `
 | `mu-stack` | `copy`\*, `copy-status`\*, `details`\*, `layout`, `next`\*, `reason`\* |
 | `mu-status` | `authorship`\*, `copy`\*, `copy-status`\*, `details`\*, `label`\*, `next`\*, `reason`\*, `status`\*, `text`\* |
 | `mu-table` | `authorship`\*, `copy`\*, `copy-status`\*, `details`\*, `empty`, `next`\*, `reason`\*, `sort-status`\*, `table` |
+| `mu-tabs` | `copy`\*, `copy-status`\*, `details`\*, `next`\*, `panel`\*, `reason`\*, `tab`\*, `tablist`\* |
 | `mu-text` | `copy`\*, `copy-status`\*, `details`\*, `next`\*, `read-more-content`\*, `read-more-toggle`\*, `reason`\*, `text` |
 | `mu-thread` | `copy`\*, `copy-status`\*, `details`\*, `list`, `next`\*, `read-more-content`\*, `read-more-toggle`\*, `reason`\*, `source`\*, `state`\*, `stream`\* |
 | `mu-time-field` | `copy`\*, `copy-status`\*, `details`\*, `edit-type`\*, `input`\*, `label`\*, `next`\*, `problem`\*, `reason`\* |
@@ -289,6 +291,8 @@ Keep the menu `trigger` and each `item` at least 44 by 44 CSS pixels. Keep their
 Keep the `tooltip` text and border visible while it is open. Leave space for it above or below the target. Keep the target and its focus ring visible.
 
 Keep the `toast` and its `message` visible while the toast is open. If it has a `close` button, keep the button at least 44 by 44 CSS pixels and keep its focus ring visible.
+
+Keep the `tablist` and each `tab` visible. Let the list wrap on narrow screens. Keep the selected tab easy to identify in each theme. Keep each tab and accordion `toggle` at least 44 by 44 CSS pixels and keep their focus rings visible. Keep each accordion `heading` visible and keep each `panel` visible when its control shows it.
 
 The image parts are `image`, `box`, `caption` and `dialog`. Keep the box ratio and its loading and failed notices visible. Keep the caption and the full-size close button visible. The `open` part must keep its focus ring.
 

@@ -26,7 +26,7 @@ A contract is one JSON file in `catalog/`, for example `catalog/card.json`. The 
 | `slots` | Optional. The provenance slots: `authorship`, `citation` or the two. Each slot has the `required` key. See "Slots". |
 | `parts` | Optional. The part names that a page can use in `::part()` rules. See "Parts". |
 | `data` | The data fields. Each field has a type, a label and the `required` key. |
-| `states` | The states of the component: `default`, `empty`, `loading`, `disabled`, `confirm`, `pending`, `done`, `error`, `refused`, `expanded`, `collapsed` or `open`. A component shows `confirm` while a person decides on a confirm step. A collapsible card uses `expanded` and `collapsed`. A dialog or drawer uses `open` while it is modal. A menu, tooltip or toast uses `open` while its popover shows. |
+| `states` | The states of the component: `default`, `empty`, `loading`, `disabled`, `confirm`, `pending`, `done`, `error`, `refused`, `expanded`, `collapsed` or `open`. A component shows `confirm` while a person decides on a confirm step. A collapsible card or an accordion uses `expanded` and `collapsed`. A dialog or drawer uses `open` while it is modal. A menu, tooltip or toast uses `open` while its popover shows. |
 | `tokens` | The design tokens that the component uses. |
 | `accessibility` | The role, the accessible name (not for the role `none`), the keys, and support for forced colors and reduced motion. |
 

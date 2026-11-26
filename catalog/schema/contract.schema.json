@@ -47,7 +47,7 @@
       "required": ["role", "keyboard", "forced_colors", "reduced_motion"],
       "additionalProperties": false,
       "properties": {
-        "role": {"enum": ["article", "button", "checkbox", "combobox", "dialog", "form", "group", "list", "menu", "region", "slider", "status", "switch", "textbox", "tooltip", "none"]},
+        "role": {"enum": ["article", "button", "checkbox", "combobox", "dialog", "form", "group", "list", "menu", "region", "slider", "status", "switch", "tablist", "textbox", "tooltip", "none"]},
         "name": {
           "oneOf": [
             {"type": "object", "required": ["field"], "additionalProperties": false, "properties": {"field": {"$ref": "#/$defs/field_name"}}},

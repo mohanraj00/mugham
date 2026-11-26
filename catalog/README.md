@@ -28,6 +28,8 @@ Each element that refuses a fill shows a short reason and the next step. Open `T
 | `menu.json` | `mu-menu` | component | A button and a list of named choices. |
 | `tooltip.json` | `mu-tooltip` | primitive | Text that describes a control on hover or focus. |
 | `toast.json` | `mu-toast` | component | A live status message with an optional close button. |
+| `tabs.json` | `mu-tabs` | component | A named tab list with one visible panel. |
+| `accordion.json` | `mu-accordion` | component | A named group with sections that open and close independently. |
 | `editable-form.json` | `mu-editable-form` | component | Up to 20 fields, submitted as one action. |
 | `form-line.json` | in `mu-form-card` | component | One field of a form card, with an optional line number and a read-only flag. |
 | `form-section.json` | in `mu-form-card` | component | A titled group of up to 40 form lines. |
@@ -167,6 +169,16 @@ Put one named, focusable control in the default slot of `mu-tooltip`. The fill g
 Call `show()` on a connected `mu-toast` with a valid fill. It announces the `message` as a status. Set `kind` to `error` to announce an alert. Keep the error or refusal in the page too. A toast without a `close_label` closes after eight seconds. A toast with a `close_label` stays open until the person uses its close button or page code replaces the fill. Focus stays where it is when the toast opens.
 
 Each element sends its `mu-<component>-open` and `mu-<component>-close` events when the browser reports a change in the popover state. The events bubble and cross shadow roots. See the [seed tray notes example](../examples/cards/popovers.html).
+
+## Tabs and accordion
+
+Give a `mu-tabs` fill a label for the tab list and a `tabs` list. Give a `mu-accordion` fill a label for the group and a `sections` list. Each item has a visible `label` and a unique `name` in lower case with underscores, for example `digest_schedule`. Put each panel's content in child elements with a `slot` attribute equal to its item name. The page can put kit elements and its own elements in these slots.
+
+The first tab starts selected unless the `selected` attribute names a different tab. To change the selection, set that attribute or call `select(name)`. An unknown name keeps the current tab. Removing the attribute selects the first tab. Read the current name with the `selected` property. Focus on a tab selects it. Left and Right move and wrap between tabs, with the direction reversed in right to left text. Home and End select the first and last tab. Tab moves to the first control in the selected panel or to the panel itself if it has no focusable content. Each change sends `mu-tabs-change` with `{ name }`.
+
+Each accordion section starts closed. Enter and Space on its button open or close it. More than one section can be open. Before giving the element a fill, set its `heading-level` attribute from 2 to 6 to match the headings of the page. Its default is 2. Call `setExpanded(name, expanded)` to open or close a section from page code. If focus is inside a section that closes, focus returns to its button. Each toggle sends `mu-accordion-toggle` with `{ name, expanded }`.
+
+Both methods return `true` when the state changes. Both events bubble and cross shadow roots. See the [settings example](../examples/cards/settings.html).
 
 ## Actions
 
