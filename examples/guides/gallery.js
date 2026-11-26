@@ -53,12 +53,12 @@ const menu = mount('menu', { label: 'Tray options', items: [{ label: 'Show shelf
 menu.addEventListener('mu-menu-select', () => {
   note.fill = fill('text', { text: 'Tray A3 is on the east shelf.' });
 });
-const tooltip = mount('tooltip', { text: 'Show the result of the note save.' }, { parent: cards });
+const tooltip = mount('tooltip', { text: 'Show a reminder about the tray.' }, { parent: cards });
 const showToast = document.createElement('button');
 showToast.type = 'button';
-showToast.textContent = 'Show save result';
+showToast.textContent = 'Show tray reminder';
 tooltip.append(showToast);
-const toast = mount('toast', { message: 'Tray note saved.' }, { parent: cards });
+const toast = mount('toast', { message: 'Keep tray A3 dry.' }, { parent: cards });
 showToast.addEventListener('click', () => toast.show());
 const tabs = mount('tabs', { label: 'Tray locations', tabs: [
   { label: 'East shelf', name: 'east' },

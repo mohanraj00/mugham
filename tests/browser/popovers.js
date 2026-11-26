@@ -50,6 +50,8 @@ function readPopovers() {
     scroll: document.documentElement.scrollWidth,
     status: toast.shadowRoot.querySelector('[role="status"]')?.textContent,
     alert: toast.shadowRoot.querySelector('[role="alert"]')?.textContent,
+    saveResult: document.getElementById('save-result').textContent,
+    saveStart: window.saveStart,
     events: window.popoverEvents,
   };
   probe.remove();
@@ -102,6 +104,16 @@ export async function popoverExampleChecks(session, sessionId, base, modes, { ev
         for (const type of ['mu-menu-select', 'mu-menu-open', 'mu-menu-close', 'mu-tooltip-open', 'mu-tooltip-close',
           'mu-toast-open', 'mu-toast-close', 'mu-action']) {
           document.addEventListener(type, (event) => window.popoverEvents.push(event.detail?.name ?? type));
+        }
+        for (const id of ['show-toast', 'show-error']) {
+          document.getElementById(id).addEventListener('click', () => {
+            const panel = document.querySelector('mu-toast').shadowRoot.querySelector('[part="toast"]');
+            window.saveStart = {
+              id,
+              text: document.getElementById('save-result').textContent,
+              toastOpen: panel.matches(':popover-open'),
+            };
+          });
         }
         document.querySelector('mu-menu').shadowRoot.querySelector('[part="trigger"]').focus();
       })()`);
@@ -172,8 +184,11 @@ export async function popoverExampleChecks(session, sessionId, base, modes, { ev
       await waitFor('document.querySelector("mu-tooltip").dataset.state === "default"');
 
       await enter();
-      await waitFor('document.querySelector("mu-toast").shadowRoot.querySelector("[role=status]").textContent');
+      await waitFor('document.querySelector("mu-toast").shadowRoot.querySelector("[role=status]")?.textContent');
       const toast = await read();
+      check(mode, 'a save shows pending text before its result', toast.saveStart?.id === 'show-toast'
+        && toast.saveStart.text === 'Saving tray note.' && !toast.saveStart.toastOpen
+        && toast.open[2] && toast.saveResult === 'Tray note saved.' && toast.status === toast.saveResult, toast);
       check(mode, 'the normal toast reports status without moving focus', toast.open[2] && toast.focus === 5
         && toast.status === 'Tray note saved.' && !toast.alert && inViewport(toast, 2) && toast.surfaces && toast.targets
         && (mode !== 'reduced-motion' || toast.noMotion), toast);
@@ -182,8 +197,11 @@ export async function popoverExampleChecks(session, sessionId, base, modes, { ev
 
       await tab();
       await enter();
-      await waitFor('document.querySelector("mu-toast").shadowRoot.querySelector("[role=alert]").textContent');
+      await waitFor('document.querySelector("mu-toast").shadowRoot.querySelector("[role=alert]")?.textContent');
       const error = await read();
+      check(mode, 'a failed save shows pending text before its result', error.saveStart?.id === 'show-error'
+        && error.saveStart.text === 'Saving tray note.' && !error.saveStart.toastOpen
+        && error.open[2] && error.saveResult === 'Tray note did not save.' && error.alert === error.saveResult, error);
       check(mode, 'the error toast reports an alert and keeps focus on its trigger', error.open[2] && error.focus === 6
         && error.alert === 'Tray note did not save.' && !error.status && error.targets && error.surfaces, error);
       steps.push(...await pageRules(session, sessionId, POPOVER_PAGE + ' with the error toast open in ' + mode));
