@@ -4,6 +4,7 @@ Each release has an entry. The newest entry is first.
 
 ## Unreleased
 
+- Pass the rich text fill revision to `setApprovals` so a late response cannot mark a different fill (#172).
 - Page code can show the approval state of top-level rich text blocks with `setApprovals` after each fill. The library newsletter shows three states from a fixture API (#137).
 - The approval queue shows its state text with a badge and each decision state with an approval mark (#137).
 - A change of the actor, the label, the title or the summary removes the binding of each row with no pending decision. The application must call `bind()` again (#137).

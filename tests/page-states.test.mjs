@@ -192,7 +192,7 @@ test('page code sets the text and accessible name of each approval mark', () => 
     { block: 2, state: 'rejected' },
     { block: 0, state: 'approved', by: APPROVER, at: APPROVAL_TIME },
     { block: 1, state: 'pending', at: '2028-02-29T10:00:00.123Z' },
-  ]);
+  ], rich.fillRevision);
   assert.equal(rich.dataset.state, 'default');
   const [body] = rich.shadowRoot.children;
   const marks = approvalMarks(body);
@@ -205,7 +205,7 @@ test('page code sets the text and accessible name of each approval mark', () => 
   assert.deepEqual(body.children.slice(-3).map((node) => node.tag), ['blockquote', 'p', 'p']);
   assert.equal(body.children.at(-2).textContent, 'The branch opens at ten.');
 
-  rich.setApprovals([]);
+  rich.setApprovals([], rich.fillRevision);
   assert.deepEqual(approvalMarks(rich.shadowRoot), []);
 });
 
@@ -220,17 +220,19 @@ test('a change of rich text policy keeps each approval mark until a new fill', (
   });
 
   rich.connectedCallback();
+  const revision = rich.fillRevision;
   rich.setApprovals([
     { block: 0, state: 'approved', by: APPROVER, at: APPROVAL_TIME },
     { block: 1, state: 'pending' },
     { block: 2, state: 'rejected' },
-  ]);
+  ], revision);
   const expected = [
     [`Approved by ${APPROVER} at ${APPROVAL_TIME}`, 'Approval: Approved'],
     ['Pending approval', 'Approval: Pending approval'],
     ['Rejected', 'Approval: Rejected'],
   ];
   function checkMarks(level) {
+    assert.equal(rich.fillRevision, revision);
     const [body] = rich.shadowRoot.children;
     const marks = approvalMarks(body);
     assert.deepEqual(marks.map((mark) => [mark.textContent, mark.getAttribute('aria-label')]), expected);
@@ -252,6 +254,8 @@ test('a change of rich text policy keeps each approval mark until a new fill', (
   rich.connectedCallback();
   checkMarks(3);
   assert.equal(rich.shadowRoot.children[0].children[1].textContent, 'The branch opens at ten.');
+  rich.setApprovals([{ block: 0, state: 'pending' }], revision);
+  assert.deepEqual(approvalMarks(rich.shadowRoot).map((mark) => mark.textContent), ['Pending approval']);
 
   rich.fill = structuredClone(rich.fill);
   assert.deepEqual(approvalMarks(rich.shadowRoot), []);
@@ -259,25 +263,93 @@ test('a change of rich text policy keeps each approval mark until a new fill', (
   assert.deepEqual(approvalMarks(rich.shadowRoot), []);
 });
 
-test('a rich text fill clears all approval marks until page code sets them again', () => {
+test('a new rich text fill clears its marks and refuses a late approval response', async () => {
   const rich = approvedDocument();
+  const refused = [];
+  rich.addEventListener('mu-refused', (event) => refused.push(event.detail.errors));
   const approvals = [{ block: 0, state: 'approved' }];
-  rich.setApprovals(approvals);
+  const revision = rich.fillRevision;
+  rich.setApprovals(approvals, revision);
   assert.equal(approvalMarks(rich.shadowRoot).length, 1);
 
+  const response = Promise.resolve(approvals);
   const next = structuredClone(rich.fill);
   next.data.blocks[0].data.content[0].data.text = 'The branch opens at noon.';
   rich.fill = next;
+  const current = rich.fillRevision;
+  const [body] = rich.shadowRoot.children;
+  assert.notEqual(current, revision);
   assert.deepEqual(approvalMarks(rich.shadowRoot), []);
-  assert.equal(rich.shadowRoot.children[0].children[0].textContent, 'The branch opens at noon.');
-  rich.setApprovals(approvals);
-  assert.equal(approvalMarks(rich.shadowRoot).length, 1);
+  const late = await response;
+  assert.doesNotThrow(() => rich.setApprovals(late, revision));
+  assert.deepEqual(refused.shift(), [`revision: stale, the current revision is ${current}`]);
+  assert.deepEqual(approvalMarks(rich.shadowRoot), []);
+  assert.equal(rich.shadowRoot.children[0], body);
+  assert.equal(body.children[0].textContent, 'The branch opens at noon.');
+
+  rich.setApprovals([{ block: 0, state: 'pending' }], current);
+  const [mark] = approvalMarks(rich.shadowRoot);
+  assert.equal(mark.textContent, 'Pending approval');
+  rich.setApprovals(late, revision);
+  assert.deepEqual(refused.shift(), [`revision: stale, the current revision is ${current}`]);
+  assert.equal(approvalMarks(rich.shadowRoot)[0], mark);
 
   rich.fill = rich.fill;
+  assert.notEqual(rich.fillRevision, current);
   assert.deepEqual(approvalMarks(rich.shadowRoot), []);
-  rich.setApprovals(approvals);
-  rich.fill = { ...next, data: { ...next.data, approval: approvals } };
+});
+
+test('rich text keeps its marks when an approval update gives no revision', () => {
+  const rich = approvedDocument();
+  const refused = [];
+  rich.addEventListener('mu-refused', (event) => refused.push(event.detail.errors));
+  rich.setApprovals([{ block: 0, state: 'approved' }], rich.fillRevision);
+  const [mark] = approvalMarks(rich.shadowRoot);
+  const [body] = rich.shadowRoot.children;
+  const unread = [{ get state() { assert.fail('The revision must be checked before the items.'); } }];
+  assert.doesNotThrow(() => rich.setApprovals(unread));
+  assert.deepEqual(refused, [[`revision: stale, the current revision is ${rich.fillRevision}`]]);
+  assert.deepEqual(approvalMarks(rich.shadowRoot), [mark]);
+  assert.equal(rich.shadowRoot.children[0], body);
+});
+
+test('rich text refuses an approval update if a new fill renders while it reads the list', () => {
+  const rich = approvedDocument();
+  const revision = rich.fillRevision;
+  const refused = [];
+  rich.addEventListener('mu-refused', (event) => refused.push(event.detail.errors));
+  const approval = {
+    block: 0,
+    get state() {
+      rich.fill = rich.fill;
+      return 'approved';
+    },
+  };
+  rich.setApprovals([approval], revision);
+  assert.notEqual(rich.fillRevision, revision);
+  assert.deepEqual(refused, [[`revision: stale, the current revision is ${rich.fillRevision}`]]);
+  assert.deepEqual(approvalMarks(rich.shadowRoot), []);
+});
+
+test('a refused rich text fill makes the old revision stale', () => {
+  const rich = approvedDocument();
+  const valid = rich.fill;
+  const revision = rich.fillRevision;
+  const approvals = [{ block: 0, state: 'approved' }];
+  assert.throws(() => { rich.fillRevision = revision + 1; }, TypeError);
+  assert.equal(rich.fillRevision, revision);
+  rich.setApprovals(approvals, revision);
+  assert.equal(approvalMarks(rich.shadowRoot).length, 1);
+
+  rich.fill = { ...valid, data: { ...valid.data, approval: approvals } };
+  assert.notEqual(rich.fillRevision, revision);
   assert.equal(rich.dataset.state, 'refused');
+  const [notice] = rich.shadowRoot.children;
+  const refused = [];
+  rich.addEventListener('mu-refused', (event) => refused.push(event.detail.errors));
+  assert.doesNotThrow(() => rich.setApprovals(approvals, revision));
+  assert.deepEqual(refused, [[`revision: stale, the current revision is ${rich.fillRevision}`]]);
+  assert.equal(rich.shadowRoot.children[0], notice);
   assert.deepEqual(approvalMarks(rich.shadowRoot), []);
 });
 
@@ -285,6 +357,7 @@ test('rich text refuses an invalid approval list and reports each error with its
   const rich = approvedDocument();
   const refused = [];
   const mark = { block: 0, state: 'approved' };
+  const revision = rich.fillRevision;
   rich.addEventListener('mu-refused', (event) => {
     assert.equal(event.bubbles, true);
     assert.equal(event.composed, true);
@@ -306,16 +379,16 @@ test('rich text refuses an invalid approval list and reports each error with its
     [{ state: 'done', at: '2026-02-30T10:00:00Z' }, [stateError, atError]],
     [{ block: 1 }, ['block: must be unique']],
   ]) {
-    rich.setApprovals([mark]);
+    rich.setApprovals([mark], revision);
     assert.equal(approvalMarks(rich.shadowRoot).length, 1);
-    assert.doesNotThrow(() => rich.setApprovals([{ block: 1, state: 'pending' }, { ...mark, ...changes }]));
+    assert.doesNotThrow(() => rich.setApprovals([{ block: 1, state: 'pending' }, { ...mark, ...changes }], revision));
     assert.deepEqual(approvalMarks(rich.shadowRoot), []);
     assert.equal(rich.dataset.state, 'default');
     assert.deepEqual(refused.shift(), errors.map((error) => 'approvals[1].' + error));
     assert.deepEqual(refused, []);
   }
 
-  rich.setApprovals(null);
-  rich.setApprovals([null]);
+  rich.setApprovals(null, revision);
+  rich.setApprovals([null], revision);
   assert.deepEqual(refused, [['approvals: must be a list'], ['approvals[0]: must be an object']]);
 });

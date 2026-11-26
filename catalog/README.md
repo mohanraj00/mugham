@@ -405,7 +405,7 @@ Bind the actor before you set the fill. Keep each step or task id when you set a
 
 ## Document block approval
 
-Page code reads the state from the application's approval API and calls `setApprovals(list)` on `mu-rich-text` after each fill. A fill cannot set a mark. The kit only shows the state as text with an accessible name. The application decides and enforces each approval.
+Read `fillRevision` on `mu-rich-text` just after you set the fill and before you call the application's approval API. Pass that revision with the response to `setApprovals(list, revision)`. A missing or stale revision leaves the document and its current marks in place and sends `mu-refused`. A fill cannot set a mark. The kit only shows the state as text with an accessible name. The application decides and enforces each approval.
 
 Each item gives a top-level `block` index that starts at zero and a `state` of `approved`, `pending` or `rejected`. Give `by` for the approver and `at` for the date and time in UTC if available. A block with no item has no mark. See the [rich text rules](../src/components/rich-text.md#approval-marks) and the [library newsletter](../examples/apps/newsletter.html).
 
