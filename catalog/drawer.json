@@ -1,6 +1,6 @@
 {
   "name": "drawer",
-  "description": "A modal dialog at the inline end of the page, with a title, a close button and a slot for page content. At 375 CSS pixels it opens at the bottom.",
+  "description": "A modal dialog at the inline end of the page, with a title, a close button and a slot for page content. On a screen 30rem wide or narrower, it opens at the bottom.",
   "ai_content": false,
   "parts": [
     {"name": "body", "description": "Container for the page content.", "guardrail": true},
