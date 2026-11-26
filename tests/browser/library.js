@@ -71,7 +71,7 @@ function readWizard() {
   const unknown = wizard?.querySelector('#unknown-progress')?.shadowRoot;
   const part = (root, name) => root?.querySelector('[part="' + name + '"]');
   const panel = wizard?.querySelector('[data-member-step]:not([hidden])');
-  const form = panel?.querySelector('mu-editable-form')?.shadowRoot;
+  const save = wizard?.querySelector('#add-member');
   const themeColor = (color) => {
     const probe = document.createElement('span');
     probe.style.forcedColorAdjust = 'none';
@@ -93,9 +93,9 @@ function readWizard() {
   const unknownStyle = unknownBar && getComputedStyle(unknownBar);
   const fillStyle = indicator && getComputedStyle(indicator);
   const stepNodes = [...(steps?.querySelectorAll('li') ?? [])];
-  const controls = [...(steps?.querySelectorAll('button') ?? []), part(form, 'button'),
-    part(panel?.querySelector('mu-button')?.shadowRoot, 'button'),
-    part(panel?.querySelector('mu-action-button')?.shadowRoot, 'button')].filter(Boolean);
+  const buttons = Array.from(panel?.querySelectorAll('mu-button, mu-action-button') ?? [],
+    (control) => part(control.shadowRoot, 'button'));
+  const controls = [...(steps?.querySelectorAll('button') ?? []), ...buttons].filter(Boolean);
   return {
     heading: panel?.querySelector('h3')?.id,
     focusedHeading: active === panel?.querySelector('h3'),
@@ -122,10 +122,14 @@ function readWizard() {
       && fillStyle?.backgroundColor === themeColor(forced ? 'Highlight' : 'var(--mu-color-accent)')
       && unknownStyle?.backgroundColor === barStyle?.backgroundColor && unknownStyle?.borderTopColor === barStyle?.borderTopColor,
     motion: Boolean(fillStyle) && (reduced ? fillStyle.animationName === 'none' : fillStyle.animationName !== 'none'),
+    memberName: wizard?.querySelector('#member-name')?.textContent,
     membership: wizard?.querySelector('#member-type')?.textContent,
     events: window.librarySteps,
+    requests: window.libraryRequests,
     saveStart: window.librarySaveStart,
-    result: part(wizard?.querySelector('mu-action-button')?.shadowRoot, 'status')?.textContent,
+    saveArgs: save?.action.arguments,
+    saveState: save?.dataset.state,
+    result: part(save?.shadowRoot, 'status')?.textContent,
   };
 }
 
@@ -138,6 +142,11 @@ async function wizardChecks(session, sessionId, width, view, { page, tab, press,
     await session.send('Input.dispatchKeyEvent', { type: 'keyUp', ...tab }, sessionId);
   };
   const names = ['member-details-title', 'member-type-title', 'member-review-title'];
+  const controlsByStep = [
+    [['textbox', 'Member name'], ['button', 'Next']],
+    [['group', 'Membership type'], ['radio', 'Standard'], ['radio', 'Household'], ['button', 'Next'], ['button', 'Back']],
+    [['button', 'Back'], ['button', 'Add member']],
+  ];
   const at = (state, index) => state.heading === names[index] && state.targets && state.scroll <= width
     && state.current.join() === names.map((_, item) => item === index ? 'step' : '').join()
     && state.states.join() === names.map((_, item) => item < index ? 'Done' : item === index ? 'Current' : 'Next').join()
@@ -160,13 +169,18 @@ async function wizardChecks(session, sessionId, width, view, { page, tab, press,
     step('the accessibility tree gives the step position, state and progress range',
       list && currentText && progress.join() === '0,' + value + ',3' && unknownOK && back === (value > 1),
       { expected: value, progress, list, currentText, back, unknown: unknown?.value, unknownOK });
+    const missing = controlsByStep[value - 1].filter(([role, name]) =>
+      !exposed.some((node) => node.role?.value === role && node.name?.value === name));
+    step('the step controls have names', missing.length === 0, { missing });
   };
 
   await page(`(() => {
     window.librarySteps = [];
+    window.libraryRequests = [];
     const wizard = document.getElementById('member-wizard');
     if (!wizard) return;
     wizard.addEventListener('mu-step-change', (event) => window.librarySteps.push(event.detail.index));
+    wizard.addEventListener('mu-action', ({ detail }) => window.libraryRequests.push(detail));
     const save = wizard.querySelector('mu-action-button');
     save?.addEventListener('mu-action', () => {
       window.librarySaveStart = {
@@ -207,6 +221,8 @@ async function wizardChecks(session, sessionId, width, view, { page, tab, press,
     && continueControl.focusedText === 'Next' && continueControl.ring
     && at(review, 2) && review.focusedHeading && review.ring && review.membership === 'Household',
     { standard, household, continueControl, review });
+  step('the draft steps send no action and Review shows both values',
+    review.requests.length === 0 && review.memberName === 'Sample Member' && review.membership === 'Household', review);
   await ax(3);
   const reviewRules = await pageRules(session, sessionId, LIBRARY_PAGE + ' at Review in ' + view);
   await tab();
@@ -216,9 +232,12 @@ async function wizardChecks(session, sessionId, width, view, { page, tab, press,
   await enter();
   const received = await waitFor('document.querySelector("#add-member")?.dataset.state === "done"');
   const saved = await read();
+  const [request] = saved.requests;
   step('Add member shows Pending and shows the result after the receipt',
     add.focusedText === 'Add member' && add.ring && saved.saveStart?.state === 'pending'
-    && saved.saveStart.text === 'Pending' && received && saved.result === 'Done: Member added.',
+    && saved.saveStart.text === 'Pending' && received && saved.result === 'Done: Member added.'
+    && saved.requests.length === 1 && request?.tool === 'library.add_member'
+    && request.arguments.member_name === 'Sample Member' && request.arguments.membership_type === 'Household',
     { add, saved, received, reason: received ? undefined : 'No receipt within the wait limit.' });
   await shiftTab();
   await enter();
@@ -232,6 +251,22 @@ async function wizardChecks(session, sessionId, width, view, { page, tab, press,
   step('Shift+Tab reaches the done step and Space requests it once and focuses Details',
     done.focus === 'back' && done.ring && at(details, 0) && details.focusedHeading && details.ring
     && details.events?.join() === '0', { done, details });
+  await tab();
+  await page('document.activeElement?.shadowRoot?.activeElement?.select?.()');
+  await session.send('Input.insertText', { text: 'Sample Member Two' }, sessionId);
+  await enter();
+  const edited = await read();
+  await tab();
+  await tab();
+  await enter();
+  const revised = await read();
+  step('an edit updates the review and the next request arguments',
+    at(edited, 1) && edited.focusedHeading && at(revised, 2) && revised.focusedHeading
+    && revised.memberName === 'Sample Member Two' && revised.membership === 'Household'
+    && revised.saveState === 'default' && revised.result === ''
+    && revised.saveArgs?.member_name === 'Sample Member Two' && revised.saveArgs?.membership_type === 'Household'
+    && revised.requests.length === 1 && revised.requests[0].arguments.member_name === 'Sample Member',
+    { edited, revised });
   return [...membershipRules, ...reviewRules];
 }
 

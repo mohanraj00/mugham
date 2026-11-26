@@ -50,25 +50,29 @@ const draft = {};
 let review = '';
 const { mount } = createKit({ actor: { type: 'human', id: 'library-staff' } });
 
-function memberForm(index, title, field, data) {
-  const action = { tool: 'library.continue_member', title, label: 'Next', editable: { [data.name]: data.label } };
-  const form = mount('editable-form', { title, submit_label: action.label, fields: [fill(field, data)] },
-    { parent: panels[index], action });
-  // Page code accepts the local draft before it opens the next step.
-  form.addEventListener('mu-action', ({ detail: { id, arguments: values } }) => {
-    if (!form.receipt({ id, ok: true })) return;
-    Object.assign(draft, values);
+function mountDraftStep(index, component, data) {
+  const parent = panels[index];
+  const field = mount(component, data, { parent });
+  const next = mount('button', { label: 'Next' }, { parent });
+  const advance = () => {
+    if (!field.reportValidity()) return;
+    draft[data.name] = field.value;
     showMemberStep(index + 1);
-  });
-  return form;
+  };
+  next.addEventListener('mu-press', advance);
+  if (component === 'field') {
+    field.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter' || event.isComposing || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+      event.preventDefault();
+      advance();
+    });
+  }
 }
 
-const forms = [
-  memberForm(0, 'Member details', 'field', { name: 'member_name', label: 'Member name', value: 'Sample Member' }),
-  memberForm(1, 'Membership options', 'choice-field', {
-    name: 'membership_type', label: 'Membership type', choices: ['Standard', 'Household'], value: 'Standard',
-  }),
-];
+mountDraftStep(0, 'field', { name: 'member_name', label: 'Member name', value: 'Sample Member' });
+mountDraftStep(1, 'choice-field', {
+  name: 'membership_type', label: 'Membership type', choices: ['Standard', 'Household'], value: 'Standard',
+});
 for (const index of [1, 2]) {
   const back = mount('button', { label: 'Back', emphasis: 'secondary' }, { parent: panels[index] });
   back.addEventListener('mu-press', () => showMemberStep(index - 1));
@@ -86,11 +90,10 @@ function showMemberStep(index, focus = true) {
     document.getElementById('member-type').textContent = draft.membership_type;
     const values = JSON.stringify(draft);
     if (review !== values) {
-      add.action = { tool: 'library.add_member', label: 'Add member', arguments: draft };
+      add.action = { tool: 'library.add_member', label: 'Add member', arguments: { ...draft } };
       review = values;
     }
   }
-  forms[index]?.reopen();
   for (const [number, panel] of panels.entries()) panel.hidden = number !== index;
   steps.fill = fill('steps', { label: 'Member steps', labels, current: index });
   progress.fill = fill('progress', { label: 'Wizard progress', maximum: labels.length, value: index + 1 });
