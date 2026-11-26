@@ -3,14 +3,6 @@
   "description": "A list node of rich text, with bullets or with numbers. Each item is a paragraph node.",
   "parts": [],
   "data": {
-    "approval": {
-      "type": "record",
-      "fields": {
-        "state": {"type": "enum", "required": true, "values": ["approved", "pending", "rejected"]},
-        "by": {"type": "text", "label": "Approver", "min_length": 1, "size": "line"},
-        "at": {"type": "text", "label": "Approval time in UTC", "min_length": 20, "max_length": 24}
-      }
-    },
     "ordered": {"type": "boolean", "label": "Numbered list"},
     "items": {
       "type": "list",

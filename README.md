@@ -127,7 +127,7 @@ Each component has a contract file in [catalog/](catalog/README.md). The contrac
 | `mu-steps` | An ordered list that shows the position and state of each wizard step. | [steps.json](catalog/steps.json) |
 | `mu-run-steps` | An ordered list of agent run steps with states and optional tool details. | [run-steps.json](catalog/run-steps.json) |
 | `mu-plan` | A list of agent tasks with their states. | [plan.json](catalog/plan.json) |
-| `mu-approval-queue` | A list of agent proposals with a state mark, a confirm step and a receipt for each decision. | [approval-queue.json](catalog/approval-queue.json) |
+| `mu-approval-queue` | A list of agent proposals with state labels, a confirm step and a receipt for each decision. | [approval-queue.json](catalog/approval-queue.json) |
 | `mu-progress` | A named bar with a known or unknown value. | [progress.json](catalog/progress.json) |
 | `mu-empty-state` | A heading and short text for an empty result, with a slot for a page control. | [empty-state.json](catalog/empty-state.json) |
 | `mu-skeleton` | A named loading status with lines that hold space for content. | [skeleton.json](catalog/skeleton.json) |
@@ -143,7 +143,7 @@ Each component has a contract file in [catalog/](catalog/README.md). The contrac
 | `mu-status` | One state as text: pending, passed, failed or unknown, with a border style for each state. The application or the service gives the state. | [status.json](catalog/status.json) |
 | `mu-image` | An image in a fixed box with a caption and a text alternative. Page code permits the origins. A native dialog shows the full-size view. | [image.json](catalog/image.json) |
 | `mu-chart` | An SVG bar, line or stacked bar chart with keyboard point controls and a table view. | [chart.json](catalog/chart.json) |
-| `mu-rich-text` | Paragraphs, headings, lists, code blocks and quotes with an optional approval mark on each block. | [rich-text.json](catalog/rich-text.json) |
+| `mu-rich-text` | Paragraphs, headings, lists, code blocks and quotes. Page code can set approval marks on top-level blocks. | [rich-text.json](catalog/rich-text.json) |
 | `mu-data-grid` | An editable grid with column headers, row headers and typed cells. Each saved change goes to the application as one action, and the cell shows a marker until the receipt comes back. | [data-grid.json](catalog/data-grid.json) |
 | `mu-upload` | A control that takes files with a file picker or a drop. Page code binds the tool, the accepted types, the size limit and the file count. Done shows only after the receipt. | [upload.json](catalog/upload.json) |
 | `mu-source-status` | The state of an offline data source as text: ready, stale, empty or error, with the time of the last confirmed read. The application fills it, not a model. | [source-status.json](catalog/source-status.json) |

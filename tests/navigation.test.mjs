@@ -493,6 +493,32 @@ test('the approval queue exports an authored fill and refuses duplicate ids and 
   assert.equal(find(queue.shadowRoot, 'empty').textContent, 'No items need a decision. Check again later.');
 });
 
+test('the approval queue uses plain badges before a decision or after a failed receipt', () => {
+  const queue = makeResearch('approval-queue', APPROVALS);
+  const [hold] = find(queue.shadowRoot, 'list').children;
+  const state = find(hold, 'state');
+  const plain = (text) => {
+    assert.equal(state.textContent, text);
+    assert.equal(state.firstElementChild.dataset.badge, '');
+    assert.equal(state.firstElementChild.getAttribute('aria-label'), null);
+    assert.equal(find(state, 'approval-mark'), undefined);
+  };
+  plain('Unavailable');
+  bindDecisions(queue, 'hold');
+  plain('Awaiting decision');
+  const approve = decision(hold, 0);
+  approve.control.click();
+  plain('Confirm approval');
+  approve.confirm();
+  plain('Pending');
+  assert.equal(queue.receipt({ id: approve.requests[0].id, ok: false, message: 'The branch is busy.' }), true);
+  plain('Not done: The branch is busy.');
+  approve.control.click();
+  approve.confirm();
+  assert.equal(queue.receipt({ id: approve.requests[1].id, ok: true }), true);
+  assert.equal(find(state, 'approval-mark').getAttribute('aria-label'), 'Approval: Approved');
+});
+
 test('each proposal confirms, waits for its own receipt and reports only its own result', () => {
   const queue = makeResearch('approval-queue', APPROVALS);
   bindDecisions(queue, 'hold');

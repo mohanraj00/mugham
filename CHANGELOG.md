@@ -4,7 +4,7 @@ Each release has an entry. The newest entry is first.
 
 ## Unreleased
 
-- The kit shows the approval state of each rich text block. The library newsletter shows three states from a fixture API (#137).
+- Page code can show the approval state of top-level rich text blocks with `setApprovals` after each fill. The library newsletter shows three states from a fixture API (#137).
 
 - The kit adds an approval queue with separate confirmation and receipts for each proposal. The library research example asks for a book hold and a reading list change (#129).
 

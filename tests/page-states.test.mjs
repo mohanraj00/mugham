@@ -9,8 +9,24 @@ class TestNode extends EventTarget {
   dataset = {};
 
   constructor(tag) { super(); this.tag = tag; }
-  append(...children) { this.children.push(...children); }
-  replaceChildren(...children) { this.children = children; }
+  append(...children) {
+    for (const child of children) this.insertBefore(child, null);
+  }
+  insertBefore(child, before) {
+    if (child instanceof TestNode) child.parentNode = this;
+    const index = before === null ? this.children.length : this.children.indexOf(before);
+    this.children.splice(index, 0, child);
+  }
+  remove() {
+    const parent = this.parentNode;
+    parent.children.splice(parent.children.indexOf(this), 1);
+    this.parentNode = null;
+  }
+  replaceChildren(...children) {
+    for (const child of this.children) if (child instanceof TestNode) child.parentNode = null;
+    this.children = [];
+    this.append(...children);
+  }
   setAttribute(name, value) { this.attributes.set(name, value); }
   getAttribute(name) { return this.attributes.get(name) ?? null; }
   get textContent() { return this.children.map((child) => child.textContent).join(''); }
@@ -25,7 +41,7 @@ globalThis.HTMLElement = class extends TestNode {
 globalThis.CSSStyleSheet = class { replaceSync() {} };
 globalThis.document = {
   createElement: (tag) => new TestNode(tag),
-  createTextNode: (textContent) => ({ textContent }),
+  createTextNode: (textContent) => Object.assign(new TestNode('#text'), { textContent }),
 };
 globalThis.customElements = {
   define: (tag, constructor) => elements.set(tag, constructor),
@@ -55,8 +71,8 @@ test('empty state shows scalar text and a named slot for a page control', () => 
   assert.equal(group.getAttribute('aria-labelledby'), title.getAttribute('id'));
   assert.equal(group.getAttribute('aria-live'), null);
   assert.equal(title.tag, 'h2');
-  assert.deepEqual(title.children, [{ textContent: EMPTY.title }]);
-  assert.deepEqual(text.children, [{ textContent: EMPTY.text }]);
+  assert.deepEqual(title.children.map((child) => child.textContent), [EMPTY.title]);
+  assert.deepEqual(text.children.map((child) => child.textContent), [EMPTY.text]);
   assert.equal(action.tag, 'slot');
   assert.equal(action.getAttribute('name'), 'action');
   assert.deepEqual(action.children, []);
@@ -89,7 +105,7 @@ test('a badge shows its text for each tone without a control', () => {
     assert.equal(label.getAttribute('class'), tone);
     assert.equal(label.getAttribute('role'), null);
     assert.equal(label.getAttribute('tabindex'), null);
-    assert.deepEqual(label.children, [{ textContent: BADGE.text }]);
+    assert.deepEqual(label.children.map((child) => child.textContent), [BADGE.text]);
   }
 });
 
@@ -109,7 +125,7 @@ test('an avatar shows up to two initials and gives the full name to assistive te
     assert.equal(initials.getAttribute('src'), null);
     assert.equal(initials.getAttribute('href'), null);
     assert.equal(initials.getAttribute('style'), null);
-    assert.deepEqual(initials.children, [{ textContent: expected }]);
+    assert.deepEqual(initials.children.map((child) => child.textContent), [expected]);
   }
 });
 
@@ -145,43 +161,111 @@ for (const [name, data, changes] of [
   });
 }
 
-test('rich text shows each approval state with its text and accessible name', () => {
+const APPROVAL_TIME = '2026-11-26T10:00:00Z';
+const APPROVER = 'Branch reviewer <north>';
+
+function approvedDocument() {
   const actor = { type: 'agent', id: 'newsletter-agent' };
   const rich = new (elements.get('mu-rich-text'))();
   rich.actor = actor;
-  const at = '2026-11-26T10:00:00Z';
-  const by = 'Branch reviewer <north>';
   const content = [fill('rich-span', { text: 'The branch opens at ten.' })];
-  const paragraph = (approval) => fill('rich-paragraph', { content, ...(approval && { approval }) });
+  const paragraph = fill('rich-paragraph', { content });
   const blocks = [
-    fill('rich-heading', { level: 1, content, approval: { state: 'approved', by, at } }),
-    fill('rich-list', { items: [paragraph({ state: 'pending' })], approval: { state: 'pending' } }),
-    fill('rich-code', { text: 'Branch hours', approval: { state: 'rejected' } }),
-    fill('rich-quote', { paragraphs: [paragraph({ state: 'approved' })], approval: { state: 'approved' } }),
+    fill('rich-heading', { level: 1, content }),
+    fill('rich-list', { items: [paragraph] }),
+    fill('rich-code', { text: 'Branch hours' }),
+    fill('rich-quote', { paragraphs: [paragraph] }),
+    paragraph,
   ];
   rich.fill = { ...fill('rich-text', { blocks }), slots: { authorship: actor } };
+  return rich;
+}
+
+function approvalMarks(node) {
+  if (node.getAttribute?.('part') === 'approval-mark') return [node];
+  return (node.children ?? []).flatMap(approvalMarks);
+}
+
+test('page code sets the text and accessible name of each approval mark', () => {
+  const rich = approvedDocument();
+  rich.setApprovals([
+    { block: 2, state: 'rejected' },
+    { block: 0, state: 'approved', by: APPROVER, at: APPROVAL_TIME },
+    { block: 1, state: 'pending', at: '2028-02-29T10:00:00.123Z' },
+  ]);
   assert.equal(rich.dataset.state, 'default');
   const [body] = rich.shadowRoot.children;
-  const marks = (node) => [
-    ...(node.getAttribute?.('part') === 'approval-mark' ? [node] : []),
-    ...(node.children ?? []).flatMap(marks),
-  ];
-  const expected = ['Approved', 'Pending approval', 'Pending approval', 'Rejected', 'Approved', 'Approved'];
-  assert.deepEqual(marks(body).map((mark) => mark.children[0].textContent), expected);
-  assert.deepEqual(marks(body).map((mark) => mark.getAttribute('aria-label')), expected.map((word) => 'Approval: ' + word));
-  assert.ok(marks(body).every((mark) => mark.getAttribute('role') === 'group'));
-  assert.equal(marks(body)[0].textContent, 'Approved by ' + by + ' at ' + at);
+  const marks = approvalMarks(body);
+  const expected = ['Approved', 'Pending approval', 'Rejected'];
+  assert.deepEqual(marks.map((mark) => mark.children[0].textContent), expected);
+  assert.deepEqual(marks.map((mark) => mark.getAttribute('aria-label')), expected.map((word) => 'Approval: ' + word));
+  assert.ok(marks.every((mark) => mark.getAttribute('role') === 'group'));
+  assert.equal(marks[0].textContent, 'Approved by ' + APPROVER + ' at ' + APPROVAL_TIME);
+  assert.equal(marks[1].textContent, 'Pending approval at 2028-02-29T10:00:00.123Z');
+  assert.deepEqual(body.children.slice(-3).map((node) => node.tag), ['blockquote', 'p', 'p']);
+  assert.equal(body.children.at(-2).textContent, 'The branch opens at ten.');
+
+  rich.setApprovals([]);
+  assert.deepEqual(approvalMarks(rich.shadowRoot), []);
 });
 
-test('a rich text block with no approval record shows no mark', () => {
-  const actor = { type: 'agent', id: 'newsletter-agent' };
-  const rich = new (elements.get('mu-rich-text'))();
-  rich.actor = actor;
-  const block = fill('rich-paragraph', { content: [fill('rich-span', { text: 'Read at the branch.', mark: 'strong' })] });
-  rich.fill = { ...fill('rich-text', { blocks: [block] }), slots: { authorship: actor } };
-  assert.equal(rich.dataset.state, 'default');
-  const [body] = rich.shadowRoot.children;
-  assert.equal(body.children[0].tag, 'p');
-  assert.deepEqual(body.children[0].children.map((child) => child.tag), ['strong']);
-  assert.equal(body.children[0].textContent, 'Read at the branch.');
+test('a rich text fill clears all approval marks until page code sets them again', () => {
+  const rich = approvedDocument();
+  const approvals = [{ block: 0, state: 'approved' }];
+  rich.setApprovals(approvals);
+  assert.equal(approvalMarks(rich.shadowRoot).length, 1);
+
+  const next = structuredClone(rich.fill);
+  next.data.blocks[0].data.content[0].data.text = 'The branch opens at noon.';
+  rich.fill = next;
+  assert.deepEqual(approvalMarks(rich.shadowRoot), []);
+  assert.equal(rich.shadowRoot.children[0].children[0].textContent, 'The branch opens at noon.');
+  rich.setApprovals(approvals);
+  assert.equal(approvalMarks(rich.shadowRoot).length, 1);
+
+  rich.fill = rich.fill;
+  assert.deepEqual(approvalMarks(rich.shadowRoot), []);
+  rich.setApprovals(approvals);
+  rich.fill = { ...next, data: { ...next.data, approval: approvals } };
+  assert.equal(rich.dataset.state, 'refused');
+  assert.deepEqual(approvalMarks(rich.shadowRoot), []);
+});
+
+test('rich text refuses an invalid approval list and reports each error with its path', () => {
+  const rich = approvedDocument();
+  const refused = [];
+  const mark = { block: 0, state: 'approved' };
+  rich.addEventListener('mu-refused', (event) => {
+    assert.equal(event.bubbles, true);
+    assert.equal(event.composed, true);
+    refused.push(event.detail.errors);
+  });
+  const atError = 'at: must be an ISO 8601 date and time in UTC';
+  const stateError = 'state: must be approved, pending or rejected';
+  for (const [changes, errors] of [
+    [{ state: 'done' }, [stateError]],
+    [{ by: 'x'.repeat(81) }, ['by: more than 80 characters']],
+    [{ by: {} }, ['by: must be a string']],
+    [{ note: 'Unknown' }, ['note: unknown key']],
+    [{ block: 5 }, ['block: must be an index of a top-level block']],
+    [{ at: '2026-11-26T10:00:00' }, [atError]],
+    [{ at: '2026-11-26T10:00:00+01:00' }, [atError]],
+    [{ at: '2026-11-26T10:00:00.1234Z' }, [atError]],
+    [{ at: '2026-02-30T10:00:00Z' }, [atError]],
+    [{ at: '2026-11-26T10:00:00Z\n' }, [atError]],
+    [{ state: 'done', at: '2026-02-30T10:00:00Z' }, [stateError, atError]],
+    [{ block: 1 }, ['block: must be unique']],
+  ]) {
+    rich.setApprovals([mark]);
+    assert.equal(approvalMarks(rich.shadowRoot).length, 1);
+    assert.doesNotThrow(() => rich.setApprovals([{ block: 1, state: 'pending' }, { ...mark, ...changes }]));
+    assert.deepEqual(approvalMarks(rich.shadowRoot), []);
+    assert.equal(rich.dataset.state, 'default');
+    assert.deepEqual(refused.shift(), errors.map((error) => 'approvals[1].' + error));
+    assert.deepEqual(refused, []);
+  }
+
+  rich.setApprovals(null);
+  rich.setApprovals([null]);
+  assert.deepEqual(refused, [['approvals: must be a list'], ['approvals[0]: must be an object']]);
 });

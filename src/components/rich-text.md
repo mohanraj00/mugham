@@ -32,9 +32,16 @@ The element makes each element with `createElement` from a fixed table, and it w
 
 ## Approval marks
 
-Each block, including a list item or a paragraph in a quote, can have an `approval` record. Set `state` to `approved`, `pending` or `rejected`. The mark shows the state as text and has a name such as `Approval: Pending approval`. The optional `by` gives the approver. The optional `at` gives the UTC date and time, for example `2026-11-26T10:00:00Z`. You can include one to three digits after the decimal point for fractional seconds.
+Page code reads the state from the application's approval API and calls `setApprovals(list)` after each fill. Each new fill clears the marks. A fill cannot set a mark. The kit only shows the state. The application decides and enforces each approval.
 
-The kit shows the state that the application gives. The application's approval API decides and enforces each approval. A block without an `approval` record has no mark. See the [library newsletter](../../examples/apps/newsletter.html).
+Each item gives these values.
+
+- `block` is the index of a top-level block in the current fill, starting at zero. Give at most one item per block.
+- `state` is `approved`, `pending` or `rejected`. The mark shows the state in text and has a name such as `Approval: Pending approval`.
+- `by` is optional text that names the approver and has at most 80 characters.
+- `at` is an optional ISO 8601 date and time in UTC, for example `2026-11-26T10:00:00Z`. Give a date and time that exists. Include seconds and the final `Z`. You can give one to three digits for fractional seconds.
+
+A block with no item has no mark. Call `setApprovals([])` to clear all marks. An invalid list also clears all marks. The element keeps the document and sends `mu-refused` with each error and its path in `event.detail.errors`. See the [library newsletter](../../examples/apps/newsletter.html).
 
 ## Links
 

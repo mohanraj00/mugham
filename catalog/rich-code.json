@@ -3,14 +3,6 @@
   "description": "A code block node of rich text. The kit shows the text as text in a fixed-width font and runs nothing.",
   "parts": [],
   "data": {
-    "approval": {
-      "type": "record",
-      "fields": {
-        "state": {"type": "enum", "required": true, "values": ["approved", "pending", "rejected"]},
-        "by": {"type": "text", "label": "Approver", "min_length": 1, "size": "line"},
-        "at": {"type": "text", "label": "Approval time in UTC", "min_length": 20, "max_length": 24}
-      }
-    },
     "text": {"type": "text", "label": "Code", "required": true, "min_length": 1, "max_length": 10000}
   },
   "tokens": ["color.text", "color.text-muted", "color.border", "space.1", "space.2", "type.body", "radius.1"]

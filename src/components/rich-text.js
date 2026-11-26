@@ -1,10 +1,10 @@
 // Rich text as a tree of typed nodes (catalog/rich-text.json). A fill gives data only. The kit makes each
 // element from the fixed tables below, and each text goes into a text node. Page code owns the link
-// schemes and the first heading level. src/components/rich-text.md gives the rules.
+// schemes, the first heading level and the approval marks. src/components/rich-text.md gives the rules.
 import { ReadMoreElement, READ_MORE_CSS } from '../primitives/read-more.js';
-import { APPROVAL_MARK_CSS, approvalMark } from '../primitives/badge.js';
+import { APPROVAL_MARK_CSS, APPROVAL_STATES, approvalMark } from '../primitives/badge.js';
 import { copyControl, el, sheet, text } from '../render/dom.js';
-import { parseLinkURL } from '../render/validate.js';
+import { isLocalDateTime, parseLinkURL, schemaErrors } from '../render/validate.js';
 
 // The schemes that page code can permit. No other scheme can open.
 const SCHEMES = Object.freeze(['https:', 'http:', 'mailto:']);
@@ -13,6 +13,8 @@ const HEADINGS = Object.freeze(['h2', 'h3', 'h4', 'h5', 'h6']);
 const MARKS = Object.freeze({ emphasis: 'em', strong: 'strong', code: 'code' });
 // The maximum number of inline nodes in one rich text. The contract limits each list, not the total.
 const MAX_INLINE = 2000;
+const APPROVAL_KEYS = new Set(['block', 'state', 'by', 'at']);
+const UTC_SECONDS = /^:[0-5][0-9](\.[0-9]{1,3})?Z$/;
 
 let schemes = Object.freeze(['https:']);
 let first = 2;
@@ -44,8 +46,7 @@ export class MuRichText extends ReadMoreElement {
     }
     p, h2, h3, h4, h5, h6, ul, ol, pre, blockquote { margin: 0; }
     p, li, .heading { white-space: pre-wrap; }
-    .block-with-approval { display: flex; flex-direction: column; gap: var(--mu-space-1); }
-    li > [part="approval-mark"] { margin-block-end: var(--mu-space-1); white-space: normal; }
+    [part="approval-mark"] { margin-block-end: calc(var(--mu-space-1) - var(--mu-space-2)); }
     .heading { font: var(--mu-type-body); font-weight: var(--mu-type-weight-strong); }
     .level-1 { font-size: 1.25em; }
     .level-2 { font-size: 1.125em; }
@@ -91,6 +92,60 @@ export class MuRichText extends ReadMoreElement {
   // The policy that this element used for its last render.
   #policy = -1;
   #targets = 0;
+  #blocks = [];
+  #marks = [];
+
+  setApprovals(list) {
+    const errors = [];
+    const approvals = new Map();
+    if (!Array.isArray(list)) errors.push('approvals: must be a list');
+    else {
+      for (let index = 0; index < list.length; index += 1) {
+        const item = list[index];
+        const path = `approvals[${index}]`;
+        if (item === null || typeof item !== 'object' || Array.isArray(item)) {
+          errors.push(path + ': must be an object');
+          continue;
+        }
+        for (const key of Reflect.ownKeys(item)) {
+          if (!APPROVAL_KEYS.has(key)) errors.push(path + '.' + String(key) + ': unknown key');
+        }
+        const { block, state } = item;
+        const by = Object.hasOwn(item, 'by') ? item.by : undefined;
+        const at = Object.hasOwn(item, 'at') ? item.at : undefined;
+        if (!Object.hasOwn(item, 'block') || !Number.isInteger(block) || block < 0 || block >= this.#blocks.length) {
+          errors.push(path + '.block: must be an index of a top-level block');
+        } else if (approvals.has(block)) {
+          errors.push(path + '.block: must be unique');
+        } else {
+          approvals.set(block, { state, by, at });
+        }
+        if (!Object.hasOwn(item, 'state') || typeof state !== 'string' || !Object.hasOwn(APPROVAL_STATES, state)) {
+          errors.push(path + '.state: must be approved, pending or rejected');
+        }
+        if (Object.hasOwn(item, 'by')) {
+          errors.push(...schemaErrors(by, { type: 'string', maxLength: 80 }, undefined, path + '.by'));
+        }
+        if (Object.hasOwn(item, 'at') && (typeof at !== 'string' || !at.endsWith('Z')
+          || !isLocalDateTime(at.slice(0, 16)) || !UTC_SECONDS.test(at.slice(16)))) {
+          errors.push(path + '.at: must be an ISO 8601 date and time in UTC');
+        }
+      }
+    }
+
+    for (const mark of this.#marks) mark.remove();
+    this.#marks = [];
+    if (errors.length) {
+      this.dispatchEvent(new CustomEvent('mu-refused', { bubbles: true, composed: true, detail: { errors } }));
+      return;
+    }
+    for (const [index, approval] of approvals) {
+      const block = this.#blocks[index];
+      const mark = approvalMark(approval);
+      block.parentNode.insertBefore(mark, block);
+      this.#marks.push(mark);
+    }
+  }
 
   // The schemes that a link can have. This policy applies to each rich text on the page, including the
   // rich text of a thread. A fill cannot set it.
@@ -163,12 +218,21 @@ export class MuRichText extends ReadMoreElement {
     return data.blocks.length ? 'default' : 'empty';
   }
 
+  refuse(errors) {
+    this.#blocks = [];
+    this.#marks = [];
+    super.refuse(errors);
+  }
+
   render(data) {
     this.#policy = policy;
     this.#targets = 0;
+    // A fill can change the text. Clear the marks until page code sets them again.
+    this.#marks = [];
+    this.#blocks = data.blocks.map((block) => this.#block(block));
     const author = this.fill.slots.authorship;
     const name = author.name ? ` (${author.name})` : '';
-    const blocks = data.blocks.length ? data.blocks.map((block) => this.#block(block))
+    const blocks = this.#blocks.length ? this.#blocks
       : [el('p', { class: 'muted', part: 'empty' }, 'No text. Ask for the text again.')];
     const authorText = el('p', { class: 'muted', part: 'authorship' }, `Author: ${author.type} ${author.id}${name}`);
     const content = el('div', { class: 'rich', part: 'rich-text' }, ...blocks);
@@ -182,11 +246,6 @@ export class MuRichText extends ReadMoreElement {
 
   // The validator accepts only the five block types and the two inline types. Each element name here is fixed.
   #block({ component, data }) {
-    const content = this.#blockContent(component, data);
-    return data.approval ? el('div', { class: 'block-with-approval' }, approvalMark(data.approval), content) : content;
-  }
-
-  #blockContent(component, data) {
     switch (component) {
       case 'rich-paragraph':
         return el('p', {}, ...this.#inline(data.content));
@@ -194,7 +253,7 @@ export class MuRichText extends ReadMoreElement {
         return el(HEADINGS[Math.min(first + data.level - 1, 6) - 2], { class: 'heading level-' + data.level }, ...this.#inline(data.content));
       case 'rich-list':
         return el(data.ordered ? 'ol' : 'ul', {}, ...data.items.map(({ data }) =>
-          el('li', {}, data.approval ? approvalMark(data.approval) : null, ...this.#inline(data.content))));
+          el('li', {}, ...this.#inline(data.content))));
       case 'rich-code':
         return el('div', { class: 'code' }, el('pre', { part: 'code' }, el('code', {}, data.text)), copyControl(data.text, 'code'));
       case 'rich-quote':

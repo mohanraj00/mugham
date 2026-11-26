@@ -1,8 +1,8 @@
 {
   "name": "rich-text",
-  "description": "Rich text as a tree of typed nodes: paragraphs, headings, lists, code blocks and quotes. A fill gives data only, never markup. The kit makes each element from a fixed list. Each block can show an approval mark. Page code sets the link schemes and the first heading level.",
+  "description": "Rich text as a tree of paragraphs, headings, lists, code blocks and quotes. The kit makes elements from a fixed list. Page code sets the link schemes and the first heading level. After each fill, page code can set an approval mark for each top-level block.",
   "parts": [
-    {"name": "approval-mark", "description": "Visible approval state with its accessible name.", "guardrail": true},
+    {"name": "approval-mark", "description": "Approval state from page code, with visible text and a group name.", "guardrail": true},
     {"name": "authorship", "description": "Type and ID of the author, with a name when available.", "guardrail": true},
     {"name": "code", "description": "Block of code.", "guardrail": false},
     {"name": "copy", "description": "Button that copies text.", "guardrail": true},

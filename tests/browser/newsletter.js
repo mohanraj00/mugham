@@ -1,5 +1,3 @@
-import { setTimeout as delay } from 'node:timers/promises';
-
 export const NEWSLETTER_PAGE = 'examples/apps/newsletter.html';
 
 const STATES = ['Approved', 'Pending approval', 'Rejected'];
@@ -52,16 +50,22 @@ function readNewsletter() {
   };
 }
 
-function removeApproval() {
+function fillAgain() {
   const view = document.querySelector('mu-rich-text');
   const fill = structuredClone(view.fill);
-  delete fill.data.blocks[1].data.approval;
+  fill.data.blocks[1].data.content[0].data.text = 'The reading group meets in Room C on Tuesday.';
   view.fill = fill;
+}
+
+function updateApprovals() {
+  const view = document.querySelector('mu-rich-text');
+  view.setApprovals([{ block: 0, state: 'approved' }, { block: 2, state: 'rejected' }]);
   const blocks = view.shadowRoot.querySelector('[part="rich-text"]');
+  const second = blocks.querySelectorAll(':scope > p:not([part])')[1];
   return {
     count: blocks.querySelectorAll('[part="approval-mark"]').length,
-    second: blocks.children[1].textContent,
-    unmarked: blocks.children[1].matches('p'),
+    second: second.textContent,
+    unmarked: !second.previousElementSibling.matches('[part="approval-mark"]'),
   };
 }
 
@@ -104,7 +108,8 @@ export async function newsletterExampleChecks(session, sessionId, base, modes, {
           const ready = await withTimeLimit(() => page(`(async () => {
             const end = performance.now() + 5000;
             do {
-              if (innerWidth === ${width} && document.querySelector('mu-rich-text')?.dataset.state === 'default'
+              if (innerWidth === ${width} && document.querySelector('mu-rich-text')?.shadowRoot
+                ?.querySelector('[part="approval-mark"]')
                 && document.querySelector('.examples-frame nav a')) return true;
               await new Promise((resolve) => setTimeout(resolve, 25));
             } while (performance.now() < end);
@@ -133,10 +138,18 @@ export async function newsletterExampleChecks(session, sessionId, base, modes, {
 
           steps.push(...await withTimeLimit(() => pageRules(session, sessionId, NEWSLETTER_PAGE + ' at ' + view),
             'The page rules did not finish within the wait limit.'));
-          const missing = await withTimeLimit(() => page(`(${removeApproval})()`), 'The fill update did not finish in time.');
+          await withTimeLimit(() => page(`(${fillAgain})()`), 'The fill update did not finish in time.');
+          const fresh = await withTimeLimit(() => page(`(${readNewsletter})()`), 'The new fill could not be read in time.');
+          const afterFill = await ax();
+          check(view, 'a new fill clears all marks until page code sets them again',
+            fresh.marks.length === 0 && STATES.every((state) => !has(afterFill, 'group', 'Approval: ' + state)),
+            'A mark stayed on the new fill.', fresh.marks);
+
+          const missing = await withTimeLimit(() => page(`(${updateApprovals})()`), 'The approval update did not finish in time.');
           const changed = await ax();
-          check(view, 'a block with no approval keeps its text without a mark',
-            missing.count === 2 && missing.unmarked && missing.second === 'The reading group meets in Room B on Tuesday.'
+          check(view, 'page code sets marks again and a block with no approval keeps its text',
+            missing.count === 2 && missing.unmarked && missing.second === 'The reading group meets in Room C on Tuesday.'
+            && has(changed, 'group', 'Approval: Approved') && has(changed, 'group', 'Approval: Rejected')
             && !has(changed, 'group', 'Approval: Pending approval'),
             'The block text changed or its mark is still present.', missing);
         } catch (error) {

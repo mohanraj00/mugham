@@ -96,8 +96,7 @@
         {"$ref": "#/$defs/list_field"},
         {"$ref": "#/$defs/component_field"},
         {"$ref": "#/$defs/components_field"},
-        {"$ref": "#/$defs/input_component"},
-        {"$ref": "#/$defs/record_field"}
+        {"$ref": "#/$defs/input_component"}
       ]
     },
     "scalar_field": {
@@ -212,26 +211,14 @@
         "type": {"const": "record"},
         "label": {"$ref": "#/$defs/label"},
         "required": {"type": "boolean"},
-        "fields": {"$ref": "#/$defs/record_fields"}
+        "fields": {
+          "type": "object",
+          "minProperties": 1,
+          "maxProperties": 40,
+          "propertyNames": {"$ref": "#/$defs/field_name"},
+          "additionalProperties": {"$ref": "#/$defs/scalar_field"}
+        }
       }
-    },
-    "record_field": {
-      "type": "object",
-      "required": ["type", "label", "required", "fields"],
-      "additionalProperties": false,
-      "properties": {
-        "type": {"const": "record"},
-        "label": {"$ref": "#/$defs/label"},
-        "required": {"const": false},
-        "fields": {"$ref": "#/$defs/record_fields"}
-      }
-    },
-    "record_fields": {
-      "type": "object",
-      "minProperties": 1,
-      "maxProperties": 40,
-      "propertyNames": {"$ref": "#/$defs/field_name"},
-      "additionalProperties": {"$ref": "#/$defs/scalar_field"}
     },
     "input_component": {
       "type": "object",

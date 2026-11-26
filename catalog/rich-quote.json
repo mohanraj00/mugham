@@ -3,14 +3,6 @@
   "description": "A quote node of rich text: a list of paragraph nodes.",
   "parts": [],
   "data": {
-    "approval": {
-      "type": "record",
-      "fields": {
-        "state": {"type": "enum", "required": true, "values": ["approved", "pending", "rejected"]},
-        "by": {"type": "text", "label": "Approver", "min_length": 1, "size": "line"},
-        "at": {"type": "text", "label": "Approval time in UTC", "min_length": 20, "max_length": 24}
-      }
-    },
     "paragraphs": {
       "type": "list",
       "required": true,

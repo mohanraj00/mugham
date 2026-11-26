@@ -60,17 +60,12 @@ test('markup is text for the validator, and the limits come from the contracts',
     ['data.blocks[0].slots: a nested fill takes the slots of its outer fill']);
 });
 
-test('the rich text tool schema gives each block an optional approval record', () => {
+test('the tool schema of each rich text block omits approval', () => {
   const schema = toolSchema('rich-text');
   for (const name of BLOCKS) {
     const data = schema.$defs[name].properties.data;
-    assert.ok(!data.required.includes('approval'), name);
-    const { type, additionalProperties, required, properties } = data.properties.approval;
-    assert.equal(type, 'object', name);
-    assert.equal(additionalProperties, false, name);
-    assert.deepEqual(required, ['state'], name);
-    assert.deepEqual(properties.state.enum, ['approved', 'pending', 'rejected'], name);
-    assert.equal(properties.by.type, 'string', name);
-    assert.equal(properties.at.type, 'string', name);
+    assert.equal(data.additionalProperties, false, name);
+    assert.ok(!Object.hasOwn(data.properties, 'approval'), name);
+    assert.ok(!Object.hasOwn(toolSchema(name).properties.data.properties, 'approval'), name);
   }
 });

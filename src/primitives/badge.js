@@ -25,11 +25,10 @@ export function badgeLabel(words, tone, attributes) {
   return label;
 }
 
-const APPROVAL_STATES = Object.freeze({
+export const APPROVAL_STATES = Object.freeze({
   approved: { words: 'Approved', tone: 'success' },
   pending: { words: 'Pending approval', tone: 'warning' },
   rejected: { words: 'Rejected', tone: 'danger' },
-  error: { tone: 'danger' },
 });
 
 export const APPROVAL_MARK_CSS = sheet(`${badgeLabelCss(false)}
@@ -40,9 +39,12 @@ export const APPROVAL_MARK_CSS = sheet(`${badgeLabelCss(false)}
 `);
 
 // A named group keeps the state and its details together without a live announcement.
-export function approvalMark({ state, by, at }, words = APPROVAL_STATES[state]?.words) {
+export function approvalMark({ state, by, at }, words) {
+  if (!Object.hasOwn(APPROVAL_STATES, state)) return null;
+  const { words: label, tone } = APPROVAL_STATES[state];
+  words ??= label;
   const details = (by ? ' by ' + by : '') + (at ? ' at ' + at : '');
   return el('span', { part: 'approval-mark', role: 'group', 'aria-label': 'Approval: ' + words },
-    badgeLabel(words, APPROVAL_STATES[state]?.tone ?? 'neutral'),
+    badgeLabel(words, tone),
     details ? el('span', {}, details) : null);
 }
