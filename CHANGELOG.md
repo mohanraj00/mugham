@@ -5,6 +5,10 @@ Each release has an entry. The newest entry is first.
 ## Unreleased
 
 - Page code can show the approval state of top-level rich text blocks with `setApprovals` after each fill. The library newsletter shows three states from a fixture API (#137).
+- The approval queue shows its state text with a badge and each decision state with an approval mark (#137).
+- A change of the actor, the label, the title or the summary removes the binding of each row with no pending decision. The application must call `bind()` again (#137).
+- A pending row shows its bound label and actor as extra text when they differ from the current values (#137).
+- `mu-badge` and the approval mark share their tone rules (#137).
 
 - The kit adds an approval queue with separate confirmation and receipts for each proposal. The library research example asks for a book hold and a reading list change (#129).
 

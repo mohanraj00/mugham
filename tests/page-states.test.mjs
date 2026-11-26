@@ -209,6 +209,56 @@ test('page code sets the text and accessible name of each approval mark', () => 
   assert.deepEqual(approvalMarks(rich.shadowRoot), []);
 });
 
+test('a change of rich text policy keeps each approval mark until a new fill', (t) => {
+  const MuRichText = elements.get('mu-rich-text');
+  const { linkSchemes, headingLevel } = MuRichText;
+  const rich = approvedDocument();
+  t.after(() => {
+    rich.disconnectedCallback();
+    MuRichText.linkSchemes = linkSchemes;
+    MuRichText.headingLevel = headingLevel;
+  });
+
+  rich.connectedCallback();
+  rich.setApprovals([
+    { block: 0, state: 'approved', by: APPROVER, at: APPROVAL_TIME },
+    { block: 1, state: 'pending' },
+    { block: 2, state: 'rejected' },
+  ]);
+  const expected = [
+    [`Approved by ${APPROVER} at ${APPROVAL_TIME}`, 'Approval: Approved'],
+    ['Pending approval', 'Approval: Pending approval'],
+    ['Rejected', 'Approval: Rejected'],
+  ];
+  function checkMarks(level) {
+    const [body] = rich.shadowRoot.children;
+    const marks = approvalMarks(body);
+    assert.deepEqual(marks.map((mark) => [mark.textContent, mark.getAttribute('aria-label')]), expected);
+    assert.deepEqual(marks.map((mark) => body.children[body.children.indexOf(mark) + 1].tag), [`h${level}`, 'ul', 'div']);
+  }
+
+  const [body] = rich.shadowRoot.children;
+  MuRichText.linkSchemes = ['https:', 'mailto:'];
+  assert.notEqual(rich.shadowRoot.children[0], body);
+  checkMarks(headingLevel);
+
+  MuRichText.headingLevel = 4;
+  checkMarks(4);
+
+  rich.fill.data.blocks[0].data.content[0].data.text = 'The branch opens at noon.';
+  rich.disconnectedCallback();
+  MuRichText.headingLevel = 3;
+  checkMarks(4);
+  rich.connectedCallback();
+  checkMarks(3);
+  assert.equal(rich.shadowRoot.children[0].children[1].textContent, 'The branch opens at ten.');
+
+  rich.fill = structuredClone(rich.fill);
+  assert.deepEqual(approvalMarks(rich.shadowRoot), []);
+  MuRichText.headingLevel = 2;
+  assert.deepEqual(approvalMarks(rich.shadowRoot), []);
+});
+
 test('a rich text fill clears all approval marks until page code sets them again', () => {
   const rich = approvedDocument();
   const approvals = [{ block: 0, state: 'approved' }];

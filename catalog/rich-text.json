@@ -1,6 +1,6 @@
 {
   "name": "rich-text",
-  "description": "Rich text as a tree of paragraphs, headings, lists, code blocks and quotes. The kit makes elements from a fixed list. Page code sets the link schemes and the first heading level. After each fill, page code can set an approval mark for each top-level block.",
+  "description": "Rich text as a tree of paragraphs, headings, lists, code blocks and quotes. The kit uses fixed elements. Page code sets the link schemes, the first heading level and the approval marks of top-level blocks. A new fill clears the marks. A policy change keeps them if the fill is still valid.",
   "parts": [
     {"name": "approval-mark", "description": "Approval state from page code, with visible text and a group name.", "guardrail": true},
     {"name": "authorship", "description": "Type and ID of the author, with a name when available.", "guardrail": true},

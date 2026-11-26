@@ -32,7 +32,7 @@ The element makes each element with `createElement` from a fixed table, and it w
 
 ## Approval marks
 
-Page code reads the state from the application's approval API and calls `setApprovals(list)` after each fill. Each new fill clears the marks. A fill cannot set a mark. The kit only shows the state. The application decides and enforces each approval.
+Page code reads the state from the application's approval API and calls `setApprovals(list)` after each fill. Each new fill clears the marks. A change of page policy keeps the marks if the fill is still valid, including when the element connects again. A refused fill clears the marks. A fill cannot set a mark. The kit only shows the state. The application decides and enforces each approval.
 
 Each item gives these values.
 

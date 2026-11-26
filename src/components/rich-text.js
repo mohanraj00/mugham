@@ -91,9 +91,12 @@ export class MuRichText extends ReadMoreElement {
 
   // The policy that this element used for its last render.
   #policy = -1;
+  #renderedFill = null;
+  #refreshing = false;
   #targets = 0;
   #blocks = [];
   #marks = [];
+  #approvals = new Map();
 
   setApprovals(list) {
     const errors = [];
@@ -136,10 +139,16 @@ export class MuRichText extends ReadMoreElement {
     for (const mark of this.#marks) mark.remove();
     this.#marks = [];
     if (errors.length) {
+      this.#approvals.clear();
       this.dispatchEvent(new CustomEvent('mu-refused', { bubbles: true, composed: true, detail: { errors } }));
       return;
     }
-    for (const [index, approval] of approvals) {
+    this.#approvals = approvals;
+    this.#showApprovals();
+  }
+
+  #showApprovals() {
+    for (const [index, approval] of this.#approvals) {
       const block = this.#blocks[index];
       const mark = approvalMark(approval);
       block.parentNode.insertBefore(mark, block);
@@ -190,7 +199,13 @@ export class MuRichText extends ReadMoreElement {
 
   // Validates and renders the fill again, if the page policy changed after the last render.
   #refresh() {
-    if (this.fill && this.#policy !== policy) this.fill = this.fill;
+    if (!this.#renderedFill || this.#policy === policy) return;
+    this.#refreshing = true;
+    try {
+      this.fill = this.#renderedFill;
+    } finally {
+      this.#refreshing = false;
+    }
   }
 
   // The contract format cannot give these rules: the heading order, the total size and the page policy of a link.
@@ -219,6 +234,9 @@ export class MuRichText extends ReadMoreElement {
   }
 
   refuse(errors) {
+    this.#renderedFill = null;
+    this.#refreshing = false;
+    this.#approvals.clear();
     this.#blocks = [];
     this.#marks = [];
     super.refuse(errors);
@@ -227,7 +245,13 @@ export class MuRichText extends ReadMoreElement {
   render(data) {
     this.#policy = policy;
     this.#targets = 0;
-    // A fill can change the text. Clear the marks until page code sets them again.
+    // A new fill clears the marks. A change of page policy keeps the marks for the same blocks.
+    if (!this.#refreshing) {
+      this.#approvals.clear();
+      // Keep the fill that supplied the displayed text for the next policy change.
+      this.#renderedFill = structuredClone(this.fill);
+    }
+    this.#refreshing = false;
     this.#marks = [];
     this.#blocks = data.blocks.map((block) => this.#block(block));
     const author = this.fill.slots.authorship;
@@ -236,6 +260,7 @@ export class MuRichText extends ReadMoreElement {
       : [el('p', { class: 'muted', part: 'empty' }, 'No text. Ask for the text again.')];
     const authorText = el('p', { class: 'muted', part: 'authorship' }, `Author: ${author.type} ${author.id}${name}`);
     const content = el('div', { class: 'rich', part: 'rich-text' }, ...blocks);
+    this.#showApprovals();
     if (data.clamp === undefined) {
       this.readMore(content);
       content.append(authorText);
@@ -299,7 +324,7 @@ export class MuRichText extends ReadMoreElement {
       // Check the policy again at the only sink.
       const now = parseLinkURL(data.url, schemes);
       if (!now) {
-        this.fill = this.fill;
+        this.#refresh();
         return;
       }
       const event = new CustomEvent('mu-open', { bubbles: true, composed: true, cancelable: true, detail: { locator: now.href } });
