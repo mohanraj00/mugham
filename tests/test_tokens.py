@@ -11,7 +11,8 @@ import tokens  # noqa: E402
 BRAND = Path(__file__).resolve().parents[1] / 'docs' / 'brand' / 'tokens.json'
 # Each kit color takes its value from one brand color. The kit border is the edge of a control, so it needs 3:1.
 # Thus it takes border-strong, not the decorative border. The kit danger color is the brand error color.
-COLORS = {'color.surface': 'surface', 'color.text': 'ink', 'color.text-muted': 'ink-muted',
+COLORS = {'color.surface': 'surface', 'color.surface-subtle': 'surface-raised',
+          'color.text': 'ink', 'color.text-muted': 'ink-muted',
           'color.border': 'border-strong', 'color.accent': 'accent', 'color.on-accent': 'on-accent',
           'color.focus': 'focus', 'color.danger': 'error', 'color.success': 'ok',
           # The default page style uses these two. The decorative border is only for a rule, never for a control.
@@ -34,6 +35,7 @@ PAIRS += [('color.on-' + state, 'color.' + state, 4.5)
 PAIRS += [('color.' + state, 'color.' + ground, 4.5)
           for state in ('warning', 'info') for ground in ('surface', 'page')]
 PAIRS += [('color.' + front, 'color.surface-subtle', 4.5) for front in ('text', 'text-muted')]
+PAIRS += [('color.' + front, 'color.surface-subtle', 3.0) for front in ('border', 'focus')]
 PAIRS += [('color.focus', 'color.' + state, 3.0) for state in ('hover', 'selected')]
 PAIRS += [('color.on-' + state, 'color.' + ground, 3.0)
           for state in ('hover', 'selected') for ground in ('surface', 'page')]

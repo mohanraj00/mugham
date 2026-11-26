@@ -30,6 +30,8 @@ const FIELD_NAME = /^[a-z][a-z0-9]*(_[a-z0-9]+)*$/;
 const boundError = (name) => `data.sections: the read-only field ${name} does not show the bound value`;
 const DIFF_EMPTY_PART = 'No changes. You do not need to review this part.';
 const DIFF_EMPTY = 'No changes. You do not need to review these versions.';
+// The thread gives this context before it sets the fill. The bound actor still checks the author claim.
+export const CARD_MESSAGE_ACTOR = Symbol('card message actor');
 const COLLAPSE_CSS = sheet(`
   .collapse-controls { display: flex; flex-wrap: wrap; gap: var(--mu-space-2); margin-block: var(--mu-space-2) var(--mu-space-3); }
   .collapse-toggle, .collapse-controls button {
@@ -106,13 +108,14 @@ const ACTION_CSS = sheet(`
 
 // The filled slots of a fill, as text (catalog/schema/README.md). The locator opens only after a person clicks
 // the button. The element first sends a cancelable mu-open event, so that the application can open the locator.
-export function provenance(slots) {
+export function provenance(slots, authorLine) {
   const { authorship, citation } = slots ?? {};
   if (!authorship && !citation) return null;
   const parts = [];
   if (authorship) {
     const name = authorship.name ? ` (${authorship.name})` : '';
-    parts.push(el('p', { class: 'muted', part: 'authorship' }, `Author: ${authorship.type} ${authorship.id}${name}`));
+    parts.push(el('p', { class: 'muted', part: 'authorship' },
+      ...(authorLine ?? [`Author: ${authorship.type} ${authorship.id}${name}`])));
   }
   if (citation) {
     const open = el('button', { type: 'button', part: 'open', 'aria-label': `Open source: ${citation.source}` }, 'Open source');
@@ -121,6 +124,17 @@ export function provenance(slots) {
       el('p', { class: 'muted', part: 'locator' }, citation.locator), el('div', {}, open));
   }
   return el('div', { class: 'provenance', part: 'provenance' }, ...parts);
+}
+
+function cardAuthorLine({ type, id, name }, messageActor) {
+  const identity = `${type}, ${id}`;
+  if (type === messageActor?.type && id === messageActor.id) {
+    const fullName = name ?? messageActor.name;
+    const fullLine = fullName ? `Author: ${fullName} (${identity})` : `Author: ${identity}`;
+    return [el('span', { 'aria-hidden': 'true' }, 'Author: same as the message'),
+      el('span', { class: 'full-author' }, fullLine)];
+  }
+  return name ? ['Author: ', el('span', { class: 'author-name' }, name), ` (${identity})`] : [`Author: ${identity}`];
 }
 
 // The validator accepts only an https: locator with no user name. Check it again before the browser opens it.
@@ -445,7 +459,19 @@ export class MuActionButton extends ActionElement {
 
 export class MuCard extends MuElement {
   static component = 'card';
-  static styles = [CARD_CSS, COLLAPSE_CSS];
+  static styles = [CARD_CSS, COLLAPSE_CSS, sheet(`
+    .thread-card { background: var(--mu-color-surface-subtle); box-shadow: none; }
+    [part="facts"] { align-items: baseline; }
+    .author-name { color: var(--mu-color-text); }
+    .full-author { position: absolute; width: 1px; height: 1px; overflow: hidden;
+      clip-path: inset(50%); white-space: nowrap; }
+    @media (forced-colors: none) {
+      .thread-card { border-color: transparent; }
+    }
+    @media (forced-colors: active) {
+      .author-name { color: CanvasText; }
+    }
+  `)];
 
   #collapsed = false;
   #hasRendered = false;
@@ -550,7 +576,8 @@ export class MuCard extends MuElement {
     actions.append(slot);
     const title = el('p', { class: 'title', part: 'title' }, data.title);
     const status = data.status ? el('p', { class: 'muted', part: 'status', role: 'status' }, data.status) : null;
-    const attribution = provenance(this.fill.slots);
+    const messageActor = this[CARD_MESSAGE_ACTOR];
+    const attribution = provenance(this.fill.slots, cardAuthorLine(this.fill.slots.authorship, messageActor));
     const content = [data.summary ? el('p', {}, data.summary) : null, date, facts];
     let parts = [title, status, ...content, attribution, actions];
     if (data.collapsible) {
@@ -562,7 +589,7 @@ export class MuCard extends MuElement {
       this.#sync();
       parts = [el('header', { class: 'card-header' }, title, this.#toggle), status, this.#summary, attribution, this.#body];
     }
-    const article = el('article', { 'aria-label': data.title, part: 'card' }, ...parts);
+    const article = el('article', { 'aria-label': data.title, part: 'card', class: messageActor ? 'thread-card' : null }, ...parts);
     this.#changed = this.#hasRendered && before !== this.#collapsed;
     this.#hasRendered = true;
     return [article];
@@ -597,6 +624,7 @@ export class MuCardGrid extends MuElement {
     // A nested card takes the slots and the actor of the grid, so each card shows them.
     for (const item of data.cards) {
       const card = document.createElement('mu-card');
+      card[CARD_MESSAGE_ACTOR] = this[CARD_MESSAGE_ACTOR];
       card.setAttribute('exportparts', 'title: card-title, status: card-status, toggle: card-toggle');
       card.actor = this.actor;
       card.fill = this.fill.slots ? { ...item, slots: this.fill.slots } : item;
