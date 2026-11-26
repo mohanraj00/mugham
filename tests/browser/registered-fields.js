@@ -113,9 +113,23 @@ export async function contactExampleChecks(session, sessionId, base, { evaluate,
     const before = log.textContent;
     save.shadowRoot.querySelector('button[part="button"]').click();
     await new Promise((done) => requestAnimationFrame(done));
-    return { before, method: phone.checked, args: JSON.parse(log.textContent || '{}'), state: save.dataset.state };
+    const first = { before, method: phone.checked, args: JSON.parse(log.textContent || '{}'), state: save.dataset.state };
+    // An edit while the save is pending: the receipt confirms only the sent value, and the button binds the new value.
+    name.value = 'Contact C3';
+    name.dispatchEvent(new Event('input', { bubbles: true, composed: true }));
+    save.shadowRoot.querySelector('button[part="button"]').click();
+    const pending = save.dataset.state;
+    name.value = 'Contact D4';
+    name.dispatchEvent(new Event('input', { bubbles: true, composed: true }));
+    await new Promise((done) => requestAnimationFrame(done));
+    await new Promise((done) => requestAnimationFrame(done));
+    return { ...first, pending, sent: JSON.parse(log.textContent || '{}').contact_name,
+      after: save.dataset.state, bound: save.action.arguments.contact_name };
   })()`);
   return [{ page: CONTACT_PAGE, step: 'the action sends both edited values and shows the receipt',
     ok: result.before === '' && result.method && result.state === 'done'
-      && result.args.contact_name === 'Contact B2' && result.args.method === 'Phone', detail: JSON.stringify(result) }];
+      && result.args.contact_name === 'Contact B2' && result.args.method === 'Phone', detail: JSON.stringify(result) },
+  { page: CONTACT_PAGE, step: 'an edit while the save is pending does not show done for the old value',
+    ok: result.pending === 'pending' && result.sent === 'Contact C3' && result.after === 'default' && result.bound === 'Contact D4',
+    detail: JSON.stringify(result) }];
 }

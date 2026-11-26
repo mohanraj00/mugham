@@ -30,6 +30,13 @@ class ContactCard extends MuElement {
       save.action = { tool: 'contacts.save', label: 'Save contact', arguments: args };
     };
     refreshAction();
+    // A receipt confirms only the sent values. If a person edits a value while the save is pending,
+    // the button binds the new values after the receipt, so Done never shows for values that are not saved.
+    new MutationObserver(() => {
+      if (save.action.state === 'pending') return;
+      const sent = save.action.arguments;
+      if (sent.contact_name !== name.value || sent.method !== method.value) refreshAction();
+    }).observe(save, { attributes: true, attributeFilter: ['data-state'] });
     const card = el('article', { 'aria-label': data.title }, el('h2', {}, data.title), name, method, save);
     card.addEventListener('mu-edit', refreshAction);
     return [card];
