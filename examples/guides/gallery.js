@@ -43,6 +43,12 @@ const note = mount('text', { text: 'No tray note open.' }, { parent: stack });
 button.addEventListener('mu-press', () => {
   note.fill = fill('text', { text: 'Keep the tray in shade.' });
 });
+for (const [name, title] of [['dialog', 'Tray note'], ['drawer', 'Tray details']]) {
+  const trigger = mount('button', { label: 'Open ' + name, emphasis: 'secondary' }, { parent: cards });
+  const modal = mount(name, { title, close_label: 'Close ' + name }, { parent: cards });
+  mount('text', { text: 'Tray A3 is on the east shelf.' }, { parent: modal });
+  trigger.addEventListener('mu-press', () => modal.open());
+}
 mount('action-queue', { label: 'Action queue', actions: [
   fill('queued-action', { key: 'tray-3', label: 'Reserve a tray', state: 'sent' }),
 ] }, { parent: cards });

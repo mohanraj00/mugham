@@ -143,6 +143,16 @@ A collapsed card shows the title, the status and the short summary. It hides the
 
 `card-grid` accepts `collapse_controls: true` to show `Expand all` and `Collapse all`. Each button changes only cards with `collapsible: true`. The pending rule applies to each card. [Card rules](../src/components/card.md) gives the properties, focus rules and slots.
 
+## Dialog and drawer
+
+Put the body of a `mu-dialog` or `mu-drawer` in its default slot. The fill supplies the title and the close button label. Give each field text that a person can read.
+
+Call `open()` on a connected element with a valid fill. The browser moves focus into the modal and keeps the page behind it inert. Call `close()`, press Escape or use the close button to close it. The browser returns focus to the control that had focus before the modal opened, if that control is still available. Replacing the fill closes the modal.
+
+Both elements send `mu-dialog-open` after they open and `mu-dialog-close` when the native dialog sends its close event. The drawer opens at the inline end. It opens at the bottom on a narrow screen.
+
+Put a [confirm step](#the-confirm-step) in the body with `mu-action-button`. The action button owns the confirm step and the receipt. See the [seed tray example](../examples/cards/dialogs.html).
+
 ## Actions
 
 This section is the one description of the action model. A contract declares no tool, and a fill names no action. The application binds the tool and the fixed arguments in code:

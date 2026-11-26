@@ -19,6 +19,7 @@ import { reviewQueueChecks } from '../tests/browser/review-queue.js';
 import { snapshotChecks } from '../tests/browser/snapshots.js';
 import { UPLOAD_FILES, uploadExampleChecks, uploadKeyboardChecks } from '../tests/browser/upload.js';
 import { plannedErrors, queueExampleChecks } from '../tests/browser/queue.js';
+import { DIALOG_PAGE, dialogExampleChecks } from '../tests/browser/dialog.js';
 import { RANGE_PAGE, rangeExampleChecks } from '../tests/browser/range-field.js';
 import { MULTI_CHOICE_PAGE, multiChoiceExampleChecks } from '../tests/browser/multi-choice-field.js';
 import { BOOKING_PAGE, bookingExampleChecks } from '../tests/browser/date-time-fields.js';
@@ -97,6 +98,7 @@ const EXAMPLES = {
     ['textbox', 'Due date'], ['group', 'Branch'], ['radio', 'Harbor']]],
   'examples/forms/notices.html': [3, 0, [['heading', 'Library notices'], ['form', 'Member M-001'],
     ['switch', 'Send due date reminders'], ['switch', 'Send pickup notices']]],
+  [DIALOG_PAGE]: [3, 0, [['button', 'Open dialog'], ['button', 'Open drawer']]],
   [RANGE_PAGE]: [3, 0, [['form', 'Loan limits'], ['slider', 'Loan period in days'], ['spinbutton', 'Loan period in days number'],
     ['group', 'Price range'], ['slider', 'Price range Minimum'], ['spinbutton', 'Price range Minimum number'],
     ['slider', 'Price range Maximum'], ['spinbutton', 'Price range Maximum number']]],
@@ -434,7 +436,7 @@ export async function pageRules(session, sessionId, where) {
       'listbox', 'listitem', 'log', 'main', 'navigation', 'none', 'option', 'presentation', 'radio', 'radiogroup', 'region', 'slider', 'status', 'switch', 'textbox']);
     const BOOLEAN = ['true', 'false'];
     const VALUES = { 'aria-invalid': BOOLEAN, 'aria-live': ['off', 'polite', 'assertive'], 'aria-disabled': BOOLEAN,
-      'aria-expanded': BOOLEAN, 'aria-selected': BOOLEAN, 'aria-multiselectable': BOOLEAN, 'aria-autocomplete': ['none', 'inline', 'list', 'both'], tabindex: ['-1', '0'] };
+      'aria-expanded': BOOLEAN, 'aria-modal': BOOLEAN, 'aria-selected': BOOLEAN, 'aria-multiselectable': BOOLEAN, 'aria-autocomplete': ['none', 'inline', 'list', 'both'], tabindex: ['-1', '0'] };
     const REFERENCES = ['aria-describedby', 'aria-labelledby', 'aria-controls', 'aria-activedescendant', 'for'];
     const problems = [];
     const check = (root, label) => {
@@ -995,6 +997,8 @@ async function main() {
       report.examples.push(...await pageRules(session, sessionId, page));
     }
     report.keyboard.push(...await noticeSwitchChecks(session, sessionId, base, problems));
+    report.keyboard.push(...await dialogExampleChecks(session, sessionId, base, MODES,
+      { evaluate, open, key, pageRules, axErrors }, problems));
     report.keyboard.push(...await rangeExampleChecks(session, sessionId, base, MODES, { evaluate, open, key }, problems));
     report.keyboard.push(...await selectExampleChecks(session, sessionId, base, MODES, { evaluate, open, key, pageRules }, problems));
     report.keyboard.push(...await multiChoiceExampleChecks(session, sessionId, base, MODES, { evaluate, open, key, pageRules }, problems));
@@ -1007,7 +1011,8 @@ async function main() {
     const [names, markup, targets] = await pageRules(session, sessionId, 'tests/browser/rules.html');
     const found = markup.detail.split('; ');
     const wanted = ['document: the id twice shows 2 times', 'document: input refers to the missing id nowhere',
-      'document: the role bogus is not known', 'document: aria-live="loud"', 'document: aria-multiselectable="yes"', 'document: tabindex="3"', 'div: label refers to the missing id missing'];
+      'document: the role bogus is not known', 'document: aria-live="loud"', 'document: aria-modal="yes"',
+      'document: aria-multiselectable="yes"', 'document: tabindex="3"', 'div: label refers to the missing id missing'];
     report.examples.push({ page: 'tests/browser/rules.html', step: 'the generic rules find each defect of the fixture',
       ok: !names.ok && names.detail === 'button' && !markup.ok && found.length === wanted.length && wanted.every((item) => found.includes(item))
         && !targets.ok && targets.detail === 'div: button Go is 20 by 20',

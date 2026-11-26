@@ -66,6 +66,8 @@ VALID = {
     'fact': FACT['data'],
     'card': CARD['data'],
     'action-button': {'label': 'Renew', 'description': 'Renew the loan for two weeks.'},
+    'dialog': {'title': 'Release tray A3', 'close_label': 'Close dialog'},
+    'drawer': {'title': 'Tray details', 'close_label': 'Close drawer'},
     'editable-form': {'title': 'Loan details', 'submit_label': 'Save', 'fields': [fill('field', {'name': 'shelf', 'label': 'Shelf code'})]},
     'card-grid': {'label': 'Loans', 'cards': [CARD]},
     'form-line': {'line': '2.1', 'field': fill('number-field', {'name': 'adults', 'label': 'Adults', 'value': 2})},
@@ -106,6 +108,26 @@ VALID = {
 
 
 class CatalogContractTest(unittest.TestCase):
+    def test_modal_contracts_declare_the_name_keys_and_scalar_fields(self):
+        for name in ('dialog', 'drawer'):
+            with self.subTest(component=name):
+                contract = CATALOG[name]
+                self.assertEqual(catalog.contract_errors(contract, name + '.json'), [])
+                self.assertEqual(contract['states'], ['default', 'open', 'refused'])
+                self.assertEqual(contract['accessibility'], {
+                    'role': 'dialog', 'name': {'field': 'title'},
+                    'keyboard': ['Tab', 'Shift+Tab', 'Enter', 'Space', 'Escape'],
+                    'forced_colors': True, 'reduced_motion': True,
+                })
+                self.assertFalse(contract['ai_content'])
+                self.assertEqual(set(contract['data']), {'title', 'close_label'})
+                data = VALID[name]
+                self.assertEqual(catalog.fill_errors(fill(name, data), CATALOG), [])
+                self.assertEqual(catalog.fill_errors(fill(name, {**data, 'body': [CARD]}), CATALOG),
+                                 ['data.body: the contract does not declare this field'])
+                self.assertEqual(catalog.fill_errors(fill(name, {'title': data['title']}), CATALOG),
+                                 ['data.close_label: a required field is missing'])
+
     def test_action_button_schema_accepts_each_icon_and_display(self):
         name = 'action-button'
         contract = CATALOG[name]

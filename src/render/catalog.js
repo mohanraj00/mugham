@@ -15,6 +15,8 @@ import timeField from '../../catalog/time-field.json' with { type: 'json' };
 import diff from '../../catalog/diff.json' with { type: 'json' };
 import diffChange from '../../catalog/diff-change.json' with { type: 'json' };
 import diffPart from '../../catalog/diff-part.json' with { type: 'json' };
+import dialog from '../../catalog/dialog.json' with { type: 'json' };
+import drawer from '../../catalog/drawer.json' with { type: 'json' };
 import editableForm from '../../catalog/editable-form.json' with { type: 'json' };
 import excerpt from '../../catalog/excerpt.json' with { type: 'json' };
 import fact from '../../catalog/fact.json' with { type: 'json' };
@@ -58,7 +60,7 @@ import queuedAction from '../../catalog/queued-action.json' with { type: 'json' 
 
 const FILES = {
   'action-button': actionButton, 'action-queue': actionQueue, 'queued-action': queuedAction, button, card, 'card-grid': cardGrid, 'choice-field': choiceField, citation, 'date-field': dateField,
-  diff, 'diff-change': diffChange, 'diff-part': diffPart, 'editable-form': editableForm, excerpt, fact, field,
+  diff, 'diff-change': diffChange, 'diff-part': diffPart, dialog, drawer, 'editable-form': editableForm, excerpt, fact, field,
   'form-card': formCard, 'form-line': formLine, 'form-section': formSection, grid, image,
   'long-text-field': longTextField, 'number-field': numberField, 'source-status': sourceStatus, stack, status, text, table, 'table-row': tableRow,
   'toggle-field': toggleField,

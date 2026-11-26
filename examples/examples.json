@@ -12,6 +12,7 @@
         {"name": "Application contract", "path": "cards/register.html", "components": ["seed-tray", "thread"], "text": "An application registers its own contract and element for a seed tray, and an agent fills it."},
         {"name": "Offline source", "path": "cards/offline.html", "components": ["source-status", "card-grid", "card"], "text": "An offline data source of a tool library in each state, offline and online."},
         {"name": "Offline queue", "path": "cards/queue.html", "components": ["action-queue", "source-status", "card", "action-button"], "text": "A person reserves a tool offline. The action waits as pending, and it goes through after the device reconnects.", "needs": "python3 -B tools/queue_server.py"},
+        {"name": "Dialog and drawer", "path": "cards/dialogs.html", "components": ["dialog", "drawer", "action-button"], "text": "Release a seed tray reservation with a confirm step, and read tray details in a drawer."},
         {"name": "Status", "path": "cards/status.html", "components": ["status"], "text": "Each state of the status component, and a refused state."}
       ]
     },
@@ -90,7 +91,7 @@
           "path": "guides/gallery.html",
           "components": [
             "action-button", "action-queue", "button", "card", "card-grid", "chart", "choice-field", "citation",
-            "data-grid", "date-field", "date-range-field", "date-time-field", "diff", "editable-form", "excerpt",
+            "data-grid", "date-field", "date-range-field", "date-time-field", "dialog", "diff", "drawer", "editable-form", "excerpt",
             "field", "form-card", "grid", "image", "long-text-field", "multi-choice-field", "number-field",
             "range-field", "rich-text", "select-field", "source-status", "stack", "status", "table", "text",
             "time-field", "toggle-field", "upload", "thread"

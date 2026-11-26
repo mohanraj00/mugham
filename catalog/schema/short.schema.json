@@ -32,7 +32,7 @@
       "uniqueItems": true,
       "items": {
         "type": "string",
-        "pattern": "^\\+?(default|empty|loading|disabled|confirm|pending|done|error|refused|expanded|collapsed)$"
+        "pattern": "^\\+?(default|empty|loading|disabled|confirm|pending|done|error|refused|expanded|collapsed|open)$"
       }
     },
     "tokens": {
@@ -45,7 +45,7 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "role": {"enum": ["article", "button", "checkbox", "combobox", "form", "group", "list", "region", "slider", "status", "switch", "textbox", "none"]},
+        "role": {"enum": ["article", "button", "checkbox", "combobox", "dialog", "form", "group", "list", "region", "slider", "status", "switch", "textbox", "none"]},
         "name": {
           "oneOf": [
             {
