@@ -30,6 +30,9 @@ Each element that refuses a fill shows a short reason and the next step. Open `T
 | `toast.json` | `mu-toast` | component | A live status message with an optional close button. |
 | `tabs.json` | `mu-tabs` | component | A named tab list with one visible panel. |
 | `accordion.json` | `mu-accordion` | component | A named group with sections that open and close independently. |
+| `app-shell.json` | `mu-app-shell` | component | A top bar, a main area and a side bar that opens in a drawer on a phone. |
+| `breadcrumbs.json` | `mu-breadcrumbs` | component | An ordered list of links and the current page. |
+| `pagination.json` | `mu-pagination` | component | Page numbers and controls that request the previous or next page. |
 | `editable-form.json` | `mu-editable-form` | component | Up to 20 fields, submitted as one action. |
 | `form-line.json` | in `mu-form-card` | component | One field of a form card, with an optional line number and a read-only flag. |
 | `form-section.json` | in `mu-form-card` | component | A titled group of up to 40 form lines. |
@@ -374,3 +377,11 @@ These are the rules of the card:
 - The old value of a typed edit is the confirmed value of the field: the value of the fill, of a computed value or of a done receipt.
 
 The application computes the read-only fields. When the service gives new values, the application calls `card.computed({ name: value })`. The card checks each value against the contract of its field. It shows the values only if all of them are valid. It refuses a value for a bound argument that is not the bound value. It returns the errors, for example `fee: the field is not read-only`.
+
+## App shell and navigation
+
+Use `mu-app-shell` as the outer element of a page. Put the top bar content in the `top` slot and the navigation links in the `side` slot. Put the main content in the default slot. The fill gives the navigation, menu button, close button and skip link names. Page code supplies the slot content. At 30rem or narrower, the menu button opens the side navigation in `mu-drawer`. A click on a navigation link, Escape or the close button closes the drawer and gives focus back to the menu button. The skip link shows on focus and moves focus to the main area.
+
+Give `mu-breadcrumbs` a navigation name and a list of labels and link addresses. Each item before the last needs an `href`. Use a relative path, a query, a fragment or a complete HTTPS address without credentials. The last item shows the current page as text. For a same-page example, see [Library staff](../examples/apps/library.html).
+
+Give `mu-pagination` a navigation name, the current `page` and the total `page_count`. Both numbers are positive safe integers. When a person requests a different page, `mu-page-change` bubbles across shadow roots with `{ page }` in its detail. Read that number in page code. When the content is ready, show it and set a new fill with the new current page. The end buttons are disabled at the limits. Long ranges show the first and last pages, a short range near the current page and marks for the gaps.

@@ -332,6 +332,31 @@ export function multiChoiceCountLimit(count, { min_items = 0, max_items = 500 })
   return null;
 }
 
+// Parse a link under the scheme policy of its component. A web address has a host and no credentials.
+export function parseLinkURL(value, schemes, base) {
+  let url;
+  try {
+    url = new URL(value, base);
+  } catch {
+    return null;
+  }
+  if (!schemes.includes(url.protocol)) return null;
+  // A mail link has an address only. It cannot set a subject, a body or a second receiver.
+  if (url.protocol === 'mailto:') return url.pathname && !url.search && !url.hash ? url : null;
+  return url.hostname && !url.username && !url.password ? url : null;
+}
+
+const HTTPS = ['https:'];
+const RELATIVE_BASE = 'https://relative.invalid';
+
+export function navigationHref(value) {
+  // A relative path stays relative to the page. Check it against a fixed base before using it.
+  if (!value || /[\s\x00-\x1f\x7f-\x9f\\]/u.test(value)) return null;
+  if (/^https:\/\//i.test(value)) return parseLinkURL(value, HTTPS)?.href ?? null;
+  if (value.startsWith('//') || /^[a-z][a-z\d+.-]*:/i.test(value)) return null;
+  return parseLinkURL(value, HTTPS, RELATIVE_BASE)?.origin === RELATIVE_BASE ? value : null;
+}
+
 function multiChoiceErrors({ choices, value = [], ...limits }, prefix) {
   if (limits.min_items > limits.max_items) return [prefix + 'min_items: must be at most max_items'];
   const limit = multiChoiceCountLimit(value.length, limits);
@@ -388,6 +413,16 @@ export function fillErrors(fill, catalog, path = '', depth = 0) {
   }
   if (!errors.length && ['date-range-field', 'time-field', 'date-time-field'].includes(fill.component)) {
     errors.push(...dateAndTimeErrors(fill.component, data, prefix + 'data.'));
+  }
+  if (!errors.length && fill.component === 'breadcrumbs') {
+    for (const [index, { href }] of data.items.entries()) {
+      if ((index < data.items.length - 1 || href !== undefined) && navigationHref(href) === null) {
+        errors.push(prefix + `data.items[${index}].href: give a relative path or an https address`);
+      }
+    }
+  }
+  if (!errors.length && fill.component === 'pagination' && data.page > data.page_count) {
+    errors.push(prefix + 'data.page: must be at most page_count');
   }
   return [...errors, ...slotErrors(fill, contract, prefix, depth)];
 }

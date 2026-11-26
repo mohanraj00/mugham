@@ -479,6 +479,8 @@ def fill_errors(fill, catalog, path='', depth=0):
         errors += multi_choice_errors(data, prefix + 'data.')
     if not errors and fill['component'] in ('date-range-field', 'time-field', 'date-time-field'):
         errors += date_and_time_errors(fill['component'], data, prefix + 'data.')
+    if not errors and fill['component'] == 'pagination' and data['page'] > data['page_count']:
+        errors.append(prefix + 'data.page: must be at most page_count')
     return errors + slot_errors(fill, contract, prefix, depth)
 
 

@@ -217,6 +217,8 @@ An asterisk marks a guardrail part. Keep it visible when the kit shows it. Run `
 | `mu-accordion` | `copy`\*, `copy-status`\*, `details`\*, `heading`\*, `next`\*, `panel`\*, `reason`\*, `toggle`\* |
 | `mu-action-button` | `accept`\*, `button`, `cancel`\*, `confirm`\*, `copy`\*, `copy-status`\*, `details`\*, `exit`\*, `icon`\*, `next`\*, `reason`\*, `reference`\*, `retry`\*, `status`\*, `tooltip`\* |
 | `mu-action-queue` | `action`, `actions`, `cancel`\*, `copy`\*, `copy-status`\*, `details`\*, `dismiss`\*, `label`, `name`, `next`\*, `queue`, `queued`, `reason`\*, `retry`\*, `state`\*, `summary` |
+| `mu-app-shell` | `copy`\*, `copy-status`\*, `details`\*, `main`\*, `menu`\*, `next`\*, `reason`\*, `side`\*, `skip`\*, `top`\* |
+| `mu-breadcrumbs` | `copy`\*, `copy-status`\*, `current`\*, `details`\*, `link`\*, `list`\*, `nav`\*, `next`\*, `reason`\*, `separator` |
 | `mu-button` | `button`, `copy`\*, `copy-status`\*, `details`\*, `next`\*, `reason`\* |
 | `mu-card-grid` | `card-status`\*, `card-title`, `card-toggle`\*, `copy`\*, `copy-status`\*, `details`\*, `empty`, `list`, `next`\*, `reason`\* |
 | `mu-card` | `actions`, `authorship`\*, `body`\*, `card`, `citation`\*, `collapsed-summary`, `copy`\*, `copy-status`\*, `details`\*, `facts`, `icon`\*, `locator`\*, `next`\*, `open`\*, `provenance`\*, `reason`\*, `status`\*, `title`, `toggle`\* |
@@ -240,6 +242,7 @@ An asterisk marks a guardrail part. Keep it visible when the kit shows it. Run `
 | `mu-menu` | `copy`\*, `copy-status`\*, `details`\*, `item`\*, `menu`\*, `next`\*, `reason`\*, `trigger`\* |
 | `mu-multi-choice-field` | `checkbox`\*, `checkbox-label`\*, `copy`\*, `copy-status`\*, `details`\*, `edit-type`\*, `group`\*, `label`\*, `listbox`\*, `next`\*, `option`\*, `popup`\*, `problem`\*, `reason`\*, `remove`\*, `search`\*, `status`\*, `tag`, `tag-text`\*, `tags` |
 | `mu-number-field` | `copy`\*, `copy-status`\*, `details`\*, `edit-type`\*, `input`\*, `label`\*, `next`\*, `problem`\*, `reason`\* |
+| `mu-pagination` | `copy`\*, `copy-status`\*, `details`\*, `gap`, `nav`\*, `next`\*, `next-page`\*, `page`\*, `previous-page`\*, `reason`\* |
 | `mu-range-field` | `controls`\*, `copy`\*, `copy-status`\*, `details`\*, `edit-type`\*, `group`\*, `handle-label`\*, `label`\*, `next`\*, `number`\*, `problem`\*, `reason`\*, `slider`\* |
 | `mu-rich-text` | `authorship`\*, `code`, `copy`\*, `copy-status`\*, `details`\*, `empty`, `link`\*, `next`\*, `read-more-content`\*, `read-more-toggle`\*, `reason`\*, `rich-text`, `target`\* |
 | `mu-select-field` | `control`\*, `copy`\*, `copy-status`\*, `details`\*, `edit-type`\*, `label`\*, `listbox`\*, `next`\*, `option`\*, `popup`\*, `problem`\*, `reason`\*, `search`\*, `status`\*, `value`\* |
@@ -293,6 +296,10 @@ Keep the `tooltip` text and border visible while it is open. Leave space for it 
 Keep the `toast` and its `message` visible while the toast is open. If it has a `close` button, keep the button at least 44 by 44 CSS pixels and keep its focus ring visible.
 
 Keep the `tablist` and each `tab` visible. Let the list wrap on narrow screens. Keep the selected tab easy to identify in each theme. Keep each tab and accordion `toggle` at least 44 by 44 CSS pixels and keep their focus rings visible. Keep each accordion `heading` visible and keep each `panel` visible when its control shows it.
+
+Keep the app shell landmarks `top`, `side` and `main` visible in their active layout. Keep the `skip` part visible on focus and keep the `menu` part visible on narrow screens. Give each control in the top and side slots a 44 by 44 CSS pixel target and a visible focus ring.
+
+Let the breadcrumb `list` and pagination `nav` wrap. Keep the current page distinct in each theme and in forced colors. Keep each `link`, `page`, `previous-page` and `next-page` target at least 44 by 44 CSS pixels and keep its focus ring visible.
 
 The image parts are `image`, `box`, `caption` and `dialog`. Keep the box ratio and its loading and failed notices visible. Keep the caption and the full-size close button visible. The `open` part must keep its focus ring.
 
