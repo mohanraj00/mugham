@@ -27,6 +27,7 @@ import sourceStatus from '../../catalog/source-status.json' with { type: 'json' 
 import stack from '../../catalog/stack.json' with { type: 'json' };
 import status from '../../catalog/status.json' with { type: 'json' };
 import rangeField from '../../catalog/range-field.json' with { type: 'json' };
+import selectField from '../../catalog/select-field.json' with { type: 'json' };
 import toggleField from '../../catalog/toggle-field.json' with { type: 'json' };
 import text from '../../catalog/text.json' with { type: 'json' };
 import table from '../../catalog/table.json' with { type: 'json' };
@@ -58,6 +59,7 @@ const FILES = {
   'long-text-field': longTextField, 'number-field': numberField, 'source-status': sourceStatus, stack, status, text, table, 'table-row': tableRow,
   'toggle-field': toggleField,
   'range-field': rangeField,
+  'select-field': selectField,
   chart, 'chart-series': chartSeries,
   'rich-text': richText, 'rich-paragraph': richParagraph, 'rich-heading': richHeading, 'rich-list': richList,
   'rich-code': richCode, 'rich-quote': richQuote, 'rich-span': richSpan, 'rich-link': richLink,

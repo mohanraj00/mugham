@@ -102,6 +102,7 @@ Each component has a contract file in [catalog/](catalog/README.md). The contrac
 | `mu-long-text-field` | A labeled text area for text of more than one line. | [long-text-field.json](catalog/long-text-field.json) |
 | `mu-number-field` | A labeled input for a number, with an optional range. | [number-field.json](catalog/number-field.json) |
 | `mu-range-field` | Shows one or two sliders, with a number box for each handle. | [range-field.json](catalog/range-field.json) |
+| `mu-select-field` | Shows one choice and adds search for long lists. | [select-field.json](catalog/select-field.json) |
 | `mu-date-field` | A labeled input for a date as `YYYY-MM-DD`, with an optional range. | [date-field.json](catalog/date-field.json) |
 | `mu-choice-field` | A labeled radio group with 1 to 20 choices. | [choice-field.json](catalog/choice-field.json) |
 | `mu-stack` | Puts its child elements in one column or one row. | [stack.json](catalog/stack.json) |
@@ -109,7 +110,7 @@ Each component has a contract file in [catalog/](catalog/README.md). The contrac
 | `mu-card` | Shows a title, a summary, a date and up to six facts. | [card.json](catalog/card.json) |
 | fact | A label and a value in a card. It has no element of its own. | [fact.json](catalog/fact.json) |
 | `mu-action-button` | A button for one action. It shows done only after the receipt comes back. | [action-button.json](catalog/action-button.json) |
-| `mu-editable-form` | Up to 20 fields for text, long text, a number, a range, a date, a choice or a yes or no value. A person edits the values and submits them as one action. | [editable-form.json](catalog/editable-form.json) |
+| `mu-editable-form` | Up to 20 fields for text, long text, a number, a range, a date, a choice, a select or a yes or no value. A person edits the values and submits them as one action. | [editable-form.json](catalog/editable-form.json) |
 | `mu-form-card` | A long form in sections, as labels and values. A person edits one field in place and sends the changes as one action. Some fields are read-only. | [form-card.json](catalog/form-card.json) |
 | `mu-card-grid` | A labeled list of cards in columns of equal width. | [card-grid.json](catalog/card-grid.json) |
 | `mu-citation` | The source of a claim: a source name, a locator as text and an open button. | [citation.json](catalog/citation.json) |
@@ -169,6 +170,7 @@ python3 tools/serve.py
    - `http://localhost:8000/examples/cards/loans.html`: a card, an action button, a card grid and a form.
    - `http://localhost:8000/examples/cards/approval-icons.html`: a request card with buttons to approve or reject the request.
    - `http://localhost:8000/examples/forms/inputs.html`: a form with text, long text, a number, a date and a choice.
+   - `http://localhost:8000/examples/forms/branches.html`: a form with a search box for 40 synthetic library branches.
    - `http://localhost:8000/examples/forms/notices.html`: a library notice form with two switches.
    - `http://localhost:8000/examples/forms/ranges.html`: sliders for a loan period and a synthetic price range.
    - `http://localhost:8000/examples/forms/membership.html`: a form card with 3 sections and 25 fields in a thread, with read-only fields that the service computes.

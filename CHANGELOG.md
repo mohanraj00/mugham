@@ -4,6 +4,7 @@ Each release has an entry. The newest entry is first.
 
 ## Unreleased
 
+- An editable form accepts a select field with up to 500 choices (#120). A list of more than seven choices has a search box.
 - An editable form accepts a range field with one or two slider handles and a number box for each handle (#123). The form sends a number or a pair of numbers.
 - A bench measures long threads in Chrome. The browser check applies a render time limit to the 500-message case (#131).
 - Cards in a thread use a subtle surface and keep their article labels (#134). Fact labels and values align on the baseline. The author line shows the name first. When the author is the message actor, the visible line is shorter and a screen reader reads the full author. In a message of an agent, the thread refuses a card whose bound author is a person.

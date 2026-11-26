@@ -1,0 +1,31 @@
+{
+  "name": "select-field",
+  "kind": "primitive",
+  "description": "A labeled combobox for one choice. Each choice is unique, and a given value must be one of the choices. A list of more than seven choices has a search box. The search matches text in any part of a choice and ignores case. The field announces when there is no match.",
+  "ai_content": false,
+  "data": {
+    "name": {"type": "text", "size": "short"},
+    "label": {"type": "text", "required": true, "min_length": 1, "size": "line"},
+    "value": {"type": "text", "size": "line", "editable": true},
+    "choices": {
+      "type": "list",
+      "required": true,
+      "max_items": 500,
+      "items": {"type": "text", "label": "Choice", "min_length": 1, "size": "line"}
+    },
+    "hint": {"type": "text", "size": "summary"},
+    "error": {"type": "text", "size": "summary"},
+    "disabled": {"type": "boolean"},
+    "typed": {"type": "boolean"}
+  },
+  "states": ["+disabled", "+error"],
+  "tokens": [
+    "+color.surface", "+color.text-muted", "+color.focus", "+color.danger", "+space.1",
+    "+space.2", "+radius.1", "+type.caption", "+type.weight-strong", "+motion.fast"
+  ],
+  "accessibility": {
+    "role": "combobox",
+    "name": {"field": "label"},
+    "keyboard": ["Tab", "Shift+Tab", "Enter", "Space", "Escape", "ArrowUp", "ArrowDown", "Home", "End"]
+  }
+}

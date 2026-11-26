@@ -58,6 +58,7 @@ class ShortFormTest(unittest.TestCase):
         self.assertEqual(full['role']['enum'], short['role']['enum'])
         self.assertEqual(full['keyboard']['items']['enum'], short['keyboard']['items']['enum'])
         self.assertIn('slider', full['role']['enum'])
+        self.assertIn('combobox', full['role']['enum'])
         self.assertTrue({'PageUp', 'PageDown'} <= set(full['keyboard']['items']['enum']))
 
     def test_both_contract_forms_accept_checkbox_and_switch_roles(self):

@@ -22,6 +22,7 @@
         {"name": "Input types", "path": "forms/inputs.html", "components": ["editable-form", "field", "long-text-field", "number-field", "date-field", "choice-field"], "text": "A form with text, long text, a number, a date and a choice, with typed edits of the number and the date."},
         {"name": "Library notices", "path": "forms/notices.html", "components": ["editable-form", "toggle-field"], "text": "A library notice form with two switches."},
         {"name": "Loan and price settings", "path": "forms/ranges.html", "components": ["editable-form", "range-field"], "text": "A form with one slider for the loan period and two sliders for a synthetic price range."},
+        {"name": "Library pickup branch", "path": "forms/branches.html", "components": ["editable-form", "select-field"], "text": "Choose a pickup branch from 40 synthetic library branches."},
         {"name": "Membership form", "path": "forms/membership.html", "components": ["thread", "form-card"], "text": "A form card with 3 sections and 25 fields in a thread. A person edits one field in place."},
         {"name": "Upload", "path": "forms/upload.html", "components": ["upload"], "text": "An upload control with the limits of the page. Each file shows Done only after its receipt.", "needs": "python3 tools/upload_server.py"}
       ]
