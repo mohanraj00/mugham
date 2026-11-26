@@ -1,6 +1,6 @@
 {
   "name": "breadcrumbs",
-  "description": "A named navigation landmark with an ordered list of links. Each item before the current page has a relative path or an HTTPS address. The last item shows the current page as text.",
+  "description": "A named navigation landmark with an ordered list of links. Each item before the current page has a relative path or an HTTPS address with an ASCII DNS host and an optional port. The last item shows the current page as text.",
   "ai_content": false,
   "parts": [
     {"name": "copy", "description": "Button that copies text.", "guardrail": true},

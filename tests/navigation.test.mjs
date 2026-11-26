@@ -213,16 +213,22 @@ test('breadcrumbs refuse unsafe addresses and require a link before the current 
   const refused = events(crumbs, 'mu-refused');
   for (const href of ['javascript:alert(1)', 'java\tscript:alert(1)', 'data:text/plain,Test', 'http://example.org/',
     'mailto:staff@example.org', 'ftp://example.org/', '//example.org/path', '/\\example.org/path',
-    ' https://example.org/', 'https://staff@example.org/', 'https://', '']) {
+    ' https://example.org/', 'https://staff@example.org/', 'https://', '',
+    'https://192.0.2.1/', 'https://[2001:db8::1]:443/', 'https://bücher.example/', 'https://a\u200db.example/',
+    'https://desk.example:65536/', 'https://-desk.example/', '/loans\ufeff', '/loans\u2003']) {
     const value = fill('breadcrumbs', { ...BREADCRUMBS, items: [{ label: 'Desk', href }, { label: 'Loans' }] });
     assert.match(validateFill(value)[0], /^data.items\[0\].href:/, href);
     crumbs.fill = value;
     assert.equal(crumbs.fill, null, href);
   }
-  for (const href of ['/loans', './loans', 'loans', '#loans', '?page=2', 'HTTPS://example.org/']) {
-    assert.deepEqual(validateFill(fill('breadcrumbs', {
+  for (const href of ['/loans', './loans', 'loans', '#loans', '?page=2', 'HTTPS://example.org/',
+    'https://xn--bcher-kva.example/', 'HTTPS://desk.example:65535/loans']) {
+    const value = fill('breadcrumbs', {
       ...BREADCRUMBS, items: [{ label: 'Desk', href }, { label: 'Loans' }],
-    })), [], href);
+    });
+    assert.deepEqual(validateFill(value), [], href);
+    crumbs.fill = value;
+    assert.equal(find(crumbs.shadowRoot, 'link').getAttribute('href'), href);
   }
   const missing = fill('breadcrumbs', { ...BREADCRUMBS, items: [{ label: 'Desk' }, { label: 'Loans' }] });
   crumbs.fill = missing;

@@ -233,10 +233,11 @@
  },
  "cases": [
   {
-   "name": "breadcrumbs accept relative paths and an HTTPS address",
+   "name": "breadcrumbs accept relative paths and HTTPS addresses",
    "fill": {"component": "breadcrumbs", "version": "0.1.0", "data": {"label": "Path", "items": [
     {"label": "Library", "href": "https://example.org/"},
-    {"label": "Annex", "href": "https://[2001:db8::1]:443/"},
+    {"label": "Annex", "href": "https://xn--bcher-kva.example/"},
+    {"label": "Desk", "href": "HTTPS://desk.example:65535/loans"},
     {"label": "Staff", "href": "/staff"},
     {"label": "Loans", "href": "loans/3"},
     {"label": "Next page", "href": "?page=2"},
@@ -296,6 +297,14 @@
     {"label": "Shelf", "href": "https://256.0.0.1/"},
     {"label": "Index", "href": "https://example%2Forg/"},
     {"label": "Guide", "href": "https://xn--/"},
+    {"label": "IPv4", "href": "https://192.0.2.1/"},
+    {"label": "IPv6", "href": "https://[2001:db8::1]:443/"},
+    {"label": "Non-ASCII host", "href": "https://bücher.example/"},
+    {"label": "Joiner in host", "href": "https://a\u200db.example/"},
+    {"label": "Port out of range", "href": "https://desk.example:65536/"},
+    {"label": "Leading hyphen", "href": "https://-desk.example/"},
+    {"label": "Byte order mark", "href": "/loans\ufeff"},
+    {"label": "Wide space", "href": "/loans\u2003"},
     {"label": "Current page", "href": "https://#main"}
    ]}},
    "errors": [
@@ -305,7 +314,15 @@
     "data.items[3].href: give a relative path or an https address",
     "data.items[4].href: give a relative path or an https address",
     "data.items[5].href: give a relative path or an https address",
-    "data.items[6].href: give a relative path or an https address"
+    "data.items[6].href: give a relative path or an https address",
+    "data.items[7].href: give a relative path or an https address",
+    "data.items[8].href: give a relative path or an https address",
+    "data.items[9].href: give a relative path or an https address",
+    "data.items[10].href: give a relative path or an https address",
+    "data.items[11].href: give a relative path or an https address",
+    "data.items[12].href: give a relative path or an https address",
+    "data.items[13].href: give a relative path or an https address",
+    "data.items[14].href: give a relative path or an https address"
    ]
   },
   {

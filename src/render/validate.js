@@ -346,15 +346,20 @@ export function parseLinkURL(value, schemes, base) {
   return url.hostname && !url.username && !url.password ? url : null;
 }
 
-const HTTPS = ['https:'];
-const RELATIVE_BASE = 'https://relative.invalid';
+// Use the same code points and grammar as is_navigation_href in tools/catalog.py.
+const NAVIGATION_FORBIDDEN = /[\x00-\x20\x7f-\x9f\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff\\]/;
+const NAVIGATION_HTTPS = /^https:\/\/([^:/?#]+)(?::([0-9]{1,5}))?(?:[/?#].*)?$/i;
+const DNS_LABEL = /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?$/;
 
 export function navigationHref(value) {
-  // A relative path stays relative to the page. Check it against a fixed base before using it.
-  if (!value || /[\s\x00-\x1f\x7f-\x9f\\]/u.test(value)) return null;
-  if (/^https:\/\//i.test(value)) return parseLinkURL(value, HTTPS)?.href ?? null;
-  if (value.startsWith('//') || /^[a-z][a-z\d+.-]*:/i.test(value)) return null;
-  return parseLinkURL(value, HTTPS, RELATIVE_BASE)?.origin === RELATIVE_BASE ? value : null;
+  if (typeof value !== 'string' || !value || NAVIGATION_FORBIDDEN.test(value)) return null;
+  const address = NAVIGATION_HTTPS.exec(value);
+  if (!address) {
+    return value.startsWith('//') || /^[A-Za-z][A-Za-z0-9+.-]*:/.test(value) ? null : value;
+  }
+  const [, host, port] = address;
+  if (/^[0-9.]+$/.test(host) || !host.split('.').every((label) => DNS_LABEL.test(label))) return null;
+  return port === undefined || Number(port) <= 65535 ? value : null;
 }
 
 function multiChoiceErrors({ choices, value = [], ...limits }, prefix) {

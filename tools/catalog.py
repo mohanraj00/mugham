@@ -6,14 +6,12 @@ contract. Each other function reads only the full form.
 """
 import copy
 import datetime
-from encodings.idna import nameprep
 from fractions import Fraction
 import json
 import math
 from pathlib import Path
 import re
 import sys
-from urllib.parse import unquote, urlsplit
 
 ROOT = Path(__file__).resolve().parents[1]
 SCHEMA_DIR = ROOT / 'catalog' / 'schema'
@@ -374,56 +372,22 @@ def is_date(value):
         return False
 
 
+# Use the same code points and grammar as navigationHref in src/render/validate.js.
+NAVIGATION_FORBIDDEN = re.compile(r'[\x00-\x20\x7f-\x9f\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff\\]')
+NAVIGATION_HTTPS = re.compile(r'https://([^:/?#]+)(?::([0-9]{1,5}))?(?:[/?#].*)?', re.IGNORECASE | re.ASCII)
+DNS_LABEL = re.compile(r'[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?')
+
+
 def is_navigation_href(value):
-    """Apply the breadcrumb link rules in src/render/validate.js."""
-    if not value or re.search(r'[\s\x00-\x1f\x7f-\x9f\ufeff\\]', value):
+    if not isinstance(value, str) or not value or NAVIGATION_FORBIDDEN.search(value):
         return False
-    if not value.lower().startswith('https://'):
+    address = NAVIGATION_HTTPS.fullmatch(value)
+    if not address:
         return not (value.startswith('//') or re.match(r'[A-Za-z][A-Za-z0-9+.-]*:', value))
-    try:
-        # The browser accepts additional slashes before the host of an HTTPS address.
-        url = urlsplit('https://' + value[8:].lstrip('/'))
-        if not url.hostname or url.username or url.password:
-            return False
-        _ = url.port  # Reading the port checks its syntax and range.
-        authority = url.netloc.rsplit('@', 1)[-1]
-        if authority.startswith('['):
-            # urlsplit checks IPv6 but also accepts zone IDs and text after the closing bracket.
-            return re.fullmatch(r'\[[0-9A-Fa-f:.]*:[0-9A-Fa-f:.]*\](?::[0-9]*)?', authority) is not None
-        host = unquote(url.hostname, errors='strict')
-        labels = re.split(r'[.\u3002\uff0e\uff61]', host)
-        for index, label in enumerate(labels):
-            if label.lower().startswith('xn--'):
-                label = label[4:].encode('ascii').decode('punycode')
-                if label.isascii():
-                    return False
-            if not label.isascii():
-                labels[index] = nameprep(label)
-        host = '.'.join(labels)
-        if not host or re.search(r'[\s\x00-\x1f\x7f-\x9f#%/:<>?@\[\]\\^|]', host):
-            return False
-        return is_navigation_host(host)
-    except ValueError:
+    host, port = address.groups()
+    if re.fullmatch(r'[0-9.]+', host) or not all(DNS_LABEL.fullmatch(label) for label in host.split('.')):
         return False
-
-
-def is_navigation_host(host):
-    """The browser reads a host that ends in a number as an IPv4 address."""
-    parts = host.lower().removesuffix('.').split('.')
-    if not re.fullmatch(r'(?:[0-9]+|0x[0-9a-f]*)', parts[-1]):
-        return True
-    if len(parts) > 4:
-        return False
-    numbers = []
-    for part in parts:
-        if part.startswith('0x'):
-            digits, base = part[2:] or '0', 16
-        else:
-            digits, base = part, 8 if part.startswith('0') else 10
-        if not re.fullmatch(r'[0-9a-f]+', digits):
-            return False
-        numbers.append(int(digits, base))
-    return all(number < 256 for number in numbers[:-1]) and numbers[-1] < 256 ** (5 - len(numbers))
+    return port is None or int(port) <= 65535
 
 
 def value_errors(value, field, path, catalog, depth):
