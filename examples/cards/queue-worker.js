@@ -11,7 +11,7 @@ const EXAMPLES = [
   'docs.js', 'docs.json', 'examples.json', 'frame.css', 'frame.js', 'page.css',
 ];
 const SRC = [
-  'actions/action.js', 'components/chart.js', 'components/data-grid.js', 'components/image.js',
+  'actions/action.js', 'components/chart.js', 'components/data-grid.js', 'components/dialog.js', 'components/image.js',
   'components/index.js', 'components/pending.js', 'components/receipt.js', 'components/rich-text.js', 'components/status.js',
   'components/table.js', 'components/upload.js', 'envelope/envelope.js', 'kit.js', 'narration/check.js',
   'offline/queue.js', 'offline/source.js', 'primitives/base.js', 'primitives/choice-list.js', 'primitives/date-time-fields.js',
@@ -25,7 +25,7 @@ const CATALOG = [
   'action-button.json', 'action-queue.json', 'button.json', 'card-grid.json', 'card.json', 'chart-series.json',
   'chart.json', 'choice-cell.json', 'choice-field.json', 'citation.json', 'data-grid-column.json',
   'data-grid-row.json', 'data-grid.json', 'date-cell.json', 'date-field.json', 'date-range-field.json', 'date-time-field.json', 'diff-change.json',
-  'diff-part.json', 'diff.json', 'editable-form.json', 'excerpt.json', 'fact.json', 'field.json',
+  'diff-part.json', 'diff.json', 'dialog.json', 'drawer.json', 'editable-form.json', 'excerpt.json', 'fact.json', 'field.json',
   'form-card.json', 'form-line.json', 'form-section.json', 'grid.json', 'image.json', 'long-text-field.json', 'multi-choice-field.json',
   'number-cell.json', 'number-field.json', 'queued-action.json', 'range-field.json', 'rich-code.json', 'rich-heading.json',
   'rich-link.json', 'rich-list.json', 'rich-paragraph.json', 'rich-quote.json', 'rich-span.json',
@@ -34,5 +34,5 @@ const CATALOG = [
   'text-cell.json', 'text.json', 'time-field.json', 'toggle-field.json', 'upload.json',
 ];
 
-mughamOffline.serve(self, { version: 'queue-example-9', files: [...PAGE, ...EXAMPLES.map((name) => '../' + name),
+mughamOffline.serve(self, { version: 'queue-example-10', files: [...PAGE, ...EXAMPLES.map((name) => '../' + name),
   ...SRC.map((name) => '../../src/' + name), ...CATALOG.map((name) => '../../catalog/' + name)] });

@@ -34,7 +34,7 @@
       "minItems": 1,
       "maxItems": 12,
       "uniqueItems": true,
-      "items": {"enum": ["default", "empty", "loading", "disabled", "confirm", "pending", "done", "error", "refused", "expanded", "collapsed"]}
+      "items": {"enum": ["default", "empty", "loading", "disabled", "confirm", "pending", "done", "error", "refused", "expanded", "collapsed", "open"]}
     },
     "tokens": {
       "type": "array",
@@ -47,7 +47,7 @@
       "required": ["role", "keyboard", "forced_colors", "reduced_motion"],
       "additionalProperties": false,
       "properties": {
-        "role": {"enum": ["article", "button", "checkbox", "combobox", "form", "group", "list", "region", "slider", "status", "switch", "textbox", "none"]},
+        "role": {"enum": ["article", "button", "checkbox", "combobox", "dialog", "form", "group", "list", "region", "slider", "status", "switch", "textbox", "none"]},
         "name": {
           "oneOf": [
             {"type": "object", "required": ["field"], "additionalProperties": false, "properties": {"field": {"$ref": "#/$defs/field_name"}}},

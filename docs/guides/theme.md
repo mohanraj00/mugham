@@ -229,6 +229,8 @@ An asterisk marks a guardrail part. Keep it visible when the kit shows it. Run `
 | `mu-date-field` | `copy`\*, `copy-status`\*, `details`\*, `edit-type`\*, `input`\*, `label`\*, `next`\*, `problem`\*, `reason`\* |
 | `mu-date-range-field` | `copy`\*, `copy-status`\*, `date-label`\*, `details`\*, `edit-type`\*, `end`\*, `group`\*, `label`\*, `next`\*, `problem`\*, `reason`\*, `start`\* |
 | `mu-date-time-field` | `copy`\*, `copy-status`\*, `details`\*, `edit-type`\*, `input`\*, `label`\*, `next`\*, `problem`\*, `reason`\*, `time-zone`\* |
+| `mu-dialog` | `body`\*, `close`\*, `copy`\*, `copy-status`\*, `details`\*, `dialog`\*, `next`\*, `reason`\*, `title`\* |
+| `mu-drawer` | `body`\*, `close`\*, `copy`\*, `copy-status`\*, `details`\*, `dialog`\*, `next`\*, `reason`\*, `title`\* |
 | `mu-diff` | `after`\*, `authorship`\*, `before`\*, `change`, `changes`, `citation`\*, `copy`\*, `copy-status`\*, `counts`, `details`\*, `diff`, `empty`, `kind`\*, `label`, `locator`\*, `next`\*, `open`\*, `part`, `provenance`\*, `reason`\*, `summary`, `title`, `value`, `version`\*, `versions` |
 | `mu-editable-form` | `accept`\*, `authorship`\*, `button`, `cancel`\*, `citation`\*, `confirm`\*, `copy`\*, `copy-status`\*, `details`\*, `exit`\*, `form`, `locator`\*, `next`\*, `open`\*, `provenance`\*, `reason`\*, `reference`\*, `retry`\*, `status`\* |
 | `mu-excerpt` | `authorship`\*, `citation`\*, `copy`\*, `copy-status`\*, `details`\*, `excerpt`, `locator`\*, `mark`, `next`\*, `open`\*, `passage`, `provenance`\*, `read-more-content`\*, `read-more-toggle`\*, `reason`\*, `span` |
@@ -279,6 +281,8 @@ Each rule protects a principle of the [constitution](../../CONSTITUTION.md#princ
 - **Do not put content into a style.** A token value comes from the application, never from a model, a tool or a document. Principle 5 keeps untrusted content as data.
 
 A page can style these parts for layout, for example a margin or a width, if it keeps each rule above: `actions`, `button`, `card`, `choices`, `empty`, `excerpt`, `facts`, `form`, `input`, `label`, `layout`, `list`, `mark`, `passage`, `quote`, `span`, `table` and `text`. The form card adds the layout parts `section`, `lines`, `line`, `line-number`, `value`, `editor` and `save`. The diff adds the layout parts `diff`, `title`, `versions`, `counts`, `summary`, `changes`, `change` and `value`. `seed-tray` in [examples/cards/register.js](../../examples/cards/register.js) shows that an application element can add its own part, for example `tray`.
+
+Keep the `dialog`, `title`, `body` and `close` parts of a dialog or drawer visible while it is open. Keep the close button at least 44 by 44 CSS pixels and keep its focus ring visible. Let the browser hide the modal when it is closed.
 
 The image parts are `image`, `box`, `caption` and `dialog`. Keep the box ratio and its loading and failed notices visible. Keep the caption and the full-size close button visible. The `open` part must keep its focus ring.
 
