@@ -9,6 +9,9 @@ import cardGrid from '../../catalog/card-grid.json' with { type: 'json' };
 import choiceField from '../../catalog/choice-field.json' with { type: 'json' };
 import citation from '../../catalog/citation.json' with { type: 'json' };
 import dateField from '../../catalog/date-field.json' with { type: 'json' };
+import dateRangeField from '../../catalog/date-range-field.json' with { type: 'json' };
+import dateTimeField from '../../catalog/date-time-field.json' with { type: 'json' };
+import timeField from '../../catalog/time-field.json' with { type: 'json' };
 import diff from '../../catalog/diff.json' with { type: 'json' };
 import diffChange from '../../catalog/diff-change.json' with { type: 'json' };
 import diffPart from '../../catalog/diff-part.json' with { type: 'json' };
@@ -61,6 +64,7 @@ const FILES = {
   'toggle-field': toggleField,
   'range-field': rangeField,
   'multi-choice-field': multiChoiceField,
+  'date-range-field': dateRangeField, 'time-field': timeField, 'date-time-field': dateTimeField,
   'select-field': selectField,
   chart, 'chart-series': chartSeries,
   'rich-text': richText, 'rich-paragraph': richParagraph, 'rich-heading': richHeading, 'rich-list': richList,

@@ -271,7 +271,14 @@ function sample(field) {
   }
 }
 
+const TEMPORAL_SAMPLES = {
+  'date-range-field': { label: 'Booking dates', value: ['2028-02-29', '2028-03-01'], earliest: '2028-02-28', latest: '2028-03-03' },
+  'time-field': { label: 'Start time', value: '09:35', earliest: '09:05', latest: '17:00', step: 15 },
+  'date-time-field': { label: 'Setup date and time', value: '2028-02-29T23:59', time_zone: 'Europe/Oslo' },
+};
+
 function sampleData(contract) {
+  if (Object.hasOwn(TEMPORAL_SAMPLES, contract.name)) return TEMPORAL_SAMPLES[contract.name];
   if (contract.name === 'multi-choice-field') return { label: 'Plants', choices: ['Mist fern'], value: ['Mist fern'] };
   if (contract.name === 'range-field') return { label: 'Loan period in days', minimum: 7, maximum: 28, step: 7, value: 14 };
   return Object.fromEntries(Object.entries(contract.data).map(([key, field]) => [key, sample(field)]));
@@ -302,6 +309,70 @@ test('schema exports refuse unknown field types', (t) => {
   for (const schema of [describe, toolSchema]) {
     assert.throws(() => schema('button'), { name: 'TypeError', message: /future-type/ });
   }
+});
+
+test('the editable form tool schema includes the three date and time fields', () => {
+  const kit = createKit({ actor: ACTOR });
+  const schema = toolSchema('editable-form');
+  const data = (name) => schema.$defs[name].properties.data;
+  assert.deepEqual(data('date-range-field').properties.value, {
+    title: 'Value', type: 'array', minItems: 2, maxItems: 2,
+    items: { ...toolSchema('date-field').properties.data.properties.value, title: 'Date' },
+  });
+  assert.deepEqual(data('time-field').properties.step, { title: 'Step', type: 'integer', minimum: 1 });
+  assert.deepEqual(data('date-time-field').required, ['label', 'value', 'time_zone']);
+  for (const [name, sample] of Object.entries(TEMPORAL_SAMPLES)) {
+    const nested = (value) => kit.outer('editable-form', { title: 'Room booking', submit_label: 'Save',
+      fields: [fill(name, { ...sample, value })] });
+    assert.deepEqual(instanceErrors(nested(sample.value), schema), []);
+    assert.notDeepEqual(instanceErrors(nested(12), schema), []);
+  }
+});
+
+test('the date and time contracts refuse invalid values and limits in a form', () => {
+  const kit = createKit({ actor: ACTOR });
+  for (const [name, cases] of Object.entries({
+    'date-range-field': [
+      [{ value: ['2027-02-29', '2028-03-01'] }, 'value[0]: must be a date as YYYY-MM-DD'],
+      [{ value: ['2028-02-29', '2028-02-30'] }, 'value[1]: must be a date as YYYY-MM-DD'],
+      [{ value: ['2028-03-01'] }, 'value: fewer than 2 items'],
+      [{ value: ['2028-02-28', '2028-03-01', '2028-03-02'] }, 'value: more than 2 items'],
+      [{ value: ['2028-02-27', '2028-03-01'] }, 'value[0]: the date is outside the range'],
+      [{ value: ['2028-02-29', '2028-03-04'] }, 'value[1]: the date is outside the range'],
+      [{ value: ['2028-03-01', '2028-02-29'] }, 'value: the end date is before the start date'],
+      [{ earliest: '2028-03-04' }, 'earliest: the earliest date is after the latest date'],
+    ],
+    'time-field': [
+      [{ value: '24:00' }, 'value: must be a time as HH:MM'],
+      [{ value: '09:60' }, 'value: must be a time as HH:MM'],
+      [{ value: '09:00' }, 'value: the time is outside the range'],
+      [{ value: '17:05' }, 'value: the time is outside the range'],
+      [{ value: '09:30' }, 'value: the time is off a step'],
+      [{ earliest: '18:00' }, 'earliest: the earliest time is after the latest time'],
+      [{ earliest: '25:05' }, 'earliest: must be a time as HH:MM'],
+      [{ latest: '17:60' }, 'latest: must be a time as HH:MM'],
+      [{ step: 0 }, 'step: less than the minimum 1'],
+      [{ step: 1.5 }, 'step: must be an integer'],
+    ],
+    'date-time-field': [
+      [{ value: '2027-02-29T23:59' }, 'value: must be a date and time as YYYY-MM-DDTHH:MM'],
+      [{ value: '2028-02-29T24:00' }, 'value: must be a date and time as YYYY-MM-DDTHH:MM'],
+      [{ value: '2028-02-29 23:59' }, 'value: must be a date and time as YYYY-MM-DDTHH:MM'],
+      [{ value: '2028-02-29T23:59Z' }, 'value: more than 16 characters'],
+      [{ time_zone: '' }, 'time_zone: must have the form Area/Location'],
+    ],
+  })) {
+    for (const [change, error] of cases) {
+      const field = fill(name, { ...TEMPORAL_SAMPLES[name], ...change });
+      assert.deepEqual(validateFill(field), ['data.' + error]);
+      const form = kit.outer('editable-form', { title: 'Room booking', submit_label: 'Save', fields: [field] });
+      assert.deepEqual(validateFill(form), ['data.fields[0].data.' + error]);
+    }
+  }
+  assert.deepEqual(validateFill(fill('time-field', { label: 'Time', value: '00:15', step: 15 })), []);
+  assert.deepEqual(validateFill(fill('time-field', { label: 'Time', value: '00:14', step: 15 })), ['data.value: the time is off a step']);
+  assert.deepEqual(validateFill(fill('date-time-field', { label: 'Setup', value: '2028-02-29T00:00' })),
+    ['data.time_zone: a required field is missing']);
 });
 
 test('the toggle tool schema gives a boolean and two displays, also in an editable form', () => {

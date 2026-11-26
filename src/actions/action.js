@@ -6,6 +6,7 @@
 import actionButton from '../../catalog/action-button.json' with { type: 'json' };
 import { copyArgs, copyValue, isTextList, receiptOf } from '../offline/queue.js';
 import { isOrderedPair, sameValue } from '../render/range.js';
+import { hasTimeZoneForm } from '../render/validate.js';
 
 const TOOL = /^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)*$/;
 const MAX_MESSAGE = 200;
@@ -79,6 +80,16 @@ function scalar(value) {
   return typeof value === 'string' || typeof value === 'boolean' || (typeof value === 'number' && Number.isFinite(value));
 }
 
+function isKnownTimeZone(name) {
+  if (!hasTimeZoneForm(name)) return false;
+  try {
+    new Intl.DateTimeFormat(undefined, { timeZone: name });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function bindingErrors(binding) {
   if (binding === null || typeof binding !== 'object' || Array.isArray(binding)) return ['the action must be an object'];
   const errors = [];
@@ -120,9 +131,15 @@ export function bindingErrors(binding) {
   // A form shows the editable value, so a bound value for the same name would go in the request unseen.
   const overlap = entries && args !== null && typeof args === 'object' ? entries.find(([name]) => Object.hasOwn(args, name)) : null;
   if (overlap) errors.push(`a bound argument cannot be editable: ${overlap[0]}`);
+  const names = entries ? new Set(entries.map(([name]) => name)) : new Set();
+  const zones = binding.time_zones;
+  if (zones !== undefined && (zones === null || typeof zones !== 'object' || Array.isArray(zones)
+    || ![Object.prototype, null].includes(Object.getPrototypeOf(zones))
+    || !Object.entries(zones).every(([name, zone]) => names.has(name) && isKnownTimeZone(zone)))) {
+    errors.push('time_zones must map editable field names to IANA time zone names');
+  }
   // The application gives the typed names and the person who edits, so a fill cannot remove the type of an edit.
   const typed = binding.typed ?? [];
-  const names = entries ? new Set(entries.map(([name]) => name)) : new Set();
   if (!Array.isArray(typed) || new Set(typed).size !== typed.length || !typed.every((name) => names.has(name))) {
     errors.push('typed must list names that editable gives, each one time');
   }
@@ -241,6 +258,11 @@ export class ActionState {
     return this.#binding ? this.#binding.editable : null;
   }
 
+  // The time zones of editable fields. Without a binding, the value is null.
+  get timeZones() {
+    return this.#binding ? this.#binding.time_zones : null;
+  }
+
   // The editable names that need an edit type. Without a binding, the value is null.
   get typed() {
     return this.#binding ? this.#binding.typed : null;
@@ -266,6 +288,7 @@ export class ActionState {
       description: binding.description ?? '', icon: binding.icon, display: binding.display,
       arguments: copyArgs(binding.arguments ?? {}),
       editable: Object.freeze(Object.assign(Object.create(null), binding.editable ?? {})),
+      time_zones: Object.freeze(Object.assign(Object.create(null), binding.time_zones ?? {})),
       typed: Object.freeze([...(binding.typed ?? [])]),
       editor: binding.editor ? Object.freeze({ type: binding.editor.type, id: binding.editor.id }) : null,
       confirm: binding.confirm ? Object.freeze({ message: binding.confirm.message, label: binding.confirm.label }) : null });

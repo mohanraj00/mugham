@@ -51,6 +51,23 @@ test('an extra value needs a name that the binding gives as editable', () => {
   assert.equal(plain.start({ shelf: 'C-2' }), null);
 });
 
+test('time_zones maps editable field names to IANA time zone names', () => {
+  const binding = { tool: 'rooms.save', editable: { setup: 'Setup date and time' } };
+  const error = ['time_zones must map editable field names to IANA time zone names'];
+  for (const time_zones of [null, [], new Map(), { setup: 'Moon/Base' }, { setup: 1 }, { start: 'Europe/Oslo' }]) {
+    assert.deepEqual(bindingErrors({ ...binding, time_zones }), error);
+  }
+  assert.deepEqual(bindingErrors({ ...binding, time_zones: { setup: 'UTC' } }), error);
+
+  const action = new ActionState();
+  assert.equal(action.timeZones, null);
+  const zones = { setup: 'Europe/Oslo' };
+  assert.deepEqual(action.bind({ ...binding, time_zones: zones }), []);
+  zones.setup = 'America/New_York';
+  assert.deepEqual({ ...action.timeZones }, { setup: 'Europe/Oslo' });
+  assert.ok(Object.isFrozen(action.timeZones));
+});
+
 test('the label comes from the binding', () => {
   const action = new ActionState();
   assert.equal(action.label, null);

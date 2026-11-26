@@ -50,6 +50,12 @@ VALID = {
     'long-text-field': {'name': 'note', 'label': 'Note', 'value': 'Keep dry.\nNo sun.', 'hint': 'Two lines at most.'},
     'number-field': {'name': 'copies', 'label': 'Copies', 'value': 3, 'minimum': 1, 'maximum': 12, 'typed': True},
     'date-field': {'name': 'due', 'label': 'Due date', 'value': '2026-12-01', 'earliest': '2026-11-01', 'latest': '2027-02-28'},
+    'date-range-field': {'name': 'dates', 'label': 'Booking dates', 'value': ['2028-02-29', '2028-03-01'],
+                         'earliest': '2028-02-28', 'latest': '2028-03-03'},
+    'time-field': {'name': 'start_time', 'label': 'Start time', 'value': '09:35', 'earliest': '09:05',
+                   'latest': '17:00', 'step': 15},
+    'date-time-field': {'name': 'setup', 'label': 'Setup date and time', 'value': '2028-02-29T23:59',
+                        'time_zone': 'Europe/Oslo'},
     'choice-field': {'name': 'branch', 'label': 'Branch', 'value': 'North', 'choices': ['North', 'South', 'Harbor']},
     'toggle-field': {'name': 'reminder', 'label': 'Send a reminder', 'value': False},
     'range-field': {'name': 'days', 'label': 'Loan period in days', 'minimum': 7, 'maximum': 28, 'step': 7, 'value': 14},
@@ -139,12 +145,59 @@ class CatalogContractTest(unittest.TestCase):
                          ['data.collapse_controls: must be true or false'])
 
     def test_a_form_accepts_each_input_type_and_no_other_component(self):
-        inputs = ['field', 'long-text-field', 'number-field', 'date-field', 'choice-field', 'toggle-field', 'range-field', 'select-field', 'multi-choice-field']
+        inputs = ['field', 'long-text-field', 'number-field', 'date-field', 'choice-field', 'toggle-field',
+                  'range-field', 'select-field', 'multi-choice-field', 'date-range-field', 'time-field', 'date-time-field']
         form = {'title': 'Loan details', 'submit_label': 'Save', 'fields': [fill(name, VALID[name]) for name in inputs]}
         self.assertEqual(catalog.fill_errors(outer('editable-form', form), CATALOG), [])
         other = {**form, 'fields': [fill('button', VALID['button'])]}
         self.assertEqual(catalog.fill_errors(outer('editable-form', other), CATALOG),
                          ['data.fields[0].component: must be ' + ' or '.join(inputs)])
+
+    def test_the_date_and_time_contracts_refuse_invalid_values_in_a_form(self):
+        cases = {
+            'date-range-field': [
+                ({'value': ['2027-02-29', '2028-03-01']}, 'value[0]: must be a date as YYYY-MM-DD'),
+                ({'value': ['2028-02-29']}, 'value: fewer than 2 items'),
+                ({'value': ['2028-02-28', '2028-02-29', '2028-03-01']}, 'value: more than 2 items'),
+                ({'value': ['2028-02-27', '2028-03-01']}, 'value[0]: the date is outside the range'),
+                ({'value': ['2028-02-29', '2028-03-04']}, 'value[1]: the date is outside the range'),
+                ({'value': ['2028-03-01', '2028-02-29']}, 'value: the end date is before the start date'),
+                ({'earliest': '2028-03-04'}, 'earliest: the earliest date is after the latest date'),
+            ],
+            'time-field': [
+                ({'value': '24:00'}, 'value: must be a time as HH:MM'),
+                ({'value': '09:60'}, 'value: must be a time as HH:MM'),
+                ({'value': '09:00'}, 'value: the time is outside the range'),
+                ({'value': '17:05'}, 'value: the time is outside the range'),
+                ({'value': '09:30'}, 'value: the time is off a step'),
+                ({'earliest': '18:00'}, 'earliest: the earliest time is after the latest time'),
+                ({'earliest': '25:05'}, 'earliest: must be a time as HH:MM'),
+                ({'latest': '17:60'}, 'latest: must be a time as HH:MM'),
+                ({'step': 0}, 'step: less than the minimum 1'),
+                ({'step': 1.5}, 'step: must be an integer'),
+            ],
+            'date-time-field': [
+                ({'value': '2027-02-29T23:59'}, 'value: must be a date and time as YYYY-MM-DDTHH:MM'),
+                ({'value': '2028-02-29T24:00'}, 'value: must be a date and time as YYYY-MM-DDTHH:MM'),
+                ({'value': '2028-02-29 23:59'}, 'value: must be a date and time as YYYY-MM-DDTHH:MM'),
+                ({'value': '2028-02-29T23:59Z'}, 'value: more than 16 characters'),
+                ({'time_zone': ''}, 'time_zone: must have the form Area/Location'),
+            ],
+        }
+        for name, changes in cases.items():
+            self.assertEqual(catalog.contract_errors(CATALOG[name], name + '.json', CATALOG), [])
+            self.assertEqual(catalog.fill_errors(fill(name, VALID[name]), CATALOG), [])
+            for change, error in changes:
+                with self.subTest(name=name, change=change):
+                    field = fill(name, {**VALID[name], **change})
+                    self.assertEqual(catalog.fill_errors(field, CATALOG), ['data.' + error])
+                    form = {'title': 'Room booking', 'submit_label': 'Save', 'fields': [field]}
+                    self.assertEqual(catalog.fill_errors(outer('editable-form', form), CATALOG),
+                                     ['data.fields[0].data.' + error])
+        data = VALID['date-time-field'].copy()
+        del data['time_zone']
+        self.assertEqual(catalog.fill_errors(fill('date-time-field', data), CATALOG),
+                         ['data.time_zone: a required field is missing'])
 
     def test_the_toggle_schema_accepts_two_displays_and_only_boolean_values(self):
         name = 'toggle-field'
@@ -297,7 +350,12 @@ class CatalogContractTest(unittest.TestCase):
                     self.assertIn('data.%s: more than %d characters' % (key, field['max_length']),
                                   catalog.fill_errors(outer(name, data), CATALOG))
 
-    def test_markup_in_each_text_field_is_accepted_as_text(self):
+    def test_markup_in_text_fields_stays_text_or_fails_the_field_format(self):
+        formats = {
+            'time-field': dict.fromkeys(('value', 'earliest', 'latest'), 'must be a time as HH:MM'),
+            'date-time-field': {'value': 'must be a date and time as YYYY-MM-DDTHH:MM',
+                                'time_zone': 'must have the form Area/Location'},
+        }
         for name, contract in CATALOG.items():
             for key, field in contract['data'].items():
                 if field['type'] == 'text':
@@ -306,7 +364,9 @@ class CatalogContractTest(unittest.TestCase):
                         data = {**VALID[name], key: value}
                         if name == 'select-field' and key == 'value':
                             data['choices'] = [value]
-                        self.assertEqual(catalog.fill_errors(outer(name, data), CATALOG), [])
+                        reason = formats.get(name, {}).get(key)
+                        expected = ['data.%s: %s' % (key, reason)] if reason else []
+                        self.assertEqual(catalog.fill_errors(outer(name, data), CATALOG), expected)
 
     def test_each_contract_with_ai_content_requires_the_authorship_slot(self):
         for name, contract in CATALOG.items():

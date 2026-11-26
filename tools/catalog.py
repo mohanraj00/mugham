@@ -28,6 +28,8 @@ MAX_UNKNOWN = 10
 # because the size of a key can have no limit.
 MAX_NAME = 40
 DATE = re.compile(r'[0-9]{4}-[0-9]{2}-[0-9]{2}')
+TIME = re.compile(r'([01][0-9]|2[0-3]):([0-5][0-9])')
+TIME_ZONE = re.compile(r'[A-Za-z_][A-Za-z0-9_+-]*(/[A-Za-z_][A-Za-z0-9_+-]*)+')
 
 
 def shown(key):
@@ -346,6 +348,16 @@ def reaches(catalog, start, goal):
     return False
 
 
+def is_date(value):
+    if not isinstance(value, str) or not DATE.fullmatch(value):
+        return False
+    try:
+        datetime.date.fromisoformat(value)
+        return True
+    except ValueError:
+        return False
+
+
 def value_errors(value, field, path, catalog, depth):
     kind = field['type']
     if kind == 'text':
@@ -372,13 +384,7 @@ def value_errors(value, field, path, catalog, depth):
             return []
         return [path + ': must be a number or a pair of numbers']
     if kind == 'date':
-        try:
-            if isinstance(value, str) and DATE.fullmatch(value):
-                datetime.date.fromisoformat(value)
-                return []
-        except ValueError:
-            pass
-        return [path + ': must be a date as YYYY-MM-DD']
+        return [] if is_date(value) else [path + ': must be a date as YYYY-MM-DD']
     if kind == 'enum':
         if isinstance(value, str) and value in field['values']:
             return []
@@ -440,6 +446,8 @@ def fill_errors(fill, catalog, path='', depth=0):
     if (not errors and fill['component'] == 'multi-choice-field' and isinstance(data.get('choices'), list)
             and contract['data'].get('value', {}).get('type') == 'list'):
         errors += multi_choice_errors(data, prefix + 'data.')
+    if not errors and fill['component'] in ('date-range-field', 'time-field', 'date-time-field'):
+        errors += date_and_time_errors(fill['component'], data, prefix + 'data.')
     return errors + slot_errors(fill, contract, prefix, depth)
 
 
@@ -480,6 +488,51 @@ def range_errors(data, prefix):
             return [path + ': the number is off a step']
     if pair and value[0] > value[1]:
         return [prefix + 'value: the low value is more than the high value']
+    return []
+
+
+def outside_limits(value, earliest, latest):
+    return (earliest is not None and value < earliest) or (latest is not None and value > latest)
+
+
+def time_minutes(value):
+    match = TIME.fullmatch(value)
+    if match:
+        hours, minutes = map(int, match.groups())
+        return hours * 60 + minutes
+    return None
+
+
+def date_and_time_errors(name, data, prefix):
+    value = data['value']
+    earliest, latest = data.get('earliest'), data.get('latest')
+    if name == 'date-range-field':
+        if earliest is not None and latest is not None and earliest > latest:
+            return [prefix + 'earliest: the earliest date is after the latest date']
+        for index, date in enumerate(value):
+            if outside_limits(date, earliest, latest):
+                return [prefix + 'value[%d]: the date is outside the range' % index]
+        if value[1] < value[0]:
+            return [prefix + 'value: the end date is before the start date']
+    elif name == 'time-field':
+        for key in ('earliest', 'latest'):
+            if key in data and time_minutes(data[key]) is None:
+                return [prefix + key + ': must be a time as HH:MM']
+        if earliest is not None and latest is not None and earliest > latest:
+            return [prefix + 'earliest: the earliest time is after the latest time']
+        minutes = time_minutes(value)
+        if minutes is None:
+            return [prefix + 'value: must be a time as HH:MM']
+        if outside_limits(value, earliest, latest):
+            return [prefix + 'value: the time is outside the range']
+        start = time_minutes(earliest) if earliest is not None else 0
+        if (minutes - start) % data.get('step', 1):
+            return [prefix + 'value: the time is off a step']
+    else:
+        if len(value) != 16 or value[10] != 'T' or not is_date(value[:10]) or time_minutes(value[11:]) is None:
+            return [prefix + 'value: must be a date and time as YYYY-MM-DDTHH:MM']
+        if not TIME_ZONE.fullmatch(data['time_zone']):
+            return [prefix + 'time_zone: must have the form Area/Location']
     return []
 
 

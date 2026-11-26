@@ -27,6 +27,8 @@ const shown = (key) => {
   return key;
 };
 const DATE = /^([0-9]{4})-([0-9]{2})-([0-9]{2})$/;
+const TIME = /^([01][0-9]|2[0-3]):([0-5][0-9])$/;
+const TIME_ZONE = /^[A-Za-z_][A-Za-z0-9_+-]*(\/[A-Za-z_][A-Za-z0-9_+-]*)+$/;
 const own = (object, key) => Object.prototype.hasOwnProperty.call(object, key);
 // Count the code points of text, but stop after limit + 1. Thus a very long text gets its error
 // quickly, and the count makes no copy of the text.
@@ -205,6 +207,63 @@ export function isDate(value) {
   return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day;
 }
 
+function outsideLimits(value, { earliest, latest }) {
+  return (earliest !== undefined && value < earliest) || (latest !== undefined && value > latest);
+}
+
+export function dateRangeProblem([start, end], limits) {
+  for (const [index, label, date, message] of [
+    [0, 'start', start, 'Give a start date that exists.'],
+    [1, 'end', end, 'Give an end date that exists.'],
+  ]) {
+    if (!isDate(date)) return { index, message };
+    if (outsideLimits(date, limits)) return { index, message: 'The ' + label + ' date is outside the range.' };
+  }
+  return end < start ? { message: 'The end date is before the start date.' } : null;
+}
+
+function timeMinutes(value) {
+  const match = TIME.exec(value);
+  return match ? Number(match[1]) * 60 + Number(match[2]) : null;
+}
+
+export function timeProblem(value, limits) {
+  const minutes = timeMinutes(value);
+  if (minutes === null) return 'must be a time as HH:MM';
+  if (outsideLimits(value, limits)) return 'the time is outside the range';
+  const start = timeMinutes(limits.earliest) ?? 0;
+  return (minutes - start) % (limits.step ?? 1) ? 'the time is off a step' : null;
+}
+
+export function isLocalDateTime(value) {
+  return value.length === 16 && value[10] === 'T' && isDate(value.slice(0, 10)) && timeMinutes(value.slice(11)) !== null;
+}
+
+export function hasTimeZoneForm(name) {
+  return typeof name === 'string' && TIME_ZONE.test(name);
+}
+
+function dateAndTimeErrors(name, data, prefix) {
+  const { value, earliest, latest } = data;
+  if (name === 'date-range-field') {
+    if (earliest > latest) return [prefix + 'earliest: the earliest date is after the latest date'];
+    const problem = dateRangeProblem(value, data);
+    if (!problem) return [];
+    if (problem.index !== undefined) return [prefix + `value[${problem.index}]: the date is outside the range`];
+    return [prefix + 'value: the end date is before the start date'];
+  }
+  if (name === 'time-field') {
+    for (const [key, bound] of [['earliest', earliest], ['latest', latest]]) {
+      if (bound !== undefined && timeMinutes(bound) === null) return [prefix + key + ': must be a time as HH:MM'];
+    }
+    if (earliest > latest) return [prefix + 'earliest: the earliest time is after the latest time'];
+    const problem = timeProblem(value, data);
+    return problem ? [prefix + 'value: ' + problem] : [];
+  }
+  if (!isLocalDateTime(value)) return [prefix + 'value: must be a date and time as YYYY-MM-DDTHH:MM'];
+  return hasTimeZoneForm(data.time_zone) ? [] : [prefix + 'time_zone: must have the form Area/Location'];
+}
+
 function valueErrors(value, field, path, catalog, depth) {
   switch (field.type) {
     case 'text':
@@ -297,6 +356,9 @@ export function fillErrors(fill, catalog, path = '', depth = 0) {
   if (!errors.length && fill.component === 'multi-choice-field' && contract.data.value?.type === 'list'
     && Array.isArray(data.choices)) {
     errors.push(...multiChoiceErrors(data, prefix + 'data.'));
+  }
+  if (!errors.length && ['date-range-field', 'time-field', 'date-time-field'].includes(fill.component)) {
+    errors.push(...dateAndTimeErrors(fill.component, data, prefix + 'data.'));
   }
   return [...errors, ...slotErrors(fill, contract, prefix, depth)];
 }

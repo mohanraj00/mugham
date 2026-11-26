@@ -40,7 +40,7 @@ const READ = `(async () => {
 
 // The files that the page loaded and that the cache of the service worker does not have.
 const NOT_KEPT = `(async () => {
-  const cache = await caches.open('mugham-shell ' + new URL('./', location.href).href + ' queue-example-7');
+  const cache = await caches.open('mugham-shell ' + new URL('./', location.href).href + ' queue-example-8');
   const kept = new Set((await cache.keys()).map((request) => request.url));
   const loaded = [location.href, ...performance.getEntriesByType('resource').map((entry) => entry.name)]
     .filter((url) => url.startsWith(location.origin) && !new URL(url).pathname.startsWith('/api/') && new URL(url).pathname !== '/favicon.ico');

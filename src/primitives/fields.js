@@ -135,7 +135,7 @@ export class FieldElement extends MuElement {
   get problem() {
     if (!this.fill || !this.#targets.length || this.fill.data.disabled) return null;
     const input = this.read();
-    return input === '' ? null : this.reason(input, this.fill.data);
+    return input === '' && !this.#targets[0].required ? null : this.reason(input, this.fill.data);
   }
 
   // The edit type of a changed typed field: judgment, correction or override. Else null.
@@ -187,7 +187,8 @@ export class FieldElement extends MuElement {
   }
 
   // A subclass reads the control and can parse and check its value. control() returns { node, targets }.
-  // The node goes after the label. The targets get the description. labelled is true if the node has its own label.
+  // The node goes after the label. The targets get the description. A control can add descriptionIds.
+  // labelled is true if the node has its own label.
   read() {
     return '';
   }
@@ -214,8 +215,8 @@ export class FieldElement extends MuElement {
     this.#editedAt = null;
     this.#shown = false;
     this.#problem = el('span', { id: id + '-problem', class: 'error', part: 'problem' });
-    this.#described = [data.hint ? id + '-hint' : '', data.error ? id + '-error' : ''].filter(Boolean);
-    const { node, targets, labelled } = this.control(data, id);
+    const { node, targets, labelled, descriptionIds = [] } = this.control(data, id);
+    this.#described = [...descriptionIds, data.hint ? id + '-hint' : '', data.error ? id + '-error' : ''].filter(Boolean);
     this.#targets = targets;
     // The browser can change the value when the control shows it, for example CRLF to LF in a text area.
     // The old value is the value that the control shows, so such a change is not an edit.

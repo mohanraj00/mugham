@@ -207,6 +207,96 @@ test('a checkbox group submits a bounded list in choice order', () => {
   assert.equal(field.changed, false);
 });
 
+test('the booking form refuses time zones that do not agree with the binding', () => {
+  const binding = { tool: 'rooms.save', title: 'Room booking', label: 'Save',
+    editable: { setup: 'Setup date and time', note: 'Note' } };
+  const field = fill('date-time-field', { name: 'setup', label: binding.editable.setup,
+    value: '2028-02-29T08:00', time_zone: 'Europe/Oslo' });
+  const note = fill('field', { name: 'note', label: binding.editable.note });
+  const wrongZone = 'data.fields: the time zone of the field setup is not the time zone of the application';
+  for (const [fields, time_zones, reason] of [
+    [[field], { setup: 'America/New_York' }, wrongZone],
+    [[field], undefined, wrongZone],
+    [[fill('time-field', { name: 'setup', label: binding.editable.setup, value: '08:00' })], { setup: 'Europe/Oslo' },
+      'data.fields: the time zone of the application for setup needs a date and time field'],
+    [[field, note], { setup: 'Europe/Oslo', note: 'Europe/Oslo' },
+      'data.fields: the time zone of the application for note needs a date and time field'],
+    [[field], { setup: 'Europe/Oslo', note: 'Europe/Oslo' },
+      'data.fields: the time zone of the application for note needs a date and time field'],
+  ]) {
+    const form = kit.mount('editable-form', { title: binding.title, submit_label: binding.label, fields },
+      { action: { ...binding, time_zones } });
+    assert.equal(form.dataset.state, 'refused');
+    assert.match(part(form.shadowRoot, 'details').textContent, new RegExp(reason));
+    assert.equal(part(form.shadowRoot, 'button'), undefined);
+  }
+});
+
+test('the booking form submits a date pair and two text values after invalid edits are fixed', () => {
+  const values = { dates: ['2028-02-29', '2028-03-01'], start_time: '09:35', setup: '2028-02-29T08:00' };
+  const editable = { dates: 'Booking dates', start_time: 'Start time', setup: 'Setup date and time' };
+  const form = kit.mount('editable-form', { title: 'Room booking', submit_label: 'Save', fields: [
+    fill('date-range-field', { name: 'dates', label: editable.dates, value: values.dates, earliest: '2028-02-29' }),
+    fill('time-field', { name: 'start_time', label: editable.start_time, value: values.start_time, earliest: '09:05', step: 15 }),
+    fill('date-time-field', { name: 'setup', label: editable.setup, value: values.setup, time_zone: 'Europe/Oslo', hint: 'Set the setup time.' }),
+  ] }, { action: { tool: 'rooms.save', title: 'Room booking', label: 'Save', editable, time_zones: { setup: 'Europe/Oslo' } } });
+  const field = (name) => find(form.shadowRoot, (node) => node.tag === 'mu-' + name);
+  const dates = field('date-range-field');
+  const time = field('time-field');
+  const setup = field('date-time-field');
+  const group = part(dates.shadowRoot, 'group');
+  assert.equal(group.getAttribute('role'), 'group');
+  assert.equal(group.getAttribute('aria-labelledby'), part(dates.shadowRoot, 'label').id);
+  const start = part(dates.shadowRoot, 'start');
+  const end = part(dates.shadowRoot, 'end');
+  const clock = part(time.shadowRoot, 'input');
+  const local = part(setup.shadowRoot, 'input');
+  const zone = part(setup.shadowRoot, 'time-zone');
+  assert.deepEqual([start, end, clock, local].map((node) => node.getAttribute('type')), ['date', 'date', 'time', 'datetime-local']);
+  for (const [root, input, label] of [[dates.shadowRoot, start, 'Start date'], [dates.shadowRoot, end, 'End date'],
+    [time.shadowRoot, clock, editable.start_time], [setup.shadowRoot, local, editable.setup]]) {
+    assert.equal(find(root, (node) => node.getAttribute?.('for') === input.id).textContent, label);
+  }
+  assert.equal(clock.step, '900');
+  assert.equal(clock.min, '09:05');
+  assert.equal(start.min, '2028-02-29');
+  assert.equal(end.min, '2028-02-29');
+  assert.equal(zone.textContent, 'Time zone Europe/Oslo');
+  assert.ok(local.getAttribute('aria-describedby').split(' ').includes(zone.id));
+  assert.deepEqual(form.values(), values);
+  assert.equal(dates.changed, false);
+
+  const requests = [];
+  form.addEventListener('mu-action', ({ detail }) => {
+    requests.push(detail.arguments);
+    form.receipt({ id: detail.id, ok: true });
+  });
+  const submit = () => find(form.shadowRoot, (node) => node.tag === 'form').dispatchEvent(new Event('submit', { cancelable: true }));
+  for (const [node, root, input, value] of [
+    [dates, dates.shadowRoot, start, '2028-03-02'],
+    [time, time.shadowRoot, clock, '09:30'],
+    [setup, setup.shadowRoot, local, ''],
+  ]) {
+    const old = input.value;
+    type(input, value);
+    submit();
+    assert.deepEqual(requests, []);
+    assert.equal(input.getAttribute('aria-invalid'), 'true');
+    assert.equal(focused, node === dates ? end : input);
+    assert.ok(part(root, 'problem').textContent);
+    type(input, old);
+    assert.equal(input.getAttribute('aria-invalid'), null);
+  }
+  assert.ok(local.getAttribute('aria-describedby').split(' ').includes(zone.id));
+  assert.equal(dates.changed, false);
+  type(end, '2028-02-29');
+  type(clock, '09:50');
+  type(local, '2028-02-29T08:15');
+  submit();
+  assert.deepEqual(requests, [{ dates: ['2028-02-29', '2028-02-29'], start_time: '09:50', setup: '2028-02-29T08:15' }]);
+  assert.equal(form.dataset.state, 'done');
+});
+
 test('a tag picker toggles the active option and keeps the search open', () => {
   const field = kit.mount('multi-choice-field', PLANTS);
   const root = field.shadowRoot;

@@ -221,6 +221,8 @@ Keep each `checkbox`, `remove`, `search` and `option` at least 44 by 44 CSS pixe
 
 The range field parts are `label`, `group`, `handle-label`, `controls`, `slider` and `number`. The `group` and `handle-label` parts show with two handles. Keep each slider next to its number box in `controls`. Keep the labels, slider track and thumb, number box border and focus rings visible in each theme and in forced colors. Keep each `slider` and `number` at least 44 by 44 CSS pixels. Let the field fit at 375 CSS pixels without horizontal scroll.
 
+The date range field parts are `label`, `group`, `date-label`, `start` and `end`. The time and date-time fields have `label` and `input` parts. The date-time field adds `time-zone`. Keep each label and the time zone visible. Let the time zone wrap. Keep the native controls, their borders and their focus rings visible in each theme and in forced colors. Keep each input at least 44 by 44 CSS pixels. Let the fields fit at 375 CSS pixels without horizontal scroll. Keep the `problem` part visible when it has text.
+
 The text limit parts are `read-more-content` and `read-more-toggle`. Keep the full text in the content part. Keep the compact toggle, its underline and its focus ring visible when the text exceeds the limit. Keep its border visible in forced colors. Do not add a fade or a height animation.
 
 The rich text parts are `rich-text`, `code`, `link` and `target`. Keep the underline and the focus ring of the `link` part. Do not hide the `target` part, because it shows the address that a link opens.

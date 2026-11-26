@@ -12,6 +12,9 @@ Each element that refuses a fill shows a short reason and the next step. Open `T
 | `long-text-field.json` | `mu-long-text-field` | primitive | A labeled text area for text of more than one line. |
 | `number-field.json` | `mu-number-field` | primitive | A labeled input for a number, with an optional range. |
 | `date-field.json` | `mu-date-field` | primitive | A labeled input for a date as `YYYY-MM-DD`, with an optional range. |
+| `date-range-field.json` | `mu-date-range-field` | primitive | Two native date inputs for an ordered pair of dates. |
+| `time-field.json` | `mu-time-field` | primitive | A native time input with optional limits and a step in minutes. |
+| `date-time-field.json` | `mu-date-time-field` | primitive | A native input for a local date and time, with a fixed time zone label. |
 | `choice-field.json` | `mu-choice-field` | primitive | A labeled radio group with 1 to 20 choices. |
 | `toggle-field.json` | `mu-toggle-field` | primitive | A labeled checkbox or switch for a yes or no value. |
 | `range-field.json` | `mu-range-field` | primitive | One or two sliders with a number box for each handle. |
@@ -162,6 +165,7 @@ A binding has these keys. Only `tool` is necessary.
 | `display` | The display of an action button. Use `text`, `icon` or `both`. |
 | `title` | The title of an editable form, 1 to 120 characters. |
 | `editable` | The names that an editable form or a form card can send, each with its label. Up to 400 names, because a form card has up to 10 sections of 40 fields. |
+| `time_zones` | Optional. Maps names from `editable` to IANA time zone names, with one entry that matches the `time_zone` of each `date-time-field` in the fill. |
 | `typed` | Optional. The editable names that need an edit type. See "Typed edits". |
 | `editor` | The person who edits a typed form: `{ type: 'human', id }`. `id` has 1 to 128 characters. It is necessary if `typed` has a name. |
 | `confirm` | Optional. The confirm step: `{ message, label }`. `message` has 1 to 200 characters. `label` has 1 to 40 characters. |
@@ -219,6 +223,8 @@ form.action = { tool: 'library.update_loan', label: 'Save', title: 'Change a loa
 
 The form refuses a fill with a different `title`, because the title names the target of the bound arguments. A binding with no title accepts no form fill. The form also refuses a fill with no field that a person can edit, because only the application labels of the fields tell what the request does. The form also refuses a fill with a field name that `editable` does not give, or with a field label that is not the label in `editable`. The form does not send the value of a disabled field, because a person cannot edit it. A new fill lets the form save again, because a receipt from before the fill does not confirm the new values. This check occurs when the fill or the binding changes. A binding with no `editable` map accepts no field. If a second submit occurs while a request is pending, the form refuses it. The refused submit does not change the values of the pending request.
 
+The form refuses a fill if a name in `time_zones` has no `date-time-field` in the fill. The request sends the local date and time as text. The application keeps the time zone in the binding.
+
 ### Typed edits
 
 Principle 4 of the constitution says that each form edit records its type. The edit types are these:
@@ -257,7 +263,7 @@ A field that did not change has no edit. A disabled field has no edit, because t
 
 ### Input types
 
-An editable form accepts nine field contracts. Each one has the data fields `name`, `label`, `hint`, `error`, `disabled` and `typed`, and the same states. A typed edit works the same with each input type.
+An editable form accepts twelve field contracts. Each one has the data fields `name`, `label`, `hint`, `error`, `disabled` and `typed`, and the same states. A typed edit works the same with each input type.
 
 | Contract | Value | Other data | The request sends |
 |---|---|---|---|
@@ -265,6 +271,9 @@ An editable form accepts nine field contracts. Each one has the data fields `nam
 | `long-text-field` | Text of 10000 characters at most, with line breaks. | | A string. |
 | `number-field` | A number. | `minimum` and `maximum`, both optional. | A number, for example `12.5`. |
 | `date-field` | A date as `YYYY-MM-DD`. | `earliest` and `latest`, both optional. | A string, for example `2026-12-01`. |
+| `date-range-field` | Two dates as `YYYY-MM-DD`, with the start date first. | `earliest` and `latest`, both optional. | A list of two texts in start to end order. |
+| `time-field` | A 24-hour time as `HH:MM`. | `earliest`, `latest` and `step`, all optional. | A string, for example `09:15`. |
+| `date-time-field` | A local date and time as `YYYY-MM-DDTHH:MM`. | A required `time_zone` in `Area/Location` form, for example `Europe/Oslo`. | A string, for example `2028-04-12T09:30`. |
 | `choice-field` | One of the choices. | `choices`: 1 to 20 unique texts. | The text of the choice. |
 | `toggle-field` | A boolean. The default is `false`. | `display` can be `checkbox` (the default) or `switch`. | `true` or `false`. |
 | `range-field` | A number for one handle, or a pair of numbers for two handles. | `minimum`, `maximum` and a positive `step`, all required. | A number or a pair in low to high order. |
@@ -294,6 +303,12 @@ A range field requires a value. Each value must be in the range and on a step fr
 Tab and Shift+Tab move through the sliders and number boxes in order. On a slider, Up and Right add one step. Down and Left subtract one step. Page Up and Page Down move by ten steps. Home and End move to the first and last available steps of the handle. A valid number edit updates the slider. If a person enters an invalid number, the number box restores the last valid value when the person presses Enter or leaves the box. The field gives the reason and the form waits for a valid edit before it can submit.
 
 The date field is a text input, not the date picker of the browser. Thus it has the same role, the same text and the same keyboard in each browser.
+
+The date range, time and date-time fields require a value. Each uses native controls and their browser keyboard behavior. A date range has two date inputs in a group named by the field label. Each input has a visible label. Both dates must be within the optional limits. The end date can be the same as the start date or come after it.
+
+Give the time step as a positive integer in minutes. The default is one minute. Steps start at the earliest time or at `00:00` when the earliest time is omitted. Limits are inclusive and apply within one day.
+
+The date-time field shows the time zone as fixed text next to the control. Both fill validators check the `Area/Location` form, which can have more than two parts. The action binding also checks that the client knows the time zone. The kit checks the calendar date and clock time and sends the local value without an offset. The application handles time zone conversion and daylight saving rules.
 
 ### Form card
 
