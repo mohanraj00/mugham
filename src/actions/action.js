@@ -86,15 +86,7 @@ export function isActionValue(value) {
     || (value?.component === 'rich-text' && richTextValueErrors(value).length === 0);
 }
 
-function freezeTree(value) {
-  if (value === null || typeof value !== 'object') return value;
-  if (Array.isArray(value)) return Object.freeze(value.map(freezeTree));
-  return Object.freeze(Object.fromEntries(Object.entries(value).map(([key, child]) => [key, freezeTree(child)])));
-}
-
-export function copyActionValue(value) {
-  return value?.component === 'rich-text' ? freezeTree(value) : copyValue(value);
-}
+export { copyValue as copyActionValue };
 
 export function isEditType(value) {
   return EDIT_TYPES.has(value);
@@ -196,7 +188,7 @@ function editsOf(edits, binding, values) {
     } else if (!scalar(old)) return null;
     if (typeof time !== 'string' || !ISO_TIME.test(time) || Number.isNaN(Date.parse(time))) return null;
     seen.add(field);
-    result.push(Object.freeze({ field, type, old_value: copyActionValue(old), new_value: next, actor: binding.editor, time }));
+    result.push(Object.freeze({ field, type, old_value: copyValue(old), new_value: next, actor: binding.editor, time }));
   }
   return Object.freeze(result);
 }
@@ -343,7 +335,7 @@ export class ActionState {
     }
     if (Object.keys(extra).some((name) => !Object.hasOwn(this.#binding.editable, name))) return null;
     if (!Object.values(extra).every(isActionValue)) return null;
-    const values = Object.fromEntries(Object.entries(extra).map(([name, value]) => [name, copyActionValue(value)]));
+    const values = Object.fromEntries(Object.entries(extra).map(([name, value]) => [name, copyValue(value)]));
     const typed = this.#binding.typed.length > 0;
     if (!typed && edits !== undefined && !(Array.isArray(edits) && edits.length === 0)) return null;
     const checked = typed ? editsOf(edits, this.#binding, values) : null;

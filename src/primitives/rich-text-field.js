@@ -1,6 +1,7 @@
 import { el, sheet, text } from '../render/dom.js';
 import { parseLinkURL } from '../render/validate.js';
-import { richNode, richTextLinkSchemes, richTextValueErrors, sameRichTextValue, watchRichTextLinkSchemes } from '../render/rich-text.js';
+import { RICH_TEXT_EDIT_LIMIT, richNode, richTextEditProblem, richTextLinkSchemes, richTextValueErrors, sameRichTextValue,
+  watchRichTextLinkSchemes } from '../render/rich-text.js';
 import { FieldElement } from './fields.js';
 import { INLINE_MARKS, readRichTransfer, readRichTree, richSpan, richValue } from './rich-text-field-model.js';
 import { applyBlock, applyMark, caretAt, editLines, lineText, pasteLines, replaceRuns, richLines, samePoint,
@@ -14,7 +15,6 @@ const FORMATS = [
 const SHORTCUTS = new Map(FORMATS.filter(([, , key]) => key).map(([format, , key]) => [key.toLowerCase(), format]));
 const NATIVE_FORMAT = new Map([['formatBold', 'strong'], ['formatItalic', 'emphasis'],
   ['insertOrderedList', 'numbers'], ['insertUnorderedList', 'bullets'], ['insertLink', 'link']]);
-const EDIT_LIMIT = 'The edit does not fit the rich text rules. Use less text or formatting.';
 const ROWS = ':scope > :is(p,h1,h2,h3,pre), :scope > :is(ul,ol) > li, :scope > blockquote > p';
 
 export class MuRichTextField extends FieldElement {
@@ -222,7 +222,7 @@ export class MuRichTextField extends FieldElement {
       const selection = replaceRuns(lines, this.#selection, [richNode('rich-link', { text: selected ? label : address, url: address })]);
       if (this.#commit(valueFromLines(lines, this.#model), selection)) this.#closeLink();
       else {
-        feedback.textContent = EDIT_LIMIT;
+        feedback.textContent = RICH_TEXT_EDIT_LIMIT;
         this.#address.setAttribute('aria-invalid', 'true');
         this.#address.focus();
       }
@@ -390,8 +390,9 @@ export class MuRichTextField extends FieldElement {
   }
 
   #commit(value, selection, notify = true) {
-    if (richTextValueErrors(value).length) {
-      this.#status.textContent = EDIT_LIMIT;
+    const problem = richTextEditProblem(value);
+    if (problem) {
+      this.#status.textContent = problem;
       return false;
     }
     const changed = !sameRichTextValue(this.#model, value);

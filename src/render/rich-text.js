@@ -3,6 +3,7 @@ import { CATALOG } from './catalog.js';
 import { fillErrors, parseLinkURL } from './validate.js';
 
 export const RICH_TEXT_SCHEMES = Object.freeze(['https:', 'http:', 'mailto:']);
+export const RICH_TEXT_EDIT_LIMIT = 'The edit does not fit the rich text rules. Use less text or formatting.';
 const linkWatchers = new Set();
 let linkSchemes = Object.freeze(['https:']);
 const MAX_INLINE = 2000;
@@ -46,32 +47,53 @@ function* runs(blocks) {
   }
 }
 
-// The contract format does not give the heading order, total inline count or link policy.
-export function richTextRules(data, schemes = richTextLinkSchemes()) {
+function skippedHeading(blocks) {
   let level = 0;
-  for (const [index, block] of data.blocks.entries()) {
+  for (const [index, block] of blocks.entries()) {
     if (block.component !== 'rich-heading') continue;
-    if (block.data.level !== richHeadingLevel(block.data.level, level)) return [`data.blocks[${index}].data.level: a heading cannot skip a level`];
+    const maximum = richHeadingLevel(block.data.level, level);
+    if (block.data.level !== maximum) return { index, maximum };
     level = block.data.level;
   }
+  return null;
+}
+
+function contentError(data, schemes) {
   let count = 0;
   for (const [at, content] of runs(data.blocks)) {
     count += content.length;
-    if (count > MAX_INLINE) return [`data.blocks: more than ${MAX_INLINE} inline nodes`];
+    if (count > MAX_INLINE) return `data.blocks: more than ${MAX_INLINE} inline nodes`;
     for (const [index, node] of content.entries()) {
       if (node.component === 'rich-link' && !parseLinkURL(node.data.url, schemes)) {
-        return [`${at}.content[${index}].data.url: the page does not permit this link`];
+        return `${at}.content[${index}].data.url: the page does not permit this link`;
       }
     }
   }
-  return [];
+  return '';
+}
+
+// The contract format does not give the heading order, total inline count or link policy.
+export function richTextRules(data, schemes = richTextLinkSchemes()) {
+  const heading = skippedHeading(data.blocks);
+  const error = heading ? `data.blocks[${heading.index}].data.level: a heading cannot skip a level` : contentError(data, schemes);
+  return error ? [error] : [];
 }
 
 // The editor value is a nested fill. Its parent supplies the slots.
-export function richTextValueErrors(value, schemes = richTextLinkSchemes()) {
+function shapeErrors(value) {
   if (value?.component !== 'rich-text') return ['value.component: must be rich-text'];
-  const errors = fillErrors(value, CATALOG, 'value', 1);
+  return fillErrors(value, CATALOG, 'value', 1);
+}
+
+export function richTextValueErrors(value, schemes = richTextLinkSchemes()) {
+  const errors = shapeErrors(value);
   return errors.length ? errors : richTextRules(value.data, schemes);
+}
+
+export function richTextEditProblem(value) {
+  if (shapeErrors(value).length || contentError(value.data, richTextLinkSchemes())) return RICH_TEXT_EDIT_LIMIT;
+  const heading = skippedHeading(value.data.blocks);
+  return heading ? `A heading cannot skip a level. Use Heading ${heading.maximum} first.` : '';
 }
 
 // Compare two validated values. The order of the keys in a fill has no effect.

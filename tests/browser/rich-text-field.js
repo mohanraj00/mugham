@@ -103,6 +103,13 @@ async function exerciseEditor() {
   const failures = [];
   const check = (condition, message) => { if (!condition) failures.push(message); };
 
+  const initial = form.fill.data.fields[0];
+  const empty = { ...initial.data.value, data: { blocks: [] } };
+  field.fill = { ...initial, data: { ...initial.data, value: empty } };
+  button('Heading 3').click();
+  const headingOrder = JSON.stringify(field.value) === JSON.stringify(empty) && !field.changed && !pressed('Heading 3')
+    && root.querySelector('[part="status"]').textContent === 'A heading cannot skip a level. Use Heading 1 first.';
+
   for (const [key, name, mark] of [['b', 'Strong', 'strong'], ['i', 'Emphasis', 'emphasis'], ['e', 'Inline code', 'code']]) {
     reset();
     select(lastText(0));
@@ -198,7 +205,7 @@ async function exerciseEditor() {
   const request = document.querySelector('#saved-note').textContent;
   check(form.dataset.state === 'done' && JSON.stringify(JSON.parse(request)) === JSON.stringify(field.value),
     'The form did not send the edited rich text value and accept the receipt.');
-  return failures;
+  return { headingOrder, failures };
 }
 
 async function exercisePasteAndDrop() {
@@ -350,9 +357,11 @@ export async function richTextFieldChecks(session, sessionId, base, modes, { ope
           check(view, 'a paste of inline handlers makes only the planned policy reports and no handler runs',
             policyFailures.length === 0, policyFailures.join(' '), { count, other });
 
-          const errors = await page(exerciseEditor);
+          const { headingOrder, failures } = await page(exerciseEditor);
+          check(view, 'Heading 3 on an empty note keeps the value and asks for Heading 1', headingOrder,
+            'The note changed or the heading message was incorrect.');
           check(view, 'formats, shortcuts, input repair and form submit work',
-            errors.length === 0, 'An editor action gave a different result.', errors);
+            failures.length === 0, 'An editor action gave a different result.', failures);
         } catch (error) {
           check(view, 'complete the editor checks', false, String(error));
         }

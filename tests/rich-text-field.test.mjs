@@ -180,7 +180,7 @@ test('an unplanned report fails the paste check and stays in the page errors', a
       }
       if (expression.startsWith('(async function exerciseEditor(')) {
         listenerCounts.push(session.listeners.length);
-        return [];
+        return { headingOrder: true, failures: [] };
       }
       if (expression.includes("'noteScriptExecuted' in window")) return false;
       return { tabStops: [] };
