@@ -12,7 +12,7 @@ const EXAMPLES = [
 ];
 const SRC = [
   'actions/action.js', 'components/chart.js', 'components/data-grid.js', 'components/dialog.js', 'components/image.js',
-  'components/index.js', 'components/navigation.js', 'components/page-states.js', 'components/panels.js', 'components/pending.js', 'components/popovers.js', 'components/progress.js', 'components/receipt.js', 'components/rich-text.js', 'components/status.js',
+  'components/index.js', 'components/navigation.js', 'components/page-states.js', 'components/panels.js', 'components/pending.js', 'components/popovers.js', 'components/progress.js', 'components/receipt.js', 'components/rich-text.js', 'components/run-steps.js', 'components/status.js',
   'components/table.js', 'components/upload.js', 'envelope/envelope.js', 'kit.js', 'narration/check.js',
   'offline/queue.js', 'offline/source.js', 'primitives/base.js', 'primitives/choice-list.js', 'primitives/date-time-fields.js',
   'primitives/fields.js', 'primitives/index.js',
@@ -27,12 +27,12 @@ const CATALOG = [
   'data-grid-row.json', 'data-grid.json', 'date-cell.json', 'date-field.json', 'date-range-field.json', 'date-time-field.json', 'diff-change.json',
   'diff-part.json', 'diff.json', 'dialog.json', 'drawer.json', 'editable-form.json', 'empty-state.json', 'excerpt.json', 'fact.json', 'field.json',
   'form-card.json', 'form-line.json', 'form-section.json', 'grid.json', 'image.json', 'long-text-field.json', 'menu.json', 'multi-choice-field.json',
-  'number-cell.json', 'number-field.json', 'pagination.json', 'progress.json', 'queued-action.json', 'range-field.json', 'rich-code.json', 'rich-heading.json',
+  'number-cell.json', 'number-field.json', 'pagination.json', 'plan.json', 'progress.json', 'queued-action.json', 'range-field.json', 'rich-code.json', 'rich-heading.json',
   'rich-link.json', 'rich-list.json', 'rich-paragraph.json', 'rich-quote.json', 'rich-span.json',
-  'rich-text.json', 'schema/contract.schema.json', 'schema/defaults.json', 'schema/fill.schema.json',
+  'rich-text.json', 'run-steps.json', 'schema/contract.schema.json', 'schema/defaults.json', 'schema/fill.schema.json',
   'schema/short.schema.json', 'select-field.json', 'skeleton.json', 'source-status.json', 'stack.json', 'status.json', 'steps.json', 'table-row.json', 'table.json',
   'tabs.json', 'text-cell.json', 'text.json', 'time-field.json', 'toast.json', 'toggle-field.json', 'tooltip.json', 'upload.json',
 ];
 
-mughamOffline.serve(self, { version: 'queue-example-15', files: [...PAGE, ...EXAMPLES.map((name) => '../' + name),
+mughamOffline.serve(self, { version: 'queue-example-16', files: [...PAGE, ...EXAMPLES.map((name) => '../' + name),
   ...SRC.map((name) => '../../src/' + name), ...CATALOG.map((name) => '../../catalog/' + name)] });

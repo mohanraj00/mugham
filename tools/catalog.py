@@ -521,6 +521,23 @@ def fill_errors(fill, catalog, path='', depth=0):
                 errors.append(prefix + 'data.current: must be within labels')
         elif 'value' in data and data['value'] > data['maximum']:
             errors.append(prefix + 'data.value: must be at most maximum')
+    if not errors and fill['component'] in ('run-steps', 'plan'):
+        key = 'steps' if fill['component'] == 'run-steps' else 'tasks'
+        if not data['label'].strip(LABEL_SPACE):
+            errors.append(prefix + 'data.label: give text')
+        ids = set()
+        for index, item in enumerate(data[key]):
+            at = prefix + f'data.{key}[{index}].'
+            if not item['id'].strip(LABEL_SPACE):
+                errors.append(at + 'id: give text')
+            elif item['id'] in ids:
+                errors.append(at + 'id: must be unique')
+            ids.add(item['id'])
+            if not item['name'].strip(LABEL_SPACE):
+                errors.append(at + 'name: give text')
+            if (key == 'steps' and any(field in item for field in ('tool_name', 'tool_arguments', 'tool_result'))
+                    and not item.get('tool_name', '').strip(LABEL_SPACE)):
+                errors.append(at + 'tool_name: give a name for the tool call')
     if not errors:
         for key in PAGE_TEXT_FIELDS.get(fill['component'], ()):
             if not data[key].strip(LABEL_SPACE):

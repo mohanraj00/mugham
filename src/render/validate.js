@@ -444,6 +444,20 @@ export function fillErrors(fill, catalog, path = '', depth = 0) {
       errors.push(prefix + 'data.value: must be at most maximum');
     }
   }
+  if (!errors.length && (fill.component === 'run-steps' || fill.component === 'plan')) {
+    const key = fill.component === 'run-steps' ? 'steps' : 'tasks';
+    if (!data.label.trim()) errors.push(prefix + 'data.label: give text');
+    const ids = new Set();
+    for (const [index, item] of data[key].entries()) {
+      const at = prefix + `data.${key}[${index}].`;
+      if (!item.id.trim()) errors.push(at + 'id: give text');
+      else if (ids.has(item.id)) errors.push(at + 'id: must be unique');
+      ids.add(item.id);
+      if (!item.name.trim()) errors.push(at + 'name: give text');
+      if (key === 'steps' && ['tool_name', 'tool_arguments', 'tool_result'].some((field) => own(item, field))
+        && !(own(item, 'tool_name') && item.tool_name.trim())) errors.push(at + 'tool_name: give a name for the tool call');
+    }
+  }
   if (!errors.length) {
     for (const key of PAGE_TEXT_FIELDS.get(fill.component) ?? []) {
       if (!data[key].trim()) errors.push(prefix + `data.${key}: give text`);

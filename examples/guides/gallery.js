@@ -49,6 +49,15 @@ const steps = mount('steps', { ...traySteps, current: 1 }, { parent: shell });
 steps.addEventListener('mu-step-change', ({ detail: { index } }) => {
   steps.fill = fill('steps', { ...traySteps, current: index });
 });
+mount('run-steps', { label: 'Tray run', steps: [
+  { id: 'find', name: 'Find the tray', state: 'done', tool_name: 'garden.find_tray',
+    tool_arguments: 'Tray: B2', tool_result: 'East shelf' },
+  { id: 'check', name: 'Check the tray', state: 'running' },
+] }, { parent: shell });
+mount('plan', { label: 'Tray plan', tasks: [
+  { id: 'count', name: 'Count the seedlings', state: 'in_progress' },
+  { id: 'water', name: 'Water the tray', state: 'pending' },
+] }, { parent: shell });
 mount('progress', { label: 'Trays checked', maximum: 8, value: 5 }, { parent: shell });
 mount('empty-state', { title: 'No trays found', text: 'Try another shelf code.' }, { parent: shell });
 mount('skeleton', { label: 'Loading trays', lines: 3 }, { parent: shell });

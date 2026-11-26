@@ -394,6 +394,14 @@ Give `mu-steps` a list name in `label`, an ordered list of step names in `labels
 
 Give `mu-progress` a name in `label` and a positive number in `maximum`. Use a finite `value` from zero through `maximum` for known progress. Omit `value` for unknown progress. The bar has the same name in both cases. Unknown progress shows a fixed mark if the person asks for reduced motion.
 
+## Run steps and plan
+
+Give `mu-run-steps` a list name in `label` and an ordered list in `steps`. Each step has a unique `id`, a `name` and a `state` of `pending`, `running`, `done` or `failed`. Give a step a `detail` or a `tool_name` to add a disclosure. When you give `tool_name`, you can also give `tool_arguments` and `tool_result`. The detail, arguments and result each accept up to 2000 characters and show as text. Tab reaches the disclosure button. Enter or Space opens or closes the panel.
+
+Give `mu-plan` a list name in `label` and a list in `tasks`. Each task has a unique `id`, a `name` and a `state` of `pending`, `in_progress`, `done`, `failed` or `skipped`.
+
+Bind the actor before you set the fill. Keep each step or task id when you set a new fill. A new fill keeps the open disclosure and focus for a step with the same id while it has details. Each list shows states as text. A polite status gives each state change for an existing id after the first fill. See [Library research](../examples/apps/research.html).
+
 ## Empty results and loading
 
 Give `mu-empty-state` a `title` and short `text`. The title is a heading and names the group. To add a control, put a named button or link in the `action` slot and handle it in page code. The page can supply a live region if it needs to announce changes.

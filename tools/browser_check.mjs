@@ -23,6 +23,7 @@ import { DIALOG_PAGE, dialogExampleChecks } from '../tests/browser/dialog.js';
 import { POPOVER_PAGE, popoverExampleChecks } from '../tests/browser/popovers.js';
 import { SETTINGS_PAGE, settingsExampleChecks } from '../tests/browser/settings.js';
 import { LIBRARY_PAGE, libraryExampleChecks } from '../tests/browser/library.js';
+import { RESEARCH_PAGE, researchExampleChecks } from '../tests/browser/research.js';
 import { RANGE_PAGE, rangeExampleChecks } from '../tests/browser/range-field.js';
 import { MULTI_CHOICE_PAGE, multiChoiceExampleChecks } from '../tests/browser/multi-choice-field.js';
 import { BOOKING_PAGE, bookingExampleChecks } from '../tests/browser/date-time-fields.js';
@@ -109,6 +110,8 @@ const EXAMPLES = {
   [LIBRARY_PAGE]: [19, 0, [['main', ''], ['navigation', 'Breadcrumbs'], ['navigation', 'Loan pages'],
     ['list', 'Member steps'], ['progressbar', 'Wizard progress'], ['textbox', 'Member name'], ['button', 'Next'],
     ['image', 'Sample Reader'], ['textbox', 'Loan title or shelf'], ['button', 'Search'], ['StaticText', 'On loan']], '#loan-list mu-badge'],
+  [RESEARCH_PAGE]: [2, 0, [['main', ''], ['list', 'Research run'], ['list', 'Research plan'],
+    ['button', 'Search the catalog'], ['button', 'Advance run'], ['StaticText', 'Pending']], 'mu-run-steps[data-state="default"]'],
   [RANGE_PAGE]: [3, 0, [['form', 'Loan limits'], ['slider', 'Loan period in days'], ['spinbutton', 'Loan period in days number'],
     ['group', 'Price range'], ['slider', 'Price range Minimum'], ['spinbutton', 'Price range Minimum number'],
     ['slider', 'Price range Maximum'], ['spinbutton', 'Price range Maximum number']]],
@@ -1046,6 +1049,8 @@ async function main() {
       { evaluate, open, key, pageRules, axErrors }, problems));
     report.keyboard.push(...await libraryExampleChecks(session, sessionId, base, MODES,
       { evaluate, open, key, pageRules, axErrors }, problems));
+    report.keyboard.push(...await researchExampleChecks(session, sessionId, base, MODES,
+      { evaluate, open, key, pageRules }, problems));
     report.keyboard.push(...await rangeExampleChecks(session, sessionId, base, MODES, { evaluate, open, key }, problems));
     report.keyboard.push(...await selectExampleChecks(session, sessionId, base, MODES, { evaluate, open, key, pageRules }, problems));
     report.keyboard.push(...await multiChoiceExampleChecks(session, sessionId, base, MODES, { evaluate, open, key, pageRules }, problems));

@@ -77,6 +77,7 @@
       "title": "Apps",
       "examples": [
         {"name": "Library staff", "path": "apps/library.html", "components": ["app-shell", "drawer", "breadcrumbs", "pagination", "steps", "progress", "empty-state", "skeleton", "badge", "avatar", "field", "choice-field", "button", "action-button"], "text": "Find a loan by title or shelf code. Add a member with a three-step wizard."},
+        {"name": "Library research", "path": "apps/research.html", "components": ["run-steps", "plan"], "text": "Advance an agent run and its plan as the agent searches the library catalog."},
         {"name": "Support desk", "path": "apps/support/", "components": ["grid", "card", "button", "thread", "editable-form", "field"], "text": "A ticket queue and a thread. A person corrects the reply that an agent drafts, and sends it.", "needs": "python3 tools/apps_server.py"},
         {"name": "Change review", "path": "apps/changes/", "components": ["card", "button", "thread", "action-button", "excerpt"], "text": "An agent proposes a timetable change with a citation. A reviewer approves it with a confirm step.", "needs": "python3 tools/apps_server.py"},
         {"name": "Field inspection", "path": "apps/inspection/", "components": ["thread", "inspection-checklist", "editable-form", "field", "action-button"], "text": "A registered checklist component, a findings form and a close action, for a phone.", "needs": "python3 tools/apps_server.py"}
@@ -96,7 +97,7 @@
             "accordion", "action-button", "action-queue", "app-shell", "avatar", "badge", "breadcrumbs", "button", "card", "card-grid", "chart", "choice-field", "citation",
             "data-grid", "date-field", "date-range-field", "date-time-field", "dialog", "diff", "drawer", "editable-form", "empty-state", "excerpt",
             "field", "form-card", "grid", "image", "long-text-field", "menu", "multi-choice-field", "number-field",
-            "pagination", "progress", "range-field", "rich-text", "select-field", "skeleton", "source-status", "stack", "status", "steps", "table", "tabs", "text",
+            "pagination", "plan", "progress", "range-field", "rich-text", "run-steps", "select-field", "skeleton", "source-status", "stack", "status", "steps", "table", "tabs", "text",
             "time-field", "toast", "toggle-field", "tooltip", "upload", "thread"
           ],
           "text": "Compare each catalog component in the three presets and in light and dark modes."

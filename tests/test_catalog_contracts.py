@@ -49,6 +49,9 @@ VALID = {
     'breadcrumbs': {'label': 'Breadcrumbs', 'items': [{'label': 'Desk', 'href': './desk'}, {'label': 'Loans'}]},
     'pagination': {'label': 'Loan pages', 'page': 2, 'page_count': 12},
     'steps': {'label': 'Member steps', 'labels': ['Details', 'Membership type', 'Review'], 'current': 1},
+    'run-steps': {'label': 'Research run', 'steps': [{'id': 'search', 'name': 'Search the catalog', 'state': 'done',
+                                                   'tool_name': 'catalog.search', 'tool_result': 'One match'}]},
+    'plan': {'label': 'Research plan', 'tasks': [{'id': 'search', 'name': 'Find a book', 'state': 'in_progress'}]},
     'progress': {'label': 'Member progress', 'maximum': 3, 'value': 1.5},
     'empty-state': {'title': 'No loans found', 'text': 'Try another search.'},
     'skeleton': {'label': 'Loading loans', 'lines': 3},
@@ -173,6 +176,25 @@ class CatalogContractTest(unittest.TestCase):
                 })
                 self.assertTrue(parts <= {part['name'] for part in contract['parts'] if part['guardrail']})
         self.assertEqual(catalog.fill_errors(fill('progress', {'label': 'Loading loans', 'maximum': 3}), CATALOG), [])
+
+    def test_run_steps_and_plan_declare_item_states_and_accessibility(self):
+        cases = [
+            ('run-steps', 'steps', ['pending', 'running', 'done', 'failed'], ['Tab', 'Shift+Tab', 'Enter', 'Space']),
+            ('plan', 'tasks', ['pending', 'in_progress', 'done', 'failed', 'skipped'], []),
+        ]
+        for name, key, states, keyboard in cases:
+            with self.subTest(component=name):
+                contract = CATALOG[name]
+                self.assertEqual(catalog.contract_errors(contract, name + '.json'), [])
+                self.assertTrue(contract['ai_content'])
+                self.assertEqual(contract['states'], ['default', 'refused'])
+                self.assertEqual(contract['accessibility'], {
+                    'role': 'list', 'name': {'field': 'label'}, 'keyboard': keyboard,
+                    'forced_colors': True, 'reduced_motion': True,
+                })
+                field = contract['data'][key]
+                self.assertEqual((field['min_items'], field['max_items']), (1, 20))
+                self.assertEqual(field['items']['fields']['state']['values'], states)
 
     def test_page_states_declare_roles_keys_and_parts(self):
         expected = {
