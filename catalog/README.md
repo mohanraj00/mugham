@@ -25,7 +25,7 @@ Each element that refuses a fill shows a short reason and the next step. Open `T
 | `fact.json` | in `mu-card` | component | A label and a value. |
 | `card.json` | `mu-card` | component | A title, a summary, a date and up to six facts, with optional collapse. See [Card rules](../src/components/card.md). |
 | `action-button.json` | `mu-action-button` | component | A button for one action. |
-| `approval-queue.json` | `mu-approval-queue` | component | Agent proposals with actions to approve or reject each item. |
+| `approval-queue.json` | `mu-approval-queue` | component | Agent proposals with a state mark and actions to approve or reject each item. |
 | `menu.json` | `mu-menu` | component | A button and a list of named choices. |
 | `tooltip.json` | `mu-tooltip` | primitive | Text that describes a control on hover or focus. |
 | `toast.json` | `mu-toast` | component | A live status message with an optional close button. |
@@ -51,12 +51,12 @@ Each element that refuses a fill shows a short reason and the next step. Open `T
 | `table-row.json` | in `mu-table` | component | Text cells and optional status text. |
 | `status.json` | `mu-status` | component | One state with short text, a fixed label and a border style. |
 | `image.json` | `mu-image` | component | An image from a page-permitted origin, with a text alternative, a caption and a full-size dialog. [Image rules](../src/components/image.md) gives the page policy and the states. |
-| `rich-text.json` | `mu-rich-text` | component | Rich text as a tree of typed nodes, never markup. [Rich text rules](../src/components/rich-text.md) gives the nodes, the link policy and the heading rule. |
-| `rich-paragraph.json` | in `mu-rich-text` | component | A paragraph node with up to 50 inline nodes. Also the content of a list item and of a quote. |
-| `rich-heading.json` | in `mu-rich-text` | component | A heading node with a relative level from 1 to 3. |
-| `rich-list.json` | in `mu-rich-text` | component | A list node with bullets or numbers, and up to 50 items. |
-| `rich-code.json` | in `mu-rich-text` | component | A code block node. The text shows as text. |
-| `rich-quote.json` | in `mu-rich-text` | component | A quote node with up to 20 paragraphs. |
+| `rich-text.json` | `mu-rich-text` | component | Rich text as a tree of typed nodes with optional approval marks. [Rich text rules](../src/components/rich-text.md) gives the node rules. |
+| `rich-paragraph.json` | in `mu-rich-text` | component | A paragraph with up to 50 inline nodes and an optional approval mark. Also the content of a list item or quote. |
+| `rich-heading.json` | in `mu-rich-text` | component | A heading with a relative level from 1 to 3 and an optional approval mark. |
+| `rich-list.json` | in `mu-rich-text` | component | A list with bullets or numbers, up to 50 items and an optional approval mark. |
+| `rich-code.json` | in `mu-rich-text` | component | A code block that shows its code as text, with an optional approval mark. |
+| `rich-quote.json` | in `mu-rich-text` | component | A quote with up to 20 paragraphs and an optional approval mark. |
 | `rich-span.json` | in `mu-rich-text` | component | An inline text node with one optional mark: emphasis, strong or code. |
 | `rich-link.json` | in `mu-rich-text` | component | An inline link node. A button shows the link text, and the target shows on hover and on focus. |
 | `data-grid.json` | `mu-data-grid` | component | An editable grid with column headers, row headers and typed cells. Each saved change is one action. [Data grid rules](../src/components/data-grid.md) gives the keys, the markers and the binding. |
@@ -402,6 +402,12 @@ Give `mu-run-steps` a list name in `label` and an ordered list in `steps`. Each 
 Give `mu-plan` a list name in `label` and a list in `tasks`. Each task has a unique `id`, a `name` and a `state` of `pending`, `in_progress`, `done`, `failed` or `skipped`.
 
 Bind the actor before you set the fill. Keep each step or task id when you set a new fill. A new fill keeps the open disclosure and focus for a step with the same id while it has details. Each list shows states as text. A polite status gives each state change for an existing id after the first fill. See [Library research](../examples/apps/research.html).
+
+## Document block approval
+
+Page code reads the approval state from the application's approval API and sets the optional `approval` record on each rich text block. The kit only shows the state as text with an accessible name. The application's approval API decides and enforces each approval.
+
+Set `state` to `approved`, `pending` or `rejected`. Give `by` for the approver and `at` for the date and time in UTC if available. Omit `approval` to show the block without a mark. See the [library newsletter](../examples/apps/newsletter.html).
 
 ## Approval queue
 

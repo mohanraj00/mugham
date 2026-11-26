@@ -1,6 +1,6 @@
 {
   "name": "approval-queue",
-  "description": "A named list of proposals with unique ids. A change to a displayed proposal value or the actor requires a new binding. A pending decision keeps its bound values and key until a receipt or cancel ends it. A polite status gives each receipt result.",
+  "description": "A named list of proposals with unique ids. A change to a displayed proposal value or the actor requires a new binding. A pending decision keeps its bound values and key until a receipt or cancel ends it. An approval mark shows each item state. A polite status gives each receipt result.",
   "parts": [
     {"name": "action-button-accept", "description": "Button that confirms a decision.", "guardrail": true},
     {"name": "action-button-button", "description": "Button that starts an approval or a rejection.", "guardrail": false},
@@ -11,6 +11,7 @@
     {"name": "action-button-exit", "description": "Controls for a pending decision.", "guardrail": true},
     {"name": "action-button-reference", "description": "Reference from the receipt.", "guardrail": true},
     {"name": "action-button-retry", "description": "Button that tries a pending decision again.", "guardrail": true},
+    {"name": "approval-mark", "description": "Visible approval state with its accessible name.", "guardrail": true},
     {"name": "announcement", "description": "Polite status for changes to item states.", "guardrail": true},
     {"name": "authorship", "description": "Author of the proposals.", "guardrail": true},
     {"name": "copy", "description": "Button that copies technical details.", "guardrail": true},
@@ -40,7 +41,7 @@
     }
   },
   "states": ["+empty", "+refused"],
-  "tokens": ["+color.accent", "+color.on-accent", "+color.surface", "+color.text-muted", "+color.danger", "+color.success", "+color.focus", "+space.1", "+space.2", "+space.3", "+radius.2", "+type.caption", "+type.weight-strong", "+motion.fast"],
+  "tokens": ["+color.accent", "+color.on-accent", "+color.surface", "+color.text-muted", "+color.danger", "+color.success", "+color.on-success", "+color.warning", "+color.on-warning", "+color.focus", "+space.1", "+space.2", "+space.3", "+radius.2", "+type.caption", "+type.weight-strong", "+motion.fast"],
   "accessibility": {
     "role": "list", "name": {"field": "label"}, "keyboard": ["Tab", "Shift+Tab", "Enter", "Space", "Escape"]
   }

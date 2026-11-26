@@ -1,5 +1,6 @@
 // The catalog components: card, action button, editable form, form card, card grid, citation and excerpt.
 import { MuElement } from '../primitives/base.js';
+import { APPROVAL_MARK_CSS, BADGE_LABEL_CSS, approvalMark } from '../primitives/badge.js';
 import { ReadMoreElement, READ_MORE_CSS } from '../primitives/read-more.js';
 import { define as definePrimitives, FIELDS } from '../primitives/index.js';
 import { ActionState, bindingErrors, isActionValue, isEditType } from '../actions/action.js';
@@ -496,8 +497,8 @@ export class MuActionButton extends ActionElement {
 }
 
 const DECISIONS = Object.freeze({
-  approve: { label: 'Approve', confirm: 'Confirm approval', result: 'Approved' },
-  reject: { label: 'Reject', confirm: 'Confirm rejection', result: 'Rejected' },
+  approve: { label: 'Approve', confirm: 'Confirm approval', result: 'Approved', state: 'approved' },
+  reject: { label: 'Reject', confirm: 'Confirm rejection', result: 'Rejected', state: 'rejected' },
 });
 
 function approvalAuthor({ type, id, name }) {
@@ -506,7 +507,7 @@ function approvalAuthor({ type, id, name }) {
 
 export class MuApprovalQueue extends MuElement {
   static component = 'approval-queue';
-  static styles = [sheet(`
+  static styles = [BADGE_LABEL_CSS, APPROVAL_MARK_CSS, sheet(`
     :host { display: block; min-inline-size: 0; color: var(--mu-color-text); font: var(--mu-type-body); overflow-wrap: anywhere; }
     p, ul { margin: 0; }
     [part="label"], [part="title"] { font-weight: var(--mu-type-weight-strong); }
@@ -515,15 +516,12 @@ export class MuApprovalQueue extends MuElement {
     ul { list-style: none; padding: 0; }
     li { border-block-start: 1px solid var(--mu-color-border); padding: var(--mu-space-2); }
     [part="state"] { margin-block: var(--mu-space-1); }
-    li[data-state="done"] [part="state"] { color: var(--mu-color-success); }
-    li[data-state="error"] [part="state"] { color: var(--mu-color-danger); }
     .decisions { display: flex; flex-wrap: wrap; align-items: start; gap: var(--mu-space-2); }
     [part="announcement"] {
       position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap;
     }
     @media (forced-colors: active) {
       li { border-color: CanvasText; }
-      li[data-state] [part="state"] { color: CanvasText; }
     }
   `)];
 
@@ -547,7 +545,7 @@ export class MuApprovalQueue extends MuElement {
     for (const [kind, binding] of bindings) entry.actions[kind].action = binding;
     entry.bound = this.#snapshot(entry.proposal);
     entry.row.dataset.state = 'default';
-    entry.state.textContent = 'Awaiting decision';
+    entry.state.replaceChildren(approvalMark({ state: 'default' }, 'Awaiting decision'));
   }
 
   // Each action checks the id and key of its own request.
@@ -665,7 +663,7 @@ export class MuApprovalQueue extends MuElement {
     context.hidden = true;
     const title = el('p', { part: 'title' });
     const summary = el('p', { part: 'summary' });
-    const state = el('p', { part: 'state' }, 'Unavailable');
+    const state = el('p', { part: 'state' }, approvalMark({ state: 'disabled' }, 'Unavailable'));
     const controls = el('div', { class: 'decisions' });
     const row = el('li', { part: 'item', 'data-state': 'disabled' }, context, title, summary, state, controls);
     const entry = { row, context, title, summary, state, actions: {}, views: {}, names: [], bound: null, proposal: null };
@@ -706,7 +704,8 @@ export class MuApprovalQueue extends MuElement {
     if (entry.row.dataset.state === state && entry.state.textContent === words) return;
     const resolved = entry.row.dataset.state === 'pending' && state !== 'pending';
     entry.row.dataset.state = state;
-    entry.state.textContent = words;
+    const markState = state === 'done' ? DECISIONS[kind].state : state;
+    entry.state.replaceChildren(approvalMark({ state: markState }, words));
     const { announcement } = this.#view;
     // A receipt can come back in a refusal event listener, before refuse() puts the status back.
     if (this.dataset.state === 'refused' && !announcement.parentNode) this.shadowRoot.append(announcement);
@@ -722,7 +721,7 @@ export class MuApprovalQueue extends MuElement {
       action[BLOCK_ACTION](false);
     }
     entry.row.dataset.state = 'disabled';
-    entry.state.textContent = 'Unavailable';
+    entry.state.replaceChildren(approvalMark({ state: 'disabled' }, 'Unavailable'));
   }
 
   #remove(entry) {

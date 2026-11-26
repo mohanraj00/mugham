@@ -1,4 +1,5 @@
 import { MuElement } from '../primitives/base.js';
+import { BADGE_LABEL_CSS, badgeLabel } from '../primitives/badge.js';
 import { el, sheet } from '../render/dom.js';
 
 export class MuEmptyState extends MuElement {
@@ -63,24 +64,12 @@ export class MuSkeleton extends MuElement {
 
 export class MuBadge extends MuElement {
   static component = 'badge';
-  static styles = [sheet(`
+  static styles = [BADGE_LABEL_CSS, sheet(`
     :host { display: inline-flex; max-inline-size: 100%; }
-    [part="label"] {
-      font: var(--mu-type-caption); color: var(--mu-color-text); background: var(--mu-color-surface);
-      border: 1px solid var(--mu-color-border); border-radius: var(--mu-radius-2);
-      padding: var(--mu-space-1) var(--mu-space-2); min-inline-size: 0; overflow-wrap: anywhere;
-    }
-    .info { background: var(--mu-color-info); color: var(--mu-color-on-info); border-color: currentColor; }
-    .success { background: var(--mu-color-success); color: var(--mu-color-on-success); border-color: currentColor; }
-    .warning { background: var(--mu-color-warning); color: var(--mu-color-on-warning); border-color: currentColor; }
-    .danger { border-color: var(--mu-color-danger); }
-    @media (forced-colors: active) {
-      [part="label"] { color: CanvasText; background: Canvas; border-color: CanvasText; }
-    }
   `)];
 
   render({ text, tone }) {
-    return [el('span', { part: 'label', class: tone }, text)];
+    return [badgeLabel(text, tone, { part: 'label' })];
   }
 }
 

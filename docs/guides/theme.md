@@ -220,7 +220,7 @@ An asterisk marks a guardrail part. Keep it visible when the kit shows it. Run `
 | `mu-accordion` | `copy`\*, `copy-status`\*, `details`\*, `heading`\*, `next`\*, `panel`\*, `reason`\*, `toggle`\* |
 | `mu-action-button` | `accept`\*, `button`, `cancel`\*, `confirm`\*, `copy`\*, `copy-status`\*, `details`\*, `exit`\*, `icon`\*, `next`\*, `reason`\*, `reference`\*, `retry`\*, `status`\*, `tooltip`\* |
 | `mu-action-queue` | `action`, `actions`, `cancel`\*, `copy`\*, `copy-status`\*, `details`\*, `dismiss`\*, `label`, `name`, `next`\*, `queue`, `queued`, `reason`\*, `retry`\*, `state`\*, `summary` |
-| `mu-approval-queue` | `action-button-accept`\*, `action-button-button`, `action-button-cancel`\*, `action-button-confirm`\*, `action-button-copy`\*, `action-button-copy-status`\*, `action-button-exit`\*, `action-button-reference`\*, `action-button-retry`\*, `announcement`\*, `authorship`\*, `copy`\*, `copy-status`\*, `details`\*, `empty`, `item`, `label`\*, `list`\*, `next`\*, `reason`\*, `state`\*, `summary`\*, `title`\* |
+| `mu-approval-queue` | `action-button-accept`\*, `action-button-button`, `action-button-cancel`\*, `action-button-confirm`\*, `action-button-copy`\*, `action-button-copy-status`\*, `action-button-exit`\*, `action-button-reference`\*, `action-button-retry`\*, `announcement`\*, `approval-mark`\*, `authorship`\*, `copy`\*, `copy-status`\*, `details`\*, `empty`, `item`, `label`\*, `list`\*, `next`\*, `reason`\*, `state`\*, `summary`\*, `title`\* |
 | `mu-app-shell` | `copy`\*, `copy-status`\*, `details`\*, `main`\*, `menu`\*, `next`\*, `reason`\*, `side`\*, `skip`\*, `top`\* |
 | `mu-avatar` | `copy`\*, `copy-status`\*, `details`\*, `initials`\*, `next`\*, `reason`\* |
 | `mu-badge` | `copy`\*, `copy-status`\*, `details`\*, `label`\*, `next`\*, `reason`\* |
@@ -253,7 +253,7 @@ An asterisk marks a guardrail part. Keep it visible when the kit shows it. Run `
 | `mu-plan` | `announcement`\*, `authorship`\*, `copy`\*, `copy-status`\*, `details`\*, `list`\*, `name`\*, `next`\*, `reason`\*, `state`\*, `task` |
 | `mu-progress` | `bar`\*, `copy`\*, `copy-status`\*, `details`\*, `indicator`\*, `label`\*, `next`\*, `reason`\*, `value`\* |
 | `mu-range-field` | `controls`\*, `copy`\*, `copy-status`\*, `details`\*, `edit-type`\*, `group`\*, `handle-label`\*, `label`\*, `next`\*, `number`\*, `problem`\*, `reason`\*, `slider`\* |
-| `mu-rich-text` | `authorship`\*, `code`, `copy`\*, `copy-status`\*, `details`\*, `empty`, `link`\*, `next`\*, `read-more-content`\*, `read-more-toggle`\*, `reason`\*, `rich-text`, `target`\* |
+| `mu-rich-text` | `approval-mark`\*, `authorship`\*, `code`, `copy`\*, `copy-status`\*, `details`\*, `empty`, `link`\*, `next`\*, `read-more-content`\*, `read-more-toggle`\*, `reason`\*, `rich-text`, `target`\* |
 | `mu-run-steps` | `announcement`\*, `arguments`\*, `authorship`\*, `copy`\*, `copy-status`\*, `detail`\*, `details`\*, `list`\*, `name`\*, `next`\*, `panel`\*, `reason`\*, `result`\*, `state`\*, `step`, `toggle`\*, `tool`\* |
 | `mu-select-field` | `control`\*, `copy`\*, `copy-status`\*, `details`\*, `edit-type`\*, `label`\*, `listbox`\*, `next`\*, `option`\*, `popup`\*, `problem`\*, `reason`\*, `search`\*, `status`\*, `value`\* |
 | `mu-skeleton` | `copy`\*, `copy-status`\*, `details`\*, `line`\*, `next`\*, `reason`\*, `status`\* |
@@ -356,7 +356,7 @@ The date range field parts are `label`, `group`, `date-label`, `start` and `end`
 
 The text limit parts are `read-more-content` and `read-more-toggle`. Keep the full text in the content part. Keep the compact toggle, its underline and its focus ring visible when the text exceeds the limit. Keep its border visible in forced colors. Do not add a fade or a height animation.
 
-The rich text parts are `rich-text`, `code`, `link` and `target`. Keep the underline and the focus ring of the `link` part. Do not hide the `target` part, because it shows the address that a link opens.
+Keep the `approval-mark` text visible in rich text and in the approval queue. The rich text also has `rich-text`, `code`, `link` and `target` parts. Keep the underline and the focus ring of the `link` part. Do not hide the `target` part, because it shows the address that a link opens.
 
 The data grid parts are `data-grid`, `title`, `scroll` and `cell`. Do not hide the `title` part, because it shows the title that the application gives. Keep the `changed` part of a cell, the `status` part below the grid and the receipt reference visible. They show the state of an edit and the reason of a refused value. Keep the focus ring of a cell and of the `editor` part.
 

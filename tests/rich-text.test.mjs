@@ -2,6 +2,7 @@
 // tests/test_rich_text.py has the same cases. The element rules are in tests/browser/rich-text.js.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { toolSchema } from '../src/kit.js';
 import { CATALOG } from '../src/render/catalog.js';
 import { contractErrors, fillErrors } from '../src/render/validate.js';
 
@@ -57,4 +58,19 @@ test('markup is text for the validator, and the limits come from the contracts',
     ['data.blocks[0].data.content[0].data.mark: must be one of emphasis, strong, code']);
   assert.deepEqual(errors([{ ...PARAGRAPH, slots: { authorship: { type: 'human', id: 'person-1' } } }]),
     ['data.blocks[0].slots: a nested fill takes the slots of its outer fill']);
+});
+
+test('the rich text tool schema gives each block an optional approval record', () => {
+  const schema = toolSchema('rich-text');
+  for (const name of BLOCKS) {
+    const data = schema.$defs[name].properties.data;
+    assert.ok(!data.required.includes('approval'), name);
+    const { type, additionalProperties, required, properties } = data.properties.approval;
+    assert.equal(type, 'object', name);
+    assert.equal(additionalProperties, false, name);
+    assert.deepEqual(required, ['state'], name);
+    assert.deepEqual(properties.state.enum, ['approved', 'pending', 'rejected'], name);
+    assert.equal(properties.by.type, 'string', name);
+    assert.equal(properties.at.type, 'string', name);
+  }
 });

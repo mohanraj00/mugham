@@ -4,6 +4,8 @@ Each release has an entry. The newest entry is first.
 
 ## Unreleased
 
+- The kit shows the approval state of each rich text block. The library newsletter shows three states from a fixture API (#137).
+
 - The kit adds an approval queue with separate confirmation and receipts for each proposal. The library research example asks for a book hold and a reading list change (#129).
 
 - The kit adds run steps and a plan with state text and polite updates. The library research example shows a tool call and changes to the run and plan (#129).

@@ -144,3 +144,44 @@ for (const [name, data, changes] of [
     assert.equal(refused.length, changes.length);
   });
 }
+
+test('rich text shows each approval state with its text and accessible name', () => {
+  const actor = { type: 'agent', id: 'newsletter-agent' };
+  const rich = new (elements.get('mu-rich-text'))();
+  rich.actor = actor;
+  const at = '2026-11-26T10:00:00Z';
+  const by = 'Branch reviewer <north>';
+  const content = [fill('rich-span', { text: 'The branch opens at ten.' })];
+  const paragraph = (approval) => fill('rich-paragraph', { content, ...(approval && { approval }) });
+  const blocks = [
+    fill('rich-heading', { level: 1, content, approval: { state: 'approved', by, at } }),
+    fill('rich-list', { items: [paragraph({ state: 'pending' })], approval: { state: 'pending' } }),
+    fill('rich-code', { text: 'Branch hours', approval: { state: 'rejected' } }),
+    fill('rich-quote', { paragraphs: [paragraph({ state: 'approved' })], approval: { state: 'approved' } }),
+  ];
+  rich.fill = { ...fill('rich-text', { blocks }), slots: { authorship: actor } };
+  assert.equal(rich.dataset.state, 'default');
+  const [body] = rich.shadowRoot.children;
+  const marks = (node) => [
+    ...(node.getAttribute?.('part') === 'approval-mark' ? [node] : []),
+    ...(node.children ?? []).flatMap(marks),
+  ];
+  const expected = ['Approved', 'Pending approval', 'Pending approval', 'Rejected', 'Approved', 'Approved'];
+  assert.deepEqual(marks(body).map((mark) => mark.children[0].textContent), expected);
+  assert.deepEqual(marks(body).map((mark) => mark.getAttribute('aria-label')), expected.map((word) => 'Approval: ' + word));
+  assert.ok(marks(body).every((mark) => mark.getAttribute('role') === 'group'));
+  assert.equal(marks(body)[0].textContent, 'Approved by ' + by + ' at ' + at);
+});
+
+test('a rich text block with no approval record shows no mark', () => {
+  const actor = { type: 'agent', id: 'newsletter-agent' };
+  const rich = new (elements.get('mu-rich-text'))();
+  rich.actor = actor;
+  const block = fill('rich-paragraph', { content: [fill('rich-span', { text: 'Read at the branch.', mark: 'strong' })] });
+  rich.fill = { ...fill('rich-text', { blocks: [block] }), slots: { authorship: actor } };
+  assert.equal(rich.dataset.state, 'default');
+  const [body] = rich.shadowRoot.children;
+  assert.equal(body.children[0].tag, 'p');
+  assert.deepEqual(body.children[0].children.map((child) => child.tag), ['strong']);
+  assert.equal(body.children[0].textContent, 'Read at the branch.');
+});

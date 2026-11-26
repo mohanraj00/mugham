@@ -52,7 +52,7 @@ The short form copies the list to the full form. A contract can omit the key or 
 | `date` | A calendar date as `YYYY-MM-DD`. | The date must exist. |
 | `enum` | One string from `values`. | |
 | `list` | An array of items. An item is a scalar field, a record or a component field. | `max_items` is necessary. Use `min_items` for a lower limit and `unique_items` to require distinct items. |
-| `record` | An object with the scalar fields declared in `fields`. | For list items only. Include each required field. Each key must be in `fields`. |
+| `record` | An object with the scalar fields declared in `fields`. | Use it as an optional data field or as a list item. Include each required field. Each key must be in `fields`. |
 | `component` | A fill of the named component. | `name` names one component. `names` names 2 to 12 components, and the fill can be of each of them. Each named component must be in the catalog. Use `field: true` in place of `name` or `names` to accept components whose contracts declare `field: true`. |
 
 A field with `editable: true` is a form input. A component field cannot be editable.

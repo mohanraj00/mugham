@@ -30,6 +30,8 @@ MAX_NAME = 40
 DATE = re.compile(r'[0-9]{4}-[0-9]{2}-[0-9]{2}')
 TIME = re.compile(r'([01][0-9]|2[0-3]):([0-5][0-9])')
 TIME_ZONE = re.compile(r'[A-Za-z_][A-Za-z0-9_+-]*(/[A-Za-z_][A-Za-z0-9_+-]*)+')
+UTC_SECONDS = re.compile(r':[0-5][0-9](\.[0-9]{1,3})?Z')
+APPROVAL_BLOCKS = {'rich-paragraph', 'rich-heading', 'rich-list', 'rich-code', 'rich-quote'}
 
 
 # The code points that String.trim() removes in the browser validator.
@@ -219,8 +221,9 @@ def merged_list(stated, default, path, errors):
 
 def resolved_field(key, field, path, defaults, errors, tier='field'):
     """Return the full form of a short field. The keys type, label and required come first."""
+    required = False if tier == 'field' and field['type'] == 'record' else defaults[tier]['required']
     full = {'type': field['type'], 'label': field.get('label', label_of(key)),
-            'required': field.get('required', defaults[tier]['required'])}
+            'required': field.get('required', required)}
     for name, value in field.items():
         if name in full:
             continue
@@ -284,14 +287,16 @@ def defaults_errors(defaults=None):
 
 
 def fields_of(contract):
-    """Yield (path, field) for each field of a contract, with list items."""
+    """Yield (path, field) for each field of a contract, with list items and record fields."""
     for name, field in contract.get('data', {}).items():
-        yield 'data.' + name, field
+        path = 'data.' + name
+        yield path, field
         if field['type'] == 'list':
-            path = 'data.%s.items' % name
-            item = field['items']
-            yield path, item
-            for key, nested in item.get('fields', {}).items():
+            path += '.items'
+            field = field['items']
+            yield path, field
+        if field['type'] == 'record':
+            for key, nested in field['fields'].items():
                 yield path + '.fields.' + key, nested
 
 
@@ -504,6 +509,10 @@ def fill_errors(fill, catalog, path='', depth=0):
         errors += multi_choice_errors(data, prefix + 'data.')
     if not errors and fill['component'] in ('date-range-field', 'time-field', 'date-time-field'):
         errors += date_and_time_errors(fill['component'], data, prefix + 'data.')
+    if not errors and fill['component'] in APPROVAL_BLOCKS and 'at' in data.get('approval', {}):
+        at = data['approval']['at']
+        if not (is_local_date_time(at[:16]) and UTC_SECONDS.fullmatch(at[16:])):
+            errors.append(prefix + 'data.approval.at: must be an ISO 8601 date and time in UTC')
     if not errors and fill['component'] == 'breadcrumbs':
         items = data['items']
         for index, item in enumerate(items):
@@ -599,6 +608,10 @@ def time_minutes(value):
     return None
 
 
+def is_local_date_time(value):
+    return len(value) == 16 and value[10] == 'T' and is_date(value[:10]) and time_minutes(value[11:]) is not None
+
+
 def date_and_time_errors(name, data, prefix):
     value = data['value']
     earliest, latest = data.get('earliest'), data.get('latest')
@@ -625,7 +638,7 @@ def date_and_time_errors(name, data, prefix):
         if (minutes - start) % data.get('step', 1):
             return [prefix + 'value: the time is off a step']
     else:
-        if len(value) != 16 or value[10] != 'T' or not is_date(value[:10]) or time_minutes(value[11:]) is None:
+        if not is_local_date_time(value):
             return [prefix + 'value: must be a date and time as YYYY-MM-DDTHH:MM']
         if not TIME_ZONE.fullmatch(data['time_zone']):
             return [prefix + 'time_zone: must have the form Area/Location']

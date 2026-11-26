@@ -28,8 +28,9 @@ function mergedList(list, base, path, errors) {
 
 // The full form of a short field. The keys type, label and required come first.
 function resolvedField(key, field, path, defaults, errors, tier = 'field') {
+  const required = tier === 'field' && field.type === 'record' ? false : defaults[tier].required;
   const full = [['type', field.type], ['label', stated(field, 'label', labelOf(key))],
-    ['required', stated(field, 'required', defaults[tier].required)]];
+    ['required', stated(field, 'required', required)]];
   for (const [name, value] of Object.entries(field)) {
     if (name === 'type' || name === 'label' || name === 'required') continue;
     if (name === 'size') {

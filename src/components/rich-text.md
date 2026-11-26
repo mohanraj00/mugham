@@ -30,6 +30,12 @@ A rich text has 0 to 100 block nodes and 2000 inline nodes maximum. A block node
 
 The element makes each element with `createElement` from a fixed table, and it writes each text into a text node. It never parses a string as markup. A node has only the attributes of its contract. A node cannot set a style, a class, an id, an event handler or an address attribute. The validator refuses an unknown node type and an undeclared attribute, and the element shows the refusal as text. A line break in a text shows as a line break.
 
+## Approval marks
+
+Each block, including a list item or a paragraph in a quote, can have an `approval` record. Set `state` to `approved`, `pending` or `rejected`. The mark shows the state as text and has a name such as `Approval: Pending approval`. The optional `by` gives the approver. The optional `at` gives the UTC date and time, for example `2026-11-26T10:00:00Z`. You can include one to three digits after the decimal point for fractional seconds.
+
+The kit shows the state that the application gives. The application's approval API decides and enforces each approval. A block without an `approval` record has no mark. See the [library newsletter](../../examples/apps/newsletter.html).
+
 ## Links
 
 A link is a button, not an anchor. No element has an address attribute, so the browser cannot follow a link without the kit.

@@ -2,6 +2,7 @@
 // element from the fixed tables below, and each text goes into a text node. Page code owns the link
 // schemes and the first heading level. src/components/rich-text.md gives the rules.
 import { ReadMoreElement, READ_MORE_CSS } from '../primitives/read-more.js';
+import { APPROVAL_MARK_CSS, BADGE_LABEL_CSS, approvalMark } from '../primitives/badge.js';
 import { copyControl, el, sheet, text } from '../render/dom.js';
 import { parseLinkURL } from '../render/validate.js';
 
@@ -35,7 +36,7 @@ function* runs(blocks) {
 
 export class MuRichText extends ReadMoreElement {
   static component = 'rich-text';
-  static styles = [READ_MORE_CSS, sheet(`
+  static styles = [READ_MORE_CSS, BADGE_LABEL_CSS, APPROVAL_MARK_CSS, sheet(`
     :host { display: block; min-width: 0; }
     .rich {
       color: var(--mu-color-text); font: var(--mu-type-body); overflow-wrap: anywhere;
@@ -43,6 +44,8 @@ export class MuRichText extends ReadMoreElement {
     }
     p, h2, h3, h4, h5, h6, ul, ol, pre, blockquote { margin: 0; }
     p, li, .heading { white-space: pre-wrap; }
+    .block-with-approval { display: flex; flex-direction: column; gap: var(--mu-space-1); }
+    li > [part="approval-mark"] { margin-block-end: var(--mu-space-1); white-space: normal; }
     .heading { font: var(--mu-type-body); font-weight: var(--mu-type-weight-strong); }
     .level-1 { font-size: 1.25em; }
     .level-2 { font-size: 1.125em; }
@@ -179,17 +182,23 @@ export class MuRichText extends ReadMoreElement {
 
   // The validator accepts only the five block types and the two inline types. Each element name here is fixed.
   #block({ component, data }) {
+    const content = this.#blockContent(component, data);
+    return data.approval ? el('div', { class: 'block-with-approval' }, approvalMark(data.approval), content) : content;
+  }
+
+  #blockContent(component, data) {
     switch (component) {
       case 'rich-paragraph':
         return el('p', {}, ...this.#inline(data.content));
       case 'rich-heading':
         return el(HEADINGS[Math.min(first + data.level - 1, 6) - 2], { class: 'heading level-' + data.level }, ...this.#inline(data.content));
       case 'rich-list':
-        return el(data.ordered ? 'ol' : 'ul', {}, ...data.items.map((item) => el('li', {}, ...this.#inline(item.data.content))));
+        return el(data.ordered ? 'ol' : 'ul', {}, ...data.items.map(({ data }) =>
+          el('li', {}, data.approval ? approvalMark(data.approval) : null, ...this.#inline(data.content))));
       case 'rich-code':
         return el('div', { class: 'code' }, el('pre', { part: 'code' }, el('code', {}, data.text)), copyControl(data.text, 'code'));
       case 'rich-quote':
-        return el('blockquote', {}, ...data.paragraphs.map((item) => el('p', {}, ...this.#inline(item.data.content))));
+        return el('blockquote', {}, ...data.paragraphs.map((item) => this.#block(item)));
       default:
         return el('p', { class: 'refused' }, 'Refused: the kit has no element for this node.');
     }

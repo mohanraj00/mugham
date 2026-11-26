@@ -282,7 +282,9 @@ function sampleData(contract) {
   if (Object.hasOwn(TEMPORAL_SAMPLES, contract.name)) return TEMPORAL_SAMPLES[contract.name];
   if (contract.name === 'multi-choice-field') return { label: 'Plants', choices: ['Mist fern'], value: ['Mist fern'] };
   if (contract.name === 'range-field') return { label: 'Loan period in days', minimum: 7, maximum: 28, step: 7, value: 14 };
-  return Object.fromEntries(Object.entries(contract.data).map(([key, field]) => [key, sample(field)]));
+  const data = Object.fromEntries(Object.entries(contract.data).map(([key, field]) => [key, sample(field)]));
+  if (data.approval) data.approval.at = '2026-11-26T10:00:00Z';
+  return data;
 }
 
 for (const [name, contract] of Object.entries(CATALOG)) {

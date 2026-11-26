@@ -145,10 +145,14 @@ export function schemaErrors(value, schema, root = schema, path = '', label = '(
 function fieldsOf(contract) {
   return Object.entries(contract.data).flatMap(([name, field]) => {
     const path = 'data.' + name;
-    if (field.type !== 'list') return [[path, field]];
-    const item = path + '.items';
-    return [[path, field], [item, field.items],
-      ...Object.entries(field.items.fields ?? {}).map(([key, nested]) => [item + '.fields.' + key, nested])];
+    const fields = [[path, field]];
+    const record = field.type === 'list' ? field.items : field;
+    const recordPath = field.type === 'list' ? path + '.items' : path;
+    if (field.type === 'list') fields.push([recordPath, record]);
+    if (record.type === 'record') {
+      for (const [key, nested] of Object.entries(record.fields)) fields.push([recordPath + '.fields.' + key, nested]);
+    }
+    return fields;
   });
 }
 
@@ -402,6 +406,9 @@ const PAGE_TEXT_FIELDS = new Map([
   ['empty-state', ['title', 'text']], ['skeleton', ['label']], ['badge', ['text']], ['avatar', ['name']],
 ]);
 
+const APPROVAL_BLOCKS = new Set(['rich-paragraph', 'rich-heading', 'rich-list', 'rich-code', 'rich-quote']);
+const UTC_SECONDS = /^:[0-5][0-9](\.[0-9]{1,3})?Z$/;
+
 // catalog maps a component name to its contract. CI validates each contract with tools/catalog.py.
 export function fillErrors(fill, catalog, path = '', depth = 0) {
   const prefix = path ? path + '.' : '';
@@ -428,6 +435,12 @@ export function fillErrors(fill, catalog, path = '', depth = 0) {
   }
   if (!errors.length && ['date-range-field', 'time-field', 'date-time-field'].includes(fill.component)) {
     errors.push(...dateAndTimeErrors(fill.component, data, prefix + 'data.'));
+  }
+  if (!errors.length && APPROVAL_BLOCKS.has(fill.component) && own(data, 'approval') && own(data.approval, 'at')) {
+    const at = data.approval.at;
+    if (!(isLocalDateTime(at.slice(0, 16)) && UTC_SECONDS.test(at.slice(16)))) {
+      errors.push(prefix + 'data.approval.at: must be an ISO 8601 date and time in UTC');
+    }
   }
   if (!errors.length && fill.component === 'breadcrumbs') {
     for (const [index, { href }] of data.items.entries()) {
