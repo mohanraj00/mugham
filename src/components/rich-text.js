@@ -93,12 +93,18 @@ export class MuRichText extends ReadMoreElement {
   #policy = -1;
   #renderedFill = null;
   #refreshing = false;
+  #fillRevision = 0;
   #targets = 0;
   #blocks = [];
   #marks = [];
   #approvals = new Map();
 
-  setApprovals(list) {
+  get fillRevision() {
+    return this.#fillRevision;
+  }
+
+  setApprovals(list, revision) {
+    if (!this.#checkRevision(revision)) return;
     const errors = [];
     const approvals = new Map();
     if (!Array.isArray(list)) errors.push('approvals: must be a list');
@@ -136,6 +142,8 @@ export class MuRichText extends ReadMoreElement {
       }
     }
 
+    // Page code can set a new fill while the kit reads the list.
+    if (!this.#checkRevision(revision)) return;
     for (const mark of this.#marks) mark.remove();
     this.#marks = [];
     if (errors.length) {
@@ -145,6 +153,13 @@ export class MuRichText extends ReadMoreElement {
     }
     this.#approvals = approvals;
     this.#showApprovals();
+  }
+
+  #checkRevision(revision) {
+    if (this.#renderedFill && revision === this.#fillRevision) return true;
+    const errors = [`revision: stale, the current revision is ${this.#fillRevision}`];
+    this.dispatchEvent(new CustomEvent('mu-refused', { bubbles: true, composed: true, detail: { errors } }));
+    return false;
   }
 
   #showApprovals() {
@@ -234,6 +249,7 @@ export class MuRichText extends ReadMoreElement {
   }
 
   refuse(errors) {
+    this.#fillRevision += 1;
     this.#renderedFill = null;
     this.#refreshing = false;
     this.#approvals.clear();
@@ -245,8 +261,9 @@ export class MuRichText extends ReadMoreElement {
   render(data) {
     this.#policy = policy;
     this.#targets = 0;
-    // A new fill clears the marks. A change of page policy keeps the marks for the same blocks.
+    // A new fill clears the marks. A change of page policy keeps the revision and marks.
     if (!this.#refreshing) {
+      this.#fillRevision += 1;
       this.#approvals.clear();
       // Keep the fill that supplied the displayed text for the next policy change.
       this.#renderedFill = structuredClone(this.fill);

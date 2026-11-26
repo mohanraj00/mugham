@@ -27,7 +27,8 @@ const approvalAPI = {
 
 newsletter.fill = outer('rich-text', { blocks: paragraphs.map(({ text }) =>
   node('rich-paragraph', { content: [node('rich-span', { text })] })) });
+const revision = newsletter.fillRevision;
 
 const approvals = await approvalAPI.read();
 newsletter.setApprovals(paragraphs.flatMap(({ id }, block) =>
-  Object.hasOwn(approvals, id) ? [{ block, ...approvals[id] }] : []));
+  Object.hasOwn(approvals, id) ? [{ block, ...approvals[id] }] : []), revision);

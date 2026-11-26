@@ -32,7 +32,7 @@ The element makes each element with `createElement` from a fixed table, and it w
 
 ## Approval marks
 
-Page code reads the state from the application's approval API and calls `setApprovals(list)` after each fill. Each new fill clears the marks. A change of page policy keeps the marks if the fill is still valid, including when the element connects again. A refused fill clears the marks. A fill cannot set a mark. The kit only shows the state. The application decides and enforces each approval.
+Read the read-only `fillRevision` property just after you set the fill and before you call the application's approval API. Pass that revision with the response to `setApprovals(list, revision)`. A new or refused fill clears the marks and makes the old revision stale. A change of page policy keeps the revision and marks if the fill is still valid, including when the element connects again. A fill cannot set a mark. The kit only shows the state. The application decides and enforces each approval.
 
 Each item gives these values.
 
@@ -41,7 +41,7 @@ Each item gives these values.
 - `by` is optional text that names the approver and has at most 80 characters.
 - `at` is an optional ISO 8601 date and time in UTC, for example `2026-11-26T10:00:00Z`. Give a date and time that exists. Include seconds and the final `Z`. You can give one to three digits for fractional seconds.
 
-A block with no item has no mark. Call `setApprovals([])` to clear all marks. An invalid list also clears all marks. The element keeps the document and sends `mu-refused` with each error and its path in `event.detail.errors`. See the [library newsletter](../../examples/apps/newsletter.html).
+A block with no item has no mark. Call `setApprovals([], revision)` with the current revision to clear all marks. An invalid list for the current revision clears all marks. A missing or stale revision leaves the current marks in place. For each refusal, the element keeps the document and sends `mu-refused` with the errors in `event.detail.errors`. See the [library newsletter](../../examples/apps/newsletter.html).
 
 ## Links
 

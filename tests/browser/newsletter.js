@@ -52,14 +52,28 @@ function readNewsletter() {
 
 function fillAgain() {
   const view = document.querySelector('mu-rich-text');
+  const revision = view.fillRevision;
   const fill = structuredClone(view.fill);
   fill.data.blocks[1].data.content[0].data.text = 'The reading group meets in Room C on Tuesday.';
   view.fill = fill;
+  return revision;
+}
+
+function applyLateApprovals(revision) {
+  const view = document.querySelector('mu-rich-text');
+  let errors = [];
+  view.addEventListener('mu-refused', (event) => { errors = event.detail.errors; }, { once: true });
+  view.setApprovals([{ block: 1, state: 'approved' }], revision);
+  return {
+    count: view.shadowRoot.querySelectorAll('[part="approval-mark"]').length,
+    revision: view.fillRevision,
+    errors,
+  };
 }
 
 function updateApprovals() {
   const view = document.querySelector('mu-rich-text');
-  view.setApprovals([{ block: 0, state: 'approved' }, { block: 2, state: 'rejected' }]);
+  view.setApprovals([{ block: 0, state: 'approved' }, { block: 2, state: 'rejected' }], view.fillRevision);
   const blocks = view.shadowRoot.querySelector('[part="rich-text"]');
   const second = blocks.querySelectorAll(':scope > p:not([part])')[1];
   return {
@@ -138,12 +152,21 @@ export async function newsletterExampleChecks(session, sessionId, base, modes, {
 
           steps.push(...await withTimeLimit(() => pageRules(session, sessionId, NEWSLETTER_PAGE + ' at ' + view),
             'The page rules did not finish within the wait limit.'));
-          await withTimeLimit(() => page(`(${fillAgain})()`), 'The fill update did not finish in time.');
+          const revision = await withTimeLimit(() => page(`(${fillAgain})()`), 'The fill update did not finish in time.');
           const fresh = await withTimeLimit(() => page(`(${readNewsletter})()`), 'The new fill could not be read in time.');
           const afterFill = await ax();
           check(view, 'a new fill clears all marks until page code sets them again',
             fresh.marks.length === 0 && STATES.every((state) => !has(afterFill, 'group', 'Approval: ' + state)),
             'A mark stayed on the new fill.', fresh.marks);
+
+          const late = await withTimeLimit(() => page(`(${applyLateApprovals})(${JSON.stringify(revision)})`),
+            'The late approval update did not finish in time.');
+          const afterLate = await ax();
+          check(view, 'a late approval response for the old fill shows no mark',
+            late.revision !== revision && late.count === 0
+            && late.errors.includes(`revision: stale, the current revision is ${late.revision}`)
+            && STATES.every((state) => !has(afterLate, 'group', 'Approval: ' + state)),
+            'A late response showed a mark or did not report a stale revision.', late);
 
           const missing = await withTimeLimit(() => page(`(${updateApprovals})()`), 'The approval update did not finish in time.');
           const changed = await ax();
