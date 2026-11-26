@@ -741,7 +741,10 @@ async function appPages(session, sessionId, report) {
               return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
             const style = getComputedStyle(document.body);
             const [light, dark] = [lum(style.color), lum(style.backgroundColor)].sort((a, b) => b - a);
-            return { ready: !document.getElementById('main').dataset.state || document.getElementById('main').dataset.state === 'ready',
+            const main = document.querySelector('body > :is(main, mu-app-shell)');
+            const state = main?.dataset.state;
+            const readyState = main?.localName === 'mu-app-shell' ? 'default' : 'ready';
+            return { ready: Boolean(main) && (!state || state === readyState),
               elements: all.length, refused: all.filter((node) => node.dataset.state === 'refused').length,
               scroll: document.documentElement.scrollWidth - innerWidth, width: innerWidth,
               dark: matchMedia('(prefers-color-scheme: dark)').matches, background: lum(style.backgroundColor),
