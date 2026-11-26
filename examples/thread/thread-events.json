@@ -283,6 +283,41 @@
   }
  },
  {
+  "delay_ms": 300,
+  "event": {
+   "type": "ACTIVITY_SNAPSHOT",
+   "messageId": "m-5-rules",
+   "activityType": "mugham.fill",
+   "metadata": {
+    "mugham": {
+     "actor": {
+      "type": "agent",
+      "id": "a-catalog",
+      "name": "Catalog agent"
+     }
+    }
+   },
+   "content": {
+    "format": 2,
+    "fill": {
+     "component": "card",
+     "version": "0.1.0",
+     "data": {
+      "title": "Renewal rules",
+      "summary": "You can renew a loan up to three times."
+     },
+     "slots": {
+      "authorship": {
+       "type": "agent",
+       "id": "a-renew",
+       "name": "Renewal agent"
+      }
+     }
+    }
+   }
+  }
+ },
+ {
   "delay_ms": 100,
   "event": {
    "type": "RUN_FINISHED",
