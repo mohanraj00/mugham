@@ -9,7 +9,7 @@
     {"name": "copy-status", "description": "Result of the copy operation.", "guardrail": true},
     {"name": "details", "description": "Control and technical details of a refusal.", "guardrail": true},
     {"name": "edit-type", "description": "Choices for the type of edit.", "guardrail": true},
-    {"name": "label", "description": "Label of the field.", "guardrail": false},
+    {"name": "label", "description": "Label of the field.", "guardrail": true},
     {"name": "listbox", "description": "List of available choices.", "guardrail": true},
     {"name": "next", "description": "Next step after a refusal.", "guardrail": true},
     {"name": "option", "description": "One available choice.", "guardrail": true},

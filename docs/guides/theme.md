@@ -195,25 +195,25 @@ An asterisk marks a guardrail part. Keep it visible when the kit shows it. Run `
 | `mu-card-grid` | `card-status`\*, `card-title`, `card-toggle`\*, `copy`\*, `copy-status`\*, `details`\*, `empty`, `list`, `next`\*, `reason`\* |
 | `mu-card` | `actions`, `authorship`\*, `body`\*, `card`, `citation`\*, `collapsed-summary`, `copy`\*, `copy-status`\*, `details`\*, `facts`, `icon`\*, `locator`\*, `next`\*, `open`\*, `provenance`\*, `reason`\*, `status`\*, `title`, `toggle`\* |
 | `mu-chart` | `authorship`\*, `bar`\*, `chart`\*, `copy`\*, `copy-status`\*, `details`\*, `next`\*, `point`\*, `reason`\*, `segment`\*, `value`\* |
-| `mu-choice-field` | `choices`, `copy`\*, `copy-status`\*, `details`\*, `edit-type`\*, `label`, `next`\*, `problem`\*, `reason`\* |
+| `mu-choice-field` | `choices`\*, `copy`\*, `copy-status`\*, `details`\*, `edit-type`\*, `label`\*, `next`\*, `problem`\*, `reason`\* |
 | `mu-citation` | `authorship`\*, `citation`\*, `copy`\*, `copy-status`\*, `details`\*, `empty`, `locator`\*, `next`\*, `open`\*, `provenance`\*, `quote`, `reason`\* |
 | `mu-data-grid` | `authorship`\*, `cancel`\*, `cell`, `changed`\*, `copy`\*, `copy-status`\*, `data-grid`, `details`\*, `editor`, `empty`, `exit`\*, `next`\*, `pending`\*, `reason`\*, `reference`\*, `retry`\*, `scroll`, `status`\*, `title`\*, `value` |
-| `mu-date-field` | `copy`\*, `copy-status`\*, `details`\*, `edit-type`\*, `input`, `label`, `next`\*, `problem`\*, `reason`\* |
+| `mu-date-field` | `copy`\*, `copy-status`\*, `details`\*, `edit-type`\*, `input`\*, `label`\*, `next`\*, `problem`\*, `reason`\* |
 | `mu-date-range-field` | `copy`\*, `copy-status`\*, `date-label`\*, `details`\*, `edit-type`\*, `end`\*, `group`\*, `label`\*, `next`\*, `problem`\*, `reason`\*, `start`\* |
 | `mu-date-time-field` | `copy`\*, `copy-status`\*, `details`\*, `edit-type`\*, `input`\*, `label`\*, `next`\*, `problem`\*, `reason`\*, `time-zone`\* |
 | `mu-diff` | `after`\*, `authorship`\*, `before`\*, `change`, `changes`, `citation`\*, `copy`\*, `copy-status`\*, `counts`, `details`\*, `diff`, `empty`, `kind`\*, `label`, `locator`\*, `next`\*, `open`\*, `part`, `provenance`\*, `reason`\*, `summary`, `title`, `value`, `version`\*, `versions` |
 | `mu-editable-form` | `accept`\*, `authorship`\*, `button`, `cancel`\*, `citation`\*, `confirm`\*, `copy`\*, `copy-status`\*, `details`\*, `exit`\*, `form`, `locator`\*, `next`\*, `open`\*, `provenance`\*, `reason`\*, `reference`\*, `retry`\*, `status`\* |
 | `mu-excerpt` | `authorship`\*, `citation`\*, `copy`\*, `copy-status`\*, `details`\*, `excerpt`, `locator`\*, `mark`, `next`\*, `open`\*, `passage`, `provenance`\*, `read-more-content`\*, `read-more-toggle`\*, `reason`\*, `span` |
-| `mu-field` | `copy`\*, `copy-status`\*, `details`\*, `edit-type`\*, `input`, `label`, `next`\*, `problem`\*, `reason`\* |
+| `mu-field` | `copy`\*, `copy-status`\*, `details`\*, `edit-type`\*, `input`\*, `label`\*, `next`\*, `problem`\*, `reason`\* |
 | `mu-form-card` | `accept`\*, `authorship`\*, `button`, `cancel`\*, `changed`\*, `citation`\*, `confirm`\*, `copy`\*, `copy-status`\*, `details`\*, `editor`, `exit`\*, `form`, `label`, `line`, `line-number`, `lines`, `locator`\*, `next`\*, `note`\*, `open`\*, `provenance`\*, `read-only`\*, `reason`\*, `reference`\*, `retry`\*, `save`, `section`, `status`\*, `value` |
 | `mu-grid` | `copy`\*, `copy-status`\*, `details`\*, `layout`, `next`\*, `reason`\* |
 | `mu-image` | `authorship`\*, `box`\*, `caption`\*, `copy`\*, `copy-status`\*, `details`\*, `dialog`\*, `image`, `next`\*, `open`\*, `reason`\*, `status`\* |
-| `mu-long-text-field` | `copy`\*, `copy-status`\*, `details`\*, `edit-type`\*, `input`, `label`, `next`\*, `problem`\*, `reason`\* |
+| `mu-long-text-field` | `copy`\*, `copy-status`\*, `details`\*, `edit-type`\*, `input`\*, `label`\*, `next`\*, `problem`\*, `reason`\* |
 | `mu-multi-choice-field` | `checkbox`\*, `checkbox-label`\*, `copy`\*, `copy-status`\*, `details`\*, `edit-type`\*, `group`\*, `label`\*, `listbox`\*, `next`\*, `option`\*, `popup`\*, `problem`\*, `reason`\*, `remove`\*, `search`\*, `status`\*, `tag`, `tag-text`\*, `tags` |
-| `mu-number-field` | `copy`\*, `copy-status`\*, `details`\*, `edit-type`\*, `input`, `label`, `next`\*, `problem`\*, `reason`\* |
+| `mu-number-field` | `copy`\*, `copy-status`\*, `details`\*, `edit-type`\*, `input`\*, `label`\*, `next`\*, `problem`\*, `reason`\* |
 | `mu-range-field` | `controls`\*, `copy`\*, `copy-status`\*, `details`\*, `edit-type`\*, `group`\*, `handle-label`\*, `label`\*, `next`\*, `number`\*, `problem`\*, `reason`\*, `slider`\* |
 | `mu-rich-text` | `authorship`\*, `code`, `copy`\*, `copy-status`\*, `details`\*, `empty`, `link`\*, `next`\*, `read-more-content`\*, `read-more-toggle`\*, `reason`\*, `rich-text`, `target`\* |
-| `mu-select-field` | `control`\*, `copy`\*, `copy-status`\*, `details`\*, `edit-type`\*, `label`, `listbox`\*, `next`\*, `option`\*, `popup`\*, `problem`\*, `reason`\*, `search`\*, `status`\*, `value`\* |
+| `mu-select-field` | `control`\*, `copy`\*, `copy-status`\*, `details`\*, `edit-type`\*, `label`\*, `listbox`\*, `next`\*, `option`\*, `popup`\*, `problem`\*, `reason`\*, `search`\*, `status`\*, `value`\* |
 | `mu-source-status` | `checked`\*, `copy`\*, `copy-status`\*, `details`\*, `empty`, `label`, `next`\*, `reason`\*, `source`\*, `state`\* |
 | `mu-stack` | `copy`\*, `copy-status`\*, `details`\*, `layout`, `next`\*, `reason`\* |
 | `mu-status` | `authorship`\*, `copy`\*, `copy-status`\*, `details`\*, `label`\*, `next`\*, `reason`\*, `status`\*, `text`\* |
