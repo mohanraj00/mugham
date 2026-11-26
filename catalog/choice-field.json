@@ -4,12 +4,12 @@
   "description": "A labeled group of choices. A person selects one choice. The value must be one of the choices.",
   "ai_content": false,
   "parts": [
-    {"name": "choices", "description": "Group of radio choices.", "guardrail": false},
+    {"name": "choices", "description": "Group of radio choices.", "guardrail": true},
     {"name": "copy", "description": "Button that copies text.", "guardrail": true},
     {"name": "copy-status", "description": "Result of the copy operation.", "guardrail": true},
     {"name": "details", "description": "Control and technical details of a refusal.", "guardrail": true},
     {"name": "edit-type", "description": "Choices for the type of edit.", "guardrail": true},
-    {"name": "label", "description": "Label of the field.", "guardrail": false},
+    {"name": "label", "description": "Label of the field.", "guardrail": true},
     {"name": "next", "description": "Next step after a refusal.", "guardrail": true},
     {"name": "problem", "description": "Reason that a field value is invalid.", "guardrail": true},
     {"name": "reason", "description": "Reason for a refusal or an edit error.", "guardrail": true}
