@@ -48,6 +48,7 @@ export class MuRichTextField extends FieldElement {
       display: flex; align-items: flex-start; flex: 0 0 100%; min-inline-size: 0; font: var(--mu-type-caption);
       min-block-size: calc(1lh + 2 * var(--mu-space-1) + 2px);
     }
+    /* The format toolbar tooltip uses this class in its reserved space. The link tooltip floats (FLOATING_TOOLTIP_CSS). */
     .action-tooltip {
       max-inline-size: 100%; overflow-wrap: anywhere; padding: var(--mu-space-1) var(--mu-space-2);
       font: var(--mu-type-caption); color: var(--mu-color-text); background: var(--mu-color-surface);
