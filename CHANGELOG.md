@@ -2,20 +2,23 @@
 
 Each release has an entry. The newest entry is first.
 
-## Unreleased
+## 0.7.0, 2026-11-27
 
-- Show icon control tooltips without moving adjacent controls or content (#186).
-- Add a helper that maps agent step and tool events to run steps in a thread. The page can enable tool arguments and results as plain text.
-- Add a synthetic run example that shows step and tool states in a thread.
+When you upgrade from 0.6.0, set `control-display="text"` on the component or an ancestor if your page needs visible text labels on the card toggle, the card grid controls or the rich text link editor buttons. Set it on an ancestor before you set the fill or attach the filled component. If your code reads `queue.entries`, handle `unreadable` entries with only `key`, `label` and `state`. If it reads the fill from `queueFill`, accept the optional `data.recovery` list. A custom store can add `allEntries()` to give the queue the store keys for records that have no valid key of their own. If you supply `mailto:` links, use one mailbox in each target, with no query or fragment. If your page enables images, set `img-src` in its Content Security Policy to the same origins as `MuImage.allowedOrigins` so that the browser checks redirects. To check message actors against trusted application data, give `readEnvelope` the optional `actorFor` hook for history and set `thread.actorFor` before you give the thread events. The thread now shows `run-steps` fills. The `tooltip`, `card-tooltip` and `link-tooltip` parts of icon controls now float in the top layer, so page styles that place these parts in the flow no longer apply. If your service worker lists kit files for offline use, add `src/envelope/run-steps-events.js` to the list and change its cache version.
 
-- Card collapse, grid expand and collapse, and link apply and cancel controls show icons by default. Set `control-display="text"` to keep the text labels.
-- Keep a completed action button done when the same application action returns after a refusal in the same message.
-- Show how an image policy blocks redirects to origins outside the allowed list.
-- Pause saved grid edits and retries while a fill is refused. Resume eligible edits when a valid fill returns.
-- Require one mailbox and no query or fragment in a mail link.
-- Let page code check the actor of a thread or history message against trusted application context.
-- Show unreadable records of the current queue principal with a Dismiss button.
-- Keep the queue owner lock until the final storage operation of an active try settles after close.
+- The card toggle, the card grid expand and collapse controls, and the rich text link editor's Apply link and Cancel controls show icons by default. Set `control-display="text"` to keep the text labels (#180).
+- The tooltip text of an icon-only action button and of each compact icon control floats in the top layer. Adjacent controls and content no longer move when it shows (#186).
+- A completed action button stays done when the same application binding returns at the same position after a refusal in the same thread message (#144).
+- The image guide shows how a page policy blocks redirects to origins outside the allowed list (#144).
+- A refused data grid pauses saved edits and blocks retries. When a valid fill returns, the grid resumes edits that still agree with the fill and the binding (#144).
+- A `mailto:` link requires one mailbox with no query or fragment (#144).
+- Page code can check the actor of a thread or history message against trusted application data (#144).
+- The queue shows unreadable records of its principal with a Dismiss button (#144).
+- The queue holds the owner lock after close until the last storage operation of an active try settles (#144).
+- The `createRunSteps` helper maps agent step and tool events to `run-steps` fills. Page code can enable tool arguments and results as plain text (#168).
+- A synthetic run example shows the states of steps and tool calls in a thread (#168).
+- The thread shows a `run-steps` fill that it refused before (#168).
+- The assemble guide browser check waits for its action buttons. The rich text browser check waits for its link target and focus states (#141).
 
 ## 0.6.0, 2026-11-26
 
