@@ -1,0 +1,46 @@
+{
+  "name": "service-status",
+  "description": "A strip that shows service states from the application. Hover or focus shows optional details. A polite status announces each change to a service in the previous fill once. The label, group and order of items with the same label and group identify a service.",
+  "ai_content": false,
+  "parts": [
+    {"name": "copy", "description": "Button that copies text.", "guardrail": true},
+    {"name": "copy-status", "description": "Result of the copy operation.", "guardrail": true},
+    {"name": "details", "description": "Control and technical details of a refusal.", "guardrail": true},
+    {"name": "empty", "description": "Message that shows when the list is empty.", "guardrail": false},
+    {"name": "label", "description": "Label of the service.", "guardrail": true},
+    {"name": "metadata", "description": "Text that shows on hover and focus.", "guardrail": true},
+    {"name": "next", "description": "Next step after a refusal.", "guardrail": true},
+    {"name": "reason", "description": "Reason for a refusal.", "guardrail": true},
+    {"name": "service", "description": "Item that shows the service.", "guardrail": true},
+    {"name": "state", "description": "State of the service as text.", "guardrail": true},
+    {"name": "strip", "description": "Group that contains the service list.", "guardrail": true},
+    {"name": "trigger", "description": "Control that shows the service details.", "guardrail": true}
+  ],
+  "data": {
+    "services": {
+      "type": "list",
+      "required": true,
+      "max_items": 24,
+      "items": {
+        "type": "record",
+        "fields": {
+          "label": {"type": "text", "required": true, "min_length": 1, "size": "line"},
+          "state": {"type": "enum", "required": true, "values": ["up", "refused", "unreachable"]},
+          "reason": {"type": "text", "min_length": 1, "size": "summary"},
+          "checked": {"type": "text", "min_length": 1, "size": "short"},
+          "group": {"type": "text", "min_length": 1, "size": "line"},
+          "version": {"type": "text", "min_length": 1, "size": "short"}
+        }
+      }
+    }
+  },
+  "states": ["+empty", "+refused"],
+  "tokens": [
+    "+color.surface", "+color.info", "+color.on-info", "+color.success", "+color.on-success", "+color.warning", "+color.on-warning",
+    "+color.danger", "+color.focus", "+space.1", "+space.2", "+radius.2", "+type.caption"
+  ],
+  "accessibility": {
+    "role": "group", "name": {"text": "Service status"},
+    "keyboard": ["Tab", "Shift+Tab", "Enter", "Space", "Escape"]
+  }
+}

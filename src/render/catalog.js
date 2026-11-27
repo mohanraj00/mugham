@@ -46,6 +46,7 @@ import menu from '../../catalog/menu.json' with { type: 'json' };
 import tooltip from '../../catalog/tooltip.json' with { type: 'json' };
 import toast from '../../catalog/toast.json' with { type: 'json' };
 import sourceStatus from '../../catalog/source-status.json' with { type: 'json' };
+import serviceStatus from '../../catalog/service-status.json' with { type: 'json' };
 import stack from '../../catalog/stack.json' with { type: 'json' };
 import status from '../../catalog/status.json' with { type: 'json' };
 import rangeField from '../../catalog/range-field.json' with { type: 'json' };
@@ -83,6 +84,7 @@ const FILES = {
   menu, tooltip, toast, tabs, accordion, 'app-shell': appShell, breadcrumbs, pagination, progress, steps,
   'empty-state': emptyState, skeleton, badge, avatar, 'run-steps': runSteps, plan, 'approval-queue': approvalQueue,
   'long-text-field': longTextField, 'number-field': numberField, 'source-status': sourceStatus, stack, status, text, table, 'table-row': tableRow,
+  'service-status': serviceStatus,
   'toggle-field': toggleField,
   'range-field': rangeField,
   'multi-choice-field': multiChoiceField,

@@ -95,6 +95,9 @@ VALID = {
     'form-card': {'title': 'Membership form', 'submit_label': 'Send changes', 'sections': [SECTION]},
     'citation': {'quote': 'A short loan can get one renewal.'},
     'source-status': {'label': 'Tool library', 'state': 'stale', 'checked': '2026-11-15T09:30:00.000Z', 'reason': 'The device is offline.'},
+    'service-status': {'services': [{'label': 'Search', 'state': 'up'}, {'label': 'Store', 'state': 'refused'},
+                                   {'label': 'Queue', 'state': 'unreachable', 'reason': 'No answer came back.',
+                                    'checked': '2026-11-27T09:30Z', 'group': 'North', 'version': '1.2.0'}]},
     'queued-action': QUEUED['data'],
     'action-queue': {'label': 'Pending actions', 'actions': [QUEUED]},
     'excerpt': {'passage': 'A short loan can get one renewal of seven days.', 'span_start': 13, 'span_end': 32},
@@ -661,6 +664,20 @@ class CatalogContractTest(unittest.TestCase):
         self.assertFalse(CATALOG['source-status']['ai_content'])
         self.assertEqual(catalog.fill_errors(fill('source-status', {'label': 'Tool library', 'state': 'offline'}), CATALOG),
                          ['data.state: must be one of ready, stale, empty, error'])
+
+    def test_service_status_checks_each_service_record(self):
+        service = {'label': 'Search', 'state': 'up'}
+        cases = [
+            ([], []),
+            ([service] * 24, []),
+            ([service] * 25, ['data.services: more than 24 items']),
+            ([{'label': 'Search'}], ['data.services[0].state: a required field is missing']),
+            ([{**service, 'state': 'offline'}], ['data.services[0].state: must be one of up, refused, unreachable']),
+            ([{**service, 'group': 3}], ['data.services[0].group: must be a string']),
+        ]
+        for services, expected in cases:
+            with self.subTest(services=services):
+                self.assertEqual(catalog.fill_errors(fill('service-status', {'services': services}), CATALOG), expected)
 
     def test_a_diff_has_up_to_20_parts_of_200_changes(self):
         large = fill('diff-part', {'title': 'Loan', 'changes': [CHANGE] * 200})

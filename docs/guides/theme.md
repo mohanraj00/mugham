@@ -267,6 +267,7 @@ An asterisk marks a guardrail part. Keep it visible when the kit shows it. Run `
 | `mu-select-field` | `control`\*, `copy`\*, `copy-status`\*, `details`\*, `edit-type`\*, `label`\*, `listbox`\*, `next`\*, `option`\*, `popup`\*, `problem`\*, `reason`\*, `search`\*, `status`\*, `value`\* |
 | `mu-skeleton` | `copy`\*, `copy-status`\*, `details`\*, `line`\*, `next`\*, `reason`\*, `status`\* |
 | `mu-source-status` | `checked`\*, `copy`\*, `copy-status`\*, `details`\*, `empty`, `label`, `next`\*, `reason`\*, `source`\*, `state`\* |
+| `mu-service-status` | `copy`\*, `copy-status`\*, `details`\*, `empty`, `label`\*, `metadata`\*, `next`\*, `reason`\*, `service`\*, `state`\*, `strip`\*, `trigger`\* |
 | `mu-stack` | `copy`\*, `copy-status`\*, `details`\*, `layout`, `next`\*, `reason`\* |
 | `mu-status` | `authorship`\*, `copy`\*, `copy-status`\*, `details`\*, `label`\*, `next`\*, `reason`\*, `status`\*, `text`\* |
 | `mu-steps` | `back`\*, `copy`\*, `copy-status`\*, `details`\*, `list`\*, `next`\*, `position`\*, `reason`\*, `state`\*, `step`\* |

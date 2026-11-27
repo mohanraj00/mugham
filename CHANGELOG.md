@@ -2,6 +2,10 @@
 
 Each release has an entry. The newest entry is first.
 
+## Unreleased
+
+- Add a service status strip that shows service states as text and announces changes (#191).
+
 ## 0.7.0, 2026-11-27
 
 When you upgrade from 0.6.0, set `control-display="text"` on the component or an ancestor if your page needs visible text labels on the card toggle, the card grid controls or the rich text link editor buttons. Set it on an ancestor before you set the fill or attach the filled component. If your code reads `queue.entries`, handle `unreadable` entries with only `key`, `label` and `state`. If it reads the fill from `queueFill`, accept the optional `data.recovery` list. A custom store can add `allEntries()` to give the queue the store keys for records that have no valid key of their own. If you supply `mailto:` links, use one mailbox in each target, with no query or fragment. If your page enables images, set `img-src` in its Content Security Policy to the same origins as `MuImage.allowedOrigins` so that the browser checks redirects. To check message actors against trusted application data, give `readEnvelope` the optional `actorFor` hook for history and set `thread.actorFor` before you give the thread events. The thread now shows `run-steps` fills. The `tooltip`, `card-tooltip` and `link-tooltip` parts of icon controls now float in the top layer, so page styles that place these parts in the flow no longer apply. If your service worker lists kit files for offline use, add `src/envelope/run-steps-events.js` to the list and change its cache version.
