@@ -76,9 +76,21 @@ pre {
   background: var(--mu-color-surface); border: 1px solid var(--mu-color-border-subtle); border-radius: var(--mu-radius-2);
 }
 
-/* A plain table of the page. The kit table is mu-table. */
+/* A plain table of the page. The kit table is mu-table. A cell does not break its text, so a wide table keeps its
+   columns and scrolls in a data-mu-scroll box. */
 table { border-collapse: collapse; }
-th, td { padding: var(--mu-space-2) var(--mu-space-3); text-align: start; border-block-end: 1px solid var(--mu-color-border-subtle); }
+th, td {
+  padding: var(--mu-space-2) var(--mu-space-3); text-align: start; border-block-end: 1px solid var(--mu-color-border-subtle);
+  overflow-wrap: normal;
+}
+
+/* A box for wide content, for example a plain table. The box scrolls to the side, so the page does not. The table
+   in the box keeps its table display and thus its table semantics. */
+[data-mu-scroll] { max-inline-size: 100%; min-inline-size: 0; overflow-x: auto; }
+
+/* A long token with no break point, for example a digest, breaks at the edge of the text block. Headings and code
+   blocks keep their words: a heading wraps only at spaces, and a pre block scrolls. */
+p, li, dt, dd, blockquote, figcaption, caption { overflow-wrap: anywhere; }
 
 /* The plain controls of the page. A kit element styles its own controls. */
 button, input, select, textarea { font: inherit; color: inherit; }

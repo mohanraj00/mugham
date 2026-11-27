@@ -7,6 +7,7 @@ Each release has an entry. The newest entry is first.
 When you upgrade from 0.7.0, if your service worker lists kit files for offline use, add `src/components/service-status.js` and `catalog/service-status.json` to the list and change its cache version.
 
 - Add a service status strip that shows service states as text and announces changes (#191).
+- Keep wide page content inside the page width. The page style adds the scroll box `data-mu-scroll` for a wide plain table and breaks a long token in plain page text (#194).
 
 ## 0.7.0, 2026-11-27
 
