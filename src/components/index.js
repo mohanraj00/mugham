@@ -28,7 +28,9 @@ export { MuEmptyState, MuSkeleton, MuBadge, MuAvatar } from './page-states.js';
 import { MuAccordion, MuTabs } from './panels.js';
 export { MuAccordion, MuTabs } from './panels.js';
 import { MuStatus } from './status.js';
+import { MuServiceStatus } from './service-status.js';
 export { MuStatus } from './status.js';
+export { MuServiceStatus } from './service-status.js';
 import { MuImage } from './image.js';
 export { MuImage } from './image.js';
 import { MuChart } from './chart.js';
@@ -1903,6 +1905,7 @@ export function define(registry = customElements) {
     ['mu-steps', MuSteps], ['mu-progress', MuProgress],
     ['mu-run-steps', MuRunSteps], ['mu-plan', MuPlan], ['mu-approval-queue', MuApprovalQueue],
     ['mu-empty-state', MuEmptyState], ['mu-skeleton', MuSkeleton], ['mu-badge', MuBadge], ['mu-avatar', MuAvatar],
+    ['mu-service-status', MuServiceStatus],
     ['mu-excerpt', MuExcerpt], ['mu-table', MuTable], ['mu-status', MuStatus], ['mu-source-status', MuSourceStatus], ['mu-action-queue', MuActionQueue], ['mu-image', MuImage], ['mu-chart', MuChart],
     ['mu-rich-text', MuRichText], ['mu-data-grid', MuDataGrid], ['mu-upload', MuUpload]]) {
     if (!registry.get(name)) registry.define(name, element);

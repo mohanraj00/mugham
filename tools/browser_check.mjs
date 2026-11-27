@@ -33,6 +33,7 @@ import { BOOKING_PAGE, bookingExampleChecks } from '../tests/browser/date-time-f
 import { COLOR_PAGE, CONTACT_PAGE, colorExampleChecks, contactExampleChecks } from '../tests/browser/registered-fields.js';
 import { SELECT_PAGE, selectExampleChecks } from '../tests/browser/select-field.js';
 import { runStepsExampleChecks } from '../tests/browser/run-steps.js';
+import { serviceStatusChecks } from '../tests/browser/service-status.js';
 import { waitFor } from '../tests/browser/wait.js';
 
 export const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
@@ -1093,6 +1094,7 @@ async function main() {
       { evaluate, open, key, pageRules, axErrors }, problems));
     report.keyboard.push(...await richTextFieldChecks(session, sessionId, base, MODES, { evaluate, open, key, pageRules }, problems));
     report.keyboard.push(...await compactControlChecks(session, sessionId, base, MODES, { evaluate, open, key, pageRules }, problems));
+    report.keyboard.push(...await serviceStatusChecks(session, sessionId, base, MODES, { evaluate, open, key, pageRules, axErrors }, problems));
     report.examples.push(...await newsletterExampleChecks(session, sessionId, base, MODES, { evaluate, open, pageRules }, problems));
     report.keyboard.push(...await rangeExampleChecks(session, sessionId, base, MODES, { evaluate, open, key }, problems));
     report.keyboard.push(...await selectExampleChecks(session, sessionId, base, MODES, { evaluate, open, key, pageRules }, problems));

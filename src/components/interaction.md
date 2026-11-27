@@ -48,6 +48,7 @@ Each empty state and each refused state has a short text that tells the person w
 | `rich-text` | `empty` | `No text. Ask for the text again.` |
 | `citation` | `empty` | `No source given. Ask for the source before you use this text.` |
 | `source-status` | `empty` | `No records. Add a record, or try again later.` |
+| `service-status` | `empty` | `No services. Check again later.` |
 | `approval-queue` | `empty` | `No items need a decision. Check again later.` |
 | `diff` | `empty` | `No changes. You do not need to review these versions.` |
 | `diff`, one part | `empty` | `No changes. You do not need to review this part.` |

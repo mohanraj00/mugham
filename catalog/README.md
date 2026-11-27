@@ -45,6 +45,7 @@ Each element that refuses a fill shows a short reason and the next step. Open `T
 | `diff.json` | `mu-diff` | component | The difference between two versions of a text or a list of fields, in up to 20 parts. |
 | `excerpt.json` | `mu-excerpt` | component | A passage as text with a marked span, the source name, the locator as text and an open button. |
 | `source-status.json` | `mu-source-status` | component | The state of an offline data source as text, with the time of the last confirmed read and the reason. |
+| `service-status.json` | `mu-service-status` | component | A strip with the state of each service from the application. |
 | `action-queue.json` | `mu-action-queue` | component | The actions of the offline queue, each with its state as text and its exits. The application fills it from its queue. [Offline queue](../docs/contracts/offline-queue.md) gives the rules. |
 | `queued-action.json` | in `mu-action-queue` | component | One action of the offline queue: a key, a label, the state and an optional message. |
 | `table.json` | `mu-table` | component | Text headers and rows, keyboard sorting and optional row status text. See [Table](../docs/table.md). |
@@ -424,6 +425,14 @@ Use the same id for a new fill of the same proposal. The row keeps its action st
 A pending row keeps its bound values until a receipt or cancel ends the decision. The queue then applies the current values for that id and removes the binding if any value differs. If the list label or actor changes while a decision is pending, the pending row shows its bound label or actor. A fill that omits a pending row keeps it through the end of the decision. The first later fill that omits the row removes it. An omitted row with only an open confirm step closes the step and goes away at once.
 
 A refused fill hides the list and keeps pending rows and their keys. A receipt can still end a kept decision. The next valid fill uses the same row for the same id and applies the same rules for omitted rows. A polite status announces the result of a kept decision with its bound title, also during a refusal. See [Library research](../examples/apps/research.html).
+
+## Service status
+
+Give `mu-service-status` a list of up to 24 services. Each service has a `label` and a `state` of `up`, `refused` or `unreachable`. Use `reason`, `checked`, `group` and `version` for optional text. Give the time of the last check in `checked`.
+
+Move the pointer over a service or use Tab to read its details. Use Escape to close the details. Use Enter or Space to show the details again. The application checks the services and gives the component a new fill.
+
+Keep the label and group of a service the same across fills. If two services have the same label and group, keep them in the same order. The component announces a change to the state of a service in the previous fill.
 
 ## Empty results and loading
 

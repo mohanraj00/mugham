@@ -219,6 +219,7 @@ python3 tools/serve.py
    - `http://localhost:8000/examples/evidence/provenance.html`: a card with the authorship slot and the citation slot, and a refused card.
    - `http://localhost:8000/examples/tables/table.html`: a table of synthetic plots with keyboard sorting and an empty table.
    - `http://localhost:8000/examples/cards/status.html`: each state of the status component, and a refused state.
+   - `http://localhost:8000/examples/cards/service-status.html`: three synthetic services with their states and check details.
    - `http://localhost:8000/examples/media/chart.html`: a bar chart, a line chart and a stacked bar chart of synthetic counts, each with a table view.
    - `http://localhost:8000/examples/media/image.html`: a synthetic floor plan in a message and in a card, and a refused image.
    - `http://localhost:8000/examples/evidence/narration.html`: a check that compares the narration of an agent with the values of a card.

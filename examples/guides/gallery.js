@@ -126,6 +126,11 @@ mount('action-queue', { label: 'Action queue', actions: [
   fill('queued-action', { key: 'tray-3', label: 'Reserve a tray', state: 'sent' }),
 ] }, { parent: cards });
 mount('source-status', { label: 'Tray records', state: 'ready', checked: '2028-04-09T08:00:00Z' }, { parent: cards });
+mount('service-status', { services: [
+  { label: 'Tray records', state: 'up', group: 'North', version: '1.0.0', checked: '2028-04-09T08:00Z' },
+  { label: 'Seed orders', state: 'refused', reason: 'The service refused the request.' },
+  { label: 'Watering plan', state: 'unreachable', reason: 'No answer came back.' },
+] }, { parent: cards });
 
 const zone = 'Etc/UTC';
 const fields = [
