@@ -9,6 +9,8 @@ When you upgrade from 0.7.0, you need no code change. The receipt fields `servic
 - A receipt can give `service` and `code`. A refusal shows the service name and the reason code as text after the message (#190).
 - `serviceHandler` binds one action handler to one base URL and one service name. It maps an HTTP response to a receipt (#190).
 - Add a service status strip that shows service states as text and announces changes (#191).
+- Keep wide page content inside the page width. The page style adds the scroll box `data-mu-scroll` for a wide plain table and breaks a long token in plain page text (#194).
+- Fix the details of the service status strip. A reorder no longer leaves stale open details, a row that a fill makes again keeps the focus, and the trigger has no `aria-expanded` (#197).
 - An example page shows one region for each of three synthetic services. Each region reads from its own fixture API and sends its action only to that API. The assemble guide gives the steps (#189).
 
 ## 0.7.0, 2026-11-27

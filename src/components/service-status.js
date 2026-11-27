@@ -76,8 +76,8 @@ export class MuServiceStatus extends MuElement {
 
     const id = 'service-details-' + ++this.#panelCount;
     const panel = el('div', { id, part: 'metadata', role: 'tooltip' }, details);
-    const trigger = el('button', { type: 'button', class: 'summary', part: 'trigger',
-      'aria-describedby': id, 'aria-expanded': 'false' }, label, ' ');
+    // As in the other kit tooltip, the trigger has no aria-expanded: it is not a disclosure.
+    const trigger = el('button', { type: 'button', class: 'summary', part: 'trigger', 'aria-describedby': id }, label, ' ');
     row.append(trigger);
     const tooltip = floatingTooltip(row, panel);
 
@@ -87,7 +87,6 @@ export class MuServiceStatus extends MuElement {
       this.#close = null;
       listeners.abort();
       tooltip.hide();
-      trigger.setAttribute('aria-expanded', 'false');
     };
     const open = () => {
       if (this.#close === close || !trigger.isConnected) return;
@@ -95,7 +94,6 @@ export class MuServiceStatus extends MuElement {
       this.#close = close;
       listeners = new AbortController();
       tooltip.show(trigger);
-      trigger.setAttribute('aria-expanded', 'true');
       this.ownerDocument.addEventListener('keydown', (event) => {
         if (event.key !== 'Escape' || event.isComposing) return;
         close();
@@ -157,21 +155,34 @@ export class MuServiceStatus extends MuElement {
       if (entry.panel && entry.panel.textContent !== details) entry.panel.textContent = details;
       next.set(key, entry);
     }
+    const active = this.shadowRoot.activeElement;
+    // A focused row that this fill makes again, because its first detail field came or all of them went.
+    let refocus = null;
     for (const [key, entry] of this.#rows) {
       if (next.get(key) === entry) continue;
+      if (active && entry.summary === active && next.has(key)) refocus = next.get(key).summary;
       entry.close?.();
       entry.row.remove();
     }
-    const active = this.shadowRoot.activeElement;
     let before = null;
-    for (const { row, summary } of [...next.values()].reverse()) {
-      // Move the other items around the focused control.
+    for (const { row, summary, close } of [...next.values()].reverse()) {
+      // Move the other items around the focused control. A move closes a native popover, so close the details
+      // first. Then the open state agrees with what shows, and the next hover, focus or click opens them again.
       if (active !== summary && (row.parentNode !== list || row.nextElementSibling !== before)) {
+        close?.();
         list.insertBefore(row, before);
       }
       before = row;
     }
     this.#rows = next;
+    if (refocus) {
+      // A row with no details has no button. It takes the focus only from code, so that the focus stays in the strip.
+      if (refocus.localName !== 'button') {
+        refocus.tabIndex = -1;
+        refocus.addEventListener('blur', () => refocus.removeAttribute('tabindex'), { once: true });
+      }
+      refocus.focus({ preventScroll: true });
+    }
     // Keep one live region in the DOM and write all changes from the fill at once.
     if (changes.length) announcement.textContent = changes.join(' ');
     return firstFill ? [strip, announcement] : null;

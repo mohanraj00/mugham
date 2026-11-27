@@ -101,7 +101,11 @@ The style gives these rules:
 | `a` | The accent color, always with an underline. |
 | `code`, `kbd`, `pre` | The code token on the surface color, with a subtle edge. |
 | `table`, `button`, `select` | A plain table has a line below each row. A plain button and a plain select have the control edge `--mu-color-border`, a minimum size of 44 by 44 CSS pixels, and a hover state. |
+| `[data-mu-scroll]` | A box for wide content, for example a plain table. The box scrolls to the side, so the page does not. A table cell does not break its text, so a wide table keeps its columns and scrolls in the box. |
+| `p`, `li`, `dt`, `dd`, `blockquote`, `figcaption`, `caption` | A long token with no break point, for example a digest, breaks at the edge of the block. A heading wraps only at spaces, and a `pre` block scrolls. |
 | Focus | A ring of 2px in `--mu-color-focus` on each focused control of the page. |
+
+A plain table that can be wider than the page goes in a scroll box. Put the table in a `div` with the attribute `data-mu-scroll`. The table keeps its `table` display, so a screen reader still reads it as a table, with its header cells. The style cannot know if the box overflows, so the page makes the box a keyboard target: give the `div` `tabindex="0"`, `role="region"` and a name in `aria-label`. Then a keyboard user can focus the box and scroll it with the arrow keys. `tests/browser/page-width.html` shows the markup, and `tools/browser_check.mjs` checks it at 1280 and 375 CSS pixels.
 
 In forced colors, the page uses `Canvas`, `CanvasText`, `LinkText`, `ButtonFace` and `ButtonText`. In reduced motion, the page has no transition. The table gives the ground of the page in each mode, and `tools/browser_check.mjs` checks it on the theme page:
 

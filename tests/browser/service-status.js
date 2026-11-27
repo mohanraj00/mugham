@@ -20,12 +20,15 @@ function view() {
     return result;
   };
   const viewport = document.documentElement;
+  // The tooltip shows when it is not hidden and, in a browser with native popovers, when its popover is open.
+  const shown = (panel) => !panel.hidden && (typeof panel.showPopover !== 'function' || panel.matches(':popover-open'));
   return {
     states: rows.map((row) => row.querySelector('[part="state"]').textContent),
     lines: new Set(rows.map((row) => box(row).top)).size,
     boxes: [...rows, document.querySelector('#next-check')].map(box),
     point: { x: triggerBox.x + triggerBox.width / 2, y: triggerBox.y + triggerBox.height / 2 },
-    text: trigger.getAttribute('aria-expanded') === 'true' ? tip.textContent : '',
+    text: shown(tip) ? tip.textContent : '',
+    expanded: rows.some((row) => row.querySelector('button')?.hasAttribute('aria-expanded')),
     focused: root.activeElement === trigger,
     ring: trigger.matches(':focus-visible') && focus.outlineStyle === 'solid' && parseFloat(focus.outlineWidth) >= 2,
     fits: viewport.scrollWidth <= viewport.clientWidth && tipBox.left >= 0 && tipBox.top >= 0
@@ -40,6 +43,28 @@ function view() {
       const style = getComputedStyle(node);
       return style.animationName === 'none' && style.transitionDuration === '0s';
     }),
+  };
+}
+
+// The rows of the strip by label: the details that show, and the center of each trigger.
+function rows() {
+  const root = document.querySelector('mu-service-status').shadowRoot;
+  const shown = (panel) => panel && !panel.hidden && (typeof panel.showPopover !== 'function' || panel.matches(':popover-open'));
+  const result = {};
+  for (const row of root.querySelectorAll('[part="service"]')) {
+    const summary = row.querySelector('.summary');
+    const panel = row.querySelector('[part="metadata"]');
+    const box = summary.getBoundingClientRect();
+    result[row.querySelector('[part="label"]').textContent] = {
+      text: shown(panel) ? panel.textContent : '', button: summary.localName === 'button',
+      expanded: summary.hasAttribute('aria-expanded'), point: { x: box.x + box.width / 2, y: box.y + box.height / 2 },
+    };
+  }
+  const focused = root.activeElement;
+  return {
+    order: Object.keys(result), rows: result, open: Object.values(result).filter(({ text }) => text).length,
+    focus: document.activeElement === root.host && focused ? focused.querySelector('[part="label"]')?.textContent ?? '' : '',
+    focusButton: focused?.localName === 'button',
   };
 }
 
@@ -107,6 +132,7 @@ export async function serviceStatusChecks(session, id, base, modes, { open, eval
         await open(session, id, base + '/' + PAGE, problems);
         await move({ x: 0, y: 0 });
         const state = () => read(view);
+        const readRows = () => read(rows);
         await waitFor(() => evaluate(session, id,
           'Boolean(document.querySelector("mu-service-status")?.shadowRoot?.querySelector("[part=trigger]"))'), Boolean);
         steps.push(...await pageRules(session, id, where));
@@ -120,7 +146,7 @@ export async function serviceStatusChecks(session, id, base, modes, { open, eval
         await move(start.point);
         const hover = await waitFor(state, (value) => value.text);
         check('Hover shows the check details and keeps the controls in place',
-          hover.text.includes('Checked: 2026-11-27T09:30Z') && hover.fits && sameBoxes(start, hover)
+          hover.text.includes('Checked: 2026-11-27T09:30Z') && !hover.expanded && hover.fits && sameBoxes(start, hover)
           && (mode !== 'forced-colors' || hover.forced) && (mode !== 'reduced-motion' || hover.reduced), hover);
         await move({ x: 0, y: 0 });
         await waitFor(state, (value) => !value.text);
@@ -140,6 +166,50 @@ export async function serviceStatusChecks(session, id, base, modes, { open, eval
           focus.focused && focus.ring && focus.text === hover.text && focus.fits && sameBoxes(start, focus)
           && escaped.focused && !escaped.text && sameBoxes(start, escaped)
           && reopened.focused && reopened.text === hover.text && sameBoxes(start, reopened), { focus, escaped, reopened });
+
+        // Hand-written from #197: a reorder during hover leaves the moved row fully shown or fully closed, and a
+        // click on its trigger then shows its details.
+        const strip = 'document.querySelector("mu-service-status")';
+        await evaluate(session, id, `${strip}.shadowRoot.activeElement?.blur()`);
+        await move({ x: 0, y: 0 });
+        // The fill [Store, Search, Queue] keeps Store and Queue in place and moves the Search row.
+        const before = await readRows();
+        await move(before.rows.Search.point);
+        const hovered = await waitFor(readRows, (value) => value.rows.Search.text);
+        await evaluate(session, id, `(() => {
+          const host = ${strip};
+          const [search, store, queue] = host.fill.data.services;
+          host.fill = { ...host.fill, data: { services: [store, search, queue] } };
+        })()`);
+        const moved = await readRows();
+        await evaluate(session, id, `[...${strip}.shadowRoot.querySelectorAll('[part="service"] button')]
+          .find((button) => button.querySelector('[part="label"]').textContent === 'Search').click()`);
+        const clicked = await waitFor(readRows, (value) => value.rows.Search.text);
+        check('A reorder during hover leaves the details shown or closed, and a click shows them again',
+          hovered.rows.Search.text.includes('Checked: 2026-11-27T09:30Z')
+          && moved.order.join(',') === 'Store,Search,Queue' && moved.open <= 1
+          && (moved.rows.Search.text === '' || moved.rows.Search.text === hovered.rows.Search.text)
+          && clicked.rows.Search.text === hovered.rows.Search.text && clicked.open === 1
+          && Object.values(moved.rows).every(({ expanded }) => !expanded), { hovered, moved, clicked });
+
+        // Hand-written from #197: if a fill makes the focused row again, the focus moves to the new row.
+        await move({ x: 0, y: 0 });
+        await evaluate(session, id, `${strip}.shadowRoot.querySelectorAll('[part="service"] button')[2].focus()`);
+        const queueFocused = await waitFor(readRows, (value) => value.focus === 'Queue');
+        const refill = (queue) => evaluate(session, id, `(() => {
+          const host = ${strip};
+          const [first, second] = host.fill.data.services;
+          host.fill = { ...host.fill, data: { services: [first, second, ${JSON.stringify(queue)}] } };
+        })()`);
+        await refill({ label: 'Queue', state: 'unreachable' });
+        const plain = await readRows();
+        await refill({ label: 'Queue', state: 'unreachable', reason: 'No answer came back.' });
+        const again = await waitFor(readRows, (value) => value.rows.Queue.text);
+        check('The focus stays on a row that a fill makes again, and the new trigger shows its details',
+          queueFocused.focus === 'Queue' && queueFocused.focusButton
+          && plain.focus === 'Queue' && !plain.rows.Queue.button
+          && again.focus === 'Queue' && again.focusButton && again.rows.Queue.text === 'Reason: No answer came back.',
+          { queueFocused, plain, again });
       }
     }
     const result = await read(fillChecks);
