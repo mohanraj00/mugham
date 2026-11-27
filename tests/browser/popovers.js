@@ -1,4 +1,5 @@
 import { setTimeout as delay } from 'node:timers/promises';
+import { waitFor as waitForState } from './wait.js';
 
 export const POPOVER_PAGE = 'examples/cards/popovers.html';
 
@@ -153,7 +154,7 @@ export async function popoverExampleChecks(session, sessionId, base, modes, { ev
       await space();
       await tab();
       await waitFor('document.querySelector("mu-menu").dataset.state === "default"');
-      const help = await read();
+      const help = await waitForState(read, (state) => state.open[1] && state.focus === 4);
       check(mode, 'Tab leaves the menu and gives focus to the tooltip target', !help.open[0] && help.open[1]
         && help.focus === 4 && help.ring && help.description === help.text, help);
       check(mode, 'the tooltip fits below or above its target', inViewport(help, 1) && clearOfTarget(help)
