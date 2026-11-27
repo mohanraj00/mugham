@@ -5,6 +5,10 @@ Each release has an entry. The newest entry is first.
 ## Unreleased
 
 - Card collapse, grid expand and collapse, and link apply and cancel controls show icons by default. Set `control-display="text"` to keep the text labels.
+- Keep a completed action button done when the same application action returns after a refusal in the same message.
+- Show how an image policy blocks redirects to origins outside the allowed list.
+- Pause saved grid edits and retries while a fill is refused. Resume eligible edits when a valid fill returns.
+- Require one mailbox and no query or fragment in a mail link.
 
 ## 0.6.0, 2026-11-26
 

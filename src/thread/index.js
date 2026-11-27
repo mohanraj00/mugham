@@ -305,7 +305,7 @@ export class MuThread extends HTMLElement {
     const node = el('li', { class: 'message ' + message.actor.type, 'data-state': message.state },
       el('article', { 'aria-label': 'Message from ' + who(message.actor) }, head, partial, parts));
     // nodes holds the node of each part. keys holds the stable text of the part that the node shows.
-    return { node, header: head, partial, parts, nodes: [], keys: [], state: message.state, refused: false };
+    return { node, header: head, partial, parts, nodes: [], keys: [], completed: new Map(), state: message.state, refused: false };
   }
 
   #refusedItem(message) {
@@ -326,7 +326,11 @@ export class MuThread extends HTMLElement {
       // element in the default state, and a person could send the request a second time. An open
       // confirm step also stays, because a person decides in it.
       if (old && this.#busy(old)) return this.#wait(entry, old);
-      const node = this.#refill(old, part, message) ?? this.#part(part, message, component);
+      const binding = part.type === 'component' ? this.#binding(part.fill, message) : null;
+      const bindingKey = stable(binding);
+      const node = this.#refill(old, part, message, bindingKey)
+        ?? this.#refill(entry.completed.get(index), part, message, bindingKey)
+        ?? this.#part(part, message, component, binding);
       if (node === old) {
         // The same element shows the new fill.
       } else if (old) {
@@ -336,9 +340,12 @@ export class MuThread extends HTMLElement {
       else entry.parts.append(node);
       if (this.isConnected) this.#textParts.get(node)?.control?.connect();
       // A refusal is new for the person, so the live region tells it. An element can also refuse its fill.
-      if (part.type === 'refusal' || node.dataset.state === 'refused' || node.classList.contains('refusal')) {
+      const refused = part.type === 'refusal' || node.dataset.state === 'refused' || node.classList.contains('refusal');
+      if (refused) {
+        // Keep the completed button off the page while a refusal shows in its place.
+        if (node !== old && old?.localName === 'mu-action-button' && old.action.state === 'done') entry.completed.set(index, old);
         said.notices.push(`The thread refused a part of the message from ${who(message.actor)}.`);
-      }
+      } else entry.completed.delete(index);
       if (part.type === 'status' && index >= entry.keys.length) {
         said.notices.push(`Error in the message from ${who(message.actor)}: ${cut(part.text, MAX_SUMMARY)}`);
       }
@@ -354,6 +361,7 @@ export class MuThread extends HTMLElement {
       this.#dropText(node);
       node.remove();
       entry.keys.pop();
+      entry.completed.delete(index);
     }
   }
 
@@ -363,7 +371,7 @@ export class MuThread extends HTMLElement {
 
   // A new fill of the same action with the same binding goes to the same element. Then the rules of the
   // element apply: a done action button stays done, and a form with new values can save again.
-  #refill(old, part, message) {
+  #refill(old, part, message, bindingKey) {
     const record = this.#textParts.get(old);
     if (record && part.type === 'text') {
       record.text.replaceChildren(part.text);
@@ -371,7 +379,7 @@ export class MuThread extends HTMLElement {
       return old;
     }
     if (!old || part.type !== 'component' || !ACTIONS.has(part.fill.component) || old.localName !== TAGS[part.fill.component]) return null;
-    if (!this.#bindings.has(old) || this.#bindings.get(old) !== stable(this.#binding(part.fill, message))) return null;
+    if (this.#bindings.get(old) !== bindingKey) return null;
     old.actor = actorOf(message);
     old.fill = part.fill;
     return old;
@@ -398,11 +406,11 @@ export class MuThread extends HTMLElement {
     observer.observe(node, { attributes: true, attributeFilter: ['data-state'] });
   }
 
-  #part(part, message, component) {
+  #part(part, message, component, binding) {
     if (part.type === 'text') return this.#textPart(el('p', { class: 'text' }, part.text));
     if (part.type === 'status') return el('p', { class: 'status error' }, 'Error: ' + part.text + (part.code ? ` (${part.code})` : ''));
     if (part.type === 'refusal') return refusalOf(component, part.errors);
-    if (part.type === 'component') return this.#component(part.fill, message);
+    if (part.type === 'component') return this.#component(part.fill, message, binding);
     return el('p', { class: 'fallback' }, part.text);
   }
 
@@ -419,11 +427,10 @@ export class MuThread extends HTMLElement {
   }
 
   // The element of the component validates the fill again. The application gives the binding of an action.
-  #component(fill, message) {
+  #component(fill, message, binding) {
     const tag = TAGS[fill.component] ?? registeredTag(fill.component);
     if (!tag) return refusalOf(fill.component, ['the kit has no element for this component']);
     const node = document.createElement(tag);
-    const binding = this.#binding(fill, message);
     if (binding !== null) {
       try {
         node.action = binding;

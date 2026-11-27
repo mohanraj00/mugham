@@ -48,8 +48,10 @@ A block with no item has no mark. Call `setApprovals([], revision)` with the cur
 A link is a button, not an anchor. No element has an address attribute, so the browser cannot follow a link without the kit.
 
 - Page code sets the schemes that a link can have: `MuRichText.linkSchemes`. The default is `['https:']`. The page can permit `https:`, `http:` and `mailto:`, and no other scheme. A fill cannot set this policy.
-- The element parses each target with `new URL`. The target must be a complete address. An `https:` or `http:` target has a host and no user name. A `mailto:` target has an address only, with no header fields.
+- The element parses each target with `new URL`. The target must be a complete address. An `https:` or `http:` target has a host and no user name.
+- A `mailto:` target must have one mailbox. After decoding, it must have a local part, one `@` and a domain. The local part accepts letters, digits, underscores, plus signs, apostrophes and hyphens, with dots between nonempty parts. The domain accepts letters and digits, with hyphens inside its labels. The rule accepts ASCII letters and digits. It refuses commas, semicolons, spaces, queries and fragments.
 - The element refuses a rich text with a target that the page does not permit, for example a script address, a `data:` address or a relative address. The refusal shows as text, and no button appears.
+- The rich text field and the offline queue use the same mailbox check. When a pasted link fails the check, the field keeps its label as plain text.
 - The target shows as text below the link on hover and on focus: `Opens https://example.org/rules`. The text is the parsed address. It is also the description of the button for a screen reader. Escape hides it.
 - The target opens only after a person presses the button, with a pointer, Enter or Space. The element first sends a cancelable `mu-open` event with `detail.locator`, the same event as a citation. If the application does not cancel it, the browser opens the target in a new tab with no opener and no referrer.
 

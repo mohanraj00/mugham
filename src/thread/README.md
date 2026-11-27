@@ -81,6 +81,8 @@ A snapshot never replaces a pending action or an open confirm step. The element 
 
 If a snapshot gives a new fill for the same action component and the binding is the same, the thread gives the fill to the same element. Then the rules of the element apply: a done action button stays done, and a form with new values can save again. If the binding or the component is different, the thread makes a new element.
 
+If a refused snapshot replaces a completed action button, the thread keeps its result. The result returns with the button when a valid fill has the same message position and application binding.
+
 ## Accessibility
 
 - The list of messages has the name `Thread`.

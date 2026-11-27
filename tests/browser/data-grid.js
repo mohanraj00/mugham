@@ -117,6 +117,13 @@ async function browserChecks() {
   const stage = document.getElementById('stage');
   const root = (element) => element.shadowRoot;
   const tick = () => new Promise((done) => setTimeout(done, 0));
+  const waitFor = async (test) => {
+    for (let i = 0; i < 100; i += 1) {
+      if (test()) return true;
+      await new Promise((done) => setTimeout(done, 20));
+    }
+    return false;
+  };
   const refusal = (element) => (element.dataset.state === 'refused' ? root(element).querySelector('[part="details"] > div')?.textContent : null);
   const thrown = (act) => { try { act(); return ''; } catch (error) { return `${error.name}: ${error.message}`; } };
   function mount(value, binding = BINDING, parent = stage) {
@@ -261,6 +268,24 @@ async function browserChecks() {
   answer(quick);
   check('quick changes: a change to the value that the receipt confirmed sends no request', quick.requests.length === 4
     && at(quick, 'food', 'jan').textContent === '500' && quick.dataset.state === 'default');
+
+  const paused = mount(budget());
+  edit(paused, 'rent', 'jan', '950');
+  edit(paused, 'food', 'jan', '450');
+  const pausedSent = last(paused);
+  paused.noReceipt(pausedSent.id);
+  const oldRetry = root(paused).querySelector('[part="retry"]');
+  paused.fill = fill({ ...budget().data, columns: [] });
+  oldRetry.click();
+  const accepted = paused.receipt({ id: pausedSent.id, ok: true });
+  const settled = await waitFor(() => paused.action.state !== 'pending' || paused.requests.length > 1);
+  check('a refused grid accepts a receipt and sends no saved edit or retry', settled && accepted
+    && paused.dataset.state === 'refused' && paused.requests.length === 1, paused.requests.length);
+  paused.fill = budget();
+  const resumed = await waitFor(() => paused.requests.length > 1);
+  check('a valid fill resumes a saved change', resumed && paused.requests.length === 2 && last(paused).arguments.row === 'food'
+    && last(paused).arguments.value === 450 && at(paused, 'food', 'jan').textContent === '450Pending', paused.requests.length);
+  if (resumed) answer(paused);
 
   // A new fill can make a cell read-only while its request is pending. The marker stays until the receipt.
   const lockedRent = (rent = 900) => { const value = budget(rent); value.data.rows[0].data.cells[1].data.read_only = true; return value; };

@@ -312,6 +312,15 @@ export class MuDataGrid extends MuElement {
     return this.#action.state === 'disabled' ? 'disabled' : 'default';
   }
 
+  refuse(errors) {
+    this.#editing = null;
+    super.refuse(errors);
+  }
+
+  rendered() {
+    this.#flush();
+  }
+
   render(data) {
     // New data keeps the focus on the same cell, and an open editor keeps its text.
     const active = this.shadowRoot.activeElement;
@@ -386,10 +395,12 @@ export class MuDataGrid extends MuElement {
     const retry = el('button', { type: 'button', part: 'retry' }, 'Retry');
     const cancel = el('button', { type: 'button', part: 'cancel' }, 'Cancel');
     retry.addEventListener('click', () => {
+      if (!this.fill || this.#pending?.retry !== retry) return;
       const request = this.#action.retry();
       if (request) this.#send(request);
     });
     cancel.addEventListener('click', () => {
+      if (!this.fill || this.#pending?.cancel !== cancel) return;
       const key = this.#action.key;
       if (!key || cancel.hidden) return;
       const event = new CustomEvent('mu-action-cancel', { bubbles: true, composed: true, cancelable: true, detail: Object.freeze({ key }) });

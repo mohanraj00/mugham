@@ -22,6 +22,10 @@ class TestNode extends EventTarget {
     parent.children.splice(parent.children.indexOf(this), 1);
     this.parentNode = null;
   }
+  replaceWith(node) {
+    this.parentNode.insertBefore(node, this);
+    this.remove();
+  }
   replaceChildren(...children) {
     for (const child of this.children) if (child instanceof TestNode) child.parentNode = null;
     this.children = [];
@@ -31,18 +35,27 @@ class TestNode extends EventTarget {
   getAttribute(name) { return this.attributes.get(name) ?? null; }
   removeAttribute(name) { this.attributes.delete(name); }
   get id() { return this.getAttribute('id'); }
+  get localName() { return this.tag; }
+  get firstElementChild() { return this.children[0]; }
+  get classList() { return { contains: (name) => (this.getAttribute('class') ?? '').split(' ').includes(name) }; }
+  closest(tag) { return this.tag === tag ? this : this.parentNode?.closest(tag); }
+  contains(node) { return Boolean(node && (node === this || this.contains(node.parentNode))); }
+  focus() {}
+  select() {}
   get textContent() { return this.children.map((child) => child.textContent).join(''); }
   set textContent(textContent) { this.replaceChildren({ textContent }); }
 }
 
 const elements = new Map();
 globalThis.Node = TestNode;
+globalThis.Element = TestNode;
 globalThis.HTMLElement = class extends TestNode {
   attachShadow() { return (this.shadowRoot = new TestNode()); }
 };
 globalThis.CSSStyleSheet = class { replaceSync() {} };
+globalThis.requestAnimationFrame = queueMicrotask;
 globalThis.document = {
-  createElement: (tag) => new TestNode(tag),
+  createElement: (tag) => elements.has(tag) ? Object.assign(new (elements.get(tag))(), { tag }) : new TestNode(tag),
   createElementNS: (namespaceURI, tag) => Object.assign(new TestNode(tag), { namespaceURI }),
   createTextNode: (textContent) => Object.assign(new TestNode('#text'), { textContent }),
 };
@@ -52,6 +65,7 @@ globalThis.customElements = {
 };
 
 const { define } = await import('../src/components/index.js');
+const { MuThread } = await import('../src/thread/index.js');
 define();
 
 const EMPTY = { title: 'No loans <found>', text: 'Try <another> search.' };
@@ -64,6 +78,117 @@ function make(name, data) {
   element.fill = fill(name, data);
   return element;
 }
+
+function descendant(node, matches) {
+  for (const child of node.children ?? []) {
+    if (matches(child)) return child;
+    const nested = descendant(child, matches);
+    if (nested) return nested;
+  }
+}
+
+test('a returned action keeps its receipt only for the same message and binding', async () => {
+  const thread = new MuThread();
+  const actor = { type: 'agent', id: 'agent-check' };
+  let loan = 'L-1';
+  thread.bind = () => ({ tool: 'loan.renew', label: 'Renew', arguments: { loan } });
+  const snapshot = (messageId, value) => ({ type: 'ACTIVITY_SNAPSHOT', messageId, activityType: 'mugham.fill',
+    metadata: { mugham: { actor } }, content: { format: 2, fill: value } });
+  const action = fill('action-button', { label: 'Renew' });
+  const refusal = { ...action, data: {} };
+  const [list] = thread.shadowRoot.children;
+  const button = (index) => descendant(list.children[index], (node) => node.localName === 'mu-action-button');
+  const requests = [];
+  function press(node) {
+    descendant(node.shadowRoot, (child) => child.tag === 'button').dispatchEvent(new Event('click'));
+  }
+  await thread.read([snapshot('one', action)]);
+  const first = button(0);
+  first.addEventListener('mu-action', (event) => requests.push(event.detail));
+  press(first);
+  assert.equal(first.receipt({ id: requests[0].id, ok: true, message: 'Renewed.', reference: 'R-1' }), true);
+  await thread.read([snapshot('one', refusal), snapshot('two', action)]);
+  assert.equal(button(0), undefined);
+  assert.equal(button(1).dataset.state, 'default');
+  await thread.read([snapshot('one', action)]);
+  const returned = button(0);
+  assert.equal(returned.dataset.state, 'done');
+  assert.match(returned.shadowRoot.textContent, /Done: Renewed\./);
+  assert.match(returned.shadowRoot.textContent, /Reference: R-1/);
+  if (returned !== first) returned.addEventListener('mu-action', (event) => requests.push(event.detail));
+  press(returned);
+  assert.equal(requests.length, 1);
+  await thread.read([snapshot('one', refusal)]);
+  loan = 'L-2';
+  await thread.read([snapshot('one', action)]);
+  assert.equal(button(0).dataset.state, 'default');
+  button(0).addEventListener('mu-action', (event) => requests.push(event.detail));
+  press(button(0));
+  assert.equal(requests.at(-1).arguments.loan, 'L-2');
+  button(0).receipt({ id: requests.at(-1).id, ok: true });
+});
+
+test('a refused grid blocks old retries and resumes saved edits after a valid fill', () => {
+  const grid = document.createElement('mu-data-grid');
+  const actor = { type: 'agent', id: 'agent-check' };
+  grid.actor = actor;
+  grid.action = { tool: 'budget.set', title: 'Budget', rows: { rent: 'Rent', food: 'Food' },
+    columns: { jan: { label: 'January', type: 'number' } } };
+  const value = fill('data-grid', { label: 'Budget',
+    columns: [fill('data-grid-column', { key: 'jan', label: 'January', type: 'number' })],
+    rows: [fill('data-grid-row', { key: 'rent', label: 'Rent', cells: [fill('number-cell', { value: 100 })] }),
+      fill('data-grid-row', { key: 'food', label: 'Food', cells: [fill('number-cell', { value: 50 })] })] }, { slots: { authorship: actor } });
+  const requests = [];
+  grid.addEventListener('mu-action', (event) => requests.push(event.detail));
+  grid.fill = value;
+  const table = descendant(grid.shadowRoot, (node) => node.tag === 'table');
+  const body = descendant(table, (node) => node.tag === 'tbody');
+  const enter = (target) => {
+    const event = Object.assign(new Event('keydown', { cancelable: true }), { key: 'Enter' });
+    table.dispatchEvent(Object.defineProperty(event, 'target', { value: target }));
+  };
+  function edit(row, value) {
+    const cell = descendant(body.children[row], (node) => node.tag === 'td');
+    enter(cell);
+    const input = descendant(cell, (node) => node.tag === 'input');
+    input.value = value;
+    enter(input);
+  }
+  edit(0, '120');
+  edit(1, '60');
+  assert.equal(requests.length, 1);
+  grid.noReceipt(requests[0].id);
+  const retry = descendant(grid.shadowRoot, (node) => node.getAttribute?.('part') === 'retry');
+  grid.fill = { ...value, data: { ...value.data, columns: [] } };
+  retry.dispatchEvent(new Event('click'));
+  assert.equal(requests.length, 1);
+  assert.equal(grid.receipt({ id: requests[0].id, ok: true }), true);
+  assert.equal(grid.dataset.state, 'refused');
+  assert.equal(requests.length, 1);
+  grid.fill = value;
+  assert.equal(requests.length, 2);
+  assert.deepEqual(requests[1].arguments, { row: 'food', column: 'jan', value: 60 });
+  assert.equal(grid.receipt({ id: requests[1].id, ok: true }), true);
+});
+
+test('the rich text renderer offers a link only for a valid mail target', (t) => {
+  const rich = document.createElement('mu-rich-text');
+  const actor = { type: 'agent', id: 'agent-check' };
+  rich.actor = actor;
+  const constructor = rich.constructor;
+  const schemes = constructor.linkSchemes;
+  t.after(() => { constructor.linkSchemes = schemes; });
+  constructor.linkSchemes = ['mailto:'];
+  const value = (url) => fill('rich-text', { blocks: [fill('rich-paragraph',
+    { content: [fill('rich-link', { text: 'Mail', url })] })] }, { slots: { authorship: actor } });
+  const link = () => descendant(rich.shadowRoot, (node) => node.getAttribute?.('part') === 'link');
+  rich.fill = value('mailto:reader@example.org');
+  assert.equal(rich.dataset.state, 'default');
+  assert.equal(link().textContent, 'Mail');
+  rich.fill = value('mailto:reader@example.org;other@example.org');
+  assert.equal(rich.dataset.state, 'refused');
+  assert.equal(link(), undefined);
+});
 
 test('Heading 3 on an empty note keeps the value and asks for Heading 1', () => {
   const value = fill('rich-text', { blocks: [] });
