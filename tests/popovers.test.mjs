@@ -132,7 +132,7 @@ for (const native of [true, false]) {
     anchor.getBoundingClientRect = () => box;
     const styles = new Map();
     tooltip.style.setProperty = (name, value) => styles.set(name, value);
-    const position = () => [styles.get('--mu-popup-left'), styles.get('--mu-popup-top')];
+    const position = () => [styles.get('--popup-left'), styles.get('--popup-top')];
 
     const layer = floatingTooltip(group, tooltip);
     assert.equal(tooltip.hidden, true);

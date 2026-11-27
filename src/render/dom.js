@@ -54,9 +54,9 @@ export function positionPopup(panel, anchor) {
     const start = view.getComputedStyle(anchor).direction === 'rtl' ? target.right - box.width : target.left;
     const left = Math.max(inset, Math.min(start, viewport.clientWidth - box.width - inset));
     const top = useBelow ? belowStart : aboveEnd - Math.min(height, available);
-    panel.style.setProperty('--mu-popup-left', left + 'px');
-    panel.style.setProperty('--mu-popup-top', top + 'px');
-    panel.style.setProperty('--mu-popup-height', available + 'px');
+    panel.style.setProperty('--popup-left', left + 'px');
+    panel.style.setProperty('--popup-top', top + 'px');
+    panel.style.setProperty('--popup-height', available + 'px');
   };
   update();
   const observer = new ResizeObserver(update);
@@ -74,9 +74,9 @@ export function positionPopup(panel, anchor) {
 
 export const FLOATING_TOOLTIP_CSS = sheet(`
   .floating-tooltip {
-    position: fixed; inset: auto; left: var(--mu-popup-left, 8px); top: var(--mu-popup-top, 8px); margin: 0;
+    position: fixed; inset: auto; left: var(--popup-left, 8px); top: var(--popup-top, 8px); margin: 0;
     inline-size: max-content; max-inline-size: calc(100% - 16px);
-    max-block-size: var(--mu-popup-height, calc(100% - 16px)); overflow: auto; overflow-wrap: anywhere;
+    max-block-size: var(--popup-height, calc(100% - 16px)); overflow: auto; overflow-wrap: anywhere;
     padding: var(--mu-space-1) var(--mu-space-2);
     font: var(--mu-type-caption); color: var(--mu-color-text); background: var(--mu-color-surface);
     border: 1px solid var(--mu-color-border); border-radius: var(--mu-radius-2);

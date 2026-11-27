@@ -10,9 +10,9 @@ const SURFACE = sheet(`
     font: var(--mu-type-body); overflow-wrap: anywhere; overscroll-behavior: contain;
   }
   .anchored {
-    inset: auto; left: var(--mu-popup-left, 0px); top: var(--mu-popup-top, 0px); margin: 0;
+    inset: auto; left: var(--popup-left, 0px); top: var(--popup-top, 0px); margin: 0;
     inline-size: max-content; max-inline-size: calc(100% - 16px);
-    max-block-size: var(--mu-popup-height, 100%); overflow: auto;
+    max-block-size: var(--popup-height, 100%); overflow: auto;
   }
   button {
     min-inline-size: 44px; min-block-size: 44px; max-inline-size: 100%;
