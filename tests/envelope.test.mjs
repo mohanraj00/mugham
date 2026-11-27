@@ -23,6 +23,8 @@ test('the history actor check requires a valid actor with the same type and id',
   const value = { ...head, actor, state: 'final', parts: [{ type: 'text', text: 'A plan.' }] };
   const read = (actorFor) => readEnvelope(value, undefined, { actorFor });
   assert.deepEqual(readEnvelope({ ...value, actorFor: () => undefined }), value);
+  assert.deepEqual(read(undefined), value);
+  assert.deepEqual(read(null), value);
   assert.deepEqual(read((message) => {
     assert.deepEqual(message, value);
     message.parts[0].text = 'A different plan.';
@@ -35,6 +37,7 @@ test('the history actor check requires a valid actor with the same type and id',
     () => ({ ...actor, type: 'human' }),
     () => ({ ...actor, id: 'agent-other' }),
     () => { throw new Error('A private error.'); },
+    'agent-plan',
   ]) {
     const result = read(actorFor);
     assert.deepEqual(result, { ...head, state: 'refused', errors: ['Actor check failed.'] });

@@ -131,7 +131,7 @@ function refused(header, errors) {
 }
 
 function checkActor(message, header, actorFor) {
-  if (actorFor === undefined) return message;
+  if (actorFor == null) return message;
   try {
     const actor = actorFor(structuredClone(message));
     if (!actorErrors(actor, 'actor').length && actor.type === message.actor.type && actor.id === message.actor.id) return message;
