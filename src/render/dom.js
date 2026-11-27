@@ -34,6 +34,89 @@ export function setDisclosure(button, panel, expanded) {
   panel.hidden = !expanded;
 }
 
+export function positionPopup(panel, anchor) {
+  const owner = anchor.ownerDocument;
+  const view = owner.defaultView;
+  const viewport = owner.documentElement;
+  const events = new AbortController();
+  // Use the space below the control when the panel fits. Otherwise use the side with more space.
+  const update = () => {
+    const target = anchor.getBoundingClientRect();
+    const box = panel.getBoundingClientRect();
+    const inset = 8;
+    const height = Math.max(box.height, panel.scrollHeight + panel.offsetHeight - panel.clientHeight);
+    const belowStart = Math.max(inset, target.bottom);
+    const aboveEnd = Math.min(target.top, viewport.clientHeight - inset);
+    const below = Math.max(0, viewport.clientHeight - belowStart - inset);
+    const above = Math.max(0, aboveEnd - inset);
+    const useBelow = height <= below || below >= above;
+    const available = useBelow ? below : above;
+    const start = view.getComputedStyle(anchor).direction === 'rtl' ? target.right - box.width : target.left;
+    const left = Math.max(inset, Math.min(start, viewport.clientWidth - box.width - inset));
+    const top = useBelow ? belowStart : aboveEnd - Math.min(height, available);
+    panel.style.setProperty('--popup-left', left + 'px');
+    panel.style.setProperty('--popup-top', top + 'px');
+    panel.style.setProperty('--popup-height', available + 'px');
+  };
+  update();
+  const observer = new ResizeObserver(update);
+  observer.observe(anchor);
+  observer.observe(panel);
+  // A scroll event in a shadow root does not reach its host.
+  const scroll = { capture: true, signal: events.signal };
+  for (let node = anchor; node; node = node.assignedSlot ?? node.parentNode ?? node.host) {
+    if (node.host) node.addEventListener('scroll', update, scroll);
+  }
+  owner.addEventListener('scroll', update, scroll);
+  view.addEventListener('resize', update, { signal: events.signal });
+  return () => { events.abort(); observer.disconnect(); };
+}
+
+export const FLOATING_TOOLTIP_CSS = sheet(`
+  .floating-tooltip {
+    position: fixed; inset: auto; left: var(--popup-left, 8px); top: var(--popup-top, 8px); margin: 0;
+    inline-size: max-content; max-inline-size: calc(100% - 16px);
+    max-block-size: var(--popup-height, calc(100% - 16px)); overflow: auto; overflow-wrap: anywhere;
+    padding: var(--mu-space-1) var(--mu-space-2);
+    font: var(--mu-type-caption); color: var(--mu-color-text); background: var(--mu-color-surface);
+    border: 1px solid var(--mu-color-border); border-radius: var(--mu-radius-2);
+  }
+  .floating-tooltip[hidden] { display: none !important; }
+  .tooltip-fallback { position: fixed; inset: 0; pointer-events: none; z-index: 1; }
+  .tooltip-fallback > .floating-tooltip { position: absolute; pointer-events: auto; }
+  @media (forced-colors: active) {
+    .floating-tooltip { background: Canvas; color: CanvasText; border-color: CanvasText; }
+  }
+`);
+
+export function floatingTooltip(area, tooltip) {
+  const native = typeof tooltip.showPopover === 'function';
+  tooltip.setAttribute('class', 'floating-tooltip');
+  if (native) tooltip.popover = 'manual';
+  // The fixed wrapper keeps the absolute tooltip outside the normal flow and scroll clip.
+  const surface = native ? tooltip : el('span', { class: 'tooltip-fallback' }, tooltip);
+  tooltip.hidden = surface.hidden = true;
+  area.append(surface);
+  let stop;
+  let target;
+  const hide = () => {
+    stop?.();
+    stop = null;
+    target = null;
+    if (native && tooltip.matches(':popover-open')) tooltip.hidePopover();
+    tooltip.hidden = surface.hidden = true;
+  };
+  const show = (anchor) => {
+    if (anchor === target || !tooltip.isConnected) return;
+    stop?.();
+    target = anchor;
+    tooltip.hidden = surface.hidden = false;
+    if (native && !tooltip.matches(':popover-open')) tooltip.showPopover({ source: anchor });
+    stop = positionPopup(tooltip, anchor);
+  };
+  return { show, hide };
+}
+
 // The edge and the small shadow of a container that is not a control: a card, a form or a message. They come
 // from the border token, so each theme and each contract that declares color.border has them. A control keeps
 // the full border color, because its edge needs a contrast of 3:1. Forced colors replaces the two.
@@ -112,24 +195,12 @@ export const COMPACT_CONTROL_CSS = sheet(`
     inline-size: 44px; block-size: 44px; min-inline-size: 44px; min-block-size: 44px; padding: 0;
   }
   [data-control-display="icon"] .icon { inline-size: 16px; block-size: 16px; }
-  .compact-tooltip-row { display: flex; flex: 0 0 100%; grid-column: 1 / -1; min-inline-size: 0; }
-  .compact-tooltip-row[hidden] { display: none; }
-  .compact-tooltip-row span {
-    max-inline-size: 100%; overflow-wrap: anywhere; padding: var(--mu-space-1) var(--mu-space-2);
-    font: var(--mu-type-caption); color: var(--mu-color-text); background: var(--mu-color-surface);
-    border: 1px solid var(--mu-color-border); border-radius: var(--mu-radius-2);
-  }
-  @media (forced-colors: active) {
-    .compact-tooltip-row span { background: Canvas; color: CanvasText; border-color: CanvasText; }
-  }
 `);
 
 const openControlTooltip = new WeakMap();
 
 export function compactControls(host, area, tooltip, controls) {
-  const row = el('div', { class: 'compact-tooltip-row' }, tooltip);
-  row.hidden = true;
-  area.append(row);
+  const layer = floatingTooltip(area, tooltip);
   let textDisplay;
   let hovered;
   let focused;
@@ -141,7 +212,7 @@ export function compactControls(host, area, tooltip, controls) {
     activeDocument.removeEventListener('keydown', escape, true);
     activeDocument = null;
     shown = null;
-    row.hidden = true;
+    layer.hide();
     tooltip.textContent = '';
   };
   const dismiss = () => {
@@ -174,7 +245,7 @@ export function compactControls(host, area, tooltip, controls) {
     }
     shown = button;
     refresh();
-    row.hidden = false;
+    layer.show(button);
   };
   // Keep the tooltip open while the pointer moves from the button to its text.
   area.addEventListener('pointerleave', () => {
@@ -182,11 +253,11 @@ export function compactControls(host, area, tooltip, controls) {
     show(focused);
   });
   for (const { button } of controls) {
-    button.addEventListener('pointerenter', () => {
+    button.addEventListener('pointerenter', (event) => {
+      if (event.pointerType === 'touch') return;
       hovered = button;
       show(button);
     });
-    // A mouse press also gives the focus. Show the tooltip only for keyboard focus, so it does not stay open and move the page.
     button.addEventListener('focus', () => {
       if (!button.matches(':focus-visible')) return;
       focused = button;

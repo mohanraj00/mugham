@@ -1,10 +1,10 @@
 # Status
 
-2026-11-26. Release 0.7.0 is ready for the owner to tag. The v0.7 scope is complete. The kit has contract format 2, the tokens, the primitives, the catalog components, the message envelope and the thread for people and agents. An application can register its own contract and element. The kit has no workbench shell and no panels. [Decision 0001](decisions/0001-build-tools.md) gives the build tools and the dependency rule.
+2026-11-27. Release 0.7.0 is ready for the owner to tag. The v0.7 scope is complete. The kit has contract format 2, the tokens, the primitives, the catalog components, the message envelope and the thread for people and agents. An application can register its own contract and element. The kit has no workbench shell and no panels. [Decision 0001](decisions/0001-build-tools.md) gives the build tools and the dependency rule.
 
 ## In release 0.7.0
 
-- Compact icon controls for cards, card grids and the rich text link editor (#180).
+- Compact icon controls for cards, card grids and the rich text link editor (#180). Their tooltip text floats, so no other control moves (#186).
 - Completed buttons stay done when the same action returns after a refusal. Grid edits pause until a valid fill returns (#144).
 - An image redirect policy example, one mailbox per mail link and an optional check of message actors (#144).
 - Dismiss controls for unreadable queue records. The queue holds the owner lock after close while an active try finishes its storage work (#144).
@@ -58,7 +58,7 @@ The GitHub milestones hold the issues of each release.
 | v0.4 | Usability: helper functions, the short contract form, the default page style, collapsible cards, the example entry point and docs panels. Complete, in release 0.4.0 |
 | v0.5 | The offline mode, security review fixes, action button icons, compact density, full-width pages and design documentation. Complete, in release 0.5.0 |
 | v0.6 | New form fields, support for registered fields and a rich text editor. Theme presets and a gallery, an application shell and page controls, views for agent work and document approvals, clearer thread cards and refusals, a long thread benchmark, declared part names, a distinct done style, and exits for pending grid and upload actions. Complete, in release 0.6.0 |
-| v0.7 | Compact icon controls, action and queue checks, link and image rules, a run steps helper and waits in browser checks. Complete, in release 0.7.0 |
+| v0.7 | Compact icon controls with floating tooltips, action and queue checks, link and image rules, a run steps helper and waits in browser checks. Complete, in release 0.7.0 |
 | v1.0 | A stable envelope and catalog contract, with a compatibility statement |
 
 ## Next

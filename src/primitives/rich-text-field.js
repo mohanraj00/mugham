@@ -1,4 +1,5 @@
-import { COMPACT_CONTROL_CSS, CONTROL_DISPLAY, compactControls, el, formatIcon, icon, sheet, text } from '../render/dom.js';
+import { COMPACT_CONTROL_CSS, CONTROL_DISPLAY, FLOATING_TOOLTIP_CSS, compactControls, el, formatIcon, icon,
+  sheet, text } from '../render/dom.js';
 import { parseLinkURL } from '../render/validate.js';
 import { RICH_TEXT_EDIT_LIMIT, richNode, richTextEditProblem, richTextLinkSchemes, richTextValueErrors, sameRichTextValue,
   watchRichTextLinkSchemes } from '../render/rich-text.js';
@@ -47,6 +48,7 @@ export class MuRichTextField extends FieldElement {
       display: flex; align-items: flex-start; flex: 0 0 100%; min-inline-size: 0; font: var(--mu-type-caption);
       min-block-size: calc(1lh + 2 * var(--mu-space-1) + 2px);
     }
+    /* The format toolbar tooltip uses this class in its reserved space. The link tooltip floats (FLOATING_TOOLTIP_CSS). */
     .action-tooltip {
       max-inline-size: 100%; overflow-wrap: anywhere; padding: var(--mu-space-1) var(--mu-space-2);
       font: var(--mu-type-caption); color: var(--mu-color-text); background: var(--mu-color-surface);
@@ -82,7 +84,7 @@ export class MuRichTextField extends FieldElement {
       .editor a { color: LinkText; }
       .status { color: CanvasText; }
     }
-  `), COMPACT_CONTROL_CSS];
+  `), COMPACT_CONTROL_CSS, FLOATING_TOOLTIP_CSS];
 
   #editor;
   #buttons = [];
@@ -143,6 +145,12 @@ export class MuRichTextField extends FieldElement {
     this.ownerDocument.removeEventListener('selectionchange', this.#selectionChanged);
     this.ownerDocument.removeEventListener('keydown', this.#tooltipEscape, true);
     this.#unwatch?.();
+  }
+
+  refuse(errors) {
+    this.#linkControls?.dismiss();
+    this.#linkControls = null;
+    super.refuse(errors);
   }
 
   attributeChangedCallback() {
