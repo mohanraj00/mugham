@@ -9,7 +9,8 @@
     {"name": "copy-status", "description": "Result of the copy operation.", "guardrail": true},
     {"name": "details", "description": "Control and technical details of a refusal.", "guardrail": true},
     {"name": "edit-type", "description": "Choices for the type of edit.", "guardrail": true},
-    {"name": "format", "description": "Format button and its pressed state.", "guardrail": true},
+    {"name": "format", "description": "Format button and its pressed state. Each button is 44 by 44 CSS pixels. Each heading button name starts with its visible glyph.", "guardrail": true},
+    {"name": "icon", "description": "Symbol on a format button.", "guardrail": true},
     {"name": "input", "description": "Editable text and its focus ring.", "guardrail": true},
     {"name": "label", "description": "Label of the field.", "guardrail": true},
     {"name": "link-editor", "description": "Address input and controls for a link.", "guardrail": true},
@@ -17,7 +18,8 @@
     {"name": "problem", "description": "Reason that a field value is invalid.", "guardrail": true},
     {"name": "reason", "description": "Reason for a refusal or an edit error.", "guardrail": true},
     {"name": "status", "description": "Result of an edit that the editor cannot accept.", "guardrail": true},
-    {"name": "toolbar", "description": "Group of format controls.", "guardrail": true}
+    {"name": "toolbar", "description": "Group of format controls.", "guardrail": true},
+    {"name": "tooltip", "description": "Format name shown on hover or focus. Escape closes the tooltip. The event stops only if the tooltip is open and the focus is in the toolbar.", "guardrail": true}
   ],
   "data": {
     "name": {"type": "text", "size": "short"},

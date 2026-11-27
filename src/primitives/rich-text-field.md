@@ -18,6 +18,10 @@ Give a field name and label when you add the field to an editable form. Give the
 
 Tab moves into the format toolbar, then into the editable area. In the toolbar, use the arrow keys to move between buttons, Home for the first button and End for the last. Press Enter or Space to apply a format. Select text before you apply a mark. At a caret, an inline mark applies to new typing. Use Control or Command with B for strong, I for emphasis, E for inline code and K for a link.
 
+Each format button shows a symbol. The `icon` stroke uses the button text color. The `tooltip` part shows the format name below the buttons when you move the pointer over a button or move the focus to it. Press Escape to close the tooltip. See the [theme rules](../../docs/guides/theme.md#what-a-page-must-not-change).
+
+The heading buttons have the accessible names `H1 Heading 1`, `H2 Heading 2` and `H3 Heading 3`. Their tooltips show `Heading 1`, `Heading 2` and `Heading 3`. The `P` button has the accessible name `Paragraph`.
+
 If a heading skips a level, the editor keeps the last valid value and shows the highest level you can use at that position.
 
 Use the link control to enter a full address. The page must permit its scheme. Press Escape to close the address control and return to the editable area. Select a link and press Link again to remove it. A click in the editable text does not open a link.

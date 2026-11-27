@@ -52,20 +52,44 @@ const ICONS = Object.freeze({
   send: 'M2 6 14 2 10 14 7 9 2 6Z M7 9 14 2',
   retry: 'M2.5 3v4h4 M2.8 7a5.5 5.5 0 1 1 .6 4',
 });
+// Only the format toolbar uses these paths.
+const FORMAT_ICONS = Object.freeze({
+  bullets: 'M6 4h8 M6 8h8 M6 12h8 M2.5 4h.1 M2.5 8h.1 M2.5 12h.1',
+  numbers: 'M2 3l1-1v5 M2 7h2 M2 10c0-1.4 2.5-1.4 2.5 0 0 1-1.5 2-2.5 3h2.5 M7 4h7 M7 11h7',
+  quote: 'M2.5 8H6v4H2.5V8c0-2 1-3.5 3-4 M9.5 8H13v4H9.5V8c0-2 1-3.5 3-4',
+  'code-block': 'M2 3h12v10H2z M5 6l2 2-2 2 M9 10h2',
+  strong: 'M4 13.5v-11h4.5a2.75 2.75 0 0 1 0 5.5H4 M8.5 8h1a2.75 2.75 0 0 1 0 5.5H4',
+  emphasis: 'M7 2.5h6 M3 13.5h6 M10 2.5 6 13.5',
+  code: 'M5 5 2 8l3 3 M11 5l3 3-3 3 M9.5 3l-3 10',
+  link: 'M6 9.5 10 5.5 M5.5 6.5l-2 2a2.8 2.8 0 0 0 4 4l2-2 M6.5 5.5l2-2a2.8 2.8 0 0 1 4 4l-2 2',
+});
 const SVG = 'http://www.w3.org/2000/svg';
 
 // An icon is decoration. The control that holds it keeps the accessible name.
 export function icon(name) {
   if (!Object.hasOwn(ICONS, name)) throw new Error('icon not known: ' + name);
-  const node = document.createElementNS(SVG, 'svg');
+  const { node, path } = svgIcon();
   node.setAttribute('part', 'icon');
+  path.setAttribute('d', ICONS[name]);
+  return node;
+}
+
+export function formatIcon(name) {
+  if (!Object.hasOwn(FORMAT_ICONS, name)) throw new Error('format icon not known: ' + name);
+  const { node, path } = svgIcon();
+  node.setAttribute('part', 'icon');
+  path.setAttribute('d', FORMAT_ICONS[name]);
+  return node;
+}
+
+function svgIcon() {
+  const node = document.createElementNS(SVG, 'svg');
   for (const [key, value] of [['class', 'icon'], ['viewBox', '0 0 16 16'], ['aria-hidden', 'true'], ['focusable', 'false']]) {
     node.setAttribute(key, value);
   }
   const path = document.createElementNS(SVG, 'path');
-  path.setAttribute('d', ICONS[name]);
   node.append(path);
-  return node;
+  return { node, path };
 }
 
 export const REFUSED_REASON = 'This content did not show because it did not match the rules of the application.';

@@ -41,6 +41,7 @@ globalThis.document = Object.assign(new EventTarget(), {
     if (tag === 'input') node.value = '';
     return node;
   },
+  createElementNS: (namespaceURI, tag) => Object.assign(new TestNode(), { namespaceURI, tag }),
   createTextNode: (textContent) => ({ textContent }),
 });
 globalThis.Node = TestNode;
@@ -478,6 +479,17 @@ test('the form leaves a disabled registered field out of the request', () => {
     assert.deepEqual(form.values(), { note: 'Sample label' });
     submit(form);
     assert.deepEqual(requests.map((request) => request.arguments), [{ note: 'Sample label' }]);
+  }
+});
+
+test('each format button with a glyph starts its accessible name with that glyph', () => {
+  const field = kit.mount('rich-text-field', { label: 'Note' });
+  const buttons = part(field.shadowRoot, 'toolbar').children.filter((node) => node.tag === 'button' && node.textContent);
+  assert.deepEqual(buttons.map((button) => button.textContent), ['P', 'H1', 'H2', 'H3']);
+  for (const button of buttons) {
+    const glyph = button.textContent;
+    const name = button.getAttribute('aria-label');
+    assert.ok(name?.startsWith(glyph), `The name of the ${glyph} button must start with ${glyph}.`);
   }
 });
 
