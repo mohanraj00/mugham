@@ -4,6 +4,8 @@ Each release has an entry. The newest entry is first.
 
 ## Unreleased
 
+When you upgrade from 0.7.0, if your service worker lists kit files for offline use, add `src/components/service-status.js` and `catalog/service-status.json` to the list and change its cache version.
+
 - Add a service status strip that shows service states as text and announces changes (#191).
 
 ## 0.7.0, 2026-11-27
