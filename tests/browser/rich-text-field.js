@@ -343,13 +343,42 @@ export async function richTextFieldChecks(session, sessionId, base, modes, { ope
 
           await press('ArrowRight', 39);
           const next = await page(toolbarState);
-          await press('Escape', 27);
-          const afterFocusEscape = await page(toolbarState);
+          await page(() => {
+            const escapes = [];
+            const record = (event) => {
+              if (event.key === 'Escape') escapes.push(event.defaultPrevented);
+            };
+            document.addEventListener('keydown', record);
+            window.toolbarEscapes = {
+              escapes,
+              remove: () => document.removeEventListener('keydown', record),
+            };
+          });
+          let afterFocusEscape;
+          let firstEscapeCount;
+          let recordedEscapes;
+          try {
+            await press('Escape', 27);
+            afterFocusEscape = await page(toolbarState);
+            firstEscapeCount = await page(() => window.toolbarEscapes.escapes.length);
+            await press('Escape', 27);
+          } finally {
+            recordedEscapes = await page(() => {
+              const { escapes, remove } = window.toolbarEscapes;
+              remove();
+              delete window.toolbarEscapes;
+              return escapes;
+            });
+          }
           check(view, 'the tooltip shows on keyboard focus and Escape closes it',
             next.tooltip?.text === 'Heading 1' && next.tooltip.ariaHidden === 'true' && next.tooltip.aboveEditor
             && next.tooltip.colors && afterFocusEscape.tooltip === null && afterFocusEscape.focus === next.focus
             && afterFocusEscape.focusRing && JSON.stringify(afterFocusEscape.pressed) === JSON.stringify(next.pressed),
           'The focus tooltip is incorrect or Escape changed the focus or the pressed state.', { next, afterFocusEscape });
+          check(view, 'only the second Escape reaches the page',
+            firstEscapeCount === 0 && recordedEscapes.length === 1 && recordedEscapes[0] === false,
+            'Escape reached the page with the tooltip open or did not reach it uncanceled with the tooltip closed.',
+            { firstEscapeCount, recordedEscapes });
           await press('End', 35);
           const last = await page(toolbarState);
           await press('ArrowRight', 39);

@@ -113,6 +113,44 @@ test('each format button keeps its name and shows only a symbol', () => {
   }
 });
 
+test('Escape stops only when it closes a tooltip from the toolbar', (t) => {
+  const field = make('rich-text-field', { label: 'Note' });
+  const page = new EventTarget();
+  field.ownerDocument = page;
+  field.connectedCallback();
+  t.after(() => field.disconnectedCallback());
+  const [box] = field.shadowRoot.children;
+  const [controls] = box.children;
+  const toolbar = controls.children.find((node) => node.getAttribute('part') === 'toolbar');
+  const editor = controls.children.find((node) => node.getAttribute('part') === 'input');
+  const button = toolbar.children[0];
+  const [tooltip] = toolbar.children.find((node) => node.getAttribute('class') === 'tooltip-space').children;
+  tooltip.isConnected = true;
+
+  const escape = (target) => {
+    const event = Object.assign(new Event('keydown', { cancelable: true }), {
+      key: 'Escape',
+      composedPath: () => target === button ? [button, toolbar] : [target],
+    });
+    // Send the event to the page first to model the capture phase.
+    page.dispatchEvent(event);
+    if (target === button) toolbar.dispatchEvent(event);
+    return [event.defaultPrevented, event.cancelBubble];
+  };
+
+  button.dispatchEvent(new Event('focus'));
+  assert.equal(tooltip.hidden, false);
+  assert.deepEqual(escape(button), [true, true]);
+  assert.equal(tooltip.hidden, true);
+  assert.deepEqual(escape(button), [false, false]);
+
+  button.dispatchEvent(new Event('blur'));
+  button.dispatchEvent(new Event('pointerenter'));
+  assert.equal(tooltip.hidden, false);
+  assert.deepEqual(escape(editor), [false, false]);
+  assert.equal(tooltip.hidden, true);
+});
+
 test('empty state shows scalar text and a named slot for a page control', () => {
   const empty = make('empty-state', EMPTY);
   const [group] = empty.shadowRoot.children;

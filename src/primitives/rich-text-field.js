@@ -83,7 +83,7 @@ export class MuRichTextField extends FieldElement {
 
   #editor;
   #buttons = [];
-  #dismissTooltip;
+  #dismissHoverTooltip;
   #linkPanel;
   #address;
   #status;
@@ -140,7 +140,7 @@ export class MuRichTextField extends FieldElement {
   }
 
   #tooltipEscape = (event) => {
-    if (event.key === 'Escape' && !event.isComposing) this.#dismissTooltip?.();
+    if (event.key === 'Escape' && !event.isComposing) this.#dismissHoverTooltip?.(event);
   };
 
   control(data, id) {
@@ -197,7 +197,6 @@ export class MuRichTextField extends FieldElement {
       focused = undefined;
       showTooltip();
     };
-    this.#dismissTooltip = dismissTooltip;
     this.#buttons = FORMATS.map(([format, label, key, glyph], index) => {
       const description = key ? id + '-shortcut-' + format : null;
       if (description) help.push(el('span', { id: description, class: 'description' }, 'Control or Command + ' + key));
@@ -232,12 +231,16 @@ export class MuRichTextField extends FieldElement {
     });
     const toolbar = el('div', { part: 'toolbar', class: 'toolbar', role: 'toolbar', 'aria-label': 'Text formats' },
       ...this.#buttons, el('div', { class: 'tooltip-space' }, tooltip), ...help);
+    this.#dismissHoverTooltip = (event) => {
+      if (!event.composedPath().includes(toolbar)) dismissTooltip();
+    };
     toolbar.addEventListener('pointerleave', () => {
       hovered = undefined;
       showTooltip(focused);
     });
     toolbar.addEventListener('keydown', (event) => {
       if (event.key === 'Escape') {
+        if (tooltip.hidden) return;
         dismissTooltip();
         event.preventDefault();
         event.stopPropagation();

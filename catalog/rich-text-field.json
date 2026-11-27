@@ -19,7 +19,7 @@
     {"name": "reason", "description": "Reason for a refusal or an edit error.", "guardrail": true},
     {"name": "status", "description": "Result of an edit that the editor cannot accept.", "guardrail": true},
     {"name": "toolbar", "description": "Group of format controls.", "guardrail": true},
-    {"name": "tooltip", "description": "Format name shown on hover or focus.", "guardrail": true}
+    {"name": "tooltip", "description": "Format name shown on hover or focus. Escape closes the tooltip. The event stops only if the tooltip is open and the focus is in the toolbar.", "guardrail": true}
   ],
   "data": {
     "name": {"type": "text", "size": "short"},
