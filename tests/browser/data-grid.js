@@ -272,12 +272,12 @@ async function browserChecks() {
   const paused = mount(budget());
   edit(paused, 'rent', 'jan', '950');
   edit(paused, 'food', 'jan', '450');
-  const sent = last(paused);
-  paused.noReceipt(sent.id);
+  const pausedSent = last(paused);
+  paused.noReceipt(pausedSent.id);
   const oldRetry = root(paused).querySelector('[part="retry"]');
   paused.fill = fill({ ...budget().data, columns: [] });
   oldRetry.click();
-  const accepted = paused.receipt({ id: sent.id, ok: true });
+  const accepted = paused.receipt({ id: pausedSent.id, ok: true });
   const settled = await waitFor(() => paused.action.state !== 'pending' || paused.requests.length > 1);
   check('a refused grid accepts a receipt and sends no saved edit or retry', settled && accepted
     && paused.dataset.state === 'refused' && paused.requests.length === 1, paused.requests.length);
