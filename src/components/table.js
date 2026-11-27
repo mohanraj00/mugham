@@ -9,6 +9,10 @@ export class MuTable extends MuElement {
     /* A long table scrolls in this area, and the column headers stay in view. */
     .table { overflow: auto; max-block-size: 30rem; color: var(--mu-color-text); background: var(--mu-color-surface); font: var(--mu-type-body); }
     table { border-collapse: separate; border-spacing: 0; width: 100%; min-width: 24rem; table-layout: fixed; }
+    /* Each column keeps a minimum width, so short cell text stays on one line. In the fixed layout, the width of
+       each header cell sets its column. If the columns need more than the element, the table grows and scrolls in
+       the table area, and the page does not scroll to the side. */
+    thead th { width: calc(var(--mu-size-column-narrow) / 2); }
     caption { text-align: start; font-weight: var(--mu-type-weight-strong); padding: var(--mu-space-2) var(--mu-space-3); }
     th, td { text-align: start; vertical-align: top; overflow-wrap: anywhere;
       padding: var(--mu-space-2) var(--mu-space-3); border-bottom: 1px solid ${EDGE}; }
