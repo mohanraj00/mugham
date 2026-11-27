@@ -4,7 +4,7 @@ import { toolSchema } from '../src/kit.js';
 import { CATALOG } from '../src/render/catalog.js';
 import { contractErrors, fillErrors } from '../src/render/validate.js';
 import { readRichTree, readRichTransfer } from '../src/primitives/rich-text-field-model.js';
-import { richTextValueErrors } from '../src/render/rich-text.js';
+import { richTextLinkSchemes, richTextValueErrors, setRichTextLinkSchemes } from '../src/render/rich-text.js';
 import { isPlannedPolicyReport, richTextFieldChecks } from './browser/rich-text-field.js';
 
 const fill = (component, data) => ({ component, version: '0.1.0', data });
@@ -91,6 +91,17 @@ test('the HTML walk keeps safe text and drops foreign nodes, unsafe text and att
 test('plain text stays text and is used if HTML cannot be read', () => {
   valid(readRichTransfer(transfer('<p>HTML</p>', '<b>Text</b>\r\nNext'), () => null),
     rich(paragraph(span('<b>Text</b>')), paragraph(span('Next'))));
+});
+
+test('a pasted mail link with more than one mailbox stays plain text', (t) => {
+  const schemes = richTextLinkSchemes();
+  t.after(() => setRichTextLinkSchemes(schemes));
+  setRichTextLinkSchemes(['mailto:']);
+  const address = 'mailto:reader@example.org';
+  const tree = body(tag('p', link(address, 'One reader'),
+    link(address + '%2Cother@example.org', 'Two readers'), link('mailto:reader', 'Missing domain')));
+  valid(readRichTree(tree, { imported: true }),
+    rich(paragraph(fill('rich-link', { text: 'One reader', url: address }), span('Two readers'), span('Missing domain'))));
 });
 
 test('a paste that exceeds a source, depth, or contract limit gives a refusal', () => {

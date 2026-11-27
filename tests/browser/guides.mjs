@@ -65,6 +65,15 @@ const THEME = `(() => {
 })()`;
 const zero = (value) => value.split(',').every((item) => parseFloat(item) === 0);
 
+function imageState() {
+  const image = document.querySelector('mu-image');
+  const root = image?.shadowRoot;
+  return { state: image?.dataset.state, width: root?.querySelector('img')?.naturalWidth,
+    disabled: root?.querySelector('[part="open"]')?.disabled,
+    notice: root?.querySelector('[part="status"]')?.textContent,
+    blocked: window.muBlockedImage };
+}
+
 // Each theme mode, and the colors that the theming guide gives for it.
 const THEME_MODES = {
   light: { features: [{ name: 'prefers-color-scheme', value: 'light' }],
@@ -82,7 +91,7 @@ const THEME_MODES = {
     test: (v) => zero(v.kit.transition) && zero(v.forest.transition) },
 };
 
-export async function guideChecks(session, sessionId, base, { evaluate, open, sleep, pageRules }) {
+export async function guideChecks(session, sessionId, base, { evaluate, open, sleep, pageRules }, imageRedirect) {
   const steps = [];
   const accessibility = [];
   const step = (page, name, ok, detail) => steps.push({ page, step: name, ok: Boolean(ok), detail: JSON.stringify(detail) });
@@ -167,6 +176,31 @@ export async function guideChecks(session, sessionId, base, { evaluate, open, sl
   step(page, 'the form shows the application label and the draft from the model', reply.state === 'default'
     && reply.label === 'Send reply' && reply.draft === 'Your loan is due on 2026-12-01.', reply);
   step(page, 'the form refuses a label with a different case', reply.refused, reply);
+
+  // docs/guides/assemble.md uses a separate page to set the image policy.
+  page = 'examples/guides/image.html';
+  await open(session, sessionId, `${base}/${page}`);
+  const readImage = `(${imageState})()`;
+  let image = await until(readImage, (value) => value.state === 'default');
+  step(page, 'an image from the page origin loads', image.state === 'default' && image.width > 0 && !image.disabled, image);
+  await named(page, [['group', 'Image'], ['button', 'Open image at full size: Two rooms with a door in the shared wall.']]);
+  steps.push(...await pageRules(session, sessionId, page));
+  await evaluate(session, sessionId, `(() => {
+    document.addEventListener('securitypolicyviolation', (event) => {
+      if (event.effectiveDirective === 'img-src' && event.disposition === 'enforce') window.muBlockedImage = event.blockedURI;
+    });
+    const image = document.querySelector('mu-image');
+    const fill = image.fill;
+    image.fill = { ...fill, data: { ...fill.data, url: ${JSON.stringify(imageRedirect.path)} } };
+  })()`);
+  image = await until(readImage, (value) => value.state === 'error' && Boolean(value.blocked));
+  const counts = imageRedirect.counts();
+  const blocked = [base + imageRedirect.path, imageRedirect.origin].includes(image.blocked)
+    || image.blocked?.startsWith(imageRedirect.origin + '/');
+  step(page, 'the image policy blocks a redirect to another origin', image.state === 'error' && image.width === 0 && image.disabled
+    && image.notice === 'Image failed to load. Two rooms with a door in the shared wall.' && blocked
+    && counts.redirects === 1 && counts.imageRequests === 0, { ...image, ...counts });
+  steps.push(...await pageRules(session, sessionId, page));
 
   // docs/guides/theme.md, in the four media modes of the kit checks.
   page = 'examples/guides/theme.html';

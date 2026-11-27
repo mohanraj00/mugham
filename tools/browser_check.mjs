@@ -153,11 +153,17 @@ const APP_VIEWS = {
 const CHROME = process.env.CHROME || (process.platform === 'darwin'
   ? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' : 'google-chrome');
 export const sleep = (ms) => new Promise((done) => setTimeout(done, ms));
+const IMAGE_REDIRECT_PATH = '/check/image-redirect.svg';
+const IMAGE_TARGET_PATH = '/examples/media/floor-plan.svg';
 
 // A local server for the kit files only. It refuses each path outside the served folders.
-export function serve() {
+export function serve(imageRedirect = null) {
   const server = createServer((request, response) => {
     const path = decodeURIComponent(new URL(request.url, 'http://127.0.0.1').pathname);
+    if (imageRedirect && request.method === 'GET' && path === IMAGE_REDIRECT_PATH) {
+      response.writeHead(302, { location: imageRedirect, 'cache-control': 'no-store' }).end();
+      return;
+    }
     const file = resolve(ROOT, '.' + path);
     if (path === '/favicon.ico') {
       response.writeHead(204).end();
@@ -802,13 +808,26 @@ async function appPages(session, sessionId, report) {
 }
 
 async function main() {
-  const server = await serve();
-  const base = `http://127.0.0.1:${server.address().port}`;
-  const profile = mkdtempSync(join(tmpdir(), 'mugham-chrome-'));
   const report = { passed: false, chrome: '', pages: {}, accessibility: [], keyboard: [], examples: [], errors: [],
     scope: 'Headless Chrome on this machine: the long thread bench, the check pages in four media modes, the accessibility tree, the keyboard, the example pages, and the example apps in the light theme, the dark theme and at the phone width. It also checks each example in compact density and the gallery in each preset at 375 CSS pixels, in the light and dark themes. No screen reader.' };
-  let chrome;
+  let chrome, server, imageServer, profile;
   try {
+    imageServer = await serve();
+    const imageOrigin = `http://127.0.0.1:${imageServer.address().port}`;
+    const imageTarget = imageOrigin + IMAGE_TARGET_PATH;
+    let imageRequests = 0;
+    imageServer.on('request', (request) => {
+      if (request.url === IMAGE_TARGET_PATH) imageRequests += 1;
+    });
+    server = await serve(imageTarget);
+    let redirects = 0;
+    server.on('request', (request) => {
+      if (request.url === IMAGE_REDIRECT_PATH) redirects += 1;
+    });
+    const base = `http://127.0.0.1:${server.address().port}`;
+    const imageStart = base + IMAGE_REDIRECT_PATH;
+    const imageLocations = [imageStart, imageTarget, imageOrigin, imageOrigin + '/'];
+    profile = mkdtempSync(join(tmpdir(), 'mugham-chrome-'));
     const started = await startChrome(profile);
     chrome = started.chrome;
     const session = started.session;
@@ -826,7 +845,15 @@ async function main() {
     session.listeners.push((message) => {
       if (message.sessionId !== sessionId) return;
       if (message.method === 'Runtime.exceptionThrown') problems.push(message.params.exceptionDetails.exception?.description || message.params.exceptionDetails.text);
-      if (message.method === 'Log.entryAdded' && message.params.entry.level === 'error') problems.push(message.params.entry.text);
+      if (message.method === 'Log.entryAdded' && message.params.entry.level === 'error') {
+        const entry = message.params.entry;
+        // The image guide checks for this policy violation. Other page errors still fail.
+        const blockedImage = entry.source === 'security' && entry.text.includes("img-src 'self'")
+          && imageLocations.some((url) => entry.text.includes(`'${url}'`));
+        const blockedRequest = entry.source === 'network' && [imageStart, imageTarget].includes(entry.url)
+          && entry.text === 'Failed to load resource: net::ERR_BLOCKED_BY_CSP';
+        if (!blockedImage && !blockedRequest) problems.push(entry.text);
+      }
     });
     for (const method of ['Page.enable', 'Runtime.enable', 'Log.enable', 'Accessibility.enable']) await session.send(method, {}, sessionId);
     await session.send('Page.bringToFront', {}, sessionId);
@@ -1081,7 +1108,8 @@ async function main() {
         && !targets.ok && targets.detail === 'div: button Go is 20 by 20',
       detail: `${names.detail} | ${markup.detail} | ${targets.detail}` });
     // The guide pages of docs/guides/. tests/browser/guides.mjs gives the expected results.
-    const guides = await guideChecks(session, sessionId, base, { evaluate, open, sleep, pageRules });
+    const guides = await guideChecks(session, sessionId, base, { evaluate, open, sleep, pageRules },
+      { path: IMAGE_REDIRECT_PATH, origin: imageOrigin, counts: () => ({ redirects, imageRequests }) });
     report.examples.push(...guides.steps);
     report.accessibility.push(...guides.accessibility);
     if (process.env.MUGHAM_GALLERY_SHOTS) report.galleryScreenshots = guides.screenshots;
@@ -1104,9 +1132,10 @@ async function main() {
     report.errors.push(String(error.message || error));
   } finally {
     if (chrome) chrome.kill();
-    server.close();
+    server?.close();
+    imageServer?.close();
     await sleep(200);
-    rmSync(profile, { recursive: true, force: true, maxRetries: 5 });
+    if (profile) rmSync(profile, { recursive: true, force: true, maxRetries: 5 });
     if (uploadFolder) rmSync(uploadFolder, { recursive: true, force: true });
   }
   report.passed = report.errors.length === 0;

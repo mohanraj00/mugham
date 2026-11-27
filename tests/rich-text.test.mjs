@@ -4,7 +4,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { toolSchema } from '../src/kit.js';
 import { CATALOG } from '../src/render/catalog.js';
-import { RICH_TEXT_SCHEMES, richTextRules, richTextValueErrors } from '../src/render/rich-text-value.js';
+import { parseLinkURL, RICH_TEXT_SCHEMES, richTextRules, richTextValueErrors } from '../src/render/rich-text-value.js';
 import { contractErrors, fillErrors } from '../src/render/validate.js';
 
 const BLOCKS = ['rich-paragraph', 'rich-heading', 'rich-list', 'rich-code', 'rich-quote'];
@@ -29,6 +29,22 @@ test('a tree with each node type is valid', () => {
   assert.deepEqual(errors([]), []);
 });
 
+test('a mail link has one mailbox and no query or fragment', () => {
+  for (const address of ['reader@example.org', 'reader.one+notes@example.org', 'reader%40example.org']) {
+    const target = 'mailto:' + address;
+    assert.equal(parseLinkURL(target, RICH_TEXT_SCHEMES)?.href, target);
+    assert.equal(parseLinkURL(target, ['https:']), null);
+  }
+  for (const address of ['', 'reader', '@example.org', 'reader@', 'reader@@example.org', 'reader@-example.org',
+    'reader@exa mple.org', 'rea\tder@example.org', 'reader%20one@example.org', 'reader%00@example.org',
+    'reader@example.org,other@example.org', 'reader@example.org;other@example.org',
+    'reader%2Cone@example.org', 'reader%3Bone@example.org', 'reader%252Cone@example.org',
+    'reader@example.org?subject=Note', 'reader@example.org#note', 'reader@example.org?', 'reader@example.org#',
+    '//reader@example.org', 'reader%ZZ@example.org']) {
+    assert.equal(parseLinkURL('mailto:' + address, RICH_TEXT_SCHEMES), null, address);
+  }
+});
+
 test('the queue value check agrees with the nested catalog check and the shared rich text rules', () => {
   const value = (blocks, data = {}) => node('rich-text', { blocks, ...data });
   const paragraph = (content) => node('rich-paragraph', { content });
@@ -46,6 +62,8 @@ test('the queue value check agrees with the nested catalog check and the shared 
     ['inline count at the limit', value(maxInline), true],
     ['text with 2000 code points', value([paragraph([node('rich-span', { text: '🌱'.repeat(2000) })])]), true],
     ['mail link', value([paragraph([node('rich-link', { text: 'Mail', url: 'mailto:check@example.org' })])]), true],
+    ['mail link with two recipients', value([paragraph([node('rich-link',
+      { text: 'Mail', url: 'mailto:check@example.org,other@example.org' })])]), true, false],
     ['heading skips a level', value([heading(1), heading(3)]), true, false],
     ['inline count over the limit', value([...maxInline, paragraph([SPAN])]), true, false],
     ['refused link scheme in a quote', value([quote([paragraph([node('rich-link', { text: 'File', url: 'file:///rules' })])])]), true, false],

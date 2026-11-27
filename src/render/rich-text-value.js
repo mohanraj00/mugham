@@ -8,6 +8,8 @@ const MAX_INLINE = 2000;
 const BLOCKS = ['rich-paragraph', 'rich-heading', 'rich-list', 'rich-code', 'rich-quote'];
 const INLINE = ['rich-span', 'rich-link'];
 const MARKS = ['emphasis', 'strong', 'code'];
+const MAILBOX = /^[a-z0-9_+'-]+(?:\.[a-z0-9_+'-]+)*@[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)*$/i;
+const MAIL_SPACE = /[\s\u0000-\u001f\u007f]/u;
 
 const linkWatchers = new Set();
 let linkSchemes = Object.freeze(['https:']);
@@ -38,8 +40,16 @@ export function parseLinkURL(value, schemes, base) {
     return null;
   }
   if (!schemes.includes(url.protocol)) return null;
-  // A mail link needs an address. It cannot have a query or a fragment.
-  if (url.protocol === 'mailto:') return url.pathname && !url.search && !url.hash ? url : null;
+  if (url.protocol === 'mailto:') {
+    // Check the decoded mailbox and the URL separators, including an empty query or fragment.
+    if (MAIL_SPACE.test(value) || url.host || /[?#]/u.test(url.href)) return null;
+    try {
+      const address = decodeURIComponent(url.pathname);
+      return !MAIL_SPACE.test(address) && MAILBOX.test(address) ? url : null;
+    } catch {
+      return null;
+    }
+  }
   return url.hostname && !url.username && !url.password ? url : null;
 }
 

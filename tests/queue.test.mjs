@@ -464,7 +464,8 @@ test('the queue refuses invalid rich text and a rich text record over the size l
   const refusedLink = note(paragraph(link('javascript:ignored')));
   const malformed = { component: 'rich-text', version: '0.1.0' };
   const large = note(...Array.from({ length: 100 }, () => paragraph(span('x'.repeat(2000)))));
-  for (const value of [refusedLink, malformed]) {
+  const refusedMail = note(paragraph(link('mailto:reader@example.org,other@example.org')));
+  for (const value of [refusedLink, refusedMail, malformed]) {
     assert.deepEqual(await queue.perform(request('T-01', { arguments: { note: value } })),
       { ok: false, message: 'The arguments are not valid.' });
     assert.deepEqual(await queue.perform(request('T-01', { edits: [edit(safe, value)] })),

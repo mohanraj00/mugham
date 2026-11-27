@@ -13,6 +13,13 @@ const check = (name, ok, detail = '') => results.push({ name, ok: Boolean(ok), d
 const stage = document.getElementById('stage');
 // The thread renders at the next frame, so a check waits for one frame and then one task.
 const settle = () => new Promise((done) => requestAnimationFrame(() => setTimeout(done, 0)));
+async function waitFor(test) {
+  for (let i = 0; i < 100; i += 1) {
+    if (test()) return true;
+    await new Promise((done) => setTimeout(done, 20));
+  }
+  return false;
+}
 const fill = (component, data) => ({ component, version: '0.1.0', data });
 const actor = (type, id, name) => ({ mugham: { actor: name ? { type, id, name } : { type, id } } });
 const ROBIN = actor('human', 'u-robin', 'Robin');
@@ -356,13 +363,22 @@ async function run() {
   await settle();
   check('pending: a pending action sends one request only', keptCalls.length === 1, keptCalls.length);
   keptCalls[0].done({ ok: true, message: 'Renewed.' });
-  await settle();
+  await waitFor(() => item(kept, 0).querySelector('.refusal'));
   check('done: the receipt goes to the element that sent the request', keptButton.dataset.state === 'done', keptButton.dataset.state);
   check('refused: the snapshot shows after the receipt',
     showsRefusal(item(kept, 0).querySelector('.refusal'), 'banner', BANNER_ERROR)
     && !item(kept, 0).querySelector('mu-action-button')
     && live(kept).textContent.includes('The thread refused a part of the message from Renewal agent, Agent.'),
   `${item(kept, 0).textContent} | ${live(kept).textContent}`);
+  kept.push(snapshot('p1', RENEW_AGENT, { format: 2, fill: renewFill }));
+  const returned = () => item(kept, 0).querySelector('mu-action-button');
+  await waitFor(returned);
+  const restored = returned();
+  const restoredControl = restored?.shadowRoot.querySelector('button');
+  restoredControl?.click();
+  check('done: the action returns after a refusal and sends no second request',
+    restored?.dataset.state === 'done' && restoredControl?.getAttribute('aria-disabled') === 'true'
+    && keptCalls.length === 1, restored?.dataset.state);
   // The same fill again cannot make a done action start again.
   const once = mount();
   once.bind = () => RENEW;

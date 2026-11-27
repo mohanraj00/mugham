@@ -34,8 +34,7 @@ Only an `http:` or `https:` URL with a permitted origin and no credentials can l
 After this check, the element sets only the `img.src` property. It uses `referrerpolicy="no-referrer"` and
 `decoding="async"`. A fill cannot set `srcset` or request options.
 
-The origin check applies to the supplied URL. The browser handles redirects. Set the page CSP `img-src` to the
-same permitted origins to restrict redirect requests too. The example permits only its own origin.
+The origin check applies to the URL in the fill. Set the page's Content Security Policy `img-src` to the same permitted origins. The browser applies this policy to image requests, including redirects. If the policy blocks a redirect, the image shows its error state. [The guide example](../../docs/guides/assemble.md#enable-images) pairs `img-src 'self'` with `MuImage.allowedOrigins = [location.origin]`.
 
 | State | Result |
 |---|---|
@@ -60,5 +59,5 @@ page code uses the card's page-owned `actions` slot. The fill does not create th
 [examples/media/image.html](../../examples/media/image.html) shows a message and a card with a small SVG written by hand.
 
 The image adds only `aria-hidden` to the attribute list of `src/render/dom.js`. The canvas needs it.
-The other image attributes use DOM properties. [tests/browser/image.js](../../tests/browser/image.js) checks
-loading, loaded, failed, refused, decorative and dialog states in the four media modes.
+The other image attributes use DOM properties. [The image checks](../../tests/browser/image.js) check
+loading, loaded, failed, refused, decorative and dialog states in the four media modes. [The guide check](../../tests/browser/guides.mjs) checks that a redirect to a different origin gives the failure notice and sends no request to that origin.

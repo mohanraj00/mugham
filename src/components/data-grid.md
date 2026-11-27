@@ -103,6 +103,7 @@ Each saved change is one action. The grid sends a `mu-action` event with the req
 - If the receipt is missing or invalid, the cell stays pending. The receipt must have the key of the pending action, the id of one of its tries, or both. If it has both, both must match. The value of `ok` must be `true` or `false`. The optional `message` and `reference` must be text of 200 and 80 characters maximum.
 - A save of the value from before the change removes the marker and sends no action. While a request of the same cell is pending, such a change waits for its result, because a receipt can confirm a different value. The last saved value is the value that stays.
 - A new binding removes each change of the old binding.
+- A refused fill pauses saved changes and prevents retries. The grid can still accept a receipt for a request in progress. When a valid fill returns, the grid sends the saved changes that still agree with the fill and the binding.
 
 ### Pending actions
 
@@ -141,6 +142,6 @@ A grid of 50 rows and 12 columns has 600 cells. The grid scrolls inside its own 
 | `disabled` | The grid has no binding. Each cell is read-only, and the keys still move the focus. |
 | `pending` | A request waits for its receipt. Its cell shows `Pending`. |
 | `error` | The last receipt of a cell has `ok` set to `false`. The cell shows `Not done`. |
-| `refused` | A status notice gives the reason as text. The element keeps no data. |
+| `refused` | A status notice gives the reason as text. The element keeps no fill. Saved edits wait for a valid fill. |
 
 [examples/tables/budget.html](../../examples/tables/budget.html) shows a synthetic budget with 6 rows, 4 month columns and a total row that the page computes. [tests/browser/data-grid.js](../../tests/browser/data-grid.js) checks each state, each key and each refusal in the four media modes.

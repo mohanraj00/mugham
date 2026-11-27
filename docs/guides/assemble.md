@@ -164,3 +164,22 @@ node tools/browser_check.mjs
 ```
 
 The page uses a function as its API. A real application sends the request to its own API, as [examples/thread/thread.js](../../examples/thread/thread.js) and [examples/cards/approval.js](../../examples/cards/approval.js) show.
+
+## Enable images
+
+[The image example](../../examples/guides/image.html) loads a floor plan from the page origin. Set the page's Content Security Policy before the page loads its images. This page uses a meta element in the head. The server can also send the policy in a response header.
+
+<!-- source: examples/guides/image.html -->
+```html
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; object-src 'none'; base-uri 'none'">
+```
+
+Give the same permitted origins to the image component before it gets a fill.
+
+<!-- source: examples/guides/image.js -->
+```js
+define();
+MuImage.allowedOrigins = [location.origin];
+```
+
+The component checks the URL in the fill. The browser applies `img-src` to image requests, including redirects. If a permitted URL redirects to a different origin, the policy in this example blocks the request to that origin. The image shows its error state with its text alternative. [Image rules](../../src/components/image.md).

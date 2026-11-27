@@ -1,6 +1,7 @@
 // These checks exercise the real image policy without a DOM or a request. Browser checks cover rendering.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { fillErrors } from '../src/render/validate.js';
 import { CATALOG } from '../src/render/catalog.js';
 
@@ -13,6 +14,14 @@ const DATA = { url: '/plan.svg', alt: 'Two rooms with a door.', width: 480, heig
 const errors = (data = DATA) => MuImage.prototype.check(data);
 const fill = (data) => ({ component: 'image', version: '0.1.0', data,
   slots: { authorship: { type: 'agent', id: 'agent-plan' } } });
+
+test('image: the guide sets matching same-origin policies before it loads images', () => {
+  const html = readFileSync(new URL('../examples/guides/image.html', import.meta.url), 'utf8');
+  const script = readFileSync(new URL('../examples/guides/image.js', import.meta.url), 'utf8');
+  assert.match(html, /http-equiv="Content-Security-Policy" content="[^"]*; img-src 'self';/);
+  assert.match(html, /Content-Security-Policy"[\s\S]*<script type="module" src="image\.js">/);
+  assert.match(script, /MuImage\.allowedOrigins = \[location\.origin\];[\s\S]*mount\('image',/);
+});
 
 test('image: the default policy refuses each image', () => {
   assert.deepEqual(MuImage.allowedOrigins, []);
