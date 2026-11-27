@@ -357,7 +357,7 @@ class CatalogContractTest(unittest.TestCase):
             self.assertEqual(catalog.fill_errors(outer('card', {**CARD['data'], key: 'true'}), CATALOG),
                              ['data.%s: must be true or false' % key])
         self.assertEqual(CATALOG['card']['states'], ['default', 'expanded', 'collapsed'])
-        self.assertEqual(CATALOG['card']['accessibility']['keyboard'], ['Tab', 'Enter', 'Space'])
+        self.assertEqual(CATALOG['card']['accessibility']['keyboard'], ['Tab', 'Enter', 'Space', 'Escape'])
 
     def test_grid_collapse_controls_are_optional_and_typed(self):
         data = {'label': 'Loans', 'cards': [{**CARD, 'data': {**CARD['data'], 'collapsible': True, 'collapsed': True}}]}
@@ -365,6 +365,7 @@ class CatalogContractTest(unittest.TestCase):
             self.assertEqual(catalog.fill_errors(outer('card-grid', {**data, 'collapse_controls': controls}), CATALOG), [])
         self.assertEqual(catalog.fill_errors(outer('card-grid', {**data, 'collapse_controls': 1}), CATALOG),
                          ['data.collapse_controls: must be true or false'])
+        self.assertEqual(CATALOG['card-grid']['accessibility']['keyboard'], ['Tab', 'Enter', 'Space', 'Escape'])
 
     def test_a_form_accepts_each_input_type_and_no_other_component(self):
         inputs = ['field', 'long-text-field', 'number-field', 'date-field', 'choice-field', 'toggle-field',

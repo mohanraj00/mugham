@@ -6,7 +6,7 @@ Set a preset on the page, then change individual tokens in a style sheet if nece
 
 Each kit element reads its style from CSS custom properties. `src/tokens/tokens.css` sets them on `:root`. A custom property goes into each shadow root of the page, so an element uses the value of its nearest ancestor that sets it. Thus a page can theme the full page on `:root`, or only one part of the page on a container element.
 
-The kit has no other style input. The shadow root of each element keeps its own rules, and a page style cannot select the nodes in it, except through a `part` name. The optional [default page style](#the-default-page-style) styles the page around the elements, and it uses only the tokens.
+The shadow root of each element keeps its own rules. A page style can select its parts by name. The optional [default page style](#the-default-page-style) styles the page around the elements, and it uses only the tokens.
 
 `tools/tokens.py --write` writes `tokens.css` from `src/tokens/tokens.json`. Do not edit `tokens.css`. To change the kit tokens, change `tokens.json`. A page theme sets the properties in its own style sheet.
 
@@ -209,6 +209,14 @@ Load the theme style sheet after `tokens.css`. A theme on `:root` has the same s
 
 The browser check opens the gallery at 375 CSS pixels in each preset and mode. Set `MUGHAM_GALLERY_SHOTS` to an output folder before you run `node tools/browser_check.mjs` to save six PNG images for review. The images are optional and do not affect the check result.
 
+## Control display
+
+The card toggle, the two card grid controls and the two rich text link buttons show icons by default. Set `control-display="text"` on a component or an ancestor to show the text labels. Set the ancestor attribute before the fill or before you attach the filled component. The closest setting applies, even across a shadow root. An empty value or `icon` selects icons. An attribute change on a component updates its controls. An attribute change on a card grid also updates its nested cards.
+
+Keep the icon buttons at 44 by 44 CSS pixels and keep their focus rings visible. Let each icon take the button text color. Keep the text and border of the `tooltip`, `card-tooltip` and `link-tooltip` parts visible in forced colors when the kit shows them. Keep the tooltips clear of the content and the editor.
+
+`Read more`, `Read less` and the `Retry` and `Cancel` exits for pending actions keep their text.
+
 ## Declared parts
 
 Use a selector such as `mu-card::part(title)` to style a part. Each contract in [the catalog](../../catalog/) gives the descriptions and the guardrail flags for its parts. A catalog entry with no element has an empty list. The thread renders message envelopes and has its own row below.
@@ -226,8 +234,8 @@ An asterisk marks a guardrail part. Keep it visible when the kit shows it. Run `
 | `mu-badge` | `copy`\*, `copy-status`\*, `details`\*, `label`\*, `next`\*, `reason`\* |
 | `mu-breadcrumbs` | `copy`\*, `copy-status`\*, `current`\*, `details`\*, `link`\*, `list`\*, `nav`\*, `next`\*, `reason`\*, `separator` |
 | `mu-button` | `button`, `copy`\*, `copy-status`\*, `details`\*, `next`\*, `reason`\* |
-| `mu-card-grid` | `card-status`\*, `card-title`, `card-toggle`\*, `copy`\*, `copy-status`\*, `details`\*, `empty`, `list`, `next`\*, `reason`\* |
-| `mu-card` | `actions`, `authorship`\*, `body`\*, `card`, `citation`\*, `collapsed-summary`, `copy`\*, `copy-status`\*, `details`\*, `facts`, `icon`\*, `locator`\*, `next`\*, `open`\*, `provenance`\*, `reason`\*, `status`\*, `title`, `toggle`\* |
+| `mu-card-grid` | `card-status`\*, `card-title`, `card-toggle`\*, `card-tooltip`\*, `collapse-all`\*, `copy`\*, `copy-status`\*, `details`\*, `empty`, `expand-all`\*, `icon`\*, `list`, `next`\*, `reason`\*, `tooltip`\* |
+| `mu-card` | `actions`, `authorship`\*, `body`\*, `card`, `citation`\*, `collapsed-summary`, `copy`\*, `copy-status`\*, `details`\*, `facts`, `icon`\*, `locator`\*, `next`\*, `open`\*, `provenance`\*, `reason`\*, `status`\*, `title`, `toggle`\*, `tooltip`\* |
 | `mu-chart` | `authorship`\*, `bar`\*, `chart`\*, `copy`\*, `copy-status`\*, `details`\*, `next`\*, `point`\*, `reason`\*, `segment`\*, `value`\* |
 | `mu-choice-field` | `choices`\*, `copy`\*, `copy-status`\*, `details`\*, `edit-type`\*, `label`\*, `next`\*, `problem`\*, `reason`\* |
 | `mu-citation` | `authorship`\*, `citation`\*, `copy`\*, `copy-status`\*, `details`\*, `empty`, `locator`\*, `next`\*, `open`\*, `provenance`\*, `quote`, `reason`\* |
@@ -253,7 +261,7 @@ An asterisk marks a guardrail part. Keep it visible when the kit shows it. Run `
 | `mu-plan` | `announcement`\*, `authorship`\*, `copy`\*, `copy-status`\*, `details`\*, `list`\*, `name`\*, `next`\*, `reason`\*, `state`\*, `task` |
 | `mu-progress` | `bar`\*, `copy`\*, `copy-status`\*, `details`\*, `indicator`\*, `label`\*, `next`\*, `reason`\*, `value`\* |
 | `mu-range-field` | `controls`\*, `copy`\*, `copy-status`\*, `details`\*, `edit-type`\*, `group`\*, `handle-label`\*, `label`\*, `next`\*, `number`\*, `problem`\*, `reason`\*, `slider`\* |
-| `mu-rich-text-field` | `copy`\*, `copy-status`\*, `details`\*, `edit-type`\*, `format`\*, `icon`\*, `input`\*, `label`\*, `link-editor`\*, `next`\*, `problem`\*, `reason`\*, `status`\*, `toolbar`\*, `tooltip`\* |
+| `mu-rich-text-field` | `copy`\*, `copy-status`\*, `details`\*, `edit-type`\*, `format`\*, `icon`\*, `input`\*, `label`\*, `link-apply`\*, `link-cancel`\*, `link-editor`\*, `link-tooltip`\*, `next`\*, `problem`\*, `reason`\*, `status`\*, `toolbar`\*, `tooltip`\* |
 | `mu-rich-text` | `approval-mark`\*, `authorship`\*, `code`, `copy`\*, `copy-status`\*, `details`\*, `empty`, `link`\*, `next`\*, `read-more-content`\*, `read-more-toggle`\*, `reason`\*, `rich-text`, `target`\* |
 | `mu-run-steps` | `announcement`\*, `arguments`\*, `authorship`\*, `copy`\*, `copy-status`\*, `detail`\*, `details`\*, `list`\*, `name`\*, `next`\*, `panel`\*, `reason`\*, `result`\*, `state`\*, `step`, `toggle`\*, `tool`\* |
 | `mu-select-field` | `control`\*, `copy`\*, `copy-status`\*, `details`\*, `edit-type`\*, `label`\*, `listbox`\*, `next`\*, `option`\*, `popup`\*, `problem`\*, `reason`\*, `search`\*, `status`\*, `value`\* |
@@ -290,6 +298,7 @@ Use these names on the outer element. Each alias starts with the name of the inn
 | `mu-card-grid` | `mu-card` | `status` | `card-status` |
 | `mu-card-grid` | `mu-card` | `title` | `card-title` |
 | `mu-card-grid` | `mu-card` | `toggle` | `card-toggle` |
+| `mu-card-grid` | `mu-card` | `tooltip` | `card-tooltip` |
 
 ## What a page must not change
 

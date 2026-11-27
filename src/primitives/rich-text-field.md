@@ -24,7 +24,11 @@ The heading buttons have the accessible names `H1 Heading 1`, `H2 Heading 2` and
 
 If a heading skips a level, the editor keeps the last valid value and shows the highest level you can use at that position.
 
-Use the link control to enter a full address. The page must permit its scheme. Press Escape to close the address control and return to the editable area. Select a link and press Link again to remove it. A click in the editable text does not open a link.
+Use the link control to enter a full address. The page must permit its scheme. Press Escape in the address input to close the link editor and return to the editable area. Select a link and press Link again to remove it. A click in the editable text does not open a link.
+
+The `link-apply` button shows a check and has the accessible name `Apply link`. The `link-cancel` button shows a cross and has the accessible name `Cancel`. The `link-tooltip` part shows the name below the link controls on hover and focus. Escape closes a visible tooltip. With focus on an icon button, Escape reaches the page when its tooltip is closed.
+
+Set `control-display="text"` on the field or an ancestor to show the text labels for the link buttons. Set the ancestor attribute before the fill or before you attach the filled field. A change to the attribute on the field updates the buttons and keeps the current edit. Read the [control display rules](../../docs/guides/theme.md#control-display).
 
 The editor reads paste and drop as data. It keeps supported blocks and text. It drops unsafe elements and uses only link addresses that the page permits. In a page with a Content Security Policy, the browser can report a violation for an inline event handler attribute, which the editor discards from the pasted HTML without running the handler. An edit that exceeds a limit leaves the last valid value in place and shows a message below the editor.
 
