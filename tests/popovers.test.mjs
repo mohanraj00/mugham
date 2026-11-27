@@ -16,6 +16,7 @@ class TestNode extends EventTarget {
   #open = false;
 
   constructor(tag) { super(); this.tag = tag; }
+  get ownerDocument() { return document; }
   append(child) { this.children.push(child); child.parentNode = this; }
   replaceChildren(...children) { this.children = []; children.forEach((child) => this.append(child)); }
   remove() { this.parentNode.children = this.parentNode.children.filter((child) => child !== this); }
@@ -76,8 +77,11 @@ globalThis.HTMLElement = class extends TestNode {
 };
 globalThis.CSSStyleSheet = class { replaceSync() {} };
 globalThis.ResizeObserver = class { observe() {} disconnect() {} };
-globalThis.window = new EventTarget();
+globalThis.window = Object.assign(new EventTarget(), {
+  getComputedStyle: (node) => ({ direction: node.getAttribute('dir') ?? 'ltr' }),
+});
 globalThis.document = Object.assign(new EventTarget(), {
+  defaultView: window,
   createElement: (tag) => new TestNode(tag),
   createTextNode: (textContent) => ({ textContent }),
   getElementById: () => null,
@@ -90,6 +94,7 @@ globalThis.customElements = {
 };
 
 const { define } = await import('../src/components/index.js');
+const { floatingTooltip } = await import('../src/render/dom.js');
 define();
 const menuData = { label: 'Tray options', items: [{ label: 'Export <CSV>', name: 'export_csv' }, { label: 'Print list', name: 'print_list' }] };
 const tooltipData = { text: 'Each tray holds <12> cells.' };
@@ -109,6 +114,53 @@ function watch(element, types) {
     });
   }
   return events;
+}
+
+for (const native of [true, false]) {
+  test('an icon tooltip follows its control ' + (native ? 'in the top layer' : 'in the fallback wrapper'), () => {
+    const outer = new HTMLElement();
+    const root = outer.attachShadow();
+    root.host = outer;
+    const group = new TestNode('div');
+    const anchor = new TestNode('button');
+    const tooltip = new TestNode('span');
+    if (!native) tooltip.showPopover = undefined;
+    root.append(group);
+    group.append(anchor);
+    anchor.setAttribute('dir', 'rtl');
+    let box = { left: 66, right: 110, top: 20, bottom: 64 };
+    anchor.getBoundingClientRect = () => box;
+    const styles = new Map();
+    tooltip.style.setProperty = (name, value) => styles.set(name, value);
+    const position = () => [styles.get('--mu-popup-left'), styles.get('--mu-popup-top')];
+
+    const layer = floatingTooltip(group, tooltip);
+    assert.equal(tooltip.hidden, true);
+    assert.equal(tooltip.popover, native ? 'manual' : undefined);
+    if (!native) assert.equal(tooltip.parentNode.getAttribute('class'), 'tooltip-fallback');
+    layer.show(anchor);
+    assert.equal(tooltip.hidden, false);
+    assert.equal(tooltip.parentNode.hidden ?? false, false);
+    assert.equal(tooltip.matches(':popover-open'), native);
+    assert.deepEqual(position(), ['10px', '64px']);
+
+    box = { left: 36, right: 80, top: 766, bottom: 810 };
+    root.dispatchEvent(new Event('scroll'));
+    assert.deepEqual(position(), ['8px', '722px']);
+
+    box = { left: 346, right: 390, top: 20, bottom: 64 };
+    window.dispatchEvent(new Event('resize'));
+    assert.deepEqual(position(), ['267px', '64px']);
+
+    layer.hide();
+    assert.equal(tooltip.hidden, true);
+    if (!native) assert.equal(tooltip.parentNode.hidden, true);
+    assert.equal(tooltip.matches(':popover-open'), false);
+    box = { left: 66, right: 110, top: 20, bottom: 64 };
+    root.dispatchEvent(new Event('scroll'));
+    window.dispatchEvent(new Event('resize'));
+    assert.deepEqual(position(), ['267px', '64px']);
+  });
 }
 
 for (const [name, data, required, bad] of [

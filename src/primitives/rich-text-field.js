@@ -1,4 +1,5 @@
-import { COMPACT_CONTROL_CSS, CONTROL_DISPLAY, compactControls, el, formatIcon, icon, sheet, text } from '../render/dom.js';
+import { COMPACT_CONTROL_CSS, CONTROL_DISPLAY, FLOATING_TOOLTIP_CSS, compactControls, el, formatIcon, icon,
+  sheet, text } from '../render/dom.js';
 import { parseLinkURL } from '../render/validate.js';
 import { RICH_TEXT_EDIT_LIMIT, richNode, richTextEditProblem, richTextLinkSchemes, richTextValueErrors, sameRichTextValue,
   watchRichTextLinkSchemes } from '../render/rich-text.js';
@@ -82,7 +83,7 @@ export class MuRichTextField extends FieldElement {
       .editor a { color: LinkText; }
       .status { color: CanvasText; }
     }
-  `), COMPACT_CONTROL_CSS];
+  `), COMPACT_CONTROL_CSS, FLOATING_TOOLTIP_CSS];
 
   #editor;
   #buttons = [];
@@ -143,6 +144,12 @@ export class MuRichTextField extends FieldElement {
     this.ownerDocument.removeEventListener('selectionchange', this.#selectionChanged);
     this.ownerDocument.removeEventListener('keydown', this.#tooltipEscape, true);
     this.#unwatch?.();
+  }
+
+  refuse(errors) {
+    this.#linkControls?.dismiss();
+    this.#linkControls = null;
+    super.refuse(errors);
   }
 
   attributeChangedCallback() {

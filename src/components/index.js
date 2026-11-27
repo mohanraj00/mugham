@@ -5,7 +5,8 @@ import { ReadMoreElement, READ_MORE_CSS } from '../primitives/read-more.js';
 import { define as definePrimitives, FIELDS } from '../primitives/index.js';
 import { ActionState, bindingErrors, copyActionValue, isActionValue, isEditType } from '../actions/action.js';
 import { PATIENCE, patienceOf, ReceiptTimer } from './pending.js';
-import { COMPACT_CONTROL_CSS, CONTROL_DISPLAY, EDGE, LIFT, compactControls, controlIcon, el, icon, setDisclosure, sheet } from '../render/dom.js';
+import { COMPACT_CONTROL_CSS, CONTROL_DISPLAY, EDGE, FLOATING_TOOLTIP_CSS, LIFT, compactControls, controlIcon,
+  el, floatingTooltip, icon, setDisclosure, sheet } from '../render/dom.js';
 import { ACTION_RESULT_CSS, REFERENCE_CSS, showReference } from './receipt.js';
 import { sameRichTextValue } from '../render/rich-text.js';
 import { fillErrors } from '../render/validate.js';
@@ -95,16 +96,10 @@ const ACTION_CSS = sheet(`
     background: var(--mu-color-accent); color: var(--mu-color-on-accent); cursor: pointer;
   }
   .with-icon { display: inline-flex; align-items: center; justify-content: center; gap: var(--mu-space-2); }
-  .icon-control { display: flex; flex-direction: column; align-items: flex-start; gap: var(--mu-space-1); }
+  .icon-control { display: flex; align-items: flex-start; }
   .icon-control button {
     min-inline-size: max(44px, 2.75rem); min-block-size: max(44px, 2.75rem); padding: var(--mu-space-2);
   }
-  .action-tooltip {
-    max-inline-size: 100%; overflow-wrap: anywhere; padding: var(--mu-space-1) var(--mu-space-2);
-    font: var(--mu-type-caption); color: var(--mu-color-text); background: var(--mu-color-surface);
-    border: 1px solid var(--mu-color-border); border-radius: var(--mu-radius-2);
-  }
-  .action-tooltip[hidden] { display: none !important; }
   .status { display: block; font: var(--mu-type-caption); color: var(--mu-color-text-muted); min-height: 1lh; overflow-wrap: anywhere; }
   .status.done { color: var(--mu-color-success); }
   .status.error { color: var(--mu-color-danger); }
@@ -117,7 +112,6 @@ const ACTION_CSS = sheet(`
     button { background: ButtonFace; color: ButtonText; border-color: ButtonText; forced-color-adjust: none; }
     .step button[part="cancel"] { background: ButtonFace; color: ButtonText; }
     .status, .status.done, .status.error { color: CanvasText; }
-    .action-tooltip { background: Canvas; color: CanvasText; border-color: CanvasText; }
   }
 `);
 
@@ -432,9 +426,20 @@ class ActionElement extends MuElement {
 export class MuActionButton extends ActionElement {
   static component = 'action-button';
   static focus = true;
-  static styles = [ACTION_CSS, REFERENCE_CSS, ACTION_RESULT_CSS];
+  static styles = [ACTION_CSS, REFERENCE_CSS, ACTION_RESULT_CSS, FLOATING_TOOLTIP_CSS];
   #graphic = null;
   #doneGraphic = null;
+  #dismissTooltip = null;
+
+  disconnectedCallback() {
+    this.#dismissTooltip?.();
+  }
+
+  refuse(errors) {
+    this.#dismissTooltip?.();
+    this.#dismissTooltip = null;
+    super.refuse(errors);
+  }
 
   // The application gives the description, icon and display of the bound action. The fill must agree with the binding.
   check(data) {
@@ -451,6 +456,8 @@ export class MuActionButton extends ActionElement {
   }
 
   render(data) {
+    this.#dismissTooltip?.();
+    this.#dismissTooltip = null;
     const approval = this[APPROVAL_CONTROL];
     const status = approval ? null : el('span', { class: 'status', role: 'status', 'aria-live': 'polite', part: 'status' });
     const display = data.icon ? data.display ?? 'text' : 'text';
@@ -474,15 +481,23 @@ export class MuActionButton extends ActionElement {
 
   #withTooltip(button, label) {
     // The button already has this name. The tooltip gives the same text to a person who can see it.
-    const tooltip = el('span', { class: 'action-tooltip', part: 'tooltip', 'aria-hidden': 'true' }, label);
-    tooltip.hidden = true;
-    const control = el('div', { class: 'icon-control' }, button, tooltip);
+    const tooltip = el('span', { part: 'tooltip', 'aria-hidden': 'true' }, label);
+    const control = el('div', { class: 'icon-control' }, button);
+    const layer = floatingTooltip(control, tooltip);
     const shown = { hover: false, focus: false };
     const show = (source, value) => {
       shown[source] = value;
-      tooltip.hidden = !(shown.hover || shown.focus);
+      if (shown.hover || shown.focus) layer.show(button);
+      else layer.hide();
     };
-    control.addEventListener('pointerenter', () => show('hover', true));
+    const dismiss = () => {
+      shown.hover = false;
+      show('focus', false);
+    };
+    this.#dismissTooltip = dismiss;
+    control.addEventListener('pointerenter', (event) => {
+      if (event.pointerType !== 'touch') show('hover', true);
+    });
     control.addEventListener('pointerleave', () => show('hover', false));
     button.addEventListener('focus', () => show('focus', true));
     button.addEventListener('blur', () => show('focus', false));
@@ -490,8 +505,7 @@ export class MuActionButton extends ActionElement {
       if (event.key !== 'Escape' || tooltip.hidden) return;
       event.preventDefault();
       event.stopPropagation();
-      shown.hover = false;
-      show('focus', false);
+      dismiss();
     });
     return control;
   }
@@ -735,7 +749,7 @@ export class MuApprovalQueue extends MuElement {
 export class MuCard extends MuElement {
   static component = 'card';
   static observedAttributes = [CONTROL_DISPLAY];
-  static styles = [CARD_CSS, COLLAPSE_CSS, COMPACT_CONTROL_CSS, sheet(`
+  static styles = [CARD_CSS, COLLAPSE_CSS, COMPACT_CONTROL_CSS, FLOATING_TOOLTIP_CSS, sheet(`
     .thread-card { background: var(--mu-color-surface-subtle); box-shadow: none; }
     [part="facts"] { align-items: baseline; }
     .author-name { color: var(--mu-color-text); }
@@ -773,6 +787,12 @@ export class MuCard extends MuElement {
   disconnectedCallback() {
     this.#observer.disconnect();
     this.#controls?.dismiss();
+  }
+
+  refuse(errors) {
+    this.#controls?.dismiss();
+    this.#controls = null;
+    super.refuse(errors);
   }
 
   attributeChangedCallback() {
@@ -900,7 +920,7 @@ export class MuCard extends MuElement {
 export class MuCardGrid extends MuElement {
   static component = 'card-grid';
   static observedAttributes = [CONTROL_DISPLAY];
-  static styles = [COLLAPSE_CSS, COMPACT_CONTROL_CSS, sheet(`
+  static styles = [COLLAPSE_CSS, COMPACT_CONTROL_CSS, FLOATING_TOOLTIP_CSS, sheet(`
     :host { display: block; }
     ul { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--mu-space-4);
       grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--mu-size-column-medium)), 1fr)); }
@@ -916,6 +936,12 @@ export class MuCardGrid extends MuElement {
 
   disconnectedCallback() {
     this.#controls?.dismiss();
+  }
+
+  refuse(errors) {
+    this.#controls?.dismiss();
+    this.#controls = null;
+    super.refuse(errors);
   }
 
   attributeChangedCallback() {

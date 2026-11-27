@@ -1,6 +1,6 @@
 // The browser owns the top layer and the dismissal of auto and hint popovers.
 import { MuElement } from '../primitives/base.js';
-import { el, sheet } from '../render/dom.js';
+import { el, positionPopup, sheet } from '../render/dom.js';
 
 const SURFACE = sheet(`
   [popover] {
@@ -29,25 +29,6 @@ const SURFACE = sheet(`
 const open = (panel) => panel?.matches(':popover-open');
 const BUBBLES = { bubbles: true, composed: true };
 
-// Place the panel below the control if there is space. Otherwise use the side with more space.
-function place(panel, anchor) {
-  const viewport = document.documentElement;
-  const target = anchor.getBoundingClientRect();
-  const { width } = panel.getBoundingClientRect();
-  const inset = 8;
-  const height = panel.scrollHeight + panel.offsetHeight - panel.clientHeight;
-  const below = Math.max(0, viewport.clientHeight - target.bottom - inset);
-  const above = Math.max(0, target.top - inset);
-  const useBelow = height <= below || below >= above;
-  const available = useBelow ? below : above;
-  const start = anchor.matches(':dir(rtl)') ? target.right - width : target.left;
-  const left = Math.max(inset, Math.min(start, viewport.clientWidth - width - inset));
-  const top = useBelow ? Math.max(inset, target.bottom) : target.top - Math.min(height, available);
-  panel.style.setProperty('--mu-popup-left', left + 'px');
-  panel.style.setProperty('--mu-popup-top', top + 'px');
-  panel.style.setProperty('--mu-popup-height', available + 'px');
-}
-
 class MuPopover extends MuElement {
   #panel = null;
   #position = null;
@@ -73,19 +54,7 @@ class MuPopover extends MuElement {
     panel.showPopover(anchor ? { source: anchor } : undefined);
     if (panel !== this.#panel || !open(panel)) return false;
     this.dataset.state = 'open';
-    if (anchor) {
-      const events = new AbortController();
-      const update = () => place(panel, anchor);
-      const observer = new ResizeObserver(update);
-      this.#position = () => { events.abort(); observer.disconnect(); };
-      update();
-      observer.observe(anchor);
-      observer.observe(panel);
-      const scope = anchor.getRootNode();
-      if (scope !== document) scope.addEventListener('scroll', update, { capture: true, signal: events.signal });
-      document.addEventListener('scroll', update, { capture: true, signal: events.signal });
-      window.addEventListener('resize', update, { signal: events.signal });
-    }
+    if (anchor) this.#position = positionPopup(panel, anchor);
     return true;
   }
 
