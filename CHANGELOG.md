@@ -2,45 +2,41 @@
 
 Each release has an entry. The newest entry is first.
 
-## Unreleased
+## 0.6.0, 2026-11-26
 
-- Show symbols on the rich text format buttons and show the format name on hover and focus (#175).
-- Check queued rich text without loading the catalog (#176).
+When you upgrade from 0.5.0, the new data keys are optional. If you show approval marks, read `fillRevision` just after you set the fill and before you request approvals. Pass it to `setApprovals(list, revision)` when the response comes back. After a change to the actor, label, title or summary, call `bind()` again for each affected approval queue row with no pending decision. Use the request `key` as the API idempotency key for grid edits and uploads. Each retry has a new `id`. Send files through the application transport. The offline queue refuses file requests. If you use the new fields, accept lists of texts, pairs of numbers and `rich-text` values in the action handler as applicable. Queue records can also hold these values in arguments and typed edits. For each local date and time field, give the matching zone in the action binding's `time_zones`. To use a registered field in a form, mark its contract with `"field": true` and export the tool schema after registration. If you import `FIELDS` from `src/primitives/fields.js`, import it from `src/primitives/index.js` now. Check page styles against the declared parts and keep each guardrail part visible when the kit shows it. If application code reads card author text, use the actor data. If it reads an element's refusal text, use the errors from `mu-refused`. If the service worker lists kit files for offline use, add the new kit files to the list and change its cache version.
+
+- An editable form accepts a select field with up to 500 choices (#120). A list of more than seven choices has a search box.
+- An editable form accepts multiple choices as checkboxes or a searchable tag picker and sends the selected texts as a list (#121).
+- An editable form accepts a yes or no field as a checkbox or a switch (#122). The switch shows `On` or `Off`. The form sends `true` or `false`.
+- The contract schemas accept the `checkbox` and `switch` roles (#150). The toggle field declares `checkbox` and uses its label as its accessible name.
+- An editable form accepts a range field with one or two slider handles and a number box for each handle (#123). The form sends a number or a pair of numbers.
+- An editable form accepts native fields for a date range, a time and a local date and time with a fixed time zone label (#124). The form refuses a date and time field if its time zone is absent from the action binding or differs from the binding. Both fill validators check the `Area/Location` form of the time zone.
+- An editable form accepts a registered field that follows the kit field protocol (#125). The examples show a color field and a contact card made from kit components.
+- The kit adds new color, elevation, radius and easing tokens, with neutral, high contrast and compact presets in light and dark modes (#126). The component gallery shows each preset.
+- The kit adds tabs and an accordion with slots for page content. The settings example shows a save with a confirm step and a toast (#127).
+- The kit adds a menu for page choices, a tooltip for help text and a toast for status messages (#127).
+- The kit adds a dialog and a drawer with page content, Escape and focus return (#127).
+- The kit adds an empty state, a loading skeleton, badges and avatars with initials. The library staff example uses them in the top bar and loan search (#128).
+- The kit adds wizard steps and a progress bar with a known or unknown value. The library staff example shows a three-step member wizard (#128).
+- The kit adds an app shell with a drawer on phones, breadcrumbs and pagination. The library staff example shows all three (#128).
+- Each catalog contract declares its style parts and the parts that a page must keep visible (#135). A card grid exports the title, state text and collapse control of each nested card.
+- The kit adds an approval queue with separate confirmation and receipts for each proposal. The library research example asks for a book hold and a reading list change (#129).
+- The kit adds run steps and a plan with state text and polite updates. The library research example shows a tool call and changes to the run and plan (#129).
 - Add a rich text field with a format toolbar, keyboard shortcuts and bounded paste and drop. An editable form sends its rich text data (#130).
-- Pass the rich text fill revision to `setApprovals` so a late response cannot mark a different fill (#172).
+- Show symbols on the rich text format buttons and show the format name on hover and focus (#175).
 - Page code can show the approval state of top-level rich text blocks with `setApprovals` after each fill. The library newsletter shows three states from a fixture API (#137).
 - The approval queue shows its state text with a badge and each decision state with an approval mark (#137).
 - A change of the actor, the label, the title or the summary removes the binding of each row with no pending decision. The application must call `bind()` again (#137).
 - A pending row shows its bound label and actor as extra text when they differ from the current values (#137).
 - `mu-badge` and the approval mark share their tone rules (#137).
-
-- The kit adds an approval queue with separate confirmation and receipts for each proposal. The library research example asks for a book hold and a reading list change (#129).
-
-- The kit adds run steps and a plan with state text and polite updates. The library research example shows a tool call and changes to the run and plan (#129).
-
-- The kit adds an empty state, a loading skeleton, badges and avatars with initials. The library staff example uses them in the top bar and loan search (#128).
-
-- The kit adds wizard steps and a progress bar with a known or unknown value. The library staff example shows a three-step member wizard (#128).
-- The kit adds an app shell with a drawer on phones, breadcrumbs and pagination. The library staff example shows all three (#128).
-- The kit adds tabs and an accordion with slots for page content. The settings example shows a save with a confirm step and a toast (#127).
-- The kit adds a menu for page choices, a tooltip for help text and a toast for status messages (#127).
-- The kit adds a dialog and a drawer with page content, Escape and focus return (#127).
-- An editable form accepts a registered field that follows the kit field protocol (#125). The examples show a color field and a contact card made from kit components.
-- The kit adds new color, elevation, radius and easing tokens, with neutral, high contrast and compact presets in light and dark modes (#126). The component gallery shows each preset.
-- Each catalog contract declares its style parts and the parts that a page must keep visible (#135). A card grid exports the title, state text and collapse control of each nested card.
-- An editable form accepts native fields for a date range, a time and a local date and time with a fixed time zone label (#124). The form refuses a date and time field if its time zone is absent from the action binding or differs from the binding. Both fill validators check the `Area/Location` form of the time zone.
-
-- An editable form accepts multiple choices as checkboxes or a searchable tag picker and sends the selected texts as a list (#121).
-- An editable form accepts a select field with up to 500 choices (#120). A list of more than seven choices has a search box.
-- An editable form accepts a range field with one or two slider handles and a number box for each handle (#123). The form sends a number or a pair of numbers.
-- A bench measures long threads in Chrome. The browser check applies a render time limit to the 500-message case (#131).
-- Cards in a thread use a subtle surface and keep their article labels (#134). Fact labels and values align on the baseline. The author line shows the name first. When the author is the message actor, the visible line is shorter and a screen reader reads the full author. In a message of an agent, the thread refuses a card whose bound author is a person.
-- The contract schemas accept the `checkbox` and `switch` roles (#150). The toggle field declares `checkbox` and uses its label as its accessible name.
+- Pass the rich text fill revision to `setApprovals` so a late response cannot mark a different fill (#172).
 - Data grids and uploads offer `Retry` and `Cancel` after a try with no receipt (#138). A queued grid change also offers `Cancel`. Cancel keeps the grid edit as `Changed`. Each retry keeps the same key and uses a new id. The offline queue refuses requests with files.
-- An editable form accepts a yes or no field as a checkbox or a switch (#122). The switch shows `On` or `Off`. The form sends `true` or `false`.
-
-- A refused element or thread part shows a short reason and the next step (#132). Open `Technical details` to read or copy the component name and the validation errors. The `mu-refused` event still gives all the errors.
 - A successful receipt shows `Done` at full opacity with a success color for its edge and state text (#133). Action buttons with an icon display show a check. The copy control sits next to the reference and wraps when the row is too narrow. This applies to action buttons, both forms, data grids and uploads.
+- Cards in a thread use a subtle surface and keep their article labels (#134). Fact labels and values align on the baseline. The author line shows the name first. When the author is the message actor, the visible line is shorter and a screen reader reads the full author. In a message of an agent, the thread refuses a card whose bound author is a person.
+- A refused element or thread part shows a short reason and the next step (#132). Open `Technical details` to read or copy the component name and the validation errors. The `mu-refused` event still gives all the errors.
+- A bench measures long threads in Chrome. The browser check applies a render time limit to the 500-message case (#131).
+- Check queued rich text without loading the catalog (#176).
 
 ## 0.5.0, 2026-11-25
 
