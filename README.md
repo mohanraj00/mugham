@@ -198,6 +198,7 @@ python3 tools/serve.py
    - `http://localhost:8000/examples/apps/newsletter.html`: three newsletter blocks with approval states from a fixture API.
    - `http://localhost:8000/examples/apps/library.html`: a library staff page with a side bar, breadcrumbs, a list with numbered pages and a wizard to add a member.
    - `http://localhost:8000/examples/apps/library-note.html`: edit a note and see the rich text data from the form.
+   - `http://localhost:8000/examples/apps/services.html`: one page with a region for each of three synthetic services. Each region reads from its own fixture API and sends its action only to that API.
    - `http://localhost:8000/examples/cards/popovers.html`: tray choices, help text and a message after a note save.
    - `http://localhost:8000/examples/cards/approval-icons.html`: a request card with buttons to approve or reject the request.
    - `http://localhost:8000/examples/forms/inputs.html`: a form with text, long text, a number, a date and a choice.

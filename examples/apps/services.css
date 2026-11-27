@@ -1,0 +1,13 @@
+/* The page code owns the layout of the regions. The kit gives no shell or panel for it. */
+/* At a wide width the regions show side by side. At a narrow width each region uses the full width. */
+.region {
+  flex: 1 1 11rem; min-inline-size: 0; margin-block-start: 0;
+  padding: var(--mu-space-4); border: 1px solid var(--mu-color-border); border-radius: var(--mu-radius-2);
+}
+.region > * + * { margin-block-start: var(--mu-space-3); }
+.region h2 { font: var(--mu-type-heading-3); margin-block-start: 0; }
+.api { font: var(--mu-type-caption); color: var(--mu-color-text-muted); overflow-wrap: anywhere; }
+.items { margin: 0; padding-inline-start: var(--mu-space-4); }
+@media (forced-colors: active) {
+  .region { border-color: CanvasText; }
+}

@@ -1098,6 +1098,7 @@ async function main() {
     report.keyboard.push(...await compactControlChecks(session, sessionId, base, MODES, { evaluate, open, key, pageRules }, problems));
     report.keyboard.push(...await serviceStatusChecks(session, sessionId, base, MODES, { evaluate, open, key, pageRules, axErrors }, problems));
     report.keyboard.push(...await pageWidthChecks(session, sessionId, base, MODES, { evaluate, open, key, pageRules, axErrors }, problems));
+    report.keyboard.push(...await (await import('../tests/browser/services.js')).servicesExampleChecks(session, sessionId, base, MODES, { evaluate, open, key, pageRules, axErrors }, problems));
     report.keyboard.push(...await tableWidthChecks(session, sessionId, base, MODES, { evaluate, open, key, pageRules, axErrors }, problems));
     report.examples.push(...await newsletterExampleChecks(session, sessionId, base, MODES, { evaluate, open, pageRules }, problems));
     report.keyboard.push(...await rangeExampleChecks(session, sessionId, base, MODES, { evaluate, open, key }, problems));
