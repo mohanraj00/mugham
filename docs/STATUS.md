@@ -1,6 +1,13 @@
 # Status
 
-2026-11-27. Release 0.7.0 is ready for the owner to tag. The v0.7 scope is complete. The kit has contract format 2, the tokens, the primitives, the catalog components, the message envelope and the thread for people and agents. An application can register its own contract and element. The kit has no workbench shell and no panels. [Decision 0001](decisions/0001-build-tools.md) gives the build tools and the dependency rule.
+2026-11-27. Release 0.8.0 is ready for the owner to tag. The v0.8 scope is complete. The kit has contract format 2, the tokens, the primitives, the catalog components, the message envelope and the thread for people and agents. An application can register its own contract and element. The kit has no workbench shell and no panels. [Decision 0001](decisions/0001-build-tools.md) gives the build tools and the dependency rule.
+
+## In release 0.8.0
+
+- A receipt can give the optional fields `service` and `code`. A refusal shows them as text. `serviceHandler` binds one action handler to one base URL and one service name (#190).
+- A service status strip shows the state of each service as text and announces changes (#191). Its details stay correct after a reorder, and a remade row keeps the focus (#197).
+- The page style keeps a wide plain table in the scroll box `data-mu-scroll` and breaks a long token in plain page text (#194).
+- An example page shows one region for each of three synthetic services, each with its own fixture API (#189).
 
 ## In release 0.7.0
 
@@ -59,9 +66,11 @@ The GitHub milestones hold the issues of each release.
 | v0.5 | The offline mode, security review fixes, action button icons, compact density, full-width pages and design documentation. Complete, in release 0.5.0 |
 | v0.6 | New form fields, support for registered fields and a rich text editor. Theme presets and a gallery, an application shell and page controls, views for agent work and document approvals, clearer thread cards and refusals, a long thread benchmark, declared part names, a distinct done style, and exits for pending grid and upload actions. Complete, in release 0.6.0 |
 | v0.7 | Compact icon controls with floating tooltips, action and queue checks, link and image rules, a run steps helper and waits in browser checks. Complete, in release 0.7.0 |
+| v0.8 | Service names and reason codes in refusals, a service handler, a service status strip, a page with one region for each service and page width rules. Complete, in release 0.8.0 |
 | v1.0 | A stable envelope and catalog contract, with a compatibility statement |
 
 ## Next
 
-1. The owner tags release 0.7.0 after this PR merges.
-2. Make the envelope and the catalog contract stable for v1.0 (#17).
+1. The owner tags release 0.8.0 after this PR merges.
+2. Keep a minimum column width in a narrow table (#193). PR 202 has the change, and it merges after the release.
+3. Make the envelope and the catalog contract stable for v1.0 (#17).
