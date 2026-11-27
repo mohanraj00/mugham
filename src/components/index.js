@@ -30,6 +30,7 @@ export { MuAccordion, MuTabs } from './panels.js';
 import { MuStatus } from './status.js';
 import { MuServiceStatus } from './service-status.js';
 export { MuStatus } from './status.js';
+export { MuServiceStatus } from './service-status.js';
 import { MuImage } from './image.js';
 export { MuImage } from './image.js';
 import { MuChart } from './chart.js';
