@@ -1,7 +1,7 @@
 // The service worker of the offline queue example. The application owns this file. It gives the kit the list of
 // the files of the page. The kit keeps only these files, so the page loads offline. It keeps no API response.
 // tests/browser/queue.js checks that the list has each file that the page loads.
-// tests/worker.test.mjs checks the kit modules in the list.
+// tests/worker.test.mjs checks that the list has each kit module.
 importScripts('../../src/offline/worker.js');
 
 const PAGE = [
@@ -13,13 +13,13 @@ const EXAMPLES = [
 const SRC = [
   'actions/action.js', 'components/chart.js', 'components/data-grid.js', 'components/dialog.js', 'components/image.js',
   'components/index.js', 'components/navigation.js', 'components/page-states.js', 'components/panels.js', 'components/pending.js', 'components/popovers.js', 'components/progress.js', 'components/receipt.js', 'components/rich-text.js', 'components/run-steps.js', 'components/status.js',
-  'components/table.js', 'components/upload.js', 'kit.js',
+  'components/table.js', 'components/upload.js', 'envelope/envelope.js', 'kit.js', 'narration/check.js',
   'offline/queue.js', 'offline/source.js', 'primitives/badge.js', 'primitives/base.js', 'primitives/choice-list.js', 'primitives/date-time-fields.js',
   'primitives/fields.js', 'primitives/index.js',
   'primitives/multi-choice-field.js',
   'primitives/range-field.js', 'primitives/read-more.js', 'primitives/rich-text-field-edit.js', 'primitives/rich-text-field-model.js', 'primitives/rich-text-field.js', 'primitives/select-field.js',
   'render/catalog.js', 'render/dom.js', 'render/range.js', 'render/registry.js', 'render/resolve.js',
-  'render/rich-text-value.js', 'render/rich-text.js', 'render/validate.js', 'styles/page.css', 'tokens/tokens.css',
+  'render/rich-text-value.js', 'render/rich-text.js', 'render/validate.js', 'styles/page.css', 'thread/index.js', 'tokens/tokens.css',
 ];
 const CATALOG = [
   'accordion.json', 'action-button.json', 'action-queue.json', 'app-shell.json', 'approval-queue.json', 'avatar.json', 'badge.json', 'breadcrumbs.json', 'button.json', 'card-grid.json', 'card.json', 'chart-series.json',
