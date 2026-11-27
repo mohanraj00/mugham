@@ -175,7 +175,7 @@ async function exerciseEditor() {
   editor().dispatchEvent(new Event('input'));
   for (const index of [0, 1, 2]) {
     select(lastText(index));
-    const name = 'Heading ' + (index + 1);
+    const name = 'H' + (index + 1) + ' Heading ' + (index + 1);
     button(name).click();
     check(blocks()[index].component === 'rich-heading' && blocks()[index].data.level === index + 1 && pressed(name) && valid(),
       name + ' did not create its heading.');
