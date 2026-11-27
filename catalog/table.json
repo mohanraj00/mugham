@@ -38,8 +38,8 @@
   },
   "states": ["+empty", "+refused"],
   "tokens": [
-    "color.text", "color.text-muted", "color.border", "color.surface", "space.2", "space.3", "type.body",
-    "type.caption", "type.weight-strong"
+    "color.text", "color.text-muted", "color.border", "color.surface", "size.column-narrow", "size.column-wide",
+    "space.2", "space.3", "type.body", "type.caption", "type.weight-strong"
   ],
   "accessibility": {"role": "group", "name": {"field": "label"}, "keyboard": ["Tab", "Shift+Tab", "Enter", "Space"]}
 }

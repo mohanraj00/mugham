@@ -46,7 +46,7 @@ Each token has a light value and a dark value. The table gives the CSS property,
 | `--mu-elevation-2` | `0 4px 12px #141a2333` | `0 4px 12px #00000099` | The shadow of a raised surface. |
 | `--mu-motion-fast` | `120ms` | same | The time of a transition. It is `0ms` in reduced motion. |
 | `--mu-easing-standard`, `--mu-easing-enter` | `cubic-bezier(0.2, 0, 0, 1)`, `cubic-bezier(0, 0, 0.2, 1)` | same | The curves of a standard transition and a transition that shows new content. |
-| `--mu-size-column-narrow`, `--mu-size-column-medium`, `--mu-size-column-wide` | `12rem`, `16rem`, `22rem` | same | The minimum column width of a grid. |
+| `--mu-size-column-narrow`, `--mu-size-column-medium`, `--mu-size-column-wide` | `12rem`, `16rem`, `22rem` | same | The minimum column width of a grid. A table column is from half of the narrow size to the wide size. |
 | `--mu-size-page` | `64rem` | same | The maximum width of the content in the default page style. |
 
 The font stack of the body, caption and heading tokens is `Instrument Sans, system-ui, -apple-system, Segoe UI, sans-serif`. The font stack of the code token is `Geist Mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace`. The kit loads no font. If the page does not supply the first font of a stack, the browser uses the next font of the stack. [docs/brand/](../brand/README.md) gives the base colors, spacing and type.

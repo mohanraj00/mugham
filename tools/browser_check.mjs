@@ -35,6 +35,7 @@ import { SELECT_PAGE, selectExampleChecks } from '../tests/browser/select-field.
 import { runStepsExampleChecks } from '../tests/browser/run-steps.js';
 import { serviceStatusChecks } from '../tests/browser/service-status.js';
 import { pageWidthChecks } from '../tests/browser/page-width.js';
+import { tableWidthChecks } from '../tests/browser/table-width.js';
 import { waitFor } from '../tests/browser/wait.js';
 
 export const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
@@ -1098,6 +1099,7 @@ async function main() {
     report.keyboard.push(...await serviceStatusChecks(session, sessionId, base, MODES, { evaluate, open, key, pageRules, axErrors }, problems));
     report.keyboard.push(...await pageWidthChecks(session, sessionId, base, MODES, { evaluate, open, key, pageRules, axErrors }, problems));
     report.keyboard.push(...await (await import('../tests/browser/services.js')).servicesExampleChecks(session, sessionId, base, MODES, { evaluate, open, key, pageRules, axErrors }, problems));
+    report.keyboard.push(...await tableWidthChecks(session, sessionId, base, MODES, { evaluate, open, key, pageRules, axErrors }, problems));
     report.examples.push(...await newsletterExampleChecks(session, sessionId, base, MODES, { evaluate, open, pageRules }, problems));
     report.keyboard.push(...await rangeExampleChecks(session, sessionId, base, MODES, { evaluate, open, key }, problems));
     report.keyboard.push(...await selectExampleChecks(session, sessionId, base, MODES, { evaluate, open, key, pageRules }, problems));
