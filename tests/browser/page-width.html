@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; object-src 'none'; base-uri 'none'">
+  <title>Page width checks</title>
+  <link rel="stylesheet" href="../../src/tokens/tokens.css">
+  <link rel="stylesheet" href="../../src/styles/page.css">
+</head>
+<body>
+  <header><h1>Page width checks</h1></header>
+  <main>
+    <h2 id="heading">Synthetic samples of the seed library</h2>
+    <p id="token">Answered from snapshot sha256:0f1e2d3c4b5a69788796a5b4c3d2e1f00f1e2d3c4b5a69788796a5b4c3d2e1f0 (gate: pass).</p>
+    <button id="before" type="button">Before the table</button>
+    <div id="box" data-mu-scroll tabindex="0" role="region" aria-label="Sample table">
+      <table id="table">
+        <caption>Synthetic samples</caption>
+        <thead><tr><th scope="col">Sample</th><th scope="col">Digest</th><th scope="col">Publications</th></tr></thead>
+        <tbody>
+          <tr><td>sample-field-guide</td><td><code>sha256:0f1e2d3c4b5a6978…</code></td><td>2</td></tr>
+          <tr><td>sample-site-notes</td><td><code>sha256:a1b2c3d4e5f60718…</code></td><td>1</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <pre id="code">seed-row-001 sample-field-guide sha256:0f1e2d3c4b5a69788796a5b4c3d2e1f0 publications=2</pre>
+    <button id="after" type="button">After the table</button>
+  </main>
+</body>
+</html>
