@@ -26,7 +26,7 @@ If a heading skips a level, the editor keeps the last valid value and shows the 
 
 Use the link control to enter a full address. The page must permit its scheme. Press Escape in the address input to close the link editor and return to the editable area. Select a link and press Link again to remove it. A click in the editable text does not open a link.
 
-The `link-apply` button shows a check and has the accessible name `Apply link`. The `link-cancel` button shows a cross and has the accessible name `Cancel`. The `link-tooltip` part shows the name below the link controls on hover and focus. Escape closes a visible tooltip. With focus on an icon button, Escape reaches the page when its tooltip is closed.
+The `link-apply` button shows a check and has the accessible name `Apply link`. The `link-cancel` button shows a cross and has the accessible name `Cancel`. The `link-tooltip` part shows the name below the link controls on hover and on keyboard focus. Escape closes a visible tooltip. If the tooltip is closed, Escape on a link button closes the link editor.
 
 Set `control-display="text"` on the field or an ancestor to show the text labels for the link buttons. Set the ancestor attribute before the fill or before you attach the filled field. A change to the attribute on the field updates the buttons and keeps the current edit. Read the [control display rules](../../docs/guides/theme.md#control-display).
 

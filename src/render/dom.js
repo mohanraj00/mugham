@@ -152,7 +152,8 @@ export function compactControls(host, area, tooltip, controls) {
     if (event.key !== 'Escape' || event.isComposing) return;
     const visible = tooltip.isConnected && tooltip.getClientRects().length > 0;
     dismiss();
-    if (visible) {
+    // Stop Escape only when it comes from the controls. Escape from other content still reaches its own handler.
+    if (visible && event.composedPath().includes(area)) {
       event.preventDefault();
       event.stopPropagation();
     }
@@ -185,7 +186,9 @@ export function compactControls(host, area, tooltip, controls) {
       hovered = button;
       show(button);
     });
+    // A mouse press also gives the focus. Show the tooltip only for keyboard focus, so it does not stay open and move the page.
     button.addEventListener('focus', () => {
+      if (!button.matches(':focus-visible')) return;
       focused = button;
       show(button);
     });

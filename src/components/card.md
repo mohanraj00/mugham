@@ -18,13 +18,13 @@ Each change sends a bubbling, composed `mu-collapse` event with `detail: { colla
 
 The toggle uses the parts `toggle` and `title`. Its controlled area uses `body`, and the short summary uses `collapsed-summary`. The status uses `status`. The toggle has a visible border in forced colors. The card has no height animation, including under reduced motion.
 
-The toggle shows a chevron by default. The chevron points down on a collapsed card and up on an expanded card. The `icon` part takes the button text color. The button has the accessible name `Expand <title>` or `Collapse <title>`. The `tooltip` part shows that name below the header on hover and focus. Escape closes the tooltip. A collapsed card has 8px between its parts and no empty space below the last part. [Interaction details](interaction.md#card-collapse) gives the rules.
+The toggle shows a chevron by default. The chevron points down on a collapsed card and up on an expanded card. The `icon` part takes the button text color. The button has the accessible name `Expand <title>` or `Collapse <title>`. The `tooltip` part shows that name below the header on hover and on keyboard focus. Escape closes the tooltip. A collapsed card has 8px between its parts and no empty space below the last part. [Interaction details](interaction.md#card-collapse) gives the rules.
 
 ## Grid controls
 
 The optional grid data key `collapse_controls: true` adds `Expand all` and `Collapse all` buttons above a nonempty list. The controls affect only collapsible cards. They keep focus on the pressed grid button. `Collapse all` skips a card while an action in it needs a receipt or shows a confirm step or a failed receipt. Each card that changes sends its own event. An empty grid keeps its empty text and has no controls. The controls have 8px above them and 12px below them, at each width from 375 CSS pixels up.
 
-Use the `expand-all` and `collapse-all` parts to style the buttons. The `icon` part shows a double chevron down for expand and a double chevron up for collapse. The `tooltip` part shows the name of the icon button below the controls on hover and focus. Escape closes it. The grid also exports the `card-tooltip` part of each nested card.
+Use the `expand-all` and `collapse-all` parts to style the buttons. The `icon` part shows a double chevron down for expand and a double chevron up for collapse. The `tooltip` part shows the name of the icon button below the controls on hover and on keyboard focus. Escape closes it. The grid also exports the `card-tooltip` part of each nested card.
 
 Set `control-display="text"` on a card, its grid or an ancestor to show the text labels. The card keeps its chevron after the label. Set the attribute on an ancestor before the fill or before you attach the filled element. An attribute change on a card or grid updates its controls. A grid also updates its nested cards. Read the [control display rules](../../docs/guides/theme.md#control-display).
 

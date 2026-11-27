@@ -319,8 +319,6 @@ export class MuRichTextField extends FieldElement {
     this.#linkPanel.hidden = true;
     this.#linkPanel.addEventListener('keydown', (event) => {
       if (event.isComposing) return;
-      // The icon tooltip handles Escape while it is open. Then Escape can reach the page.
-      if (event.key === 'Escape' && event.target.getAttribute('data-control-display') === 'icon') return;
       if (event.key === 'Escape' || (event.key === 'Enter' && event.target === this.#address)) {
         event.preventDefault();
         event.stopPropagation();

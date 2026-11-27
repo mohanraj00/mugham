@@ -50,6 +50,8 @@ async function prepareControls(note) {
 
 function compareDisplays(index) {
   const { element, button, area } = window.muCompactControls[index];
+  // Escape closes the link editor, so open it again for the next control.
+  if (area.hidden) element.shadowRoot.querySelector('[part="toolbar"] [aria-label="Link"]').click();
   const width = () => button.getBoundingClientRect().width;
   const icon = width();
   const before = element.getAttribute('control-display');
@@ -108,6 +110,7 @@ function controlState(index) {
       && style.outlineColor === color(forced ? 'Highlight' : 'var(--mu-color-focus)'),
     escapes: window.muCompactEscapes,
     fits: document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+    areaHidden: area.hidden,
   };
 }
 
@@ -156,10 +159,15 @@ export async function compactControlChecks(session, sessionId, base, modes, { op
               const dismissedFocus = await read(controlState, index);
               await press('Escape', 27);
               const secondEscape = await read(controlState, index);
-              check(name + ' shows its focus ring and lets the next Escape reach the page',
+              // In the link editor, the next Escape closes the editor. Elsewhere it reaches the page.
+              const next = page === RICH_TEXT_FIELD_PAGE
+                ? secondEscape.areaHidden && !secondEscape.escapes.length
+                : secondEscape.escapes.length === 1 && secondEscape.escapes[0] === false;
+              check(name + (page === RICH_TEXT_FIELD_PAGE ? ' shows its focus ring and lets the next Escape close the editor'
+                : ' shows its focus ring and lets the next Escape reach the page'),
                 focus.focus && focus.ring && focus.tooltip === name && focus.tooltipFits && focus.tooltipColors
                 && (width !== 375 || focus.fits) && dismissedFocus.focus && !dismissedFocus.tooltip
-                && !dismissedFocus.escapes.length && secondEscape.escapes.length === 1 && secondEscape.escapes[0] === false,
+                && !dismissedFocus.escapes.length && next,
               { focus, dismissedFocus, secondEscape });
             }
           } catch (error) {

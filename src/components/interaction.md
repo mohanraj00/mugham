@@ -75,7 +75,7 @@ Each transition of the kit is `motion.fast`, which is 120 ms. The base style sto
 
 ## Card collapse
 
-The collapse toggle of a card shows a chevron by default. The chevron points down on a collapsed card and up on an expanded card. It is an inline SVG that the kit draws with `icon()` in `src/render/dom.js`, with `aria-hidden="true"`. No data goes into it. The button keeps its accessible name, for example `Expand Rivers and deltas`. Its tooltip shows that name on hover and focus. The chevron turns in 120 ms. It turns at once under reduced motion. It uses the text color of the button, so it shows in forced colors.
+The collapse toggle of a card shows a chevron by default. The chevron points down on a collapsed card and up on an expanded card. It is an inline SVG that the kit draws with `icon()` in `src/render/dom.js`, with `aria-hidden="true"`. No data goes into it. The button keeps its accessible name, for example `Expand Rivers and deltas`. Its tooltip shows that name on hover and on keyboard focus. The chevron turns in 120 ms. It turns at once under reduced motion. It uses the text color of the button, so it shows in forced colors.
 
 A collapsed card has 8px between its header, its status, its short summary and its provenance, and no empty space below the last part. The controls of a card grid have 8px above them and 12px below their group, at each width from 375 CSS pixels up. The browser check measures the two rules at 375, 768 and 1280 CSS pixels with the tooltips closed.
 
