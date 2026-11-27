@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; object-src 'none'; base-uri 'none'">
+  <title>Town services</title>
+  <link rel="stylesheet" href="../../src/tokens/tokens.css">
+  <link rel="stylesheet" href="../../src/styles/page.css">
+  <link rel="stylesheet" href="services.css">
+  <script type="module" src="services.js"></script>
+  <script type="module" src="../frame.js"></script>
+</head>
+<body>
+  <mu-app-shell id="services">
+    <strong slot="top">Town services</strong>
+    <a slot="side" href="#catalog">Catalog service</a>
+    <a slot="side" href="#loans">Loans service</a>
+    <a slot="side" href="#notices">Notices service</a>
+    <h1>Town services</h1>
+    <p>Each region reads from one service and sends its actions only to that service.</p>
+    <mu-stack id="regions">
+      <section id="catalog" class="region" aria-labelledby="catalog-title">
+        <h2 id="catalog-title">Catalog service</h2>
+        <p class="api">API: <code>https://catalog.example.test/api/</code></p>
+        <mu-tabs>
+          <ul slot="trays" class="items" aria-label="Seed trays"></ul>
+          <ul slot="tools" class="items" aria-label="Tools"></ul>
+        </mu-tabs>
+      </section>
+      <section id="loans" class="region" aria-labelledby="loans-title">
+        <h2 id="loans-title">Loans service</h2>
+        <p class="api">API: <code>https://loans.example.test/v2/</code></p>
+        <ul class="items" aria-label="Current loans"></ul>
+      </section>
+      <section id="notices" class="region" aria-labelledby="notices-title">
+        <h2 id="notices-title">Notices service</h2>
+        <p class="api">API: <code>https://notices.example.test/</code></p>
+        <ul class="items" aria-label="Open notices"></ul>
+      </section>
+    </mu-stack>
+  </mu-app-shell>
+</body>
+</html>
