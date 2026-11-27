@@ -1,8 +1,8 @@
 # 0008: The stable contract of v1.0
 
-Status: proposed, 2026-11-27. Issue: mohanraj00/mugham#17.
+Status: accepted, 2026-11-27. Issue: mohanraj00/mugham#17.
 
-This note is a proposal for an owner choice. It changes no contract, test or source file. The owner answers the questions in "Owner choices". After that, the implementation issues of the last section start.
+This note started as a proposal for an owner choice. It changes no contract, test or source file. The owner accepted the defaults of the three questions. "Owner answers" records them. The implementation issues of the last section can now start.
 
 ## Context
 
@@ -302,9 +302,17 @@ Implementation issue I8 writes `docs/guides/upgrade-1.0.md` from this outline.
 2. Which rule matches the fill version to the contract version? Default: the major version matches, the catalog contracts get `1.0.0`, and major version 0 keeps the exact match (Q2, option A).
 3. Which part of a validator error is stable? Default: the error path only (Q3, option A).
 
+### Owner answers
+
+On 2026-11-27, the owner answered the three questions with the words "Accept the defaults". The [comment on #17](https://github.com/mohanraj00/mugham/issues/17#issuecomment-7217373070) records the answers.
+
+1. Q1: option A. The token names and the page attributes become stable at v1.0. The token values stay provisional.
+2. Q2: option A. The major version of a fill must match the major version of the contract. The catalog contracts get `1.0.0`. A contract of major version 0 keeps the exact match.
+3. Q3: option A. Only the error path of a validator error is stable. The words after the path can change.
+
 ## 6. Implementation issues (draft)
 
-The owner files these issues after the choice. Each change of `catalog/schema/*`, `docs/contracts/*` or `.github/` is level 1.
+The owner files these issues. They use the owner answers. Each change of `catalog/schema/*`, `docs/contracts/*` or `.github/` is level 1.
 
 ### I1. Write the compatibility statement
 
@@ -362,5 +370,5 @@ The owner files these issues after the choice. Each change of `catalog/schema/*`
 - [ ] `docs/guides/upgrade-1.0.md` follows the outline of section 4, with the answers of the owner.
 - [ ] `CHANGELOG.md` has a 1.0.0 entry with the upgrade steps first.
 - [ ] `docs/STATUS.md` gives the v1.0 scope as complete.
-- [ ] This note gets the status `accepted` with the answers of the owner.
+- [ ] This note links to the PR of each implementation issue.
 - [ ] The tag and the release need a separate owner approval.
