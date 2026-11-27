@@ -1,6 +1,16 @@
 # Status
 
-2026-11-25. Release 0.5.0 is ready for the owner to tag. The v0.5 scope is complete. The kit has contract format 2, the tokens, the primitives, the catalog components, the message envelope and the thread for people and agents. An application can register its own contract and element. The kit has no workbench shell and no panels. [Decision 0001](decisions/0001-build-tools.md) gives the build tools and the dependency rule.
+2026-11-26. Release 0.6.0 is ready for the owner to tag. The v0.6 scope is complete. The kit has contract format 2, the tokens, the primitives, the catalog components, the message envelope and the thread for people and agents. An application can register its own contract and element. The kit has no workbench shell and no panels. [Decision 0001](decisions/0001-build-tools.md) gives the build tools and the dependency rule.
+
+## In release 0.6.0
+
+- Searchable select, multiple choice, toggle, range, date range, time and local date and time fields (#120, #121, #122, #123, #124, #150). An editable form also accepts registered fields (#125).
+- Theme presets and a component gallery (#126). Each contract declares its style parts (#135).
+- An app shell, navigation, page controls and state components (#127, #128).
+- Run steps and a plan, with an approval queue for proposed actions (#129). Rich text shows approval marks from page code for the current fill (#137, #172).
+- A rich text editor with symbols on its format buttons (#130, #175). The offline queue checks rich text without loading the catalog (#176).
+- Clearer refusals and thread cards, a distinct style for completed actions, and retry and cancel controls for pending grid and upload actions (#132, #133, #134, #138).
+- A long thread benchmark with a render time limit in the browser check (#131). Accessibility checks use the project page rules from [Decision 0006](decisions/0006-axe-core.md).
 
 ## In release 0.5.0
 
@@ -38,12 +48,13 @@ The GitHub milestones hold the issues of each release.
 | v0.3 | Typed form edits and more input types. Evidence components: a diff, a table and a status. More components, and examples on a fixture API. Complete, in release 0.3.0 |
 | v0.4 | Usability: helper functions, the short contract form, the default page style, collapsible cards, the example entry point and docs panels. Complete, in release 0.4.0 |
 | v0.5 | The offline mode, security review fixes, action button icons, compact density, full-width pages and design documentation. Complete, in release 0.5.0 |
-| v0.6 | New form fields, support for registered fields and a rich text editor. Theme presets and a gallery, an application shell and page controls, views for agent work and document approvals, clearer thread cards and refusals, a long thread benchmark, declared part names, a distinct done style, and exits for pending grid and upload actions |
+| v0.6 | New form fields, support for registered fields and a rich text editor. Theme presets and a gallery, an application shell and page controls, views for agent work and document approvals, clearer thread cards and refusals, a long thread benchmark, declared part names, a distinct done style, and exits for pending grid and upload actions. Complete, in release 0.6.0 |
 | v1.0 | A stable envelope and catalog contract, with a compatibility statement |
 
 ## Next
 
-1. The owner tags release 0.5.0 after this PR merges. A release needs the owner approval for the tag.
-2. Build the v0.6 scope.
-3. Complete the security hardening of the action path, the queue and the renderer (#144).
-4. Make the envelope and the catalog contract stable for v1.0 (#17).
+1. The owner tags release 0.6.0 after this PR merges. A release needs the owner approval for the tag.
+2. Complete the security hardening of the action path, the queue and the renderer (#144).
+3. Fix the two timing-dependent browser checks (#141).
+4. Map the step events of an agent run to run steps fills (#168).
+5. Make the envelope and the catalog contract stable for v1.0 (#17).
