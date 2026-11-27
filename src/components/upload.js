@@ -163,10 +163,11 @@ export class MuUpload extends MuElement {
     const entry = this.#files.find(({ action }) => action.receipt(value));
     if (!entry) return false;
     entry.timer.clear();
-    const { state, message, reference } = entry.action;
+    const { state, message, reference, service, code } = entry.action;
     this.#refresh();
     this.dispatchEvent(new CustomEvent('mu-receipt', { bubbles: true, composed: true,
-      detail: Object.freeze({ id: entry.id, name: entry.file.name, size: entry.file.size, ok: state === 'done', message, reference }) }));
+      detail: Object.freeze({ id: entry.id, name: entry.file.name, size: entry.file.size, ok: state === 'done', message, reference,
+        ...(service ? { service } : {}), ...(code ? { code } : {}) }) }));
     return true;
   }
 
@@ -357,7 +358,7 @@ export class MuUpload extends MuElement {
     let next = null;
     for (const entry of this.#files) {
       const state = fileState(entry.action);
-      const { message, reference } = entry.action;
+      const { outcome: message, reference } = entry.action;
       count[state] += 1;
       entry.row.dataset.state = state;
       entry.status.textContent = STATES[state] + (message ? ': ' + message : '');

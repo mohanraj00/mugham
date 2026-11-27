@@ -234,7 +234,7 @@ export class MuDataGrid extends MuElement {
     if (!this.#action.receipt(value)) return false;
     const change = this.#sent;
     const ok = this.#action.state === 'done';
-    const message = this.#action.message;
+    const message = this.#action.outcome;
     const reference = this.#action.reference;
     this.#sent = null;
     // The action can start again for the next change.

@@ -106,6 +106,8 @@ Expected result:
 
 The helper checks each supplied `id` and `key` against the request. A valid receipt with `ok: false` gives `Not done` and the message. A valid receipt with `ok: true` can give `Done`. A failure before send gives its own reason. If the handler throws, its promise rejects or its result is invalid, the action stays pending. When the button offers Retry, it sends the same key with a new id. Cancel clears the pending action.
 
+If the page talks to several services, give `service` and `code` in a refusal. The button then shows which service refused the action, and why, for example `Not done: The tray is full. Service: Seed orders. Code: tray-full.` The kit shows both values only as text. `serviceHandler` in [src/kit.md](../../src/kit.md) binds one handler to one base URL and one service name, and it maps the HTTP response of the service to a receipt.
+
 ## Step 6: add the thread
 
 `mu-thread` shows the messages of people and agents. It needs two functions of the application:

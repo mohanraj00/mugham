@@ -707,6 +707,17 @@ check('action-button: a refused button sends no request', button.dataset.state =
   check('exit: a receipt with both identifiers must match both', !keyed.receipt({ id: 'other', key: request.key, ok: true })
     && !keyed.receipt({ id: request.id, key: 'other', ok: true }) && keyed.receipt({ id: request.id, key: request.key, ok: false, message: 'The tool is reserved.' })
     && keyed.dataset.state === 'error' && keyed.shadowRoot.querySelector('[role="status"]').textContent === 'Not done: The tool is reserved.');
+  // A refusal shows the service name and the reason code of the receipt as text, after the message (#190).
+  const refused = mount('action-button', { label: 'Reserve' });
+  refused.action = { tool: 'tool.reserve', label: 'Reserve' };
+  let sent = null;
+  refused.addEventListener('mu-action', (event) => { sent = event.detail; });
+  refused.shadowRoot.querySelector('[part="button"]').click();
+  const refusedText = () => refused.shadowRoot.querySelector('[role="status"]').textContent;
+  check('receipt: a refusal shows the service name and the code as text', refused.receipt({ id: sent.id, ok: false,
+    message: 'The tool is reserved', service: 'Tool library', code: '<b>held</b>' }) && refused.dataset.state === 'error'
+    && refusedText() === 'Not done: The tool is reserved. Service: Tool library. Code: <b>held</b>.'
+    && deepQuery(refused, 'b').length === 0, refusedText());
   // With no queue, the element finds a try with no receipt by itself, after its patience time.
   const slow = mount('action-button', { label: 'Reserve' });
   slow.action = { tool: 'tool.reserve', label: 'Reserve' };
