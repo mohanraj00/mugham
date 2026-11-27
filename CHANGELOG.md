@@ -2,15 +2,15 @@
 
 Each release has an entry. The newest entry is first.
 
-## Unreleased
+## 0.8.0, 2026-11-27
 
-When you upgrade from 0.7.0, you need no code change. The receipt fields `service` and `code` are optional. If your service worker lists kit files for offline use, add `src/actions/service.js`, `src/components/service-status.js` and `catalog/service-status.json` to the list and change its cache version.
+When you upgrade from 0.7.0, the receipt fields `service` and `code` are optional, so a page needs no code change for them. If your API gives a service name or a reason code, return them in the receipt, or bind the action handler with `serviceHandler`. If your code reads the `mu-receipt` detail of an upload, accept the optional `service` and `code`. If your page uses the page style and has a wide plain table, put the table in `<div data-mu-scroll tabindex="0" role="region" aria-label="...">`. Give the region a name that tells what the table shows. The page style now breaks a long token in plain page text, but not in headings, table cells or code blocks. If your service worker lists kit files for offline use, add `src/actions/service.js`, `src/components/service-status.js` and `catalog/service-status.json` to the list and change its cache version.
 
 - A receipt can give `service` and `code`. A refusal shows the service name and the reason code as text after the message (#190).
 - `serviceHandler` binds one action handler to one base URL and one service name. It maps an HTTP response to a receipt (#190).
 - Add a service status strip that shows service states as text and announces changes (#191).
-- Keep wide page content inside the page width. The page style adds the scroll box `data-mu-scroll` for a wide plain table and breaks a long token in plain page text (#194).
 - Fix the details of the service status strip. A reorder no longer leaves stale open details, a row that a fill makes again keeps the focus, and the trigger has no `aria-expanded` (#197).
+- Keep wide page content inside the page width. The page style adds the scroll box `data-mu-scroll` for a wide plain table and breaks a long token in plain page text (#194).
 - An example page shows one region for each of three synthetic services. Each region reads from its own fixture API and sends its action only to that API. The assemble guide gives the steps (#189).
 - Each column of a table keeps a minimum width, half of `--mu-size-column-narrow`. If a narrow table cannot show all columns, the table scrolls in its own area, and short cell text stays on one line (#193).
 
