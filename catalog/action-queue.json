@@ -1,6 +1,6 @@
 {
   "name": "action-queue",
-  "description": "The actions of the offline queue of the application, each with its state as text and its exits. A waiting action shows as pending, never as done. The application fills it from its queue, not a model.",
+  "description": "The actions and unreadable entries of the offline queue, each with its state as text and its exits. A waiting action shows as pending, never as done. Page code fills it from its queue.",
   "ai_content": false,
   "parts": [
     {"name": "action", "description": "Row for one action.", "guardrail": false},
@@ -9,7 +9,7 @@
     {"name": "copy", "description": "Button that copies text.", "guardrail": true},
     {"name": "copy-status", "description": "Result of the copy operation.", "guardrail": true},
     {"name": "details", "description": "Control and technical details of a refusal.", "guardrail": true},
-    {"name": "dismiss", "description": "Button that removes a rejected action from the list.", "guardrail": true},
+    {"name": "dismiss", "description": "Button that removes a rejected action or an unreadable entry.", "guardrail": true},
     {"name": "label", "description": "Label of the queue.", "guardrail": false},
     {"name": "name", "description": "Name of the action.", "guardrail": false},
     {"name": "next", "description": "Next step after a refusal.", "guardrail": true},
@@ -27,6 +27,11 @@
       "required": true,
       "max_items": 100,
       "items": {"type": "component", "label": "Action", "name": "queued-action"}
+    },
+    "recovery": {
+      "type": "list",
+      "max_items": 100,
+      "items": {"type": "component", "label": "Unreadable entry", "name": "queued-action"}
     }
   },
   "states": ["+empty", "+pending", "+error", "+refused"],

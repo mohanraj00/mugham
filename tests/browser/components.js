@@ -1,8 +1,10 @@
 // In-page checks of the catalog components. Each expected result comes from the contracts in catalog/
 // and from the constitution: an action shows as done only after its receipt comes back.
 import { define } from '../../src/components/index.js';
+import { indexedDbStore, openQueue, queueFill } from '../../src/offline/queue.js';
 import { CATALOG } from '../../src/render/catalog.js';
 import { showsRefusal } from './refusal.js';
+import { waitFor } from './wait.js';
 
 define();
 
@@ -764,6 +766,83 @@ check('action-button: a refused button sends no request', button.dataset.state =
   check('action-queue: an action with the state done is refused', node.dataset.state === 'refused', node.shadowRoot.textContent);
   const sheets = mount('action-queue', VALID['action-queue']).shadowRoot.adoptedStyleSheets;
   check('action-queue: the styles have a forced colors rule', sheets.some((item) => [...item.cssRules].some((rule) => rule.cssText.includes('forced-colors'))));
+}
+
+// A saved record with a numeric store key shows only a safe label and a Dismiss button.
+{
+  const name = `recovery-${crypto.randomUUID()}`;
+  const principal = 'member-1';
+  const store = indexedDbStore(name);
+  const old = { key: 17, version: 2, principal, label: 'Saved label', message: 'Saved message' };
+  const other = { key: 'other', version: 2, principal: 'member-2' };
+  await store.put(old);
+  await store.put(other);
+  let sends = 0;
+  const queue = await openQueue({ name, principal, store, send: () => { sends += 1; } });
+  const node = mount('action-queue', queueFill('Saved actions', queue.entries).data);
+  const stop = queue.watch((entries) => { node.fill = queueFill('Saved actions', entries); });
+  const unlisten = queue.listen(node);
+  const row = await waitFor(() => node.shadowRoot.querySelector('[data-state="unreadable"]'), Boolean);
+  const buttons = [...(row?.querySelectorAll('button') ?? [])];
+  check('action-queue: an unreadable entry shows a fixed label and a named Dismiss button', queue.entries.length === 1
+    && row?.querySelector('[part="name"]')?.textContent === 'A saved action that this version cannot read'
+    && row.querySelector('[part="state"]')?.textContent === 'Unreadable'
+    && buttons.map((button) => button.textContent).join(',') === 'Dismiss'
+    && buttons[0].getAttribute('aria-label') === 'Dismiss A saved action that this version cannot read'
+    && !row.textContent.includes('Saved label') && !row.textContent.includes('Saved message'), row?.textContent);
+  buttons[0]?.focus();
+  buttons[0]?.click();
+  const summary = await waitFor(() => node.shadowRoot.querySelector('[part="summary"]'),
+    (status) => status?.textContent === 'No pending actions.');
+  const saved = await store.all();
+  check('action-queue: Dismiss removes the numeric store key and returns focus to the summary', sends === 0
+    && summary?.textContent === 'No pending actions.' && node.shadowRoot.activeElement === summary
+    && saved.length === 1 && saved[0].key === other.key, summary?.textContent);
+  node.remove();
+  stop();
+  unlisten();
+  queue.close();
+  await store.remove(other.key);
+}
+
+// With Web Locks, another queue cannot take a record while a closed queue removes it after a receipt.
+{
+  const name = `owner-${crypto.randomUUID()}`;
+  const principal = 'member-1';
+  const store = indexedDbStore(name);
+  let finishSend, finishRemoval;
+  const firstStore = { ...store, remove: async (key) => {
+    await new Promise((done) => { finishRemoval = done; });
+    await store.remove(key);
+  } };
+  const first = await openQueue({ name, principal, store: firstStore, online: () => true,
+    send: () => new Promise((done) => { finishSend = done; }) });
+  const receipt = first.perform({ id: 'try-1', key: 'action-1', tool: 'tool.reserve' });
+  const sent = await waitFor(() => finishSend, Boolean);
+  let heldDuringRemoval = false;
+  if (sent) {
+    const [record] = await store.all();
+    const ownerLock = `mugham-queue:${name}:${record.owner}`;
+    const held = async () => (await navigator.locks.query()).held.some((lock) => lock.name === ownerLock);
+    first.close();
+    const second = await openQueue({ name, principal, store, online: () => false, send: () => ({ ok: true }) });
+    sent({ ok: true });
+    const remove = await waitFor(() => finishRemoval, Boolean);
+    await second.flush();
+    heldDuringRemoval = Boolean(remove) && await held() && second.entries.length === 0;
+    remove?.();
+    if (remove) {
+      await receipt;
+      await first.flush();
+      const stillHeld = await waitFor(held, (value) => !value);
+      await second.flush();
+      check('action-queue: the owner lock releases after removal and the next queue finds no record',
+        !stillHeld && second.entries.length === 0 && (await store.all()).length === 0);
+    }
+    second.close();
+  }
+  first.close();
+  check('action-queue: close keeps the owner lock through the final storage operation', heldDuringRemoval);
 }
 
 // The application gives the label of the action. A fill cannot show a different meaning for the bound tool.
