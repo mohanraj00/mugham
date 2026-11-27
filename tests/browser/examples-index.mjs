@@ -177,7 +177,11 @@ export async function exampleIndexChecks(session, sessionId, base, { evaluate, o
     let noted = 0;
     for (const [index, example] of EXAMPLES.entries()) {
       const name = serverOf(example);
-      if (name && !servers[name]) servers[name] = await pythonServer(name, SERVERS[name]);
+      if (name && !servers[name]) {
+        const args = SERVERS[name];
+        if (!args) throw new Error(`The example index check has no arguments for tools/${name}.`);
+        servers[name] = await pythonServer(name, args);
+      }
       const origin = name ? new URL(servers[name].url).origin : base;
       const where = `examples/${example.path}`;
       await open(session, sessionId, `${origin}/${where}`);

@@ -32,6 +32,7 @@ import { MULTI_CHOICE_PAGE, multiChoiceExampleChecks } from '../tests/browser/mu
 import { BOOKING_PAGE, bookingExampleChecks } from '../tests/browser/date-time-fields.js';
 import { COLOR_PAGE, CONTACT_PAGE, colorExampleChecks, contactExampleChecks } from '../tests/browser/registered-fields.js';
 import { SELECT_PAGE, selectExampleChecks } from '../tests/browser/select-field.js';
+import { waitFor } from '../tests/browser/wait.js';
 
 export const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
 // The upload checks give synthetic files to a file input. The files are in a temporary folder, not in the checkout.
@@ -355,13 +356,14 @@ async function actionIconChecks(session, sessionId, page, mode) {
   check('The icon takes the button text color', idle.iconColor, idle);
   check('The tooltip is hidden at rest', idle.tooltip === '', idle);
   await move(idle.x, idle.y);
-  const hover = await read();
+  const hover = await waitFor(read, (value) => value.hovered && value.tooltip === 'Icon keyboard target');
   check('Hover shows the tooltip', hover.hovered && !hover.focused && hover.tooltip === 'Icon keyboard target', hover);
   await move(0, 0);
-  const away = await read();
+  const away = await waitFor(read, (value) => value.tooltip === '');
   check('Moving away hides the tooltip', away.tooltip === '', away);
   await key(session, sessionId, 'Tab', 'Tab', 9);
-  const focus = await read();
+  const focus = await waitFor(read, (value) =>
+    value.focused && value.focusRing && value.tooltip === 'Icon keyboard target');
   check('Tab shows the focus ring and the tooltip', focus.focused && focus.focusRing && focus.tooltip === 'Icon keyboard target', focus);
   if (mode === 'forced-colors') {
     // The border can still be in transition after the pointer leaves the button.
@@ -371,7 +373,7 @@ async function actionIconChecks(session, sessionId, page, mode) {
   }
   if (mode === 'reduced-motion') check('The icon button and tooltip have no motion', focus.noMotion, focus);
   await key(session, sessionId, 'Escape', 'Escape', 27);
-  const dismissed = await read();
+  const dismissed = await waitFor(read, (value) => value.focused && value.tooltip === '');
   check('Escape hides the tooltip and keeps focus', dismissed.focused && dismissed.tooltip === '', dismissed);
   return results;
 }
@@ -531,7 +533,7 @@ async function touchTargetProblems(session, sessionId, includePage = false) {
 }
 
 // Starts a Python server of tools/ on a free port. The server gives its URL on its first line of output.
-export async function pythonServer(name, args) {
+export async function pythonServer(name, args = []) {
   const server = spawn(process.env.PYTHON || 'python3', ['-B', join(ROOT, 'tools', name), ...args],
     { stdio: ['ignore', 'pipe', 'inherit'] });
   const url = await new Promise((done, fail) => {
