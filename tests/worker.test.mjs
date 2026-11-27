@@ -54,7 +54,7 @@ const get = (path, init) => new Request(ORIGIN + path, init);
 // The name of the cache of one scope and one version.
 const cacheOf = (version, place = ORIGIN + '/app/') => `mugham-shell ${place} ${version}`;
 
-test('the queue example worker keeps each kit module', async () => {
+test('the queue example worker keeps the kit modules of its page', async () => {
   const self = scope();
   self.location.href = ORIGIN + '/examples/cards/queue-worker.js';
   const script = readFileSync(new URL('../examples/cards/queue-worker.js', import.meta.url), 'utf8');
@@ -70,7 +70,8 @@ test('the queue example worker keeps each kit module', async () => {
     .filter((name) => name.endsWith('.js') && name !== 'offline/worker.js');
   const kept = new Set(self.fetched);
   const missing = modules.filter((name) => !kept.has(ORIGIN + '/src/' + name)).sort();
-  assert.deepEqual(missing, []);
+  // The page has no thread, envelope or narration.
+  assert.deepEqual(missing, ['envelope/envelope.js', 'narration/check.js', 'thread/index.js']);
 });
 
 test('the install keeps each listed file, and the activate removes each older cache of its scope', async () => {

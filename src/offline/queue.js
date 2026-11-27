@@ -4,7 +4,7 @@
 // The queue keeps no header, no cookie and no credential. It never shows an action as done: only a receipt does.
 // Each record belongs to one principal, the signed-in person that the application names. A queue takes and sends
 // only the records of its principal. The application checks the credentials in the send function.
-import { RICH_TEXT_SCHEMES, richTextValueErrors } from '../render/rich-text.js';
+import { RICH_TEXT_SCHEMES, richTextValueErrors } from '../render/rich-text-value.js';
 
 const TOOL = /^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)*$/;
 const ID = /^[A-Za-z0-9._:-]{1,128}$/;

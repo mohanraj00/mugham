@@ -196,7 +196,11 @@ class PackageImportTest(unittest.TestCase):
 
     def test_the_offline_queue_imports_only_the_shared_rich_text_rules(self):
         queue = (build.ROOT / 'src/offline/queue.js').read_text(encoding='utf-8')
-        self.assertEqual(specifiers(queue), ['../render/rich-text.js'])
+        self.assertEqual(specifiers(queue), ['../render/rich-text-value.js'])
+
+    def test_the_shared_rich_text_rules_import_nothing(self):
+        rules = (build.ROOT / 'src/render/rich-text-value.js').read_text(encoding='utf-8')
+        self.assertEqual(specifiers(rules), [])
 
     def test_the_offline_worker_has_no_import_or_export(self):
         # The worker file has no import and no export, so a classic service worker loads it with importScripts

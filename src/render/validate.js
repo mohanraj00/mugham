@@ -5,6 +5,8 @@ import CONTRACT_SCHEMA from '../../catalog/schema/contract.schema.json' with { t
 import FILL_SCHEMA from '../../catalog/schema/fill.schema.json' with { type: 'json' };
 import { isNumberPair, rangeErrors } from './range.js';
 
+export { parseLinkURL } from './rich-text-value.js';
+
 const KEYWORDS = new Set(['$schema', '$id', '$defs', '$ref', 'title', 'description', 'type', 'properties', 'required',
   'additionalProperties', 'propertyNames', 'minProperties', 'maxProperties', 'items', 'minItems', 'maxItems',
   'uniqueItems', 'enum', 'const', 'pattern', 'minLength', 'maxLength', 'minimum', 'maximum', 'oneOf']);
@@ -330,20 +332,6 @@ export function multiChoiceCountLimit(count, { min_items = 0, max_items = 500 })
   if (count < min_items) return 'min_items';
   if (count > max_items) return 'max_items';
   return null;
-}
-
-// Parse a link under the scheme policy of its component. A web address has a host and no credentials.
-export function parseLinkURL(value, schemes, base) {
-  let url;
-  try {
-    url = new URL(value, base);
-  } catch {
-    return null;
-  }
-  if (!schemes.includes(url.protocol)) return null;
-  // A mail link has an address only. It cannot set a subject, a body or a second receiver.
-  if (url.protocol === 'mailto:') return url.pathname && !url.search && !url.hash ? url : null;
-  return url.hostname && !url.username && !url.password ? url : null;
 }
 
 // Use the same code points and grammar as is_navigation_href in tools/catalog.py.
