@@ -146,6 +146,10 @@ Expected result:
 5. A press on `Renew` in the thread shows `Pending`. After the receipt, it shows `Done: The loan is renewed.` and `Reference: R-0002`.
 6. At the end of the source, `thread.state` is `ended`.
 
+## Show run steps
+
+Import `createRunSteps` from `src/kit.js` and give it the actor from trusted page data. Push each original event to the thread, then push the snapshots that the helper returns for that event. The thread can check each snapshot actor with `actorFor`. [Helper details](../../src/envelope/run-steps-events.md) and [run steps example](../../examples/thread/run-steps.html).
+
 ## Choose a form
 
 | Component | When to use it | Which field values it sends |
