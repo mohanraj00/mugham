@@ -4,6 +4,9 @@ Each release has an entry. The newest entry is first.
 
 ## Unreleased
 
+- Add a helper that maps agent step and tool events to run steps in a thread. The page can enable tool arguments and results as plain text.
+- Add a synthetic run example that shows step and tool states in a thread.
+
 - Card collapse, grid expand and collapse, and link apply and cancel controls show icons by default. Set `control-display="text"` to keep the text labels.
 - Keep a completed action button done when the same application action returns after a refusal in the same message.
 - Show how an image policy blocks redirects to origins outside the allowed list.

@@ -211,6 +211,7 @@ python3 tools/serve.py
    - `http://localhost:8000/examples/forms/membership.html`: a form card with 3 sections and 25 fields in a thread, with read-only fields that the service computes.
    - `http://localhost:8000/examples/evidence/citation.html`: a citation in a message, a citation with no source and a refused citation.
    - `http://localhost:8000/examples/evidence/diff.html`: a diff of two versions of a synthetic hall booking, and a large diff that starts closed.
+   - `http://localhost:8000/examples/thread/run-steps.html`: a thread shows the steps and tool calls of a synthetic run.
    - `http://localhost:8000/examples/thread/rich-text.html`: an agent message with rich text in a thread, markup that shows as text and a refused script address.
    - `http://localhost:8000/examples/tables/budget.html`: an editable grid with a synthetic budget, a total row that the page computes and a refused amount.
    - `http://localhost:8000/examples/tables/density.html`: a card grid and a data grid in the default and compact densities.

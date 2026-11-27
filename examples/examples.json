@@ -61,7 +61,8 @@
       "title": "Chat thread",
       "examples": [
         {"name": "Thread", "path": "thread/thread.html", "components": ["thread", "card", "action-button"], "text": "Two people and two agents talk about a loan, with a refused component and an action with a receipt.", "needs": "python3 tools/thread_server.py"},
-        {"name": "Rich text", "path": "thread/rich-text.html", "components": ["thread", "rich-text", "card"], "text": "An agent message with a heading, a list of steps and a link, as typed nodes."}
+        {"name": "Rich text", "path": "thread/rich-text.html", "components": ["thread", "rich-text", "card"], "text": "An agent message with a heading, a list of steps and a link, as typed nodes."},
+        {"name": "Run steps", "path": "thread/run-steps.html", "components": ["thread", "run-steps"], "text": "A thread shows step and tool events from a synthetic run."}
       ]
     },
     {

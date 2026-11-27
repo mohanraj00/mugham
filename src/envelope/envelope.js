@@ -413,3 +413,6 @@ export function readStream(events, catalog = CONTRACTS) {
   for (const event of events) reader.push(event);
   return reader.result();
 }
+
+// The event adapter uses the same checks and limits as the reader.
+export { MAX_ID, MAX_NAME, actorCopy, actorErrors, cut, isId };

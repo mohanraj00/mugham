@@ -13,7 +13,7 @@ const EXAMPLES = [
 const SRC = [
   'actions/action.js', 'components/chart.js', 'components/data-grid.js', 'components/dialog.js', 'components/image.js',
   'components/index.js', 'components/navigation.js', 'components/page-states.js', 'components/panels.js', 'components/pending.js', 'components/popovers.js', 'components/progress.js', 'components/receipt.js', 'components/rich-text.js', 'components/run-steps.js', 'components/status.js',
-  'components/table.js', 'components/upload.js', 'envelope/envelope.js', 'kit.js', 'narration/check.js',
+  'components/table.js', 'components/upload.js', 'envelope/envelope.js', 'envelope/run-steps-events.js', 'kit.js', 'narration/check.js',
   'offline/queue.js', 'offline/source.js', 'primitives/badge.js', 'primitives/base.js', 'primitives/choice-list.js', 'primitives/date-time-fields.js',
   'primitives/fields.js', 'primitives/index.js',
   'primitives/multi-choice-field.js',
@@ -34,5 +34,5 @@ const CATALOG = [
   'tabs.json', 'text-cell.json', 'text.json', 'time-field.json', 'toast.json', 'toggle-field.json', 'tooltip.json', 'upload.json',
 ];
 
-mughamOffline.serve(self, { version: 'queue-example-20', files: [...PAGE, ...EXAMPLES.map((name) => '../' + name),
+mughamOffline.serve(self, { version: 'queue-example-21', files: [...PAGE, ...EXAMPLES.map((name) => '../' + name),
   ...SRC.map((name) => '../../src/' + name), ...CATALOG.map((name) => '../../catalog/' + name)] });
