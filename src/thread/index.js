@@ -92,6 +92,7 @@ export class MuThread extends HTMLElement {
   bind = null;
   perform = null;
   bindCardAuthor = null;
+  actorFor;
 
   #clamp = null;
   #textParts = new Map();
@@ -180,7 +181,7 @@ export class MuThread extends HTMLElement {
 
   // An event that changes no state gives no update. Thus a stream of unknown events costs no render.
   push(event) {
-    if (this.#reader.push(event)) this.#schedule();
+    if (this.#reader.push(event, { actorFor: this.actorFor })) this.#schedule();
   }
 
   // The thread updates the page one time for each frame, not one time for each event. A page can

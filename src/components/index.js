@@ -1648,7 +1648,7 @@ export class MuSourceStatus extends MuElement {
 }
 
 // The words of each state of an action in the offline queue. No state shows as done.
-const QUEUE_STATES = Object.freeze({ queued: 'Pending', sent: 'Pending', stalled: 'Pending', rejected: 'Not done' });
+const QUEUE_STATES = Object.freeze({ queued: 'Pending', sent: 'Pending', stalled: 'Pending', rejected: 'Not done', unreadable: 'Unreadable' });
 const QUEUE_NOTES = Object.freeze({ queued: 'Waiting for a connection.', sent: '', stalled: 'No receipt came back.', rejected: 'The service rejected the action.' });
 // The actions of the offline queue of the application (docs/contracts/offline-queue.md). The application fills it
 // with queueFill in src/offline/queue.js after each change of its queue. The thread does not show it. A button
@@ -1661,6 +1661,7 @@ export class MuActionQueue extends MuElement {
     sent: [],
     stalled: [[{ part: 'retry' }, 'Retry'], [{ part: 'cancel' }, 'Cancel']],
     rejected: [[{ part: 'dismiss' }, 'Dismiss']],
+    unreadable: [[{ part: 'dismiss' }, 'Dismiss']],
   });
   static styles = [sheet(`
     :host { display: block; }
@@ -1674,7 +1675,7 @@ export class MuActionQueue extends MuElement {
     li { display: flex; flex-wrap: wrap; align-items: center; gap: var(--mu-space-1) var(--mu-space-2); overflow-wrap: anywhere; }
     .name { font-weight: var(--mu-type-weight-strong); }
     .muted { font: var(--mu-type-caption); color: var(--mu-color-text-muted); }
-    li[data-state="rejected"] .state { color: var(--mu-color-danger); }
+    li:is([data-state="rejected"], [data-state="unreadable"]) .state { color: var(--mu-color-danger); }
     button {
       font: var(--mu-type-body); min-height: 2.75rem; min-width: 2.75rem; padding: var(--mu-space-1) var(--mu-space-3);
       border-radius: var(--mu-radius-2); border: 1px solid var(--mu-color-accent); background: transparent;
@@ -1682,7 +1683,7 @@ export class MuActionQueue extends MuElement {
     }
     @media (forced-colors: active) {
       .queue { border-color: CanvasText; }
-      .muted, li[data-state="rejected"] .state { color: CanvasText; }
+      .muted, li:is([data-state="rejected"], [data-state="unreadable"]) .state { color: CanvasText; }
       button { background: ButtonFace; color: ButtonText; border-color: ButtonText; forced-color-adjust: none; }
     }
   `)];
@@ -1692,13 +1693,16 @@ export class MuActionQueue extends MuElement {
 
   // Each action has a different key, so a step names one action.
   check(data) {
-    const keys = data.actions.map((item) => item.data.key);
+    if (data.recovery?.some((item) => item.data.state !== 'unreadable')) {
+      return ['data.recovery: each entry must be unreadable'];
+    }
+    const keys = [...data.actions, ...(data.recovery ?? [])].map((item) => item.data.key);
     return new Set(keys).size === keys.length ? [] : ['data.actions: two actions have the same key'];
   }
 
   state(data) {
-    const states = data.actions.map((item) => item.data.state);
-    if (states.includes('rejected')) return 'error';
+    const states = [...data.actions, ...(data.recovery ?? [])].map((item) => item.data.state);
+    if (states.includes('rejected') || states.includes('unreadable')) return 'error';
     return states.length ? 'pending' : 'empty';
   }
 
@@ -1706,11 +1710,14 @@ export class MuActionQueue extends MuElement {
     // The nodes of the fill before this one are still in the shadow root.
     const active = this.shadowRoot.activeElement;
     this.#focused = active?.dataset.step ? [active.dataset.key, active.dataset.step] : null;
-    const waiting = data.actions.filter((item) => item.data.state !== 'rejected').length;
-    const rejected = data.actions.length - waiting;
-    const summary = data.actions.length === 0 ? 'No pending actions.'
-      : [waiting ? `${waiting} pending` : '', rejected ? `${rejected} not done` : ''].filter(Boolean).join(', ') + '.';
-    const items = data.actions.map(({ data: action }) => {
+    const entries = [...data.actions, ...(data.recovery ?? [])];
+    const rejected = entries.filter((item) => item.data.state === 'rejected').length;
+    const unreadable = entries.filter((item) => item.data.state === 'unreadable').length;
+    const waiting = entries.length - rejected - unreadable;
+    const summary = entries.length === 0 ? 'No pending actions.'
+      : [waiting ? `${waiting} pending` : '', rejected ? `${rejected} not done` : '',
+        unreadable ? `${unreadable} unreadable` : ''].filter(Boolean).join(', ') + '.';
+    const items = entries.map(({ data: action }) => {
       const note = action.message ?? QUEUE_NOTES[action.state];
       const buttons = MuActionQueue.#steps[action.state].map(([attributes, word]) => {
         const step = attributes.part;

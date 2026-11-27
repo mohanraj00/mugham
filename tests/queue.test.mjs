@@ -7,6 +7,8 @@ import { ActionQueue, indexedDbStore, memoryStore, openQueue, queueFill } from '
 import { richTextLinkSchemes, setRichTextLinkSchemes } from '../src/render/rich-text.js';
 
 const RECORD_KEYS = ['arguments', 'key', 'label', 'message', 'order', 'owner', 'principal', 'queued', 'state', 'tool', 'tries'];
+const UNREADABLE = 'A saved action that this version cannot read';
+const recovery = (key) => ({ key, label: UNREADABLE, state: 'unreadable' });
 const sleep = (ms = 0) => new Promise((done) => setTimeout(done, ms));
 async function until(condition, what) {
   for (let i = 0; i < 200; i += 1) {
@@ -748,7 +750,7 @@ test('a stored record that breaks a limit of the contract is not taken', async (
   for (const change of [{ label: '' }, { label: 'x'.repeat(121) }, { message: 'x'.repeat(201) }, { queued: 'yesterday' }, { queued: '2026-11-25' }]) {
     await net.store.put({ ...record, ...change });
     const queue = await net.open();
-    assert.deepEqual(queue.entries, [], JSON.stringify(Object.keys(change)));
+    assert.deepEqual(queue.entries, [recovery(first.key)], JSON.stringify(Object.keys(change)));
     queue.close();
   }
   await net.store.put(record);
@@ -790,6 +792,7 @@ test('only valid stored records of a known version are sent', async (t) => {
       const queue = await net.open({ online: () => true });
       await queue.flush();
       assert.deepEqual(net.sent.splice(0), []);
+      assert.deepEqual(queue.entries, invalid.principal ? [recovery(first.key)] : []);
       assert.deepEqual(await net.store.all(), [invalid]);
       queue.close();
     });
@@ -801,6 +804,89 @@ test('only valid stored records of a known version are sent', async (t) => {
   assert.deepEqual(net.sent.map((sent) => sent.key), [first.key]);
   assert.deepEqual(await net.store.all(), []);
   after.close();
+});
+
+test('dismiss removes an unreadable record by its store key after removal succeeds', async () => {
+  const records = new Map([
+    [17, { principal: 'member-1', version: 2, tool: 'tool.reserve', arguments: { note: 'Saved note.' }, message: 'Saved message.' }],
+    ['bad key', { key: 'bad key', principal: 'member-1' }],
+    ['foreign', { key: 'foreign', principal: 'member-2', version: 2 }],
+    ['no-principal', { key: 'no-principal' }],
+  ]);
+  const removed = [];
+  let finish;
+  const store = {
+    all: async () => [...records.values()],
+    allEntries: async () => [...records].map(([key, record]) => ({ key, record })),
+    put: async () => assert.fail('an unreadable record cannot be written'),
+    remove: async (key) => {
+      removed.push(key);
+      if (key === 17 && !await new Promise((done) => { finish = done; })) throw new Error('The store cannot remove the record.');
+      records.delete(key);
+    },
+  };
+  const net = device({ store });
+  const queue = await net.open();
+  await queue.flush();
+  const [missing, invalid] = queue.entries;
+  assert.notEqual(missing.key, invalid.key);
+  assert.deepEqual(queue.entries, [recovery(missing.key), recovery(invalid.key)]);
+  assert.deepEqual(queueFill('Pending actions', queue.entries).data, { label: 'Pending actions', actions: [],
+    recovery: [missing, invalid].map((entry) => fill('queued-action', entry)) });
+  assert.ok(Object.isFrozen(missing));
+  assert.equal(queue.retry(missing.key), false);
+  assert.equal(queue.cancel(missing.key), false);
+  assert.equal(await queue.clear(), 0);
+  assert.deepEqual(net.sent, []);
+  assert.equal(queue.dismiss(missing.key), true);
+  assert.equal(queue.dismiss(missing.key), false);
+  await until(() => finish, 'the store removal');
+  assert.deepEqual(queue.entries, [missing, invalid]);
+  finish(false);
+  finish = null;
+  await until(() => queue.dismiss(missing.key), 'dismiss can start again');
+  await until(() => finish, 'the second store removal');
+  finish(true);
+  assert.equal(queue.dismiss(invalid.key), true);
+  await until(() => queue.entries.length === 0, 'both removals');
+  assert.deepEqual(removed, [17, 17, 'bad key']);
+  assert.deepEqual([...records.keys()], ['foreign', 'no-principal']);
+  queue.close();
+});
+
+test('dismiss leaves a record that now belongs to a different principal', async () => {
+  const net = device();
+  const old = { key: 'saved', version: 2, principal: 'member-1' };
+  await net.store.put(old);
+  const queue = await net.open();
+  await queue.flush();
+  assert.deepEqual(queue.entries, [recovery(old.key)]);
+  const other = { ...old, principal: 'member-2' };
+  await net.store.put(other);
+  assert.equal(queue.dismiss(old.key), true);
+  await until(() => queue.entries.length === 0, 'the entry leaves the view');
+  assert.deepEqual(await net.store.all(), [other]);
+  queue.close();
+});
+
+test('unreadable records do not use the space for valid actions', async () => {
+  const net = device();
+  net.online = false;
+  for (let index = 0; index < 101; index += 1) {
+    await net.store.put({ key: 'saved-' + index, principal: 'member-1', version: 2 });
+  }
+  const queue = await net.open();
+  const pending = request();
+  queue.perform(pending, element());
+  await until(() => queue.entries.length === 102, 'all unreadable entries and one pending action');
+  assert.equal(queue.entries[0].key, pending.key);
+  const view = queueFill('Pending actions', queue.entries);
+  assert.equal(view.data.actions.length, 1);
+  assert.equal(view.data.recovery.length, 100);
+  queue.dismiss('saved-0');
+  await until(() => queue.entries.length === 101, 'dismissal');
+  assert.equal(queueFill('Pending actions', queue.entries).data.recovery.at(-1).data.key, 'saved-100');
+  queue.close();
 });
 
 test('the queue takes 100 stored actions at the maximum, the oldest first', async () => {
@@ -940,6 +1026,54 @@ test('with locks, a queue takes only the records of an owner that is not live', 
   await two.flush();
   assert.deepEqual(net.sent.map((item) => item.key), [first.key, second.key]);
   two.close();
+});
+
+test('close holds the owner lock until the last storage operation of the try', async (t) => {
+  for (const ok of [true, false, null]) {
+    await t.test(String(ok), async () => {
+      const locks = fakeLocks();
+      const base = memoryStore();
+      let finishSend, finishStore;
+      let holdWrite = true;
+      const waitForStore = () => {
+        holdWrite = false;
+        return new Promise((done) => { finishStore = done; });
+      };
+      const net = device({
+        timeout: 2000,
+        answer: () => new Promise((done) => { finishSend = done; }),
+        store: {
+          ...base,
+          put: async (record) => {
+            if (holdWrite && (record.state === 'rejected' || record.state === 'stalled')) await waitForStore();
+            await base.put(record);
+          },
+          remove: async (key) => { await waitForStore(); await base.remove(key); },
+        },
+      });
+      const first = await net.open({ locks });
+      const saved = request();
+      first.perform(saved);
+      await until(() => finishSend, 'the first send');
+      const [record] = await base.all();
+      const lock = `mugham-queue:actions:${record.owner}`;
+      first.close();
+      const second = await net.open({ locks, online: () => false });
+      assert.deepEqual(second.entries, []);
+      finishSend(ok === null ? null : { ok });
+      await until(() => finishStore, 'the last storage operation');
+      await second.flush();
+      assert.deepEqual(second.entries, []);
+      finishStore();
+      await first.flush();
+      await until(async () => !(await locks.query()).held.some(({ name }) => name === lock), 'the owner lock releases');
+      await second.flush();
+      assert.deepEqual(second.entries.map(({ key, state }) => [key, state]),
+        ok === true ? [] : [[saved.key, ok === false ? 'rejected' : 'queued']]);
+      assert.equal(net.sent.length, 1);
+      second.close();
+    });
+  }
 });
 
 test('listen connects the cancel event and the steps of the queue component', async () => {

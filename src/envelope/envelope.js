@@ -130,9 +130,20 @@ function refused(header, errors) {
   return { ...header, state: 'refused', errors: errors.slice(0, MAX_ERRORS).map((error) => cut(error, MAX_ERROR)) };
 }
 
+function checkActor(message, header, actorFor) {
+  if (actorFor === undefined) return message;
+  try {
+    const actor = actorFor(structuredClone(message));
+    if (!actorErrors(actor, 'actor').length && actor.type === message.actor.type && actor.id === message.actor.id) return message;
+  } catch {
+    // The error from page code can contain private data.
+  }
+  return refused(header, ['Actor check failed.']);
+}
+
 // Read one envelope, for example a message from the history of an application. The result is always an
 // envelope that agrees with docs/contracts/envelope-v1.schema.json. An envelope with an error is refused.
-export function readEnvelope(value, catalog = CONTRACTS) {
+export function readEnvelope(value, catalog = CONTRACTS, { actorFor } = {}) {
   const header = { envelope: ENVELOPE_VERSION, agui: AGUI_VERSION };
   if (!isObject(value)) return refused(header, ['(envelope): must be an object']);
   const errors = [];
@@ -165,7 +176,7 @@ export function readEnvelope(value, catalog = CONTRACTS) {
   message.actor = actorCopy(value.actor);
   message.state = value.state;
   message.parts = value.parts.map((part, index) => readPart(part, `parts[${index}]`, catalog));
-  return message;
+  return checkActor(message, header, actorFor);
 }
 
 // A reader of one AG-UI 1.0 stream. Call push for each event in the order of the transport.
@@ -278,7 +289,7 @@ export function createReader(catalog = CONTRACTS) {
       if (own(event, 'code')) active.error.code = event.code;
       active = null;
     },
-    TEXT_MESSAGE_START(event, at) {
+    TEXT_MESSAGE_START(event, at, actorFor) {
       if (!isId(event.messageId)) return fail(`${at}.messageId: ${ID_ERROR}`);
       if (index.has(event.messageId)) return fail(`${at}.messageId: the message exists already`);
       if (messages.length >= MAX_MESSAGES) return fail(`${at}: the stream has ${MAX_MESSAGES} messages`);
@@ -286,10 +297,11 @@ export function createReader(catalog = CONTRACTS) {
       const actor = actorOf(event);
       const bad = actorErrors(actor, 'metadata.mugham.actor');
       if (bad.length) return add(event.messageId, 'text', refused(header(event.messageId), bad));
-      const message = header(event.messageId);
+      const head = header(event.messageId);
+      const message = { ...head };
       if (own(event, 'role')) message.role = event.role;
       Object.assign(message, { actor: actorCopy(actor), state: 'partial', parts: [{ type: 'text', text: '' }] });
-      add(event.messageId, 'text', message);
+      add(event.messageId, 'text', checkActor(message, head, actorFor));
     },
     TEXT_MESSAGE_CONTENT(event, at) {
       const open = openText(event, at);
@@ -319,7 +331,7 @@ export function createReader(catalog = CONTRACTS) {
       const open = openText(event, at);
       if (open) open.message.state = 'final';
     },
-    ACTIVITY_SNAPSHOT(event, at) {
+    ACTIVITY_SNAPSHOT(event, at, actorFor) {
       if (event.activityType !== FILL_ACTIVITY) {
         skip();
         return;
@@ -357,7 +369,7 @@ export function createReader(catalog = CONTRACTS) {
         const content = event.content;
         const part = isObject(content) ? componentPart(content.format, content.fill, 'content', catalog)
           : refusalPart(['content: must be an object']);
-        message = { ...head, role: 'activity', actor: actorCopy(actor), state: 'final', parts: [part] };
+        message = checkActor({ ...head, role: 'activity', actor: actorCopy(actor), state: 'final', parts: [part] }, head, actorFor);
       }
       // The JSON text of a fill counts in the data of the stream. A replaced fill gives back its size.
       const part = message.parts ? message.parts[0] : undefined;
@@ -376,14 +388,14 @@ export function createReader(catalog = CONTRACTS) {
   };
 
   return {
-    push(event) {
+    push(event, { actorFor } = {}) {
       const at = `events[${count}]`;
       count += 1;
       changed = false;
       unchanged = false;
       if (!isObject(event) || typeof event.type !== 'string') fail(`${at}: must be an object with a type`);
       else if (!own(handlers, event.type)) skip();
-      else handlers[event.type](event, at);
+      else handlers[event.type](event, at, actorFor);
       return changed || !unchanged;
     },
     result() {

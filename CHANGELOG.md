@@ -9,6 +9,9 @@ Each release has an entry. The newest entry is first.
 - Show how an image policy blocks redirects to origins outside the allowed list.
 - Pause saved grid edits and retries while a fill is refused. Resume eligible edits when a valid fill returns.
 - Require one mailbox and no query or fragment in a mail link.
+- Let page code check the actor of a thread or history message against trusted application context.
+- Show unreadable records of the current queue principal with a Dismiss button.
+- Keep the queue owner lock until the final storage operation of an active try settles after close.
 
 ## 0.6.0, 2026-11-26
 

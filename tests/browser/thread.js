@@ -4,6 +4,7 @@
 // shows as the content of a person.
 import { define } from '../../src/thread/index.js';
 import { showsRefusal } from './refusal.js';
+import { waitFor as waitForNodes } from './wait.js';
 
 define();
 
@@ -84,6 +85,18 @@ async function run() {
   for (const event of say('n1', actor('system', 'sys-1'), 'The thread is open.')) unnamed.push(event);
   await settle();
   check('actors: an actor with no name shows its id', header(item(unnamed, 0)) === 'sys-1 System', header(item(unnamed, 0)));
+
+  // Page code supplies a trusted actor for each message that the reader accepts.
+  const checked = mount();
+  checked.actorFor = () => CATALOG_AGENT_ID;
+  for (const event of say('untrusted-text', ROBIN, 'This text must stay hidden.')) checked.push(event);
+  checked.push(snapshot('trusted-card', CATALOG_AGENT, { format: 2, fill: card('A trusted card', CATALOG_AGENT_ID) }));
+  const checkedItems = await waitForNodes(() => items(checked), (nodes) => nodes.length === 2);
+  check('actors: the hook refuses a mismatch and shows the matching message', checkedItems[0]?.dataset.state === 'refused'
+    && checkedItems[0].textContent.includes('Actor check failed.') && !checkedItems[0].textContent.includes('This text must stay hidden.')
+    && !header(checkedItems[0]) && checkedItems[1]?.dataset.state === 'final'
+    && checkedItems[1].querySelector('mu-card')?.fill?.data.title === 'A trusted card',
+  checkedItems.map((node) => node.textContent).join('|'));
 
   // Partial: a message with no end marker shows as partial, also after the end of its run.
   const partial = mount();

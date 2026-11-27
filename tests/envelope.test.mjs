@@ -17,6 +17,58 @@ const READ_TYPES = ['RUN_STARTED', 'RUN_FINISHED', 'RUN_ERROR', 'TEXT_MESSAGE_ST
 
 const envelopeErrors = (value) => schemaErrors(value, SCHEMA, SCHEMA, '', '(envelope)');
 
+test('the history actor check requires a valid actor with the same type and id', () => {
+  const head = { envelope: 1, agui: '1.0', messageId: 'm-1' };
+  const actor = { type: 'agent', id: 'agent-plan', name: 'Planner' };
+  const value = { ...head, actor, state: 'final', parts: [{ type: 'text', text: 'A plan.' }] };
+  const read = (actorFor) => readEnvelope(value, undefined, { actorFor });
+  assert.deepEqual(readEnvelope({ ...value, actorFor: () => undefined }), value);
+  assert.deepEqual(read((message) => {
+    assert.deepEqual(message, value);
+    message.parts[0].text = 'A different plan.';
+    message.actor.type = 'human';
+    return { ...actor, name: 'A different name' };
+  }), value);
+  for (const actorFor of [
+    () => undefined,
+    () => ({ ...actor, name: '' }),
+    () => ({ ...actor, type: 'human' }),
+    () => ({ ...actor, id: 'agent-other' }),
+    () => { throw new Error('A private error.'); },
+  ]) {
+    const result = read(actorFor);
+    assert.deepEqual(result, { ...head, state: 'refused', errors: ['Actor check failed.'] });
+    assert.deepEqual(envelopeErrors(result), []);
+  }
+  const refused = { ...head, state: 'refused', errors: ['A prior refusal.'] };
+  assert.deepEqual(readEnvelope(refused, undefined, { actorFor: () => assert.fail('a prior refusal needs no check') }), refused);
+});
+
+test('the stream actor check refuses a text start and a replacement snapshot', () => {
+  const reader = createReader();
+  const actor = { type: 'agent', id: 'agent-plan' };
+  const metadata = { mugham: { actor } };
+  const checked = [];
+  const options = { actorFor: ({ messageId, role }) => {
+    checked.push([messageId, role]);
+    return messageId === 'm-1' ? { ...actor, type: 'human' } : actor;
+  } };
+  reader.push({ type: 'TEXT_MESSAGE_START', messageId: 'm-1', metadata, role: 'assistant', actorFor: () => actor }, options);
+  reader.push({ type: 'TEXT_MESSAGE_CONTENT', messageId: 'm-1', delta: 'A plan.' }, options);
+  reader.push({ type: 'TEXT_MESSAGE_END', messageId: 'm-1' }, options);
+  const snapshot = { type: 'ACTIVITY_SNAPSHOT', activityType: 'mugham.fill', messageId: 'm-2', metadata, content: {} };
+  reader.push(snapshot, options);
+  assert.equal(reader.result().messages[1].state, 'final');
+  reader.push(snapshot, { actorFor: () => { throw new Error('A private error.'); } });
+  reader.push(snapshot, options);
+  const result = reader.result();
+  assert.deepEqual(checked, [['m-1', 'assistant'], ['m-2', 'activity']]);
+  assert.equal(result.ignored, 3);
+  assert.deepEqual(result.messages, ['m-1', 'm-2'].map((messageId) => ({
+    envelope: 1, agui: '1.0', messageId, state: 'refused', errors: ['Actor check failed.'],
+  })));
+});
+
 test('the fallback text of the vectors is the text of the kit', () => {
   assert.equal(ENVELOPES.fallback, FALLBACK_TEXT);
 });

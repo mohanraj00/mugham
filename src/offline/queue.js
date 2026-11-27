@@ -25,6 +25,7 @@ const MAX_MESSAGE = 200;
 const MAX_REFERENCE = 80;
 const TIMEOUT = 10000;
 const REJECTED = 'The service rejected the action.';
+const UNREADABLE = 'A saved action that this version cannot read';
 const FULL = 'The device holds 100 pending actions. Wait until the device sends them.';
 const NOT_KEPT = 'The device cannot keep the action.';
 const CLOSED = 'The queue is closed.';
@@ -43,6 +44,7 @@ const isOrderedPair = (value) => Array.isArray(value) && value.length === 2 && O
   && Number.isFinite(value[0]) && Number.isFinite(value[1]) && value[0] <= value[1];
 const isCount = (value) => Number.isSafeInteger(value) && value >= 0;
 const isPrincipal = (value) => typeof value === 'string' && value.length >= 1 && value.length <= MAX_PRINCIPAL;
+const isKey = (value) => typeof value === 'string' && ID.test(value);
 const shortText = (value, max) => typeof value === 'string' && value.length <= max * 2 && [...value].length <= max;
 const refusal = (message) => Object.freeze({ ok: false, message });
 
@@ -134,7 +136,7 @@ function checkedRecord(record) {
     || !Reflect.ownKeys(record).every((key) => RECORD_KEYS.has(key) && Object.prototype.propertyIsEnumerable.call(record, key))
     || (Object.hasOwn(record, 'version') && record.version !== RECORD_VERSION)) return { error: 'The record is not valid.' };
   const { key, principal, owner, order, tool, arguments: args, label, queued, tries, state, message } = record;
-  if (typeof key !== 'string' || !ID.test(key)) return { error: 'The request has no valid key.' };
+  if (!isKey(key)) return { error: 'The request has no valid key.' };
   if (typeof tool !== 'string' || tool.length > 80 || !TOOL.test(tool)) return { error: 'The tool name is not valid.' };
   if (!validArguments(args)) return { error: 'The arguments are not valid.' };
   const secret = Object.keys(args).find((name) => CREDENTIAL.test(name));
@@ -167,6 +169,7 @@ export function memoryStore() {
   const records = new Map();
   return {
     all: async () => [...records.values()].map((record) => structuredClone(record)),
+    allEntries: async () => [...records].map(([key, record]) => ({ key, record: structuredClone(record) })),
     put: async (record) => { records.set(record.key, structuredClone(record)); },
     remove: async (key) => { records.delete(key); },
   };
@@ -201,9 +204,25 @@ export function indexedDbStore(name = 'actions', factory = globalThis.indexedDB)
   };
   return {
     all: () => run('readonly', (store) => store.getAll()),
+    allEntries: () => run('readonly', (store) => {
+      const keys = store.getAllKeys();
+      const records = store.getAll();
+      return { get result() { return records.result.map((record, index) => ({ key: keys.result[index], record })); } };
+    }),
     put: async (record) => { await run('readwrite', (store) => store.put(record)); },
     remove: async (key) => { await run('readwrite', (store) => store.delete(key)); },
   };
+}
+
+// IndexedDB gives a new copy of a compound key on each read.
+function sameStoreKey(a, b) {
+  if (Object.is(a, b)) return true;
+  if (a === null || b === null || typeof a !== 'object' || typeof b !== 'object') return false;
+  try {
+    return globalThis.indexedDB?.cmp(a, b) === 0;
+  } catch {
+    return false;
+  }
 }
 
 export class ActionQueue {
@@ -219,6 +238,9 @@ export class ActionQueue {
   #owner = crypto.randomUUID();
   // The records of this owner, in order. Each record is also in the store.
   #list = [];
+  // The local recovery key names the store key. The saved content stays in the store.
+  #unreadable = new Map();
+  #nextRecovery = 0;
   // The page parts that wait for a receipt: key -> { id, element, promise, resolve }.
   #waiters = new Map();
   // The keys of the records that this queue removed. The queue never takes them from the store again.
@@ -282,8 +304,10 @@ export class ActionQueue {
 
   // The actions of the queue, in order. No state of the queue is done.
   get entries() {
-    return Object.freeze(this.#list.map((record) => Object.freeze({ key: record.key, tool: record.tool, label: record.label,
-      arguments: copyArgs(record.arguments), queued: record.queued, tries: record.tries, ...this.#shown(record) })));
+    const actions = this.#list.map((record) => Object.freeze({ key: record.key, tool: record.tool, label: record.label,
+      arguments: copyArgs(record.arguments), queued: record.queued, tries: record.tries, ...this.#shown(record) }));
+    const recovery = [...this.#unreadable.keys()].map((key) => Object.freeze({ key, label: UNREADABLE, state: 'unreadable' }));
+    return Object.freeze([...actions, ...recovery]);
   }
 
   // Calls the listener with the entries after each change. A receipt gives { key, receipt } as the second argument.
@@ -307,7 +331,7 @@ export class ActionQueue {
     const waiter = { id: request?.id, element };
     waiter.promise = new Promise((resolve) => { waiter.resolve = resolve; });
     const add = this.#adds.then(async () => {
-      if (this.#find(key)) return 'The queue has an action with this key.';
+      if (this.#find(key) || this.#unreadable.has(key)) return 'The queue has an action with this key.';
       if (this.#list.length >= MAX_ACTIONS) return FULL;
       this.#order = Math.max(this.#order + 1, this.#now());
       const label = element?.action?.label || element?.action?.title || '';
@@ -340,6 +364,7 @@ export class ActionQueue {
 
   // Sends the queue now. One flush runs at a time. A flush that starts during a flush runs one more pass after it.
   flush() {
+    if (this.#closed) return this.#running ?? Promise.resolve();
     this.#again = true;
     this.#running ??= (async () => {
       try {
@@ -349,6 +374,7 @@ export class ActionQueue {
         }
       } finally {
         this.#running = null;
+        if (this.#closed) this.#releaseOwner();
       }
     })();
     return this.#running;
@@ -387,8 +413,15 @@ export class ActionQueue {
     return removed.filter(Boolean).length;
   }
 
-  // Removes a rejected action after a person read the rejection.
+  // Removes a rejected action or starts removal of an unreadable entry.
   dismiss(key) {
+    const unreadable = this.#unreadable.get(key);
+    if (unreadable) {
+      if (unreadable.dismissing) return false;
+      unreadable.dismissing = true;
+      void this.#dismissUnreadable(key, unreadable);
+      return true;
+    }
     const record = this.#find(key);
     if (record?.state !== 'rejected') return false;
     this.#drop(record);
@@ -426,6 +459,10 @@ export class ActionQueue {
     this.#closed = true;
     this.#events?.removeEventListener('online', this.#reconnect);
     this.#events?.removeEventListener('offline', this.#disconnect);
+    if (!this.#running) this.#releaseOwner();
+  }
+
+  #releaseOwner() {
     this.#release?.();
     this.#release = null;
   }
@@ -475,7 +512,7 @@ export class ActionQueue {
   #drop(record) {
     this.#list = this.#list.filter((item) => item !== record);
     this.#gone.add(record.key);
-    this.#store.remove(record.key).catch(() => {});
+    return this.#store.remove(record.key).catch(() => {});
   }
 
   // The state and the message that the page shows for a record. Offline, an action waits for a connection. Online,
@@ -524,7 +561,7 @@ export class ActionQueue {
     }
   }
 
-  // Holds a lock with the owner id while the page is open. A different queue reads it to know that this owner is live.
+  // Holds the owner lock until the queue closes and the running flush finishes its storage work.
   #own() {
     if (!this.#locks) return Promise.resolve();
     return new Promise((ready) => {
@@ -539,6 +576,62 @@ export class ActionQueue {
     });
   }
 
+  #readStored() {
+    if (typeof this.#store.allEntries === 'function') return this.#store.allEntries();
+    return this.#store.all().then((records) => records.map((record) => ({ key: record?.key, record })));
+  }
+
+  #withStoreLock(work) {
+    if (this.#locks) return this.#locks.request(`mugham-queue:${this.#name}`, work);
+    return work();
+  }
+
+  #isMine(record) {
+    return record != null && Object.hasOwn(record, 'principal') && record.principal === this.#principal;
+  }
+
+  async #dismissUnreadable(key, entry) {
+    try {
+      await this.#withStoreLock(async () => {
+        // Check the current record. Another page can dismiss it after this queue reads it.
+        const found = (await this.#readStored()).find((item) => sameStoreKey(item.key, entry.storeKey));
+        if (found && this.#isMine(found.record) && !(found.key === found.record.key && checkedRecord(found.record).record)) {
+          await this.#store.remove(entry.storeKey);
+        }
+        this.#unreadable.delete(key);
+      });
+    } catch {
+      // The entry stays available for dismissal.
+    } finally {
+      entry.dismissing = false;
+      this.#changed();
+    }
+  }
+
+  #readRecords(entries) {
+    const stored = [];
+    const recovery = new Map();
+    const prior = new Map([...this.#unreadable].map(([key, entry]) => [entry.storeKey, key]));
+    const compound = [...prior].filter(([key]) => key !== null && typeof key === 'object');
+    for (const { key, record } of entries) {
+      if (!this.#isMine(record)) continue;
+      const checked = key === record.key ? checkedRecord(record).record : undefined;
+      if (checked) {
+        stored.push(checked);
+        continue;
+      }
+      const oldKey = prior.get(key) ?? (key !== null && typeof key === 'object'
+        ? compound.find(([old]) => sameStoreKey(old, key))?.[1]
+        : undefined);
+      const shownKey = oldKey ?? (isKey(key) && key === record.key && !this.#find(key) ? key : `unreadable/${++this.#nextRecovery}`);
+      recovery.set(shownKey, this.#unreadable.get(oldKey) ?? { storeKey: key, dismissing: false });
+    }
+    const changed = recovery.size !== this.#unreadable.size || [...recovery.keys()].some((key) => !this.#unreadable.has(key));
+    this.#unreadable = recovery;
+    if (changed) this.#changed();
+    return stored.sort((a, b) => a.order - b.order);
+  }
+
   // Takes each record of its principal whose owner holds no lock, for example after a reload. With no Web Locks API,
   // the queue takes each record of its principal. The lock of the queue name lets only one queue take records at a time.
   async #adopt() {
@@ -547,13 +640,12 @@ export class ActionQueue {
     const take = async () => {
       const held = this.#locks ? new Set(((await this.#locks.query()).held ?? []).map((lock) => lock.name)) : null;
       // The oldest records come first, so the queue takes them first if it has no room for all of them.
-      const stored = (await this.#store.all()).map((record) => checkedRecord(record).record).filter(Boolean)
-        .sort((a, b) => a.order - b.order);
+      const entries = await this.#readStored();
+      if (this.#closed) return;
+      const stored = this.#readRecords(entries);
       for (const record of stored) {
         if (this.#closed) break;
         if (this.#find(record.key) || this.#gone.has(record.key)) continue;
-        // A record of a different principal stays in the store. This queue does not show it and does not send it.
-        if (record.principal !== this.#principal) continue;
         // A record of this owner that is not in the list is in the middle of perform. perform adds it to the list.
         if (record.owner === this.#owner || held?.has(`mugham-queue:${this.#name}:${record.owner}`)) continue;
         // A full queue takes the other records in a later pass, when it has room.
@@ -570,8 +662,7 @@ export class ActionQueue {
       this.#list.sort((a, b) => a.order - b.order || (a.queued < b.queued ? -1 : a.queued > b.queued ? 1 : 0));
       this.#order = Math.max(this.#order, ...this.#list.map((record) => record.order));
     };
-    if (this.#locks) await this.#locks.request(`mugham-queue:${this.#name}`, take);
-    else await take();
+    await this.#withStoreLock(take);
   }
 
   // One pass: sends each action in order until the queue is empty, the device is offline or a try gets no receipt.
@@ -625,9 +716,8 @@ export class ActionQueue {
       // Only an element that is in the page now can show a rejection. A call of perform with no element has none.
       const shows = Boolean(waiter?.element) && waiter.element.isConnected !== false;
       this.#waiters.delete(record.key);
-      if (receipt.ok || shows) {
-        this.#drop(record);
-      } else {
+      const removal = receipt.ok || shows ? this.#drop(record) : null;
+      if (!removal) {
         // The page has no element for this action. The rejection stays until a person dismisses it.
         record.state = 'rejected';
         record.message = receipt.message || REJECTED;
@@ -636,6 +726,7 @@ export class ActionQueue {
       // The caller knows the id of its request. The queue has already checked its transport id.
       if (waiter) waiter.resolve(Object.freeze({ ...receipt, id: waiter.id }));
       this.#changed({ key: record.key, receipt });
+      if (removal) await removal;
     }
   }
 
@@ -682,8 +773,16 @@ export async function openQueue(options) {
 
 // A fill of the action-queue component from the entries of a queue.
 export function queueFill(label, entries) {
-  return { component: 'action-queue', version: '0.1.0', data: { label, actions: entries.map((entry) => ({
-    component: 'queued-action', version: '0.1.0',
-    data: { key: entry.key, label: entry.label, state: entry.state, tries: entry.tries, queued: entry.queued,
-      ...(entry.message ? { message: entry.message } : {}) } })) } };
+  const actions = [];
+  const recovery = [];
+  for (const { key, label, state, tries, queued, message } of entries) {
+    const row = { component: 'queued-action', version: '0.1.0', data: { key, label, state } };
+    if (state === 'unreadable') {
+      if (recovery.length < MAX_ACTIONS) recovery.push(row);
+    } else {
+      Object.assign(row.data, { tries, queued, ...(message ? { message } : {}) });
+      actions.push(row);
+    }
+  }
+  return { component: 'action-queue', version: '0.1.0', data: { label, actions, ...(recovery.length ? { recovery } : {}) } };
 }
