@@ -18,6 +18,7 @@ const TAGS = Object.freeze(Object.assign(Object.create(null), {
   image: 'mu-image',
   chart: 'mu-chart',
   'rich-text': 'mu-rich-text',
+  'run-steps': 'mu-run-steps',
   'data-grid': 'mu-data-grid',
   upload: 'mu-upload',
 }));
