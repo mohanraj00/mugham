@@ -63,6 +63,11 @@ const FORMAT_ICONS = Object.freeze({
   code: 'M5 5 2 8l3 3 M11 5l3 3-3 3 M9.5 3l-3 10',
   link: 'M6 9.5 10 5.5 M5.5 6.5l-2 2a2.8 2.8 0 0 0 4 4l2-2 M6.5 5.5l2-2a2.8 2.8 0 0 1 4 4l-2 2',
 });
+// Only the grid controls use these paths.
+const CONTROL_ICONS = Object.freeze({
+  'expand-all': 'M3.5 3.5 8 7 12.5 3.5 M3.5 8.5 8 12 12.5 8.5',
+  'collapse-all': 'M3.5 7.5 8 4 12.5 7.5 M3.5 12.5 8 9 12.5 12.5',
+});
 const SVG = 'http://www.w3.org/2000/svg';
 
 // An icon is decoration. The control that holds it keeps the accessible name.
@@ -82,6 +87,14 @@ export function formatIcon(name) {
   return node;
 }
 
+export function controlIcon(name) {
+  if (!Object.hasOwn(CONTROL_ICONS, name)) throw new Error('control icon not known: ' + name);
+  const { node, path } = svgIcon();
+  node.setAttribute('part', 'icon');
+  path.setAttribute('d', CONTROL_ICONS[name]);
+  return node;
+}
+
 function svgIcon() {
   const node = document.createElementNS(SVG, 'svg');
   for (const [key, value] of [['class', 'icon'], ['viewBox', '0 0 16 16'], ['aria-hidden', 'true'], ['focusable', 'false']]) {
@@ -90,6 +103,117 @@ function svgIcon() {
   const path = document.createElementNS(SVG, 'path');
   node.append(path);
   return { node, path };
+}
+
+export const CONTROL_DISPLAY = 'control-display';
+export const COMPACT_CONTROL_CSS = sheet(`
+  button[data-control-display="icon"] {
+    display: inline-flex; align-items: center; justify-content: center; flex: none;
+    inline-size: 44px; block-size: 44px; min-inline-size: 44px; min-block-size: 44px; padding: 0;
+  }
+  [data-control-display="icon"] .icon { inline-size: 16px; block-size: 16px; }
+  .compact-tooltip-row { display: flex; flex: 0 0 100%; grid-column: 1 / -1; min-inline-size: 0; }
+  .compact-tooltip-row[hidden] { display: none; }
+  .compact-tooltip-row span {
+    max-inline-size: 100%; overflow-wrap: anywhere; padding: var(--mu-space-1) var(--mu-space-2);
+    font: var(--mu-type-caption); color: var(--mu-color-text); background: var(--mu-color-surface);
+    border: 1px solid var(--mu-color-border); border-radius: var(--mu-radius-2);
+  }
+  @media (forced-colors: active) {
+    .compact-tooltip-row span { background: Canvas; color: CanvasText; border-color: CanvasText; }
+  }
+`);
+
+const openControlTooltip = new WeakMap();
+
+export function compactControls(host, area, tooltip, controls) {
+  const row = el('div', { class: 'compact-tooltip-row' }, tooltip);
+  row.hidden = true;
+  area.append(row);
+  let textDisplay;
+  let hovered;
+  let focused;
+  let shown;
+  let activeDocument;
+  const hide = () => {
+    if (!activeDocument) return;
+    if (openControlTooltip.get(activeDocument) === dismiss) openControlTooltip.delete(activeDocument);
+    activeDocument.removeEventListener('keydown', escape, true);
+    activeDocument = null;
+    shown = null;
+    row.hidden = true;
+    tooltip.textContent = '';
+  };
+  const dismiss = () => {
+    hovered = focused = null;
+    hide();
+  };
+  const escape = (event) => {
+    if (event.key !== 'Escape' || event.isComposing) return;
+    const visible = tooltip.isConnected && tooltip.getClientRects().length > 0;
+    dismiss();
+    // Stop Escape only when it comes from the controls. Escape from other content still reaches its own handler.
+    if (visible && event.composedPath().includes(area)) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+  };
+  const refresh = () => {
+    if (shown) tooltip.textContent = shown.getAttribute('aria-label');
+  };
+  const show = (button) => {
+    if (!button || textDisplay || !tooltip.isConnected) {
+      hide();
+      return;
+    }
+    if (!activeDocument) {
+      activeDocument = tooltip.ownerDocument;
+      openControlTooltip.get(activeDocument)?.();
+      openControlTooltip.set(activeDocument, dismiss);
+      activeDocument.addEventListener('keydown', escape, true);
+    }
+    shown = button;
+    refresh();
+    row.hidden = false;
+  };
+  // Keep the tooltip open while the pointer moves from the button to its text.
+  area.addEventListener('pointerleave', () => {
+    hovered = null;
+    show(focused);
+  });
+  for (const { button } of controls) {
+    button.addEventListener('pointerenter', () => {
+      hovered = button;
+      show(button);
+    });
+    // A mouse press also gives the focus. Show the tooltip only for keyboard focus, so it does not stay open and move the page.
+    button.addEventListener('focus', () => {
+      if (!button.matches(':focus-visible')) return;
+      focused = button;
+      show(button);
+    });
+    button.addEventListener('blur', () => {
+      focused = null;
+      show(hovered);
+    });
+  }
+  const render = () => {
+    let display = null;
+    for (let node = host; node && display === null; node = node.assignedSlot ?? node.parentNode ?? node.host) {
+      display = node.getAttribute?.(CONTROL_DISPLAY) ?? null;
+    }
+    const next = display === 'text';
+    if (next === textDisplay) return;
+    textDisplay = next;
+    for (const { button, label, graphic, keepIcon } of controls) {
+      button.setAttribute('data-control-display', textDisplay ? 'text' : 'icon');
+      const content = textDisplay ? (keepIcon ? [label, graphic] : [label]) : [graphic];
+      button.replaceChildren(...content);
+    }
+    show(focused ?? hovered);
+  };
+  render();
+  return { render, dismiss, refresh };
 }
 
 export const REFUSED_REASON = 'This content did not show because it did not match the rules of the application.';

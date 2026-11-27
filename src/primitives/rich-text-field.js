@@ -1,4 +1,4 @@
-import { el, formatIcon, sheet, text } from '../render/dom.js';
+import { COMPACT_CONTROL_CSS, CONTROL_DISPLAY, compactControls, el, formatIcon, icon, sheet, text } from '../render/dom.js';
 import { parseLinkURL } from '../render/validate.js';
 import { RICH_TEXT_EDIT_LIMIT, richNode, richTextEditProblem, richTextLinkSchemes, richTextValueErrors, sameRichTextValue,
   watchRichTextLinkSchemes } from '../render/rich-text.js';
@@ -20,6 +20,7 @@ const ROWS = ':scope > :is(p,h1,h2,h3,pre), :scope > :is(ul,ol) > li, :scope > b
 
 export class MuRichTextField extends FieldElement {
   static component = 'rich-text-field';
+  static observedAttributes = [CONTROL_DISPLAY];
   static submitOnEnter = false;
   static styles = [...FieldElement.styles, sheet(`
     :host { min-inline-size: 0; overflow-wrap: anywhere; }
@@ -81,11 +82,12 @@ export class MuRichTextField extends FieldElement {
       .editor a { color: LinkText; }
       .status { color: CanvasText; }
     }
-  `)];
+  `), COMPACT_CONTROL_CSS];
 
   #editor;
   #buttons = [];
   #dismissHoverTooltip;
+  #linkControls;
   #linkPanel;
   #address;
   #status;
@@ -128,6 +130,7 @@ export class MuRichTextField extends FieldElement {
   }
 
   connectedCallback() {
+    this.#linkControls?.render();
     this.ownerDocument.addEventListener('selectionchange', this.#selectionChanged);
     // Escape can close a tooltip when the focus is outside the toolbar.
     this.ownerDocument.addEventListener('keydown', this.#tooltipEscape, true);
@@ -136,9 +139,14 @@ export class MuRichTextField extends FieldElement {
   }
 
   disconnectedCallback() {
+    this.#linkControls?.dismiss();
     this.ownerDocument.removeEventListener('selectionchange', this.#selectionChanged);
     this.ownerDocument.removeEventListener('keydown', this.#tooltipEscape, true);
     this.#unwatch?.();
+  }
+
+  attributeChangedCallback() {
+    this.#linkControls?.render();
   }
 
   #tooltipEscape = (event) => {
@@ -146,6 +154,8 @@ export class MuRichTextField extends FieldElement {
   };
 
   control(data, id) {
+    this.#linkControls?.dismiss();
+    this.#linkControls = null;
     this.#model = data.value ? structuredClone(data.value) : richValue([]);
     this.#policy = richTextLinkSchemes();
     this.#selection = caretAt(0, 0);
@@ -271,8 +281,8 @@ export class MuRichTextField extends FieldElement {
     const label = el('label', { class: 'link-label', for: id + '-address' }, 'Link address');
     this.#address = el('input', { id: id + '-address', type: 'text', autocomplete: 'off', 'aria-describedby': id + '-link-status' });
     label.append(this.#address);
-    const apply = el('button', { type: 'button' }, 'Apply link');
-    const cancel = el('button', { type: 'button' }, 'Cancel');
+    const apply = el('button', { type: 'button', part: 'link-apply', 'aria-label': 'Apply link' });
+    const cancel = el('button', { type: 'button', part: 'link-cancel', 'aria-label': 'Cancel' });
     const feedback = el('span', { id: id + '-link-status', class: 'error', role: 'status' });
     apply.addEventListener('click', () => {
       const address = this.#address.value.trim();
@@ -301,6 +311,11 @@ export class MuRichTextField extends FieldElement {
     });
     this.#linkPanel = el('div', { part: 'link-editor', class: 'link-editor', role: 'group', 'aria-label': 'Link address controls' },
       label, apply, cancel, feedback);
+    const tooltip = el('span', { part: 'link-tooltip', 'aria-hidden': 'true' });
+    this.#linkControls = compactControls(this, this.#linkPanel, tooltip, [
+      { button: apply, label: 'Apply link', graphic: icon('check') },
+      { button: cancel, label: 'Cancel', graphic: icon('cross') },
+    ]);
     this.#linkPanel.hidden = true;
     this.#linkPanel.addEventListener('keydown', (event) => {
       if (event.isComposing) return;
@@ -315,6 +330,7 @@ export class MuRichTextField extends FieldElement {
   }
 
   #closeLink() {
+    this.#linkControls.dismiss();
     this.#linkPanel.hidden = true;
     this.focus();
     this.#restoreSelection();

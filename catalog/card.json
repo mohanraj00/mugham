@@ -21,7 +21,8 @@
     {"name": "reason", "description": "Reason for a refusal or an edit error.", "guardrail": true},
     {"name": "status", "description": "State text of the card.", "guardrail": true},
     {"name": "title", "description": "Title of the card.", "guardrail": false},
-    {"name": "toggle", "description": "Button that expands or collapses the card.", "guardrail": true}
+    {"name": "toggle", "description": "Button with a chevron that expands or collapses the card. It keeps its name and expanded state in text display.", "guardrail": true},
+    {"name": "tooltip", "description": "Name of the icon control on hover or focus. Escape closes it.", "guardrail": true}
   ],
   "data": {
     "title": {"type": "text", "required": true, "min_length": 1, "size": "title"},
@@ -36,8 +37,8 @@
   },
   "states": ["+expanded", "+collapsed"],
   "tokens": [
-    "color.surface", "color.surface-subtle", "color.text", "color.text-muted", "color.border", "space.2", "space.3", "space.4", "radius.2",
-    "type.body", "type.caption", "type.weight-strong", "color.focus"
+    "color.surface", "color.surface-subtle", "color.text", "color.text-muted", "color.border", "space.1", "space.2", "space.3",
+    "space.4", "radius.2", "type.body", "type.caption", "type.weight-strong", "color.focus", "motion.fast"
   ],
-  "accessibility": {"role": "article", "name": {"field": "title"}, "keyboard": ["Tab", "Enter", "Space"]}
+  "accessibility": {"role": "article", "name": {"field": "title"}, "keyboard": ["Tab", "Enter", "Space", "Escape"]}
 }

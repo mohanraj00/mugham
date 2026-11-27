@@ -11,18 +11,39 @@ class TestNode extends EventTarget {
   ownerDocument = document;
   hidden = false;
 
-  append(...children) { this.children.push(...children); }
-  replaceChildren(...children) { this.children = children; }
-  setAttribute(name, value) { this.attributes.set(name, String(value)); }
+  append(...children) {
+    for (const child of children) {
+      if (child instanceof TestNode) child.parentNode = this;
+      this.children.push(child);
+    }
+  }
+  replaceChildren(...children) {
+    this.children = [];
+    this.append(...children);
+  }
+  setAttribute(name, value) {
+    const before = this.getAttribute(name);
+    this.attributes.set(name, String(value));
+    if (this.constructor.observedAttributes?.includes(name)) this.attributeChangedCallback(name, before, String(value));
+  }
   getAttribute(name) { return this.attributes.get(name) ?? null; }
-  removeAttribute(name) { this.attributes.delete(name); }
+  removeAttribute(name) {
+    const before = this.getAttribute(name);
+    if (this.attributes.delete(name) && this.constructor.observedAttributes?.includes(name)) {
+      this.attributeChangedCallback(name, before, null);
+    }
+  }
   get id() { return this.getAttribute('id'); }
   get textContent() { return this.children.map((node) => typeof node === 'string' ? node : node.textContent).join(''); }
   set textContent(value) { this.replaceChildren({ textContent: String(value) }); }
   querySelector(selector) { return this.querySelectorAll(selector)[0] ?? null; }
   querySelectorAll(selector) {
-    const matches = (node) => node.tag === 'input' && (selector === 'input' || (selector === 'input:checked' && node.checked));
+    const matches = (node) => node instanceof TestNode && (selector === '*' || node.tag === selector
+      || (selector === 'input:checked' && node.tag === 'input' && node.checked));
     return this.children.flatMap((node) => [...(matches(node) ? [node] : []), ...(node.querySelectorAll?.(selector) ?? [])]);
+  }
+  contains(node) {
+    return this === node || this.children.some((child) => child.contains?.(node));
   }
   focus() { focused = this; }
   click() { this.dispatchEvent(new Event('click')); }
@@ -46,9 +67,10 @@ globalThis.document = Object.assign(new EventTarget(), {
 });
 globalThis.Node = TestNode;
 globalThis.HTMLElement = class extends TestNode {
-  attachShadow() { return (this.shadowRoot = new TestNode()); }
+  attachShadow() { return (this.shadowRoot = Object.assign(new TestNode(), { host: this })); }
 };
 globalThis.CSSStyleSheet = class { replaceSync() {} };
+globalThis.MutationObserver = class { disconnect() {} };
 
 const { MuElement, define, register } = await import('../src/components/index.js');
 define();
@@ -490,6 +512,91 @@ test('each format button with a glyph starts its accessible name with that glyph
     const glyph = button.textContent;
     const name = button.getAttribute('aria-label');
     assert.ok(name?.startsWith(glyph), `The name of the ${glyph} button must start with ${glyph}.`);
+  }
+});
+
+function checkControl(button, name, label, svg) {
+  assert.equal(button.getAttribute('aria-label'), name);
+  assert.equal(button.textContent, label);
+  const graphic = button.children.find((node) => node.tag === 'svg');
+  assert.equal(Boolean(graphic), svg);
+  if (graphic) {
+    assert.equal(graphic.getAttribute('viewBox'), '0 0 16 16');
+    assert.equal(graphic.getAttribute('aria-hidden'), 'true');
+    assert.equal(graphic.getAttribute('focusable'), 'false');
+  }
+}
+
+test('the card and grid controls keep their names and states in both displays', () => {
+  const data = { title: 'Seed tray', collapsible: true, collapsed: true };
+  const card = kit.mount('card', data);
+  const toggle = part(card.shadowRoot, 'toggle');
+  checkControl(toggle, 'Expand Seed tray', '', true);
+  assert.equal(toggle.getAttribute('aria-expanded'), 'false');
+  toggle.click();
+  checkControl(toggle, 'Collapse Seed tray', '', true);
+  assert.equal(toggle.getAttribute('aria-expanded'), 'true');
+  card.setAttribute('control-display', 'text');
+  checkControl(toggle, 'Collapse Seed tray', 'Collapse', true);
+  assert.equal(toggle.getAttribute('aria-expanded'), 'true');
+  toggle.click();
+  checkControl(toggle, 'Expand Seed tray', 'Expand', true);
+  assert.equal(toggle.getAttribute('aria-expanded'), 'false');
+  card.setAttribute('control-display', 'icon');
+  checkControl(toggle, 'Expand Seed tray', '', true);
+
+  const section = document.createElement('section');
+  section.setAttribute('control-display', 'text');
+  const grid = document.createElement('mu-card-grid');
+  section.append(grid);
+  const gridFill = kit.outer('card-grid', { label: 'Trays', cards: [fill('card', data)], collapse_controls: true });
+  grid.actor = gridFill.slots.authorship;
+  grid.fill = gridFill;
+  const nested = grid.shadowRoot.querySelector('mu-card');
+  const nestedToggle = part(nested.shadowRoot, 'toggle');
+  const expand = part(grid.shadowRoot, 'expand-all');
+  const collapse = part(grid.shadowRoot, 'collapse-all');
+  for (const value of ['text', 'icon', '']) {
+    if (value !== 'text') grid.setAttribute('control-display', value);
+    checkControl(expand, 'Expand all', value === 'text' ? 'Expand all' : '', value !== 'text');
+    checkControl(collapse, 'Collapse all', value === 'text' ? 'Collapse all' : '', value !== 'text');
+    checkControl(nestedToggle, 'Expand Seed tray', value === 'text' ? 'Expand' : '', true);
+    expand.click();
+    assert.equal(nestedToggle.getAttribute('aria-expanded'), 'true');
+    collapse.click();
+    assert.equal(nestedToggle.getAttribute('aria-expanded'), 'false');
+  }
+  grid.removeAttribute('control-display');
+  checkControl(nestedToggle, 'Expand Seed tray', 'Expand', true);
+});
+
+test('the link controls keep their names and work in both displays', () => {
+  for (const display of ['icon', 'text']) {
+    const field = kit.mount('rich-text-field', { label: 'Note' });
+    const panel = part(field.shadowRoot, 'link-editor');
+    const apply = part(panel, 'link-apply');
+    const cancel = part(panel, 'link-cancel');
+    const link = find(field.shadowRoot, (node) => node.getAttribute?.('aria-label') === 'Link');
+    const address = panel.querySelector('input');
+    link.click();
+    assert.equal(panel.hidden, false);
+    assert.equal(focused, address);
+    address.value = 'https://example.org/reading';
+    const showText = display === 'text';
+    if (showText) field.setAttribute('control-display', display);
+    checkControl(apply, 'Apply link', showText ? 'Apply link' : '', !showText);
+    checkControl(cancel, 'Cancel', showText ? 'Cancel' : '', !showText);
+    assert.equal(panel.hidden, false);
+    assert.equal(address.value, 'https://example.org/reading');
+    cancel.click();
+    assert.equal(panel.hidden, true);
+    assert.equal(field.changed, false);
+
+    link.click();
+    address.value = 'https://example.org/' + display;
+    apply.click();
+    assert.equal(panel.hidden, true);
+    assert.equal(field.value.data.blocks[0].data.content[0].data.url, address.value);
   }
 });
 

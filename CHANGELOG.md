@@ -2,6 +2,10 @@
 
 Each release has an entry. The newest entry is first.
 
+## Unreleased
+
+- Card collapse, grid expand and collapse, and link apply and cancel controls show icons by default. Set `control-display="text"` to keep the text labels.
+
 ## 0.6.0, 2026-11-26
 
 When you upgrade from 0.5.0, the new data keys are optional. If you show approval marks, read `fillRevision` just after you set the fill and before you request approvals. Pass it to `setApprovals(list, revision)` when the response comes back. After a change to the actor, label, title or summary, call `bind()` again for each affected approval queue row with no pending decision. Use the request `key` as the API idempotency key for grid edits and uploads. Each retry has a new `id`. Send files through the application transport. The offline queue refuses file requests. If you use the new fields, accept lists of texts, pairs of numbers and `rich-text` values in the action handler as applicable. Queue records can also hold these values in arguments and typed edits. For each local date and time field, give the matching zone in the action binding's `time_zones`. To use a registered field in a form, mark its contract with `"field": true` and export the tool schema after registration. If you import `FIELDS` from `src/primitives/fields.js`, import it from `src/primitives/index.js` now. Check page styles against the declared parts and keep each guardrail part visible when the kit shows it. If application code reads card author text, use the actor data. If it reads an element's refusal text, use the errors from `mu-refused`. If the service worker lists kit files for offline use, add the new kit files to the list and change its cache version.

@@ -25,6 +25,7 @@ import { SETTINGS_PAGE, settingsExampleChecks } from '../tests/browser/settings.
 import { LIBRARY_PAGE, libraryExampleChecks } from '../tests/browser/library.js';
 import { RESEARCH_PAGE, researchExampleChecks } from '../tests/browser/research.js';
 import { RICH_TEXT_FIELD_PAGE, richTextFieldChecks } from '../tests/browser/rich-text-field.js';
+import { compactControlChecks } from '../tests/browser/compact-controls.js';
 import { NEWSLETTER_PAGE, newsletterExampleChecks } from '../tests/browser/newsletter.js';
 import { RANGE_PAGE, rangeExampleChecks } from '../tests/browser/range-field.js';
 import { MULTI_CHOICE_PAGE, multiChoiceExampleChecks } from '../tests/browser/multi-choice-field.js';
@@ -1059,6 +1060,7 @@ async function main() {
     report.keyboard.push(...await researchExampleChecks(session, sessionId, base, MODES,
       { evaluate, open, key, pageRules }, problems));
     report.keyboard.push(...await richTextFieldChecks(session, sessionId, base, MODES, { evaluate, open, key, pageRules }, problems));
+    report.keyboard.push(...await compactControlChecks(session, sessionId, base, MODES, { evaluate, open, key, pageRules }, problems));
     report.examples.push(...await newsletterExampleChecks(session, sessionId, base, MODES, { evaluate, open, pageRules }, problems));
     report.keyboard.push(...await rangeExampleChecks(session, sessionId, base, MODES, { evaluate, open, key }, problems));
     report.keyboard.push(...await selectExampleChecks(session, sessionId, base, MODES, { evaluate, open, key, pageRules }, problems));

@@ -282,13 +282,15 @@ async function browserChecks() {
     && chevron(card).querySelector('path').getAttribute('d') === 'M3.5 6 8 10.5 12.5 6' && !root(card).querySelector('img, use, image')));
   check('chevron: it points down on a collapsed card and up on an expanded card', turn(shut) === 'none' && turn(open) === 'matrix(-1, 0, 0, -1, 0, 0)',
     `${turn(shut)} | ${turn(open)}`);
-  check('chevron: the button keeps its accessible name and its text', toggle(shut).getAttribute('aria-label') === 'Expand Rivers and deltas'
-    && toggle(open).getAttribute('aria-label') === 'Collapse Field guide to moss' && toggle(shut).textContent === 'Expand'
-    && toggle(open).textContent === 'Collapse' && toggle(shut).getAttribute('aria-expanded') === 'false');
+  check('chevron: the button shows only its icon and keeps its accessible name and state',
+    toggle(shut).getAttribute('aria-label') === 'Expand Rivers and deltas'
+    && toggle(open).getAttribute('aria-label') === 'Collapse Field guide to moss'
+    && toggle(shut).textContent === '' && toggle(open).textContent === '' && toggle(shut).getAttribute('aria-expanded') === 'false');
   toggle(shut).click();
   check('chevron: a press turns it, with no animation under reduced motion',
     (!media('(prefers-reduced-motion: reduce)') || turn(shut) === 'matrix(-1, 0, 0, -1, 0, 0)')
-    && toggle(shut).getAttribute('aria-expanded') === 'true' && toggle(shut).textContent === 'Collapse', turn(shut));
+    && toggle(shut).getAttribute('aria-expanded') === 'true'
+    && toggle(shut).getAttribute('aria-label') === 'Collapse Rivers and deltas', turn(shut));
   shut.collapsed = true;
   const size = chevron(open).getBoundingClientRect();
   check('chevron: it has a size and the color of the button text', size.width >= 12 && size.height >= 12
