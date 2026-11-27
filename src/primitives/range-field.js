@@ -11,10 +11,10 @@ const RANGE_CSS = sheet(`
   :host { min-inline-size: 0; }
   .range { display: grid; gap: var(--mu-space-1); overflow-wrap: anywhere; }
   .controls {
-    display: grid; grid-template-columns: minmax(44px, 1fr) minmax(44px, 8ch);
+    display: grid; grid-template-columns: minmax(var(--mu-target), 1fr) minmax(var(--mu-target), 8ch);
     align-items: center; gap: var(--mu-space-2);
   }
-  .controls input { inline-size: 100%; min-inline-size: 44px; min-block-size: 44px; margin: 0; }
+  .controls input { inline-size: 100%; min-inline-size: var(--mu-target); min-block-size: var(--mu-target); margin: 0; }
   .controls input[type="range"] {
     accent-color: var(--mu-color-accent); background: transparent; border: 0; padding: 0; cursor: pointer;
   }

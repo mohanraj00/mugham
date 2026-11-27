@@ -1,6 +1,6 @@
 // A table of text. The application or the service gives each row status.
 import { MuElement } from '../primitives/base.js';
-import { EDGE, el, sheet } from '../render/dom.js';
+import { EDGE, controlIcon, el, sheet } from '../render/dom.js';
 
 export class MuTable extends MuElement {
   static component = 'table';
@@ -17,9 +17,18 @@ export class MuTable extends MuElement {
     th, td { text-align: start; vertical-align: top; overflow-wrap: anywhere;
       padding: var(--mu-space-2) var(--mu-space-3); border-bottom: 1px solid ${EDGE}; }
     th { font-weight: var(--mu-type-weight-strong); }
-    thead th { position: sticky; inset-block-start: 0; z-index: 1; background: var(--mu-color-surface); }
-    button { font: inherit; color: inherit; background: transparent; border: 1px solid var(--mu-color-border);
-      min-height: 2.75rem; min-width: 2.75rem; padding: var(--mu-space-2); cursor: pointer; overflow-wrap: anywhere; max-width: 100%; }
+    thead th { position: sticky; inset-block-start: 0; z-index: 1; background: var(--mu-color-surface-subtle);
+      font: var(--mu-type-caption); font-weight: var(--mu-type-weight-strong); color: var(--mu-color-text-muted);
+      vertical-align: middle; padding-block: var(--mu-space-1); }
+    /* The sort control is the header text with a small sort mark. It has no frame. */
+    thead button { display: inline-flex; align-items: center; gap: var(--mu-space-1); font: inherit; color: inherit;
+      background: transparent; border: 0; border-radius: var(--mu-radius-1); margin-inline: calc(-1 * var(--mu-space-1));
+      min-height: var(--mu-target); min-width: var(--mu-target); padding: 0 var(--mu-space-1); cursor: pointer; overflow-wrap: anywhere; max-width: 100%; text-align: start; }
+    thead button:hover { color: var(--mu-color-text); }
+    .sort-mark { display: inline-flex; flex: none; opacity: 0.45; }
+    .sort-mark .icon { inline-size: 0.875rem; block-size: 0.875rem; }
+    th[aria-sort] { color: var(--mu-color-text); }
+    th[aria-sort] .sort-mark, thead button:hover .sort-mark, thead button:focus-visible .sort-mark { opacity: 1; }
     p { margin: var(--mu-space-2) var(--mu-space-3); overflow-wrap: anywhere; }
     .muted { font: var(--mu-type-caption); color: var(--mu-color-text-muted); }
     /* The author stays in view at the bottom of the scroll area. */
@@ -29,7 +38,9 @@ export class MuTable extends MuElement {
       .table, .muted { color: CanvasText; background: Canvas; }
       th, td { border-color: CanvasText; }
       thead th { background: Canvas; }
-      button { color: ButtonText; border-color: ButtonText; background: ButtonFace; }
+      thead th { color: CanvasText; }
+      thead button { color: ButtonText; background: ButtonFace; }
+      .sort-mark { opacity: 1; }
     }
   `)];
 
@@ -62,7 +73,8 @@ export class MuTable extends MuElement {
     const body = el('tbody');
     const announcement = el('p', { class: 'muted', role: 'status', 'aria-live': 'polite', part: 'sort-status' });
     const headers = data.columns.map((label, index) => {
-      const button = el('button', { type: 'button' }, label);
+      const mark = el('span', { class: 'sort-mark', part: 'sort-mark' });
+      const button = el('button', { type: 'button' }, label, mark);
       button.addEventListener('click', () => {
         direction = key === index && direction === 'ascending' ? 'descending' : 'ascending';
         key = index;
@@ -75,6 +87,8 @@ export class MuTable extends MuElement {
       headers.forEach((header, index) => {
         if (index === key) header.setAttribute('aria-sort', direction);
         else header.removeAttribute('aria-sort');
+        const name = index !== key ? 'sort-none' : direction === 'ascending' ? 'sort-up' : 'sort-down';
+        header.querySelector('.sort-mark').replaceChildren(controlIcon(name));
       });
       const rows = data.rows.map((row, index) => ({ row, index }));
       if (key !== undefined) rows.sort((a, b) => {

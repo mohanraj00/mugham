@@ -63,7 +63,7 @@ export class MuChart extends MuElement {
     .series-6 { stroke-dasharray: 12 4 4 4; }
     [part="point"]:focus { outline: 2px solid var(--mu-color-focus); outline-offset: 3px; }
     button { font: inherit; color: inherit; background: var(--mu-color-surface); border: 1px solid var(--mu-color-border);
-      padding: var(--mu-space-2); min-height: 2.75rem; cursor: pointer; }
+      padding: var(--mu-space-2); min-height: var(--mu-target); cursor: pointer; }
     .muted { color: var(--mu-color-text-muted); font: var(--mu-type-caption); }
     @media (forced-colors: active) {
       figure, button { color: CanvasText; background: Canvas; border-color: CanvasText; }

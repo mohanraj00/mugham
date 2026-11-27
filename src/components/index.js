@@ -5,7 +5,7 @@ import { ReadMoreElement, READ_MORE_CSS } from '../primitives/read-more.js';
 import { define as definePrimitives, FIELDS } from '../primitives/index.js';
 import { ActionState, bindingErrors, copyActionValue, isActionValue, isEditType } from '../actions/action.js';
 import { PATIENCE, patienceOf, ReceiptTimer } from './pending.js';
-import { COMPACT_CONTROL_CSS, CONTROL_DISPLAY, EDGE, FLOATING_TOOLTIP_CSS, LIFT, compactControls, controlIcon,
+import { COMPACT_CONTROL_CSS, CONTROL_DISPLAY, EDGE, FLOATING_TOOLTIP_CSS, LIFT, compactControls, controlIcon, textDisplayOf,
   el, floatingTooltip, icon, setDisclosure, sheet } from '../render/dom.js';
 import { ACTION_RESULT_CSS, REFERENCE_CSS, showReference } from './receipt.js';
 import { sameRichTextValue } from '../render/rich-text.js';
@@ -52,7 +52,7 @@ const UPDATE_CARD_DISPLAY = Symbol('update card display');
 const COLLAPSE_CSS = sheet(`
   .collapse-controls { display: flex; flex-wrap: wrap; gap: var(--mu-space-2); margin-block: var(--mu-space-2) var(--mu-space-3); }
   .collapse-toggle, .collapse-controls button {
-    font: var(--mu-type-body); min-height: 2.75rem; min-width: 2.75rem; padding: var(--mu-space-2) var(--mu-space-3);
+    font: var(--mu-type-body); min-height: var(--mu-target); min-width: var(--mu-target); padding: var(--mu-space-2) var(--mu-space-3);
     border: 1px solid var(--mu-color-border); border-radius: var(--mu-radius-2);
     background: transparent; color: var(--mu-color-text); cursor: pointer;
   }
@@ -82,7 +82,7 @@ const CARD_CSS = sheet(`
   .actions { display: flex; flex-wrap: wrap; gap: var(--mu-space-2); }
   .provenance p { margin: 0; overflow-wrap: anywhere; }
   .provenance button {
-    font: var(--mu-type-caption); min-height: 2.75rem; padding: 0 var(--mu-space-2); cursor: pointer;
+    font: var(--mu-type-caption); min-height: var(--mu-target); padding: 0 var(--mu-space-2); cursor: pointer;
     border: 1px solid var(--mu-color-border); border-radius: var(--mu-radius-2); background: transparent; color: var(--mu-color-text);
   }
   @media (forced-colors: active) {
@@ -93,15 +93,26 @@ const CARD_CSS = sheet(`
 const ACTION_CSS = sheet(`
   :host { display: inline-flex; flex-direction: column; gap: var(--mu-space-1); max-inline-size: 100%; }
   button {
-    font: var(--mu-type-body); min-height: max(44px, 2.75rem); min-width: max(44px, 2.75rem); padding: var(--mu-space-2) var(--mu-space-3);
-    border-radius: var(--mu-radius-2); border: 1px solid var(--mu-color-accent);
+    font: var(--mu-type-body); min-height: var(--mu-target); min-width: var(--mu-target); padding: var(--mu-space-1) var(--mu-space-3);
+    border-radius: var(--mu-radius-1); border: 1px solid var(--mu-color-accent);
     background: var(--mu-color-accent); color: var(--mu-color-on-accent); cursor: pointer;
   }
+  /* A check (save, approve, accept) is a filled success control. A cross (reject, cancel, close) is a quiet control. */
+  button[data-icon="check"] { background: var(--mu-color-success); border-color: var(--mu-color-success); color: var(--mu-color-on-success); }
+  button[data-icon="cross"], button[data-icon="retry"] {
+    background: transparent; color: var(--mu-color-text); border-color: color-mix(in srgb, var(--mu-color-border) 60%, transparent);
+  }
+  button .icon { inline-size: var(--mu-size-icon, 1rem); block-size: var(--mu-size-icon, 1rem); }
   .with-icon { display: inline-flex; align-items: center; justify-content: center; gap: var(--mu-space-2); }
   .icon-control { display: flex; align-items: flex-start; }
-  .icon-control button {
-    min-inline-size: max(44px, 2.75rem); min-block-size: max(44px, 2.75rem); padding: var(--mu-space-2);
+  .icon-control button, button[data-control-display="icon"] {
+    display: inline-flex; align-items: center; justify-content: center;
+    inline-size: var(--mu-target); block-size: var(--mu-target); min-inline-size: var(--mu-target); min-block-size: var(--mu-target); padding: 0;
   }
+  .step.icons { flex-wrap: nowrap; }
+  .step.icons p { flex: 1 1 auto; flex-basis: auto; }
+  .submit-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--mu-space-2) var(--mu-space-3); }
+  .submit-row .status { min-height: 0; }
   .status { display: block; font: var(--mu-type-caption); color: var(--mu-color-text-muted); min-height: 1lh; overflow-wrap: anywhere; }
   .status.done { color: var(--mu-color-success); }
   .status.error { color: var(--mu-color-danger); }
@@ -110,9 +121,10 @@ const ACTION_CSS = sheet(`
   .step { display: flex; flex-wrap: wrap; align-items: center; gap: var(--mu-space-2); }
   .step p { flex-basis: 100%; min-inline-size: 0; margin: 0; overflow-wrap: anywhere; }
   .step button[part="cancel"] { background: transparent; color: var(--mu-color-accent); }
+  .step button[part="cancel"][data-icon="cross"] { color: var(--mu-color-text); }
   @media (forced-colors: active) {
     button { background: ButtonFace; color: ButtonText; border-color: ButtonText; forced-color-adjust: none; }
-    .step button[part="cancel"] { background: ButtonFace; color: ButtonText; }
+    .step button[part="cancel"], button[data-icon] { background: ButtonFace; color: ButtonText; border-color: ButtonText; }
     .status, .status.done, .status.error { color: CanvasText; }
   }
 `);
@@ -189,8 +201,9 @@ class ActionElement extends MuElement {
   }
 
   set action(binding) {
-    if (this.constructor.component !== 'action-button' && binding && (Object.hasOwn(binding, 'icon') || Object.hasOwn(binding, 'display'))) {
-      throw new TypeError('action: only an action button accepts icon and display');
+    if (!['action-button', 'editable-form'].includes(this.constructor.component) && binding
+      && (Object.hasOwn(binding, 'icon') || Object.hasOwn(binding, 'display'))) {
+      throw new TypeError('action: only an action button or an editable form accepts icon and display');
     }
     const errors = this.#action.bind(binding);
     if (errors.length) throw new TypeError('action: ' + errors.join('; '));
@@ -260,6 +273,13 @@ class ActionElement extends MuElement {
     if (this.fill && this.check(this.fill.data).length) this.fill = this.fill;
   }
 
+  // True if the confirm step and the pending exits show icons. The action shows an icon, and its icon is not
+  // delete: the confirm step of a destructive action keeps its text.
+  iconSteps() {
+    const { icon: name, display } = this.#action;
+    return display === 'icon' && Boolean(name) && name !== 'delete' && !textDisplayOf(this);
+  }
+
   // A subclass can change its controls after each change of the state.
   updated() {}
 
@@ -302,13 +322,23 @@ class ActionElement extends MuElement {
       this.#start(extra, started, false, edits);
       return;
     }
-    const cancel = el('button', { type: 'button', part: 'cancel' }, 'Cancel');
-    const accept = el('button', { type: 'button', part: 'accept' }, confirm.label);
+    const icons = this.iconSteps();
+    const cancel = el('button', { type: 'button', part: 'cancel', 'data-icon': icons ? 'cross' : null,
+      'aria-label': icons ? 'Cancel' : null }, 'Cancel');
+    const accept = el('button', { type: 'button', part: 'accept', 'data-icon': icons ? 'check' : null,
+      'aria-label': icons ? confirm.label : null }, confirm.label);
     const nameControl = this[APPROVAL_CONTROL]?.nameControl;
     nameControl?.(cancel, 'Cancel');
     nameControl?.(accept, confirm.label);
-    const step = el('div', { class: 'step', role: 'group', 'aria-label': confirm.message, part: 'confirm' },
+    const step = el('div', { class: icons ? 'step icons' : 'step', role: 'group', 'aria-label': confirm.message, part: 'confirm' },
       el('p', {}, confirm.message), cancel, accept);
+    // In an icon display, the two controls show a cross and a check. Each keeps its text as its name and tooltip.
+    if (icons) {
+      compactControls(this, step, el('span', { part: 'tooltip', 'aria-hidden': 'true' }), [
+        { button: cancel, label: 'Cancel', graphic: icon('cross') },
+        { button: accept, label: confirm.label, graphic: icon('check') },
+      ]);
+    }
     cancel.addEventListener('click', () => this.#close());
     accept.addEventListener('click', () => {
       this.#close(false);
@@ -462,12 +492,14 @@ export class MuActionButton extends ActionElement {
     this.#dismissTooltip = null;
     const approval = this[APPROVAL_CONTROL];
     const status = approval ? null : el('span', { class: 'status', role: 'status', 'aria-live': 'polite', part: 'status' });
-    const display = data.icon ? data.display ?? 'text' : 'text';
+    const bound = data.icon ? data.display ?? 'text' : 'text';
+    // control-display="text" on an ancestor shows the label next to the icon.
+    const display = bound === 'icon' && textDisplayOf(this) ? 'both' : bound;
     const iconOnly = display === 'icon';
     this.#graphic = display === 'text' ? null : icon(data.icon);
     this.#doneGraphic = this.#graphic ? icon('check') : null;
     const button = el('button', { type: 'button', part: 'button', class: this.#graphic ? 'with-icon' : null,
-      'aria-label': iconOnly ? data.label : null }, this.#graphic, iconOnly ? null : data.label);
+      'data-icon': this.#graphic ? data.icon : null, 'aria-label': iconOnly ? data.label : null }, this.#graphic, iconOnly ? null : data.label);
     approval?.nameControl(button, data.label);
     button.addEventListener('click', () => this.send());
     return [approval?.title, iconOnly ? this.#withTooltip(button, data.label) : button,
@@ -1009,9 +1041,12 @@ function sameFieldValue(first, second) {
 export class MuEditableForm extends ActionElement {
   static component = 'editable-form';
   static labelField = 'submit_label';
-  static styles = [CARD_CSS, ACTION_CSS, REFERENCE_CSS, ACTION_RESULT_CSS, sheet(`
+  static styles = [CARD_CSS, ACTION_CSS, REFERENCE_CSS, ACTION_RESULT_CSS, FLOATING_TOOLTIP_CSS, sheet(`
     :host { display: block; }
     form { display: flex; flex-direction: column; gap: var(--mu-space-3); }
+    /* A single-line field takes the width of its value, not the width of the form. */
+    form > :is(mu-field, mu-select-field, mu-number-field, mu-date-field, mu-time-field, mu-date-time-field,
+      mu-date-range-field, mu-choice-field, mu-multi-choice-field, mu-range-field) { max-inline-size: var(--mu-size-field, 20rem); }
     .field-error { display: block; color: var(--mu-color-danger); overflow-wrap: anywhere; }
     @media (forced-colors: active) { .field-error { color: CanvasText; } }
   `)];
@@ -1160,10 +1195,21 @@ export class MuEditableForm extends ActionElement {
     });
     this.#error = el('span', { class: 'field-error', role: 'status', part: 'reason' });
     const status = el('span', { class: 'status', role: 'status', 'aria-live': 'polite', part: 'status' });
-    const submit = el('button', { type: 'submit', part: 'button' }, data.submit_label);
+    // The binding can ask for an icon display. The label stays the name of the button and shows as its tooltip.
+    const { icon: name, display } = this.action;
+    const iconSubmit = display === 'icon' && Boolean(name);
+    const submit = el('button', { type: 'submit', part: 'button', 'data-icon': iconSubmit ? name : null,
+      'aria-label': iconSubmit ? data.submit_label : null }, data.submit_label);
+    const row = el('div', { class: 'submit-row' }, submit);
+    if (iconSubmit) {
+      compactControls(this, row, el('span', { part: 'tooltip', 'aria-hidden': 'true' }),
+        [{ button: submit, label: data.submit_label, graphic: icon(name), keepIcon: true }]);
+    }
+    const [area, result] = this.attach(submit, status);
+    row.append(result);
     const form = el('form', { 'aria-label': data.title, part: 'form' },
       el('p', { class: 'title' }, data.title), provenance(this.fill.slots), ...this.#fields.map(({ node }) => node),
-      el('div', {}, submit), ...this.attach(submit, status), this.#error);
+      row, area, this.#error);
     // An edit after done makes the values new, so the form can save again.
     form.addEventListener('mu-edit', () => {
       this.#error.textContent = '';
@@ -1545,7 +1591,7 @@ export class MuCitation extends MuElement {
     .provenance { display: flex; flex-direction: column; gap: var(--mu-space-1); }
     .provenance p { margin: 0; overflow-wrap: anywhere; }
     .provenance button {
-      align-self: start; font: var(--mu-type-caption); min-height: 2.75rem; padding: 0 var(--mu-space-2); cursor: pointer;
+      align-self: start; font: var(--mu-type-caption); min-height: var(--mu-target); padding: 0 var(--mu-space-2); cursor: pointer;
       border: 1px solid var(--mu-color-border); border-radius: var(--mu-radius-2); background: transparent; color: var(--mu-color-text);
     }
     @media (forced-colors: active) {
@@ -1594,7 +1640,7 @@ export class MuExcerpt extends ReadMoreElement {
     .provenance { display: flex; flex-direction: column; gap: var(--mu-space-1); }
     .provenance p { margin: 0; overflow-wrap: anywhere; }
     .provenance button {
-      align-self: start; font: var(--mu-type-caption); min-height: 2.75rem; padding: 0 var(--mu-space-2); cursor: pointer;
+      align-self: start; font: var(--mu-type-caption); min-height: var(--mu-target); padding: 0 var(--mu-space-2); cursor: pointer;
       border: 1px solid var(--mu-color-border); border-radius: var(--mu-radius-2); background: transparent; color: var(--mu-color-text);
     }
     @media (forced-colors: active) {
@@ -1705,7 +1751,7 @@ export class MuActionQueue extends MuElement {
     .muted { font: var(--mu-type-caption); color: var(--mu-color-text-muted); }
     li:is([data-state="rejected"], [data-state="unreadable"]) .state { color: var(--mu-color-danger); }
     button {
-      font: var(--mu-type-body); min-height: 2.75rem; min-width: 2.75rem; padding: var(--mu-space-1) var(--mu-space-3);
+      font: var(--mu-type-body); min-height: var(--mu-target); min-width: var(--mu-target); padding: var(--mu-space-1) var(--mu-space-3);
       border-radius: var(--mu-radius-2); border: 1px solid var(--mu-color-accent); background: transparent;
       color: var(--mu-color-accent); cursor: pointer;
     }
@@ -1802,7 +1848,7 @@ export class MuDiff extends MuElement {
     .title { font-weight: var(--mu-type-weight-strong); }
     .muted { font: var(--mu-type-caption); color: var(--mu-color-text-muted); }
     details[data-state] { border-block-start: 1px solid ${EDGE}; padding-block-start: var(--mu-space-2); }
-    summary[part="summary"] { cursor: pointer; min-height: 2.75rem; display: flex; flex-wrap: wrap; align-items: center; gap: var(--mu-space-1) var(--mu-space-2); }
+    summary[part="summary"] { cursor: pointer; min-height: var(--mu-target); display: flex; flex-wrap: wrap; align-items: center; gap: var(--mu-space-1) var(--mu-space-2); }
     summary[part="summary"] .name { font-weight: var(--mu-type-weight-strong); }
     ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--mu-space-2); }
     li { display: flex; flex-direction: column; gap: var(--mu-space-1); padding-inline-start: var(--mu-space-2);

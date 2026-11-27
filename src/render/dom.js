@@ -1,7 +1,7 @@
 // The only way the kit makes DOM nodes. Data goes into text nodes and into a short list of attributes.
 // No function here parses a string as markup. tests/test_sinks.py refuses markup sinks in src/.
 const ATTRIBUTES = new Set(['id', 'class', 'part', 'role', 'type', 'for', 'name', 'autocomplete', 'tabindex',
-  'aria-label', 'aria-describedby', 'aria-invalid', 'aria-live', 'aria-disabled', 'data-state', 'scope', 'aria-sort', 'aria-hidden',
+  'aria-label', 'aria-describedby', 'aria-invalid', 'aria-live', 'aria-disabled', 'data-state', 'data-icon', 'scope', 'aria-sort', 'aria-hidden',
   'aria-labelledby', 'aria-modal', 'aria-expanded', 'aria-haspopup', 'aria-controls', 'aria-readonly', 'aria-autocomplete',
   'aria-selected', 'aria-pressed', 'aria-multiline', 'aria-required', 'aria-multiselectable', 'aria-current', 'aria-valuemin', 'aria-valuemax', 'aria-valuenow']);
 
@@ -150,6 +150,9 @@ const FORMAT_ICONS = Object.freeze({
 const CONTROL_ICONS = Object.freeze({
   'expand-all': 'M3.5 3.5 8 7 12.5 3.5 M3.5 8.5 8 12 12.5 8.5',
   'collapse-all': 'M3.5 7.5 8 4 12.5 7.5 M3.5 12.5 8 9 12.5 12.5',
+  'sort-none': 'M5 6 8 3 11 6 M5 10 8 13 11 10',
+  'sort-up': 'M8 13V3 M4.5 6.5 8 3l3.5 3.5',
+  'sort-down': 'M8 3v10 M4.5 9.5 8 13l3.5-3.5',
 });
 const SVG = 'http://www.w3.org/2000/svg';
 
@@ -189,12 +192,21 @@ function svgIcon() {
 }
 
 export const CONTROL_DISPLAY = 'control-display';
+
+// True if the closest control-display setting of the host or an ancestor is "text". The walk crosses shadow roots.
+export function textDisplayOf(host) {
+  for (let node = host; node; node = node.assignedSlot ?? node.parentNode ?? node.host) {
+    const display = node.getAttribute?.(CONTROL_DISPLAY) ?? null;
+    if (display !== null) return display === 'text';
+  }
+  return false;
+}
 export const COMPACT_CONTROL_CSS = sheet(`
   button[data-control-display="icon"] {
     display: inline-flex; align-items: center; justify-content: center; flex: none;
-    inline-size: 44px; block-size: 44px; min-inline-size: 44px; min-block-size: 44px; padding: 0;
+    inline-size: var(--mu-target); block-size: var(--mu-target); min-inline-size: var(--mu-target); min-block-size: var(--mu-target); padding: 0;
   }
-  [data-control-display="icon"] .icon { inline-size: 16px; block-size: 16px; }
+  [data-control-display="icon"] .icon { inline-size: var(--mu-size-icon, 1rem); block-size: var(--mu-size-icon, 1rem); }
 `);
 
 const openControlTooltip = new WeakMap();
@@ -330,7 +342,9 @@ export function copyControl(value, name) {
 // Shared rules for each primitive: the focus ring, the states of each control, forced colors and reduced motion.
 // A control shows hover and pressed with a layer of its own text color, so each theme gives the two states.
 export const BASE = sheet(`
-  :host { box-sizing: border-box; }
+  /* The target size of each control: the control size with a mouse, the touch size with a coarse pointer. */
+  :host { box-sizing: border-box; --mu-target: var(--mu-size-control, 2rem); }
+  @media (pointer: coarse) { :host { --mu-target: var(--mu-size-control-touch, 2.75rem); } }
   :host([hidden]) { display: none; }
   *, *::before, *::after { box-sizing: inherit; }
   :focus-visible { outline: 2px solid var(--mu-color-focus); outline-offset: 2px; }
@@ -352,13 +366,13 @@ export const BASE = sheet(`
     stroke-linecap: round; stroke-linejoin: round; transition: transform var(--mu-motion-fast); }
   .copy-box { display: inline-flex; align-items: center; }
   .copy {
-    font: var(--mu-type-caption); min-height: 2.75rem; min-width: 2.75rem; padding: 0 var(--mu-space-2); cursor: pointer;
+    font: var(--mu-type-caption); min-height: var(--mu-target); min-width: var(--mu-target); padding: 0 var(--mu-space-2); cursor: pointer;
     border: 1px solid currentColor; background: transparent; color: inherit;
   }
   .copy-status { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   .refused { font: var(--mu-type-caption); color: var(--mu-color-danger); }
   .refused [part="next"] { display: block; }
-  details[part="details"] > summary { min-height: 2.75rem; min-width: 2.75rem; padding-block: 0.625rem; cursor: pointer; }
+  details[part="details"] > summary { min-height: var(--mu-target); min-width: var(--mu-target); padding-block: 0.625rem; cursor: pointer; }
   details[part="details"]:not([open]) > :not(summary) { display: none; }
   details[part="details"] > div { white-space: pre-wrap; overflow-wrap: anywhere; }
   @media (prefers-reduced-motion: reduce) {

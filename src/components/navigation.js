@@ -9,7 +9,7 @@ const NAVIGATION_CSS = sheet(`
     color: var(--mu-color-accent); text-decoration: underline; text-underline-offset: 0.18em;
   }
   a, button, slot::slotted(a) {
-    min-inline-size: 44px; min-block-size: 44px; max-inline-size: 100%;
+    min-inline-size: var(--mu-target); min-block-size: var(--mu-target); max-inline-size: 100%;
     display: inline-flex; align-items: center; padding-inline: var(--mu-space-2); overflow-wrap: anywhere;
   }
   button {
@@ -222,7 +222,7 @@ export class MuSteps extends MuElement {
   static component = 'steps';
   static styles = [NAVIGATION_CSS, sheet(`
     ol { display: flex; flex-wrap: wrap; gap: var(--mu-space-2); list-style: none; margin: 0; padding: 0; }
-    li { display: flex; align-items: center; min-block-size: 44px; max-inline-size: 100%; overflow-wrap: anywhere; }
+    li { display: flex; align-items: center; min-block-size: var(--mu-target); max-inline-size: 100%; overflow-wrap: anywhere; }
     li > span { padding-inline: var(--mu-space-2); }
     [aria-current="step"] { font-weight: bold; }
     button { display: block; text-align: start; }

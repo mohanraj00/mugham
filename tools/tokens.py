@@ -17,7 +17,7 @@ HEX = re.compile(r'#[0-9a-f]{6}')
 UNIT_FRACTION = r'(?:0(?:\.[0-9]{1,4})?|1(?:\.0{1,4})?)'
 EASING = re.compile(r'cubic-bezier\(' + ', ?'.join([UNIT_FRACTION] * 4) + r'\)')
 COMPACT = {'type.body', 'type.caption', 'space.1', 'space.2', 'space.3', 'space.4',
-           'size.column-narrow', 'size.column-medium', 'size.column-wide'}
+           'size.column-narrow', 'size.column-medium', 'size.column-wide', 'size.control', 'size.icon', 'size.field'}
 DARK_SYSTEM = ':where(:not([data-mu-mode="light"], [data-mu-theme="light"]:not([data-mu-mode])))'
 DARK_EXPLICIT = ':where([data-mu-mode="dark"], [data-mu-theme="dark"]:not([data-mu-mode]))'
 

@@ -29,7 +29,7 @@ export class MuRichTextField extends FieldElement {
     .toolbar { gap: var(--mu-space-1); }
     [hidden] { display: none !important; }
     button, .link-editor input, .editor {
-      min-block-size: 44px; min-inline-size: 44px; max-inline-size: 100%;
+      min-block-size: var(--mu-target); min-inline-size: var(--mu-target); max-inline-size: 100%;
       background: var(--mu-color-surface); color: var(--mu-color-text);
       border: 1px solid var(--mu-color-border); border-radius: var(--mu-radius-1);
       font: var(--mu-type-body); padding: var(--mu-space-1) var(--mu-space-2);
@@ -37,7 +37,7 @@ export class MuRichTextField extends FieldElement {
     .toolbar button, .link-editor button { cursor: pointer; }
     .toolbar button {
       display: inline-flex; align-items: center; justify-content: center;
-      box-sizing: border-box; inline-size: 44px; block-size: 44px;
+      box-sizing: border-box; inline-size: var(--mu-target); block-size: var(--mu-target);
       padding: 0; font-weight: var(--mu-type-weight-strong); white-space: nowrap;
     }
     .toolbar .icon { inline-size: 16px; block-size: 16px; stroke-width: 1.5; }

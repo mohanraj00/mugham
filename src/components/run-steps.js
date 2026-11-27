@@ -71,7 +71,7 @@ export class MuRunSteps extends MuWorkList {
   static styles = [WORK_LIST_CSS, sheet(`
     [part="toggle"] {
       display: flex; align-items: center; justify-content: space-between; gap: var(--mu-space-2);
-      min-inline-size: 44px; min-block-size: 44px; inline-size: 100%; padding: var(--mu-space-1) var(--mu-space-2);
+      min-inline-size: var(--mu-target); min-block-size: var(--mu-target); inline-size: 100%; padding: var(--mu-space-1) var(--mu-space-2);
       color: inherit; background: var(--mu-color-surface); border: 1px solid var(--mu-color-border);
       border-radius: var(--mu-radius-2); font: inherit; text-align: start; cursor: pointer;
       overflow-wrap: anywhere;

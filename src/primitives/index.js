@@ -55,7 +55,7 @@ export class MuButton extends MuElement {
   static styles = [sheet(`
     :host { display: inline-block; }
     button {
-      font: var(--mu-type-body); min-height: 2.75rem; min-width: 2.75rem;
+      font: var(--mu-type-body); min-height: var(--mu-target); min-width: var(--mu-target);
       padding: var(--mu-space-2) var(--mu-space-3); border-radius: var(--mu-radius-2);
       border: 1px solid var(--mu-color-accent); background: var(--mu-color-accent); color: var(--mu-color-on-accent);
       cursor: pointer;

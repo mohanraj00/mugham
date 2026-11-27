@@ -13,7 +13,7 @@ const plants = [
   'Copper frond', 'Sand star', 'Silver sprig', 'Dusky plume', 'Glade ribbon', 'Moon tuft',
 ];
 const editable = { sun: 'Sun levels', plants: 'Plants' };
-const action = { tool: 'garden.save_bed', label: 'Save', title: 'Garden bed', editable };
+const action = { tool: 'garden.save_bed', label: 'Save', title: 'Garden bed', editable, icon: 'check', display: 'icon' };
 const form = mount('editable-form', { title: action.title, submit_label: action.label, fields: [
   fill('multi-choice-field', { name: 'sun', label: editable.sun, choices: sun, value: ['Part shade'],
     min_items: 1, hint: 'Choose the sun levels of the bed during the day.' }),
