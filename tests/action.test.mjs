@@ -2,7 +2,7 @@
 // the kit shows an action as done only after the receipt of the API comes back.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { ActionState, bindingErrors, deliverReceipt } from '../src/actions/action.js';
+import { ActionState, bindingErrors, deliverReceipt, outcomeText } from '../src/actions/action.js';
 
 test('a binding needs a valid tool name and supported arguments', () => {
   assert.deepEqual(bindingErrors({ tool: 'library.renew', arguments: { loan_id: 'L-0001' } }), []);
@@ -427,7 +427,7 @@ test('a receipt needs a matching key or id, and both must match when present', (
   assert.deepEqual([keyed.action.state, keyed.action.message], ['error', 'The tool is reserved.']);
 });
 
-for (const field of ['message', 'reference']) {
+for (const field of ['message', 'reference', 'service', 'code']) {
   test(`an action refuses a receipt with a null ${field}`, () => {
     const { action, request } = pendingAction();
     assert.equal(action.receipt({ id: request.id, ok: true, [field]: null }), false);
@@ -457,4 +457,38 @@ test('an action keeps copies of bounded text lists and their typed edits', () =>
   assert.deepEqual(request.edits[0].old_value, []);
   assert.equal(request.edits[0].new_value, request.arguments.plants);
   assert.ok([request.arguments.beds, request.arguments.plants, request.edits[0].old_value].every(Object.isFrozen));
+});
+
+// The service name and the reason code of a receipt (#190). Expected results from the issue: a refusal with a
+// service and a code shows both, a receipt with no service shows as before, and a code with markup stays text.
+test('a refusal shows the service name and the reason code after the message', () => {
+  const { action, request } = pendingAction();
+  assert.equal(action.receipt({ id: request.id, ok: false, message: 'The tray is full.', service: 'Seed orders',
+    code: 'tray-full' }), true);
+  assert.deepEqual([action.state, action.message, action.service, action.code],
+    ['error', 'The tray is full.', 'Seed orders', 'tray-full']);
+  assert.equal(action.outcome, 'The tray is full. Service: Seed orders. Code: tray-full.');
+  action.reopen();
+  assert.deepEqual([action.service, action.code, action.outcome], ['', '', '']);
+});
+
+test('a receipt with no service and no code shows only its message, as before', () => {
+  const { action, request } = pendingAction();
+  assert.equal(action.receipt({ id: request.id, ok: false, message: 'The tool is reserved' }), true);
+  assert.deepEqual([action.service, action.code, action.outcome], ['', '', 'The tool is reserved']);
+  assert.equal(outcomeText('', '', ''), '');
+  assert.equal(outcomeText('The tray is full', 'Seed orders'), 'The tray is full. Service: Seed orders.');
+  assert.equal(outcomeText('', '', 'dry-soil'), 'Code: dry-soil.');
+});
+
+test('a service name and a code with markup stay text, and each has a limit of 80 characters', () => {
+  const markup = '<img src=x onerror=alert(1)>';
+  const { action, request } = pendingAction();
+  assert.equal(action.receipt({ id: request.id, ok: false, service: 'S'.repeat(81) }), false);
+  assert.equal(action.receipt({ id: request.id, ok: false, code: 'C'.repeat(81) }), false);
+  assert.equal(action.receipt({ id: request.id, ok: false, code: 7 }), false);
+  assert.equal(action.state, 'pending');
+  assert.equal(action.receipt({ id: request.id, ok: false, service: markup, code: markup }), true);
+  assert.deepEqual([action.service, action.code], [markup, markup]);
+  assert.equal(action.outcome, `Service: ${markup}. Code: ${markup}.`);
 });

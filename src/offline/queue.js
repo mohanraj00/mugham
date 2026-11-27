@@ -23,6 +23,9 @@ const MAX_LABEL = 120;
 const MAX_PRINCIPAL = 128;
 const MAX_MESSAGE = 200;
 const MAX_REFERENCE = 80;
+// The service name and the reason code of a receipt. The kit shows them only as text.
+const MAX_SERVICE = 80;
+const MAX_CODE = 80;
 const TIMEOUT = 10000;
 const REJECTED = 'The service rejected the action.';
 const UNREADABLE = 'A saved action that this version cannot read';
@@ -65,7 +68,8 @@ export function receiptOf(value, request, ids) {
     if (typeof key !== 'string' || key !== request.key) return null;
     receipt.key = key;
   }
-  for (const [field, limit] of [['message', MAX_MESSAGE], ['reference', MAX_REFERENCE]]) {
+  for (const [field, limit] of [['message', MAX_MESSAGE], ['reference', MAX_REFERENCE], ['service', MAX_SERVICE],
+    ['code', MAX_CODE]]) {
     if (!Object.hasOwn(value, field)) continue;
     const content = value[field];
     if (!shortText(content, limit)) return null;

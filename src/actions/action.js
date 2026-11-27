@@ -45,6 +45,15 @@ function longer(text, max) {
   return false;
 }
 
+// The words of a receipt: the message, then the service name and the reason code. A receipt with no service and
+// no code shows only its message. Each value stays text.
+export function outcomeText(message, service = '', code = '') {
+  const details = [service && `Service: ${service}.`, code && `Code: ${code}.`].filter(Boolean);
+  if (!details.length) return message;
+  const lead = !message || /[.!?]$/u.test(message) ? message : message + '.';
+  return [lead, ...details].filter(Boolean).join(' ');
+}
+
 // A failed call or an invalid or refused result leaves the outcome unknown.
 export async function deliverReceipt(element, request, send) {
   try {
@@ -199,6 +208,8 @@ export class ActionState {
   #state = 'disabled';
   #message = '';
   #reference = '';
+  #service = '';
+  #code = '';
   // The detail of the pending state, the ids of the tries of the pending action and the number of tries that
   // left the device.
   #wait = '';
@@ -226,6 +237,20 @@ export class ActionState {
   // The reference of the last receipt, for example a record id. The element shows it only as text.
   get reference() {
     return this.#reference;
+  }
+
+  // The service name and the reason code of the last receipt. The element shows them only as text.
+  get service() {
+    return this.#service;
+  }
+
+  get code() {
+    return this.#code;
+  }
+
+  // The message with the service name and the reason code of the receipt, as the element shows it.
+  get outcome() {
+    return outcomeText(this.#message, this.#service, this.#code);
   }
 
   // The confirm step of the binding, as { message, label }. Without a binding or a confirm step, the value is null.
@@ -294,6 +319,8 @@ export class ActionState {
       this.#state = 'disabled';
       this.#message = '';
       this.#reference = '';
+      this.#service = '';
+      this.#code = '';
       return [];
     }
     const errors = bindingErrors(binding);
@@ -310,6 +337,8 @@ export class ActionState {
     this.#state = 'default';
     this.#message = '';
     this.#reference = '';
+    this.#service = '';
+    this.#code = '';
     return [];
   }
 
@@ -331,6 +360,8 @@ export class ActionState {
       this.#state = 'error';
       this.#message = UNCONFIRMED;
       this.#reference = '';
+      this.#service = '';
+      this.#code = '';
       return null;
     }
     if (Object.keys(extra).some((name) => !Object.hasOwn(this.#binding.editable, name))) return null;
@@ -349,6 +380,8 @@ export class ActionState {
     this.#tries = 1;
     this.#message = '';
     this.#reference = '';
+    this.#service = '';
+    this.#code = '';
     return this.#request;
   }
 
@@ -394,6 +427,8 @@ export class ActionState {
     this.#state = 'default';
     this.#message = sent ? CANCELED_UNKNOWN : CANCELED;
     this.#reference = '';
+    this.#service = '';
+    this.#code = '';
     return true;
   }
 
@@ -404,6 +439,8 @@ export class ActionState {
     this.#state = 'default';
     this.#message = first(String(message), MAX_MESSAGE);
     this.#reference = '';
+    this.#service = '';
+    this.#code = '';
     return true;
   }
 
@@ -415,6 +452,8 @@ export class ActionState {
     this.#state = receipt.ok ? 'done' : 'error';
     this.#message = receipt.message ?? '';
     this.#reference = receipt.reference ?? '';
+    this.#service = receipt.service ?? '';
+    this.#code = receipt.code ?? '';
     this.#clear();
     return true;
   }

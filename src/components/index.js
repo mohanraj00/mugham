@@ -400,7 +400,7 @@ class ActionElement extends MuElement {
     this.#exits(wait);
     this.#timer.watch(wait, this.#patience, () => this.hold({ key: this.#action.key, wait: 'stalled' }));
     this.#updateControl(state);
-    const words = [STATUS[state], state === 'confirm' ? '' : this.#action.message].filter(Boolean).join(': ');
+    const words = [STATUS[state], state === 'confirm' ? '' : this.#action.outcome].filter(Boolean).join(': ');
     if (this.#status) {
       this.#status.className = 'status ' + state;
       this.#status.textContent = words;
