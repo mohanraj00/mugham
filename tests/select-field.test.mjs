@@ -41,6 +41,7 @@ globalThis.document = Object.assign(new EventTarget(), {
     if (tag === 'input') node.value = '';
     return node;
   },
+  createElementNS: (namespaceURI, tag) => Object.assign(new TestNode(), { namespaceURI, tag }),
   createTextNode: (textContent) => ({ textContent }),
 });
 globalThis.Node = TestNode;

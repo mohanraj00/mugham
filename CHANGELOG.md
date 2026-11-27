@@ -4,6 +4,7 @@ Each release has an entry. The newest entry is first.
 
 ## Unreleased
 
+- Show symbols on the rich text format buttons and show the format name on hover and focus (#175).
 - Check queued rich text without loading the catalog (#176).
 - Add a rich text field with a format toolbar, keyboard shortcuts and bounded paste and drop. An editable form sends its rich text data (#130).
 - Pass the rich text fill revision to `setApprovals` so a late response cannot mark a different fill (#172).

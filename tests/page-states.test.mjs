@@ -43,6 +43,7 @@ globalThis.HTMLElement = class extends TestNode {
 globalThis.CSSStyleSheet = class { replaceSync() {} };
 globalThis.document = {
   createElement: (tag) => new TestNode(tag),
+  createElementNS: (namespaceURI, tag) => Object.assign(new TestNode(tag), { namespaceURI }),
   createTextNode: (textContent) => Object.assign(new TestNode('#text'), { textContent }),
 };
 globalThis.customElements = {
@@ -70,13 +71,46 @@ test('Heading 3 on an empty note keeps the value and asks for Heading 1', () => 
   const [box] = field.shadowRoot.children;
   const [controls] = box.children;
   const toolbar = controls.children.find((node) => node.getAttribute('part') === 'toolbar');
-  const heading = toolbar.children.find((node) => node.textContent === 'Heading 3');
+  const heading = toolbar.children.find((node) => node.getAttribute('aria-label') === 'Heading 3');
   const status = controls.children.find((node) => node.getAttribute('part') === 'status');
   heading.dispatchEvent(new Event('click'));
   assert.deepEqual(field.value, value);
   assert.equal(field.changed, false);
   assert.equal(heading.getAttribute('aria-pressed'), 'false');
   assert.equal(status.textContent, 'A heading cannot skip a level. Use Heading 1 first.');
+});
+
+test('each format button keeps its name and shows only a symbol', () => {
+  const field = make('rich-text-field', { label: 'Note' });
+  const [box] = field.shadowRoot.children;
+  const [controls] = box.children;
+  const toolbar = controls.children.find((node) => node.getAttribute('part') === 'toolbar');
+  const buttons = toolbar.children.filter((node) => node.tag === 'button');
+  const names = ['Paragraph', 'Heading 1', 'Heading 2', 'Heading 3', 'Bulleted list', 'Numbered list',
+    'Quote', 'Code block', 'Strong', 'Emphasis', 'Inline code', 'Link'];
+  assert.deepEqual(buttons.map((button) => button.getAttribute('aria-label')), names);
+  assert.deepEqual(buttons.map((button) => button.textContent), ['P', 'H1', 'H2', 'H3', '', '', '', '', '', '', '', '']);
+  const paths = buttons.slice(4).map(({ children }) => {
+    assert.equal(children.length, 1);
+    const [svg] = children;
+    assert.equal(svg.tag, 'svg');
+    assert.equal(svg.namespaceURI, 'http://www.w3.org/2000/svg');
+    assert.equal(svg.getAttribute('viewBox'), '0 0 16 16');
+    assert.equal(svg.getAttribute('aria-hidden'), 'true');
+    assert.equal(svg.getAttribute('focusable'), 'false');
+    assert.equal(svg.children.length, 1);
+    const [path] = svg.children;
+    assert.equal(path.tag, 'path');
+    assert.match(path.getAttribute('d'), /^M/);
+    return path.getAttribute('d');
+  });
+  assert.equal(new Set(paths).size, paths.length);
+  for (const [index, key] of ['B', 'I', 'E', 'K'].entries()) {
+    const button = buttons[index + 8];
+    assert.equal(button.getAttribute('aria-keyshortcuts'), `Control+${key} Meta+${key}`);
+    const description = toolbar.children.find((node) => node.id === button.getAttribute('aria-describedby'));
+    assert.equal(description?.textContent, `Control or Command + ${key}`);
+  }
 });
 
 test('empty state shows scalar text and a named slot for a page control', () => {

@@ -253,7 +253,7 @@ An asterisk marks a guardrail part. Keep it visible when the kit shows it. Run `
 | `mu-plan` | `announcement`\*, `authorship`\*, `copy`\*, `copy-status`\*, `details`\*, `list`\*, `name`\*, `next`\*, `reason`\*, `state`\*, `task` |
 | `mu-progress` | `bar`\*, `copy`\*, `copy-status`\*, `details`\*, `indicator`\*, `label`\*, `next`\*, `reason`\*, `value`\* |
 | `mu-range-field` | `controls`\*, `copy`\*, `copy-status`\*, `details`\*, `edit-type`\*, `group`\*, `handle-label`\*, `label`\*, `next`\*, `number`\*, `problem`\*, `reason`\*, `slider`\* |
-| `mu-rich-text-field` | `copy`\*, `copy-status`\*, `details`\*, `edit-type`\*, `format`\*, `input`\*, `label`\*, `link-editor`\*, `next`\*, `problem`\*, `reason`\*, `status`\*, `toolbar`\* |
+| `mu-rich-text-field` | `copy`\*, `copy-status`\*, `details`\*, `edit-type`\*, `format`\*, `icon`\*, `input`\*, `label`\*, `link-editor`\*, `next`\*, `problem`\*, `reason`\*, `status`\*, `toolbar`\*, `tooltip`\* |
 | `mu-rich-text` | `approval-mark`\*, `authorship`\*, `code`, `copy`\*, `copy-status`\*, `details`\*, `empty`, `link`\*, `next`\*, `read-more-content`\*, `read-more-toggle`\*, `reason`\*, `rich-text`, `target`\* |
 | `mu-run-steps` | `announcement`\*, `arguments`\*, `authorship`\*, `copy`\*, `copy-status`\*, `detail`\*, `details`\*, `list`\*, `name`\*, `next`\*, `panel`\*, `reason`\*, `result`\*, `state`\*, `step`, `toggle`\*, `tool`\* |
 | `mu-select-field` | `control`\*, `copy`\*, `copy-status`\*, `details`\*, `edit-type`\*, `label`\*, `listbox`\*, `next`\*, `option`\*, `popup`\*, `problem`\*, `reason`\*, `search`\*, `status`\*, `value`\* |
@@ -342,6 +342,8 @@ The image parts are `image`, `box`, `caption` and `dialog`. Keep the box ratio a
 The card parts include `toggle`, `icon`, `body` and `collapsed-summary`. Keep the toggle, its border and its focus ring visible. The part `icon` is the chevron of the toggle, and it takes the text color of the toggle. The kit hides the body only when the card can collapse. Do not change this rule or hide a pending action with page styles. The short summary shows only while the card is collapsed.
 
 The action button uses the `icon` part in `icon` and `both` displays. Keep the icon visible and let its stroke take the button text color. In `icon` display, the `tooltip` part shows the button label on hover and focus. Keep its text and border visible in forced colors. Keep the `button` part at least 44 by 44 CSS pixels and keep its focus ring. The `status` and `reference` parts keep their text in each display.
+
+In a rich text field, keep the `format` buttons at least 44 by 44 CSS pixels. Keep their focus rings and pressed states visible. Let the `toolbar` wrap on narrow screens. Keep each format symbol visible and let the `icon` stroke take the button text color. Keep the `tooltip` text and border visible in forced colors. Keep the tooltip clear of the `input` part.
 
 The toggle field parts are `target`, `input`, `label` and `state`. Keep the `target` at least 44 by 44 CSS pixels. Keep the `input`, its focus ring and the `label` visible. In switch display, keep the switch border visible in forced colors and the `On` or `Off` text in the `state` part visible in each theme.
 

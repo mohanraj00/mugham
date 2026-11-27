@@ -65,16 +65,35 @@ function toolbarState() {
     const rect = node.getBoundingClientRect();
     return rect.width >= 44 && rect.height >= 44;
   };
+  const name = (button) => button.getAttribute('aria-label');
+  const strong = buttons.find((button) => name(button) === 'Strong')?.getBoundingClientRect();
+  const tooltip = toolbar.querySelector('.action-tooltip[part="tooltip"]');
+  const tooltipStyle = tooltip && getComputedStyle(tooltip);
+  const tooltipBox = tooltip?.getBoundingClientRect();
   return {
     width: innerWidth, scroll: document.documentElement.scrollWidth, forced, dark, reduced,
     toolbarName: toolbar.getAttribute('aria-label'), toolbarRole: toolbar.getAttribute('role'),
     role: editor.getAttribute('role'), multiline: editor.getAttribute('aria-multiline'), required: editor.getAttribute('aria-required'),
-    tabStops: buttons.filter(({ tabIndex }) => tabIndex === 0).map(({ textContent }) => textContent),
-    focus: active === editor ? 'editor' : active?.textContent,
+    tabStops: buttons.filter(({ tabIndex }) => tabIndex === 0).map(name),
+    focus: active === editor ? 'editor' : active?.getAttribute('aria-label'),
     focusRing: style?.outlineStyle === 'solid' && parseFloat(style.outlineWidth) >= 2
       && style.outlineColor === color(forced ? 'Highlight' : 'var(--mu-color-focus)'),
     targets: [editor, ...buttons].every(size),
-    pressed: buttons.filter((button) => button.getAttribute('aria-pressed') === 'true').map(({ textContent }) => textContent),
+    pressed: buttons.filter((button) => button.getAttribute('aria-pressed') === 'true').map(name),
+    rows: new Set(buttons.map((button) => button.getBoundingClientRect().top)).size,
+    iconsUseTextColor: buttons.slice(4).every((button) => {
+      const icon = button.querySelector('svg');
+      return icon && getComputedStyle(icon).stroke === getComputedStyle(button).color;
+    }),
+    hoverPoint: strong && { x: strong.x + strong.width / 2, y: strong.y + strong.height / 2 },
+    tooltip: tooltipBox?.width > 0 && tooltipBox.height > 0 && tooltipStyle.visibility === 'visible' ? {
+      text: tooltip.textContent,
+      ariaHidden: tooltip.getAttribute('aria-hidden'),
+      aboveEditor: tooltipBox.bottom <= editor.getBoundingClientRect().top,
+      colors: tooltipStyle.backgroundColor === color(forced ? 'Canvas' : 'var(--mu-color-surface)')
+        && tooltipStyle.color === color(forced ? 'CanvasText' : 'var(--mu-color-text)')
+        && tooltipStyle.borderColor === color(forced ? 'CanvasText' : 'var(--mu-color-border)'),
+    } : null,
     colors: getComputedStyle(editor).backgroundColor === color(forced ? 'Canvas' : 'var(--mu-color-surface)')
       && getComputedStyle(editor).color === color(forced ? 'CanvasText' : 'var(--mu-color-text)'),
     noMotion: buttons.every((button) => {
@@ -91,7 +110,8 @@ async function exerciseEditor() {
   const field = form.shadowRoot.querySelector('mu-rich-text-field');
   const root = field.shadowRoot;
   const editor = () => root.querySelector('[part="input"]');
-  const button = (name) => [...root.querySelectorAll('button')].find((node) => node.textContent === name);
+  const button = (name) => [...root.querySelectorAll('button')]
+    .find((node) => (node.getAttribute('aria-label') ?? node.textContent) === name);
   const pressed = (name) => button(name).getAttribute('aria-pressed') === 'true';
   const select = (node, from = 0, to = node.length) => {
     editor().focus();
@@ -323,6 +343,13 @@ export async function richTextFieldChecks(session, sessionId, base, modes, { ope
 
           await press('ArrowRight', 39);
           const next = await page(toolbarState);
+          await press('Escape', 27);
+          const afterFocusEscape = await page(toolbarState);
+          check(view, 'the tooltip shows on keyboard focus and Escape closes it',
+            next.tooltip?.text === 'Heading 1' && next.tooltip.ariaHidden === 'true' && next.tooltip.aboveEditor
+            && next.tooltip.colors && afterFocusEscape.tooltip === null && afterFocusEscape.focus === next.focus
+            && afterFocusEscape.focusRing && JSON.stringify(afterFocusEscape.pressed) === JSON.stringify(next.pressed),
+          'The focus tooltip is incorrect or Escape changed the focus or the pressed state.', { next, afterFocusEscape });
           await press('End', 35);
           const last = await page(toolbarState);
           await press('ArrowRight', 39);
@@ -344,10 +371,23 @@ export async function richTextFieldChecks(session, sessionId, base, modes, { ope
           check(view, 'Tab leaves the toolbar for the multi-line editor', editor.focus === 'editor' && editor.focusRing
             && editor.role === 'textbox' && editor.multiline === 'true' && editor.required === 'true',
           'The editor did not receive visible focus or has incorrect semantics.', editor);
+          await send('Input.dispatchMouseEvent', { type: 'mouseMoved', ...editor.hoverPoint });
+          const hover = await page(toolbarState);
+          await press('Escape', 27);
+          const afterHoverEscape = await page(toolbarState);
+          await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: 0, y: 0 });
+          check(view, 'the tooltip shows on hover and Escape closes it',
+            hover.tooltip?.text === 'Strong' && hover.tooltip.ariaHidden === 'true' && hover.tooltip.aboveEditor
+            && hover.tooltip.colors && afterHoverEscape.tooltip === null && afterHoverEscape.focus === 'editor',
+          'The hover tooltip is incorrect or Escape moved focus out of the editor.', { hover, afterHoverEscape });
+          check(view, 'the format buttons fit in the toolbar rows',
+            first.rows > 0 && first.rows <= (width === 375 ? 2 : 1) && hover.rows === first.rows,
+          'The format buttons take too many rows or the tooltip changes the row count.', { rows: first.rows, hoverRows: hover.rows });
           const media = first.forced === (mode === 'forced-colors') && (first.forced || first.dark === (mode === 'dark'))
             && first.reduced === (mode === 'reduced-motion');
           check(view, 'targets fit and the colors and motion respect the current mode',
-            first.targets && first.colors && media && (!first.reduced || first.noMotion) && first.width === width && first.scroll <= width,
+            first.targets && first.colors && first.iconsUseTextColor && media
+            && (!first.reduced || first.noMotion) && first.width === width && first.scroll <= width,
             'A target, color, media setting, motion value or page width is incorrect.', first);
           steps.push(...await withLimit(() => pageRules(session, sessionId, RICH_TEXT_FIELD_PAGE + ' at ' + view), 'Check the page rules'));
 

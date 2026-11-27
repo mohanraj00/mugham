@@ -1,4 +1,4 @@
-import { el, sheet, text } from '../render/dom.js';
+import { el, formatIcon, sheet, text } from '../render/dom.js';
 import { parseLinkURL } from '../render/validate.js';
 import { RICH_TEXT_EDIT_LIMIT, richNode, richTextEditProblem, richTextLinkSchemes, richTextValueErrors, sameRichTextValue,
   watchRichTextLinkSchemes } from '../render/rich-text.js';
@@ -8,7 +8,8 @@ import { applyBlock, applyMark, caretAt, editLines, lineText, pasteLines, replac
   selectedLines, selectedRuns, splitLine, valueFromLines } from './rich-text-field-edit.js';
 
 const FORMATS = [
-  ['paragraph', 'Paragraph'], ['heading-1', 'Heading 1'], ['heading-2', 'Heading 2'], ['heading-3', 'Heading 3'],
+  ['paragraph', 'Paragraph', null, 'P'], ['heading-1', 'Heading 1', null, 'H1'],
+  ['heading-2', 'Heading 2', null, 'H2'], ['heading-3', 'Heading 3', null, 'H3'],
   ['bullets', 'Bulleted list'], ['numbers', 'Numbered list'], ['quote', 'Quote'], ['code-block', 'Code block'],
   ['strong', 'Strong', 'B'], ['emphasis', 'Emphasis', 'I'], ['code', 'Inline code', 'E'], ['link', 'Link', 'K'],
 ];
@@ -31,8 +32,22 @@ export class MuRichTextField extends FieldElement {
       font: var(--mu-type-body); padding: var(--mu-space-1) var(--mu-space-2);
     }
     .toolbar button, .link-editor button { cursor: pointer; }
+    .toolbar button {
+      display: inline-flex; align-items: center; justify-content: center;
+      padding: var(--mu-space-1); font-weight: var(--mu-type-weight-strong); white-space: nowrap;
+    }
+    .toolbar .icon { inline-size: 16px; block-size: 16px; stroke-width: 1.5; }
     .toolbar [aria-pressed="true"] {
       color: var(--mu-color-on-accent); background: var(--mu-color-accent); border-color: var(--mu-color-accent);
+    }
+    .tooltip-space {
+      display: flex; align-items: flex-start; flex: 0 0 100%; min-inline-size: 0; font: var(--mu-type-caption);
+      min-block-size: calc(1lh + 2 * var(--mu-space-1) + 2px);
+    }
+    .action-tooltip {
+      max-inline-size: 100%; overflow-wrap: anywhere; padding: var(--mu-space-1) var(--mu-space-2);
+      font: var(--mu-type-caption); color: var(--mu-color-text); background: var(--mu-color-surface);
+      border: 1px solid var(--mu-color-border); border-radius: var(--mu-radius-1);
     }
     .link-editor { align-items: end; }
     .link-label { display: flex; flex: 1 1 12rem; min-inline-size: 0; flex-direction: column; }
@@ -57,6 +72,7 @@ export class MuRichTextField extends FieldElement {
       .toolbar [aria-pressed="true"] {
         forced-color-adjust: none; color: HighlightText; background: Highlight; border-color: Highlight;
       }
+      .action-tooltip { background: Canvas; color: CanvasText; border-color: CanvasText; }
       .editor { background: Canvas; }
       .editor, .editor[aria-invalid="true"], .editor blockquote { color: CanvasText; border-color: CanvasText; }
       .editor[aria-disabled="true"] { color: GrayText; border-color: GrayText; opacity: 1; }
@@ -67,6 +83,7 @@ export class MuRichTextField extends FieldElement {
 
   #editor;
   #buttons = [];
+  #dismissTooltip;
   #linkPanel;
   #address;
   #status;
@@ -110,14 +127,21 @@ export class MuRichTextField extends FieldElement {
 
   connectedCallback() {
     this.ownerDocument.addEventListener('selectionchange', this.#selectionChanged);
+    // Escape can close a tooltip when the focus is outside the toolbar.
+    this.ownerDocument.addEventListener('keydown', this.#tooltipEscape, true);
     this.#unwatch = watchRichTextLinkSchemes(() => this.#refreshLinks());
     this.#refreshLinks();
   }
 
   disconnectedCallback() {
     this.ownerDocument.removeEventListener('selectionchange', this.#selectionChanged);
+    this.ownerDocument.removeEventListener('keydown', this.#tooltipEscape, true);
     this.#unwatch?.();
   }
+
+  #tooltipEscape = (event) => {
+    if (event.key === 'Escape' && !event.isComposing) this.#dismissTooltip?.();
+  };
 
   control(data, id) {
     this.#model = data.value ? structuredClone(data.value) : richValue([]);
@@ -159,11 +183,26 @@ export class MuRichTextField extends FieldElement {
 
   #toolbar(id) {
     const help = [];
-    this.#buttons = FORMATS.map(([format, label, key], index) => {
+    const tooltip = el('span', { class: 'action-tooltip', part: 'tooltip', 'aria-hidden': 'true' });
+    tooltip.hidden = true;
+    let hovered;
+    let focused;
+    const showTooltip = (label) => {
+      tooltip.textContent = label ?? '';
+      tooltip.hidden = !label;
+    };
+    const dismissTooltip = () => {
+      if (tooltip.hidden || !tooltip.isConnected) return;
+      hovered = undefined;
+      focused = undefined;
+      showTooltip();
+    };
+    this.#dismissTooltip = dismissTooltip;
+    this.#buttons = FORMATS.map(([format, label, key, glyph], index) => {
       const description = key ? id + '-shortcut-' + format : null;
       if (description) help.push(el('span', { id: description, class: 'description' }, 'Control or Command + ' + key));
       const button = el('button', { part: 'format', type: 'button', tabindex: index === 0 ? 0 : -1,
-        'aria-pressed': 'false', 'aria-describedby': description }, label);
+        'aria-label': label, 'aria-pressed': 'false', 'aria-describedby': description }, glyph ?? formatIcon(format));
       if (key) button.setAttribute('aria-keyshortcuts', 'Control+' + key + ' Meta+' + key);
       button.addEventListener('mousedown', (event) => {
         // Keep the text selection when a pointer presses a format.
@@ -172,7 +211,19 @@ export class MuRichTextField extends FieldElement {
           event.preventDefault();
         }
       });
-      button.addEventListener('focus', () => this.#tabStop(index));
+      button.addEventListener('pointerenter', () => {
+        hovered = label;
+        showTooltip(hovered);
+      });
+      button.addEventListener('focus', () => {
+        this.#tabStop(index);
+        focused = label;
+        showTooltip(focused);
+      });
+      button.addEventListener('blur', () => {
+        focused = undefined;
+        showTooltip(hovered);
+      });
       button.addEventListener('click', () => {
         this.#tabStop(index);
         this.#format(format);
@@ -180,8 +231,18 @@ export class MuRichTextField extends FieldElement {
       return button;
     });
     const toolbar = el('div', { part: 'toolbar', class: 'toolbar', role: 'toolbar', 'aria-label': 'Text formats' },
-      ...this.#buttons, ...help);
+      ...this.#buttons, el('div', { class: 'tooltip-space' }, tooltip), ...help);
+    toolbar.addEventListener('pointerleave', () => {
+      hovered = undefined;
+      showTooltip(focused);
+    });
     toolbar.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        dismissTooltip();
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
       if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
       let index = this.#buttons.indexOf(event.target);
       if (index === -1) return;

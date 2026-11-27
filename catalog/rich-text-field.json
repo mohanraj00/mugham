@@ -10,6 +10,7 @@
     {"name": "details", "description": "Control and technical details of a refusal.", "guardrail": true},
     {"name": "edit-type", "description": "Choices for the type of edit.", "guardrail": true},
     {"name": "format", "description": "Format button and its pressed state.", "guardrail": true},
+    {"name": "icon", "description": "Symbol on a format button.", "guardrail": true},
     {"name": "input", "description": "Editable text and its focus ring.", "guardrail": true},
     {"name": "label", "description": "Label of the field.", "guardrail": true},
     {"name": "link-editor", "description": "Address input and controls for a link.", "guardrail": true},
@@ -17,7 +18,8 @@
     {"name": "problem", "description": "Reason that a field value is invalid.", "guardrail": true},
     {"name": "reason", "description": "Reason for a refusal or an edit error.", "guardrail": true},
     {"name": "status", "description": "Result of an edit that the editor cannot accept.", "guardrail": true},
-    {"name": "toolbar", "description": "Group of format controls.", "guardrail": true}
+    {"name": "toolbar", "description": "Group of format controls.", "guardrail": true},
+    {"name": "tooltip", "description": "Format name shown on hover or focus.", "guardrail": true}
   ],
   "data": {
     "name": {"type": "text", "size": "short"},
