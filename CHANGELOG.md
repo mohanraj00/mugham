@@ -4,6 +4,7 @@ Each release has an entry. The newest entry is first.
 
 ## Unreleased
 
+- Show icon control tooltips without moving adjacent controls or content (#186).
 - Add a helper that maps agent step and tool events to run steps in a thread. The page can enable tool arguments and results as plain text.
 - Add a synthetic run example that shows step and tool states in a thread.
 
