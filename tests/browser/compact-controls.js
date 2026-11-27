@@ -1,4 +1,5 @@
 import { RICH_TEXT_FIELD_PAGE } from './rich-text-field.js';
+import { waitFor } from './wait.js';
 
 const LOANS_PAGE = 'examples/cards/loans.html';
 
@@ -13,20 +14,23 @@ async function prepareControls(note) {
       if (fieldRoot?.querySelector('[part="link-editor"]')) break;
     } else {
       host = document.querySelector('mu-card-grid');
-      if (host?.shadowRoot.querySelector('mu-card')) break;
+      if (host?.shadowRoot?.querySelector('mu-card')) break;
     }
     if (performance.now() > deadline) throw new Error('The controls did not load.');
     await new Promise((resolve) => setTimeout(resolve, 25));
   } while (true);
 
   const target = (element, part, name, tooltipPart = 'tooltip') => {
-    const root = element.shadowRoot;
-    const button = root.querySelector(`[part="${part}"]`);
-    return { element, button, name, tooltip: root.querySelector(`[part="${tooltipPart}"]`),
-      area: button.parentElement };
+    const root = element?.shadowRoot;
+    const button = root?.querySelector(`[part="${part}"]`);
+    const tooltip = root?.querySelector(`[part="${tooltipPart}"]`);
+    if (!button || !tooltip) throw new Error(`The ${part} control or the ${tooltipPart} part did not load.`);
+    return { element, button, name, tooltip, area: button.parentElement };
   };
   if (note) {
-    fieldRoot.querySelector('[part="toolbar"] [aria-label="Link"]').click();
+    const link = fieldRoot.querySelector('[part="toolbar"] [aria-label="Link"]');
+    if (!link) throw new Error('The Link button did not load.');
+    link.click();
     window.muCompactControls = [
       target(host, 'link-apply', 'Apply link', 'link-tooltip'),
       target(host, 'link-cancel', 'Cancel', 'link-tooltip'),
@@ -135,18 +139,19 @@ export async function compactControlChecks(session, sessionId, base, modes, { op
             const names = await read(prepareControls, page === RICH_TEXT_FIELD_PAGE);
             steps.push(...await pageRules(session, sessionId, page + ' at ' + view));
             for (const [index, name] of names.entries()) {
+              const state = () => read(controlState, index);
               await move(0, 0);
               const widths = await read(compareDisplays, index);
-              const idle = await read(controlState, index);
+              const idle = await waitFor(state, (value) => !value.tooltip);
               check(name + ' has a fixed target that is narrower than the text button',
                 idle.width === 44 && idle.height === 44 && widths.icon < widths.text && name.startsWith(widths.label)
                 && widths.label.length > 0 && !idle.tooltip && idle.iconColor
                 && (width !== 375 || idle.fits) && (mode !== 'reduced-motion' || idle.noMotion), { widths, idle });
 
               await move(idle.point.x, idle.point.y);
-              const hover = await read(controlState, index);
+              const hover = await waitFor(state, (value) => value.tooltip === name);
               await press('Escape', 27);
-              const dismissedHover = await read(controlState, index);
+              const dismissedHover = await waitFor(state, (value) => !value.tooltip);
               check(name + ' shows its name on hover and closes it with Escape',
                 hover.tooltip === name && !hover.focus && hover.tooltipFits && hover.tooltipColors
                 && (width !== 375 || hover.fits) && !dismissedHover.tooltip && !dismissedHover.escapes.length,
@@ -154,11 +159,11 @@ export async function compactControlChecks(session, sessionId, base, modes, { op
 
               await move(0, 0);
               await press('Tab', 9);
-              const focus = await read(controlState, index);
+              const focus = await waitFor(state, (value) => value.focus && value.ring && value.tooltip === name);
               await press('Escape', 27);
-              const dismissedFocus = await read(controlState, index);
+              const dismissedFocus = await waitFor(state, (value) => value.focus && !value.tooltip);
               await press('Escape', 27);
-              const secondEscape = await read(controlState, index);
+              const secondEscape = await state();
               // In the link editor, the next Escape closes the editor. Elsewhere it reaches the page.
               const next = page === RICH_TEXT_FIELD_PAGE
                 ? secondEscape.areaHidden && !secondEscape.escapes.length

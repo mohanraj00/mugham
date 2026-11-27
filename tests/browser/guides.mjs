@@ -3,6 +3,7 @@
 // this check fails, so a guide cannot drift from the kit.
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { waitFor } from './wait.js';
 
 // The kit elements in the document and in each shadow root.
 const WALK = `const all = []; const walk = (root) => { for (const node of root.querySelectorAll('*')) {
@@ -24,21 +25,16 @@ const CONTRACTS = `(() => { ${WALK}
 
 const ASSEMBLE = `(() => {
   const thread = document.querySelector('mu-thread');
-  const root = thread.shadowRoot;
-  const action = (node) => node && ({ state: node.dataset.state, status: node.shadowRoot.querySelector('.status').textContent,
-    reference: node.shadowRoot.querySelector('[part="reference"]')?.textContent });
+  const root = thread?.shadowRoot;
+  if (!root) return null;
+  const action = (node) => node && ({ state: node.dataset.state, status: node.shadowRoot?.querySelector('.status')?.textContent,
+    reference: node.shadowRoot?.querySelector('[part="reference"]')?.textContent });
   return { thread: thread.dataset.state,
     actors: [...root.querySelectorAll('li.message .actor')].map((node) => node.textContent),
     refusals: [...root.querySelectorAll('.refusal [part="details"] > div')].map((node) => node.textContent),
-    card: root.querySelector('mu-card')?.shadowRoot.textContent || '',
+    card: root.querySelector('mu-card')?.shadowRoot?.textContent || '',
     top: action(document.querySelector('mu-action-button')), inThread: action(root.querySelector('mu-action-button')),
     stack: document.querySelector('mu-stack')?.dataset.state, cards: document.querySelectorAll('mu-grid > mu-card').length };
-})()`;
-// The click and the read run in one task, before the receipt can come back.
-const press = (where) => `(() => {
-  const button = ${where};
-  button.shadowRoot.querySelector('button').click();
-  return { state: button.dataset.state, status: button.shadowRoot.querySelector('.status').textContent };
 })()`;
 
 const THEME = `(() => {
@@ -86,13 +82,21 @@ export async function guideChecks(session, sessionId, base, { evaluate, open, sl
   const steps = [];
   const accessibility = [];
   const step = (page, name, ok, detail) => steps.push({ page, step: name, ok: Boolean(ok), detail: JSON.stringify(detail) });
-  const until = async (expression, test) => {
-    let value = await evaluate(session, sessionId, expression);
-    for (let i = 0; i < 100 && !test(value); i += 1) {
-      await sleep(50);
-      value = await evaluate(session, sessionId, expression);
-    }
-    return value;
+  const until = (expression, test) => waitFor(() => evaluate(session, sessionId, expression), test,
+    { retries: 100, pause: () => sleep(50) });
+  const press = async (selector, shadowHost) => {
+    const scope = shadowHost ? `document.querySelector(${JSON.stringify(shadowHost)})?.shadowRoot` : 'document';
+    // The click and the read run in one task, before the receipt can come back.
+    const result = await until(`(() => {
+      const action = (${scope})?.querySelector(${JSON.stringify(selector)});
+      const button = action?.shadowRoot?.querySelector('button');
+      if (!button) return null;
+      const read = () => ({ state: action.dataset.state, status: action.shadowRoot.querySelector('.status')?.textContent });
+      const before = read();
+      button.click();
+      return { before, ...read() };
+    })()`, Boolean);
+    return result ?? { selector, shadowHost, problem: 'The button in the shadow root did not appear.' };
   };
   const named = async (page, expected) => {
     const { nodes } = await session.send('Accessibility.getFullAXTree', {}, sessionId);
@@ -130,33 +134,35 @@ export async function guideChecks(session, sessionId, base, { evaluate, open, sl
   // docs/guides/assemble.md
   page = 'examples/guides/assemble.html';
   await open(session, sessionId, `${base}/${page}`);
-  let a = await until(ASSEMBLE, (value) => value.thread === 'ended');
-  step(page, 'the stack holds a grid of two cards', a.stack === 'default' && a.cards === 2, a);
-  step(page, 'the action waits for a person', a.top?.state === 'default' && a.top.status === '', a.top);
-  const top = await evaluate(session, sessionId, press(`document.querySelector('mu-action-button')`));
+  let a = await until(ASSEMBLE, (value) => value?.thread === 'ended');
+  step(page, 'the stack holds a grid of two cards', a?.stack === 'default' && a.cards === 2, a);
+  const top = await press('mu-action-button');
+  step(page, 'the action waits for a person', top.before?.state === 'default' && top.before.status === '', top.before ?? top);
   step(page, 'a press shows Pending before the receipt', top.state === 'pending' && top.status === 'Pending', top);
-  a = await until(ASSEMBLE, (value) => value.top.state !== 'pending');
-  step(page, 'the receipt makes the action done', a.top.state === 'done' && a.top.status === 'Done: The loan is renewed.'
-    && a.top.reference === 'Reference: R-0001', a.top);
-  step(page, 'the thread reads the source to its end', a.thread === 'ended', a.thread);
-  step(page, 'each message names its actor', JSON.stringify(a.actors) === JSON.stringify(['Robin Person', ...Array(4).fill('Loan helper Agent')]), a.actors);
-  step(page, 'the thread refuses the undeclared component', a.refusals.length === 1 && a.refusals[0].includes('banner'), a.refusals);
-  step(page, 'the thread shows the card of the agent', a.card.includes('A short history of maps')
-    && a.card.includes('Author: same as the message'), a.card);
-  const inThread = await evaluate(session, sessionId, press(`document.querySelector('mu-thread').shadowRoot.querySelector('mu-action-button')`));
+  if (!top.problem) a = await until(ASSEMBLE, (value) => value?.top && value.top.state !== 'pending');
+  step(page, 'the receipt makes the action done', a?.top?.state === 'done' && a.top.status === 'Done: The loan is renewed.'
+    && a.top.reference === 'Reference: R-0001', a?.top);
+  step(page, 'the thread reads the source to its end', a?.thread === 'ended', a?.thread);
+  step(page, 'each message names its actor', JSON.stringify(a?.actors) === JSON.stringify(['Robin Person', ...Array(4).fill('Loan helper Agent')]), a?.actors);
+  step(page, 'the thread refuses the undeclared component', a?.refusals.length === 1 && a.refusals[0].includes('banner'), a?.refusals);
+  step(page, 'the thread shows the card of the agent', a?.card.includes('A short history of maps')
+    && a.card.includes('Author: same as the message'), a?.card);
+  const inThread = await press('mu-action-button', 'mu-thread');
   step(page, 'the action in the thread shows Pending before the receipt', inThread.state === 'pending', inThread);
-  a = await until(ASSEMBLE, (value) => value.inThread.state !== 'pending');
-  step(page, 'perform gives the receipt to the action in the thread', a.inThread.state === 'done'
-    && a.inThread.status === 'Done: The loan is renewed.' && a.inThread.reference === 'Reference: R-0002', a.inThread);
+  if (!inThread.problem) a = await until(ASSEMBLE, (value) => value?.inThread && value.inThread.state !== 'pending');
+  step(page, 'perform gives the receipt to the action in the thread', a?.inThread?.state === 'done'
+    && a.inThread.status === 'Done: The loan is renewed.' && a.inThread.reference === 'Reference: R-0002', a?.inThread);
   await named(page, [['group', 'Loans of Robin'], ['group', 'Current loans'], ['article', 'Field guide to moss'], ['list', 'Thread'],
     ['article', 'Message from Robin, Person'], ['article', 'Message from Loan helper, Agent'], ['button', 'Renew']]);
 
   // docs/guides/agents.md uses the reply form on the assemble page.
   const reply = await evaluate(session, sessionId, `(() => {
     const form = document.querySelector('mu-editable-form');
+    const submit = form?.shadowRoot?.querySelector('button[type=submit]');
+    if (!submit || !form.fill) return null;
     const original = form.fill;
     const state = form.dataset.state;
-    const label = form.shadowRoot.querySelector('button[type=submit]').textContent;
+    const label = submit.textContent;
     const draft = form.values().reply;
     form.fill = { ...original, data: { ...original.data, submit_label: 'Send Reply' } };
     const refused = form.dataset.state === 'refused' && form.shadowRoot.querySelector('[part="details"] > div')?.textContent
@@ -164,9 +170,9 @@ export async function guideChecks(session, sessionId, base, { evaluate, open, sl
     form.fill = original;
     return { state, label, draft, refused };
   })()`);
-  step(page, 'the form shows the application label and the draft from the model', reply.state === 'default'
+  step(page, 'the form shows the application label and the draft from the model', reply?.state === 'default'
     && reply.label === 'Send reply' && reply.draft === 'Your loan is due on 2026-12-01.', reply);
-  step(page, 'the form refuses a label with a different case', reply.refused, reply);
+  step(page, 'the form refuses a label with a different case', reply?.refused, reply);
 
   // docs/guides/theme.md, in the four media modes of the kit checks.
   page = 'examples/guides/theme.html';
@@ -277,7 +283,7 @@ async function galleryChecks(session, sessionId, base, { evaluate, open, sleep, 
     for (let i = 0; i < 100; i += 1) {
       if (await evaluate(session, sessionId, `document.querySelector('body > aside.example-docs')
         && document.querySelector('mu-image')?.dataset.state === 'default'
-        && document.querySelector('mu-thread')?.shadowRoot.querySelectorAll('li.message').length === 2`)) break;
+        && document.querySelector('mu-thread')?.shadowRoot?.querySelectorAll('li.message').length === 2`)) break;
       await sleep(50);
     }
     for (const [preset, expected] of Object.entries(presets)) {

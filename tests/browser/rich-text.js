@@ -1,15 +1,17 @@
 // Expected elements, limits and refusal texts come from catalog/rich-*.json and src/components/rich-text.md.
 // tools/browser_check.mjs imports the keyboard checks in Node and loads this page in each media mode.
 import { showsRefusal } from './refusal.js';
+import { waitFor } from './wait.js';
 
 export async function richTextKeyboardChecks(session, sessionId, { evaluate, key }, page) {
   const results = [];
   const check = (name, ok, detail) => results.push({ page, step: name, ok: Boolean(ok), detail: JSON.stringify(detail) });
   const state = () => evaluate(session, sessionId, 'window.muLinkState()');
   // The focus is on the first button of the page. The next Tab stop is the link.
+  const showsTarget = (value) => value.focused && value.target === 'Opens https://example.org/rules';
   await key(session, sessionId, 'Tab', 'Tab', 9);
-  let found = await state();
-  check('Tab focuses the link and shows its target', found.focused && found.target === 'Opens https://example.org/rules', found);
+  let found = await waitFor(state, showsTarget);
+  check('Tab focuses the link and shows its target', showsTarget(found), found);
   await key(session, sessionId, 'Enter', 'Enter', 13, '\r');
   await key(session, sessionId, ' ', 'Space', 32, ' ');
   found = await state();
@@ -17,14 +19,16 @@ export async function richTextKeyboardChecks(session, sessionId, { evaluate, key
   await key(session, sessionId, 'Escape', 'Escape', 27);
   // Headless Chrome marks the page hidden after an Escape key event. Show the page again before the next step.
   await session.send('Page.bringToFront', {}, sessionId);
-  found = await state();
   // The page reads the target at the key event, because the browser focuses the link again when the page shows again.
-  check('Escape hides the target and keeps the focus', found.focused && found.escaped === true, found);
+  const escaped = (value) => value.focused && value.escaped === true;
+  found = await waitFor(state, escaped);
+  check('Escape hides the target and keeps the focus', escaped(found), found);
   const tab = { key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9, nativeVirtualKeyCode: 9, modifiers: 8 };
   await session.send('Input.dispatchKeyEvent', { type: 'keyDown', ...tab }, sessionId);
   await session.send('Input.dispatchKeyEvent', { type: 'keyUp', ...tab }, sessionId);
-  found = await state();
-  check('Shift+Tab moves the focus back to the first button', !found.focused && found.active === 'Keyboard target', found);
+  const movedBack = (value) => !value.focused && value.active === 'Keyboard target';
+  found = await waitFor(state, movedBack);
+  check('Shift+Tab moves the focus back to the first button', movedBack(found), found);
   return results;
 }
 
@@ -74,7 +78,6 @@ async function browserChecks() {
 
   // Each node type makes its fixed element. A text goes into a text node.
   const answer = mount(ANSWER);
-  const wrapper = root(answer).querySelector('[part="rich-text"]');
   check('each node type: the fill is valid', answer.dataset.state === 'default' && answer.fill !== null, root(answer).textContent);
   check('each node type: the blocks show in order', tags(answer, '[part="rich-text"] > *') === 'h2 p ol ul h3 div blockquote h4 p',
     tags(answer, '[part="rich-text"] > *'));
@@ -88,7 +91,8 @@ async function browserChecks() {
     && !root(answer).querySelector('b'));
   check('quote: each paragraph shows', tags(answer, 'blockquote > *') === 'p p'
     && root(answer).querySelector('blockquote p:last-child')?.textContent === 'Line one.\nLine two.');
-  check('paragraph: a line break in the text shows', getComputedStyle(root(answer).querySelector('blockquote p:last-child')).whiteSpace.startsWith('pre-wrap'));
+  const lastQuote = root(answer).querySelector('blockquote p:last-child');
+  check('paragraph: a line break in the text shows', lastQuote && getComputedStyle(lastQuote).whiteSpace.startsWith('pre-wrap'));
   check('the author shows as text', root(answer).querySelector('[part="authorship"]')?.textContent === 'Author: agent agent-garden (Garden helper)');
   // The contract declares these elements and attributes. No fill can add a different one.
   const ELEMENTS = new Set(['div', 'p', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'pre', 'code', 'blockquote', 'em', 'strong', 'span', 'button']);
@@ -98,29 +102,33 @@ async function browserChecks() {
     ...(ELEMENTS.has(item.localName) ? [] : [item.localName]),
     ...item.getAttributeNames().filter((name) => !ATTRIBUTES.has(name)).map((name) => `${item.localName}[${name}]`)]);
   check('each element and attribute is in the fixed list', strange(answer).length === 0, strange(answer).join(' '));
-  const style = getComputedStyle(root(answer).querySelector('h2'));
-  check('heading: the weight is strong', Number(style.fontWeight) >= 600, style.fontWeight);
+  const title = root(answer).querySelector('h2');
+  const weight = title && getComputedStyle(title).fontWeight;
+  check('heading: the weight is strong', Number(weight) >= 600, weight);
 
   // A link is a button with no address attribute. Its target shows on hover and on focus.
   const button = root(answer).querySelector('[part="link"]');
   const target = root(answer).querySelector('[part="target"]');
-  const visible = () => !target.hidden && getComputedStyle(target).display !== 'none';
+  const visible = (part) => part?.isConnected ? !part.hidden && getComputedStyle(part).display !== 'none' : null;
+  const targetShows = async (part, shown) =>
+    (await waitFor(() => visible(part), (value) => value === shown)) === shown;
   check('link: the button has the link text and no address', button?.localName === 'button' && button.textContent === 'Synthetic rules'
     && !root(answer).querySelector('a, [href]'));
   check('link: the target is the description of the button', target?.textContent === 'Opens ' + RULES
-    && button.getAttribute('aria-describedby') === target.id && root(answer).querySelectorAll('#' + target.id).length === 1);
-  check('link: the target is hidden with no hover and no focus', !visible());
-  button.focus();
-  check('link: the target shows on focus', visible());
-  button.blur();
-  check('link: the target hides after the focus leaves', !visible());
-  button.parentElement.dispatchEvent(new MouseEvent('mouseenter'));
-  check('link: the target shows on hover', visible());
-  button.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
-  check('link: Escape hides the target', !visible());
-  button.parentElement.dispatchEvent(new MouseEvent('mouseenter'));
-  button.parentElement.dispatchEvent(new MouseEvent('mouseleave'));
-  check('link: the target hides after the pointer leaves', !visible());
+    && button?.getAttribute('aria-describedby') === target.id && root(answer).querySelectorAll('#' + target.id).length === 1);
+  check('link: the target is hidden with no hover and no focus', visible(target) === false);
+  button?.focus();
+  check('link: the target shows on focus', await targetShows(target, true));
+  button?.blur();
+  check('link: the target hides after the focus leaves', await targetShows(target, false));
+  button?.parentElement.dispatchEvent(new MouseEvent('mouseenter'));
+  check('link: the target shows on hover', await targetShows(target, true));
+  button?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+  check('link: Escape hides the target', await targetShows(target, false));
+  button?.parentElement.dispatchEvent(new MouseEvent('mouseenter'));
+  const shownAgain = await targetShows(target, true);
+  button?.parentElement.dispatchEvent(new MouseEvent('mouseleave'));
+  check('link: the target hides after the pointer leaves', (await targetShows(target, false)) && shownAgain);
   // The target opens only after a press. The application can cancel the mu-open event.
   const calls = [];
   const realOpen = window.open;
@@ -129,11 +137,11 @@ async function browserChecks() {
   const cancel = (event) => { opened.push(event.detail.locator); event.preventDefault(); };
   document.addEventListener('mu-open', cancel);
   check('link: a render opens nothing', calls.length === 0 && opened.length === 0);
-  button.click();
+  button?.click();
   check('link: a press sends mu-open with the target', opened.join() === RULES);
   check('link: a canceled mu-open opens nothing', calls.length === 0);
   document.removeEventListener('mu-open', cancel);
-  button.click();
+  button?.click();
   check('link: a press opens the target in a new tab with no opener and no referrer',
     JSON.stringify(calls) === JSON.stringify([[RULES, '_blank', 'noopener,noreferrer']]), JSON.stringify(calls));
   window.open = realOpen;
@@ -248,26 +256,27 @@ async function browserChecks() {
   // A policy change rendered the answer again, so read its link and its target again.
   const shownLink = root(answer).querySelector('[part="link"]');
   const shownTarget = root(answer).querySelector('[part="target"]');
-  check('policy: a policy change renders the rich text again', shownLink !== button && !button.isConnected);
-  const linkStyle = getComputedStyle(shownLink);
-  check('link: the text has an underline', linkStyle.textDecorationLine === 'underline');
+  check('policy: a policy change renders the rich text again', shownLink && shownLink !== button && button?.isConnected === false);
+  const linkStyle = shownLink && getComputedStyle(shownLink);
+  check('link: the text has an underline', linkStyle?.textDecorationLine === 'underline');
   if (mode === 'light' || mode === 'dark') {
     probe.style.color = 'var(--mu-color-accent)';
-    check(`${mode}: the link has the accent color`, linkStyle.color === getComputedStyle(probe).color, linkStyle.color);
+    check(`${mode}: the link has the accent color`, linkStyle?.color === getComputedStyle(probe).color, linkStyle?.color);
   }
   if (mode === 'forced-colors') {
-    shownLink.focus();
-    const tip = getComputedStyle(shownTarget);
-    check('forced colors: the link has the system link color', linkStyle.color === resolved('LinkText'), linkStyle.color);
-    check('forced colors: the target has system colors', tip.color === resolved('CanvasText') && tip.backgroundColor === resolved('Canvas')
-      && tip.borderTopColor === resolved('CanvasText'), `${tip.color} ${tip.backgroundColor}`);
+    shownLink?.focus();
+    const shown = await targetShows(shownTarget, true);
+    const tip = shownTarget && getComputedStyle(shownTarget);
+    check('forced colors: the link has the system link color', linkStyle?.color === resolved('LinkText'), linkStyle?.color);
+    check('forced colors: the target has system colors', shown && tip.color === resolved('CanvasText') && tip.backgroundColor === resolved('Canvas')
+      && tip.borderTopColor === resolved('CanvasText'), `${tip?.color} ${tip?.backgroundColor}`);
     check('forced colors: the code block and the quote keep a border', getComputedStyle(root(answer).querySelector('pre')).borderTopStyle === 'solid'
       && getComputedStyle(root(answer).querySelector('blockquote')).borderInlineStartStyle === 'solid');
     check('forced colors: the refusal is visible', getComputedStyle(root(unbound).querySelector('[role="status"]')).color === resolved('CanvasText'));
-    shownLink.blur();
+    shownLink?.blur();
   }
   if (mode === 'reduced-motion') {
-    check('reduced motion: no transition or animation', parseFloat(linkStyle.transitionDuration) === 0 && linkStyle.animationName === 'none');
+    check('reduced motion: no transition or animation', parseFloat(linkStyle?.transitionDuration) === 0 && linkStyle.animationName === 'none');
   }
 
   // A card and a thread show rich text. The thread binds the actor of the envelope.
@@ -309,14 +318,15 @@ async function browserChecks() {
   keyed.addEventListener('mu-open', (event) => { opens += 1; event.preventDefault(); });
   // This listener runs after the listener of the element, so it reads the result of the Escape key.
   let escaped = null;
-  root(keyed).querySelector('[part="link"]').addEventListener('keydown', (event) => {
-    if (event.key === 'Escape') escaped = root(keyed).querySelector('[part="target"]').hidden;
+  root(keyed).querySelector('[part="link"]')?.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') escaped = root(keyed).querySelector('[part="target"]')?.hidden;
   });
   window.muPresses = () => presses;
   window.muLinkState = () => {
     const tip = root(keyed).querySelector('[part="target"]');
-    return { focused: root(keyed).activeElement === root(keyed).querySelector('[part="link"]'), opens, escaped,
-      target: tip.hidden || getComputedStyle(tip).display === 'none' ? null : tip.textContent,
+    const link = root(keyed).querySelector('[part="link"]');
+    return { focused: Boolean(link && root(keyed).activeElement === link), opens, escaped,
+      target: !tip || tip.hidden || getComputedStyle(tip).display === 'none' ? null : tip.textContent,
       active: document.activeElement?.shadowRoot?.activeElement?.textContent ?? '' };
   };
   window.muChecks = { mode, results };

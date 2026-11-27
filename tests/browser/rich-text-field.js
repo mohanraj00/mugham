@@ -1,3 +1,5 @@
+import { waitFor } from './wait.js';
+
 export const RICH_TEXT_FIELD_PAGE = 'examples/apps/library-note.html';
 
 const PASTE_PROBE_PATH = '/probe-paste/';
@@ -321,6 +323,7 @@ export async function richTextFieldChecks(session, sessionId, base, modes, { ope
   const page = (fn, ...args) => withLimit(
     () => evaluate(session, sessionId, '(' + fn + ')(' + args.map((arg) => JSON.stringify(arg)).join(',') + ')'), 'Read the editor');
   const press = (name, code) => withLimit(() => key(session, sessionId, name, name, code), 'Press ' + name);
+  const toolbar = () => page(toolbarState);
 
   try {
     for (const width of [375, 1280]) {
@@ -332,17 +335,20 @@ export async function richTextFieldChecks(session, sessionId, base, modes, { ope
           await withLimit(() => open(session, sessionId, base + '/' + RICH_TEXT_FIELD_PAGE, problems), 'Open the note');
           await page(async function waitForEditor() {
             const end = performance.now() + 3000;
-            while (!document.querySelector('mu-editable-form')?.shadowRoot?.querySelector('mu-rich-text-field')?.shadowRoot?.querySelector('[part="toolbar"]')) {
-              if (performance.now() > end) throw new Error('The editor did not load.');
+            const firstButton = () => document.querySelector('mu-editable-form')?.shadowRoot
+              ?.querySelector('mu-rich-text-field')?.shadowRoot?.querySelector('[part="toolbar"] button');
+            let button = firstButton();
+            while (!button) {
+              if (performance.now() > end) throw new Error('The editor toolbar button did not load.');
               await new Promise((done) => setTimeout(done, 25));
+              button = firstButton();
             }
-            document.querySelector('mu-editable-form').shadowRoot.querySelector('mu-rich-text-field')
-              .shadowRoot.querySelector('[part="toolbar"] button').focus();
+            button.focus();
             return true;
           });
 
           await press('ArrowRight', 39);
-          const next = await page(toolbarState);
+          const next = await waitFor(toolbar, (state) => state.focus === 'H1 Heading 1' && state.tooltip?.text === 'Heading 1');
           await page(() => {
             const escapes = [];
             const record = (event) => {
@@ -359,7 +365,7 @@ export async function richTextFieldChecks(session, sessionId, base, modes, { ope
           let recordedEscapes;
           try {
             await press('Escape', 27);
-            afterFocusEscape = await page(toolbarState);
+            afterFocusEscape = await waitFor(toolbar, (state) => state.tooltip === null);
             firstEscapeCount = await page(() => window.toolbarEscapes.escapes.length);
             await press('Escape', 27);
           } finally {
@@ -396,17 +402,18 @@ export async function richTextFieldChecks(session, sessionId, base, modes, { ope
             'A format button does not show the focus ring.', first);
 
           await press('Tab', 9);
-          const editor = await page(toolbarState);
+          const editor = await waitFor(toolbar, (state) => state.focus === 'editor' && state.focusRing);
           check(view, 'Tab leaves the toolbar for the multi-line editor', editor.focus === 'editor' && editor.focusRing
             && editor.role === 'textbox' && editor.multiline === 'true' && editor.required === 'true',
           'The editor did not receive visible focus or has incorrect semantics.', editor);
-          await send('Input.dispatchMouseEvent', { type: 'mouseMoved', ...editor.hoverPoint });
-          const hover = await page(toolbarState);
+          const point = editor.hoverPoint;
+          if (point) await send('Input.dispatchMouseEvent', { type: 'mouseMoved', ...point });
+          const hover = point ? await waitFor(toolbar, (state) => state.tooltip?.text === 'Strong') : editor;
           await press('Escape', 27);
-          const afterHoverEscape = await page(toolbarState);
+          const afterHoverEscape = await waitFor(toolbar, (state) => state.tooltip === null);
           await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: 0, y: 0 });
           check(view, 'the tooltip shows on hover and Escape closes it',
-            hover.tooltip?.text === 'Strong' && hover.tooltip.ariaHidden === 'true' && hover.tooltip.aboveEditor
+            point && hover.tooltip?.text === 'Strong' && hover.tooltip.ariaHidden === 'true' && hover.tooltip.aboveEditor
             && hover.tooltip.colors && afterHoverEscape.tooltip === null && afterHoverEscape.focus === 'editor',
           'The hover tooltip is incorrect or Escape moved focus out of the editor.', { hover, afterHoverEscape });
           check(view, 'the format buttons fit in the toolbar rows',
