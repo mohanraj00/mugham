@@ -10,6 +10,7 @@ When you upgrade from 0.7.0, you need no code change. The receipt fields `servic
 - `serviceHandler` binds one action handler to one base URL and one service name. It maps an HTTP response to a receipt (#190).
 - Add a service status strip that shows service states as text and announces changes (#191).
 - Keep wide page content inside the page width. The page style adds the scroll box `data-mu-scroll` for a wide plain table and breaks a long token in plain page text (#194).
+- Fix the details of the service status strip. A reorder no longer leaves stale open details, a row that a fill makes again keeps the focus, and the trigger has no `aria-expanded` (#197).
 
 ## 0.7.0, 2026-11-27
 
