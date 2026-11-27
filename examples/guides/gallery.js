@@ -131,6 +131,9 @@ const zone = 'Etc/UTC';
 const fields = [
   fill('field', { name: 'tray', label: 'Tray label', value: 'A3' }),
   fill('long-text-field', { name: 'notes', label: 'Care notes', value: 'Water before noon.' }),
+  fill('rich-text-field', { name: 'care_note', label: 'Care note', value: fill('rich-text', { blocks: [
+    fill('rich-paragraph', { content: [fill('rich-span', { text: 'Keep the tray in shade.' })] }),
+  ] }) }),
   fill('number-field', { name: 'seeds', label: 'Seed count', value: 12 }),
   fill('date-field', { name: 'date', label: 'Sow date', value: '2028-04-10' }),
   fill('choice-field', { name: 'shelf', label: 'Shelf', choices: ['A', 'B'], value: 'A' }),

@@ -4,37 +4,19 @@
 import { ReadMoreElement, READ_MORE_CSS } from '../primitives/read-more.js';
 import { APPROVAL_MARK_CSS, APPROVAL_STATES, approvalMark } from '../primitives/badge.js';
 import { copyControl, el, sheet, text } from '../render/dom.js';
+import { richTextLinkSchemes, richTextRules, setRichTextLinkSchemes } from '../render/rich-text.js';
 import { isLocalDateTime, parseLinkURL, schemaErrors } from '../render/validate.js';
 
-// The schemes that page code can permit. No other scheme can open.
-const SCHEMES = Object.freeze(['https:', 'http:', 'mailto:']);
 // The element of each heading level of the page, from level 2 to level 6.
 const HEADINGS = Object.freeze(['h2', 'h3', 'h4', 'h5', 'h6']);
 const MARKS = Object.freeze({ emphasis: 'em', strong: 'strong', code: 'code' });
-// The maximum number of inline nodes in one rich text. The contract limits each list, not the total.
-const MAX_INLINE = 2000;
 const APPROVAL_KEYS = new Set(['block', 'state', 'by', 'at']);
 const UTC_SECONDS = /^:[0-5][0-9](\.[0-9]{1,3})?Z$/;
 
-let schemes = Object.freeze(['https:']);
 let first = 2;
 // The number of the current page policy. An element renders again if its render used an older policy.
 let policy = 0;
 const connected = new Set();
-
-// The inline content of each paragraph, heading, list item and quote paragraph, with its path in the fill.
-function* runs(blocks) {
-  for (const [index, { component, data }] of blocks.entries()) {
-    const at = `data.blocks[${index}].data`;
-    if (component === 'rich-paragraph' || component === 'rich-heading') yield [at, data.content];
-    if (component === 'rich-list') {
-      for (const [item, node] of data.items.entries()) yield [`${at}.items[${item}].data`, node.data.content];
-    }
-    if (component === 'rich-quote') {
-      for (const [item, node] of data.paragraphs.entries()) yield [`${at}.paragraphs[${item}].data`, node.data.content];
-    }
-  }
-}
 
 export class MuRichText extends ReadMoreElement {
   static component = 'rich-text';
@@ -174,14 +156,11 @@ export class MuRichText extends ReadMoreElement {
   // The schemes that a link can have. This policy applies to each rich text on the page, including the
   // rich text of a thread. A fill cannot set it.
   static get linkSchemes() {
-    return schemes;
+    return richTextLinkSchemes();
   }
 
   static set linkSchemes(values) {
-    if (!Array.isArray(values) || !values.every((value) => SCHEMES.includes(value))) {
-      throw new TypeError('link schemes: must be an array of ' + SCHEMES.join(', '));
-    }
-    schemes = Object.freeze([...new Set(values)]);
+    setRichTextLinkSchemes(values);
     MuRichText.#changed();
   }
 
@@ -223,25 +202,8 @@ export class MuRichText extends ReadMoreElement {
     }
   }
 
-  // The contract format cannot give these rules: the heading order, the total size and the page policy of a link.
   check(data) {
-    let level = 0;
-    for (const [index, block] of data.blocks.entries()) {
-      if (block.component !== 'rich-heading') continue;
-      if (block.data.level > level + 1) return [`data.blocks[${index}].data.level: a heading cannot skip a level`];
-      level = block.data.level;
-    }
-    let count = 0;
-    for (const [at, content] of runs(data.blocks)) {
-      count += content.length;
-      if (count > MAX_INLINE) return [`data.blocks: more than ${MAX_INLINE} inline nodes`];
-      for (const [index, node] of content.entries()) {
-        if (node.component === 'rich-link' && !parseLinkURL(node.data.url, schemes)) {
-          return [`${at}.content[${index}].data.url: the page does not permit this link`];
-        }
-      }
-    }
-    return [];
+    return richTextRules(data);
   }
 
   state(data) {
@@ -315,7 +277,7 @@ export class MuRichText extends ReadMoreElement {
   // A link is a button, and no element has an address attribute. The target shows as text on hover and
   // on focus. The target opens only after a person presses the button, and the application can cancel it.
   #link(data) {
-    const url = parseLinkURL(data.url, schemes);
+    const url = parseLinkURL(data.url, richTextLinkSchemes());
     if (!url) return text(data.text);
     const id = `target-${++this.#targets}`;
     const target = el('span', { class: 'target', id, part: 'target' }, `Opens ${url.href}`);
@@ -339,7 +301,7 @@ export class MuRichText extends ReadMoreElement {
     });
     button.addEventListener('click', () => {
       // Check the policy again at the only sink.
-      const now = parseLinkURL(data.url, schemes);
+      const now = parseLinkURL(data.url, richTextLinkSchemes());
       if (!now) {
         this.#refresh();
         return;

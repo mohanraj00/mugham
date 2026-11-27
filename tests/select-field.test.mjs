@@ -480,3 +480,46 @@ test('the form leaves a disabled registered field out of the request', () => {
     assert.deepEqual(requests.map((request) => request.arguments), [{ note: 'Sample label' }]);
   }
 });
+
+test('an editable form sends a rich text field as a frozen rich text fill', () => {
+  const note = fill('rich-text', { blocks: [
+    fill('rich-paragraph', { content: [fill('rich-span', { text: 'A library note.', mark: 'strong' })] }),
+  ] });
+  const data = { name: 'note', label: 'Note', required: true, value: note };
+  const form = document.createElement('mu-editable-form');
+  form.actor = { type: 'human', id: 'reader' };
+  const requests = [];
+  form.addEventListener('mu-action', ({ detail }) => requests.push(detail));
+  form.action = { tool: 'library.save_note', title: 'Library note', label: 'Save', editable: { note: 'Note' } };
+  const setFields = (...fields) => {
+    form.fill = { component: 'editable-form', version: '0.1.0',
+      data: { title: 'Library note', submit_label: 'Save', fields },
+      slots: { authorship: { type: 'human', id: 'reader' } } };
+  };
+  setFields(fill('rich-text-field', { name: 'note', label: 'Note', required: true }));
+  let control = part(form.shadowRoot, 'form');
+  control.dispatchEvent(new Event('submit', { cancelable: true }));
+  const empty = find(control, (node) => node.tag === 'mu-rich-text-field');
+  assert.equal(requests.length, 0);
+  assert.equal(empty.validationMessage, 'Enter text.');
+  assert.equal(part(empty.shadowRoot, 'problem').textContent, 'Enter text.');
+  assert.equal(focused, part(empty.shadowRoot, 'input'));
+
+  setFields(fill('rich-text-field', data));
+  control = part(form.shadowRoot, 'form');
+  const editor = find(control, (node) => node.tag === 'mu-rich-text-field');
+  editor.value.data.blocks.length = 0;
+  editor.fill.data.value.data.blocks.length = 0;
+  assert.deepEqual(form.values(), { note });
+  control.dispatchEvent(new Event('submit', { cancelable: true }));
+  assert.deepEqual(requests[0].arguments, { note });
+  assert.ok(Object.isFrozen(requests[0].arguments.note.data.blocks[0].data.content[0].data));
+  assert.equal(form.receipt({ id: requests[0].id, ok: true }), true);
+  assert.equal(form.dataset.state, 'done');
+
+  setFields(fill('rich-text-field', { ...data, read_only: true }));
+  const readonly = find(part(form.shadowRoot, 'form'), (node) => node.tag === 'mu-rich-text-field');
+  assert.equal(part(readonly.shadowRoot, 'input').contentEditable, 'false');
+  assert.equal(part(readonly.shadowRoot, 'input').getAttribute('aria-readonly'), 'true');
+  assert.deepEqual(form.values(), { note });
+});

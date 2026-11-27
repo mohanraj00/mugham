@@ -17,8 +17,8 @@ const SRC = [
   'offline/queue.js', 'offline/source.js', 'primitives/badge.js', 'primitives/base.js', 'primitives/choice-list.js', 'primitives/date-time-fields.js',
   'primitives/fields.js', 'primitives/index.js',
   'primitives/multi-choice-field.js',
-  'primitives/range-field.js', 'primitives/read-more.js', 'primitives/select-field.js',
-  'render/catalog.js', 'render/dom.js', 'render/range.js', 'render/registry.js', 'render/resolve.js',
+  'primitives/range-field.js', 'primitives/read-more.js', 'primitives/rich-text-field-edit.js', 'primitives/rich-text-field-model.js', 'primitives/rich-text-field.js', 'primitives/select-field.js',
+  'render/catalog.js', 'render/dom.js', 'render/range.js', 'render/registry.js', 'render/resolve.js', 'render/rich-text.js',
   'render/validate.js', 'styles/page.css', 'thread/index.js', 'tokens/tokens.css',
 ];
 const CATALOG = [
@@ -29,10 +29,10 @@ const CATALOG = [
   'form-card.json', 'form-line.json', 'form-section.json', 'grid.json', 'image.json', 'long-text-field.json', 'menu.json', 'multi-choice-field.json',
   'number-cell.json', 'number-field.json', 'pagination.json', 'plan.json', 'progress.json', 'queued-action.json', 'range-field.json', 'rich-code.json', 'rich-heading.json',
   'rich-link.json', 'rich-list.json', 'rich-paragraph.json', 'rich-quote.json', 'rich-span.json',
-  'rich-text.json', 'run-steps.json', 'schema/contract.schema.json', 'schema/defaults.json', 'schema/fill.schema.json',
+  'rich-text-field.json', 'rich-text.json', 'run-steps.json', 'schema/contract.schema.json', 'schema/defaults.json', 'schema/fill.schema.json',
   'schema/short.schema.json', 'select-field.json', 'skeleton.json', 'source-status.json', 'stack.json', 'status.json', 'steps.json', 'table-row.json', 'table.json',
   'tabs.json', 'text-cell.json', 'text.json', 'time-field.json', 'toast.json', 'toggle-field.json', 'tooltip.json', 'upload.json',
 ];
 
-mughamOffline.serve(self, { version: 'queue-example-18', files: [...PAGE, ...EXAMPLES.map((name) => '../' + name),
+mughamOffline.serve(self, { version: 'queue-example-19', files: [...PAGE, ...EXAMPLES.map((name) => '../' + name),
   ...SRC.map((name) => '../../src/' + name), ...CATALOG.map((name) => '../../catalog/' + name)] });

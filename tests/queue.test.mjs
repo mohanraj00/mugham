@@ -4,6 +4,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { ActionQueue, indexedDbStore, memoryStore, openQueue, queueFill } from '../src/offline/queue.js';
+import { richTextLinkSchemes, setRichTextLinkSchemes } from '../src/render/rich-text.js';
 
 const RECORD_KEYS = ['arguments', 'key', 'label', 'message', 'order', 'owner', 'principal', 'queued', 'state', 'tool', 'tries'];
 const sleep = (ms = 0) => new Promise((done) => setTimeout(done, ms));
@@ -17,6 +18,20 @@ async function until(condition, what) {
 
 const request = (toolId = 'T-01', extra = {}) => ({ id: crypto.randomUUID(), key: crypto.randomUUID(), tool: 'tool.reserve',
   arguments: { tool_id: toolId }, ...extra });
+const fill = (component, data) => ({ component, version: '0.1.0', data });
+const paragraph = (...content) => fill('rich-paragraph', { content });
+const note = (...blocks) => fill('rich-text', { blocks });
+const link = (url) => fill('rich-link', { text: 'Reading list', url });
+const span = (text) => fill('rich-span', { text });
+const edit = (old_value, new_value) => ({ field: 'note', type: 'correction', old_value, new_value,
+  actor: { type: 'human', id: 'editor' }, time: '2026-11-25T12:00:00.000Z' });
+
+function assertFrozenTree(value) {
+  assert.ok(Object.isFrozen(value));
+  for (const child of Object.values(value)) {
+    if (child !== null && typeof child === 'object') assertFrozenTree(child);
+  }
+}
 
 // A page part that waits for a receipt. It records each detail that the queue gives.
 const element = (label = 'Reserve Ladder') => ({ action: { label }, holds: [], canceled: [],
@@ -122,6 +137,66 @@ test('the queue stores and sends a numeric pair and its edit', async () => {
   assert.deepEqual(net.sent[0].arguments.price, [15, 30]);
   assert.deepEqual(net.sent[0].edits[0].old_value, [10, 30]);
   queue.close();
+});
+
+test('the queue keeps a frozen copy of a rich text argument after the link policy changes', async (t) => {
+  const schemes = richTextLinkSchemes();
+  t.after(() => setRichTextLinkSchemes(schemes));
+  setRichTextLinkSchemes(['https:', 'http:']);
+  const net = device();
+  net.online = false;
+  const queue = await net.open();
+  const original = note(paragraph(link('http://example.org/reading')));
+  const save = request('T-01', { tool: 'note.save', arguments: { note: structuredClone(original) } });
+  void queue.perform(save);
+  await until(() => queue.entries.length === 1, 'the rich text save');
+  save.arguments.note.data.blocks[0].data.content[0].data.text = 'A later edit.';
+  assert.deepEqual(queue.entries[0].arguments.note, original);
+  assertFrozenTree(queue.entries[0].arguments.note);
+  assert.deepEqual((await net.store.all())[0].arguments.note, original);
+  queue.close();
+
+  setRichTextLinkSchemes(['https:']);
+  const reopened = await net.open();
+  assert.deepEqual(reopened.entries.map((entry) => entry.key), [save.key]);
+  assert.deepEqual(reopened.entries[0].arguments.note, original);
+  assertFrozenTree(reopened.entries[0].arguments.note);
+  net.online = true;
+  await reopened.flush();
+  assert.equal(net.sent[0].key, save.key);
+  assert.deepEqual(net.sent[0].arguments.note, original);
+  assertFrozenTree(net.sent[0].arguments.note);
+  reopened.close();
+});
+
+test('the queue keeps and sends a typed rich text edit after the link policy changes', async (t) => {
+  const schemes = richTextLinkSchemes();
+  t.after(() => setRichTextLinkSchemes(schemes));
+  setRichTextLinkSchemes(['https:', 'http:']);
+  const net = device();
+  net.online = false;
+  const queue = await net.open();
+  const old = note(paragraph(link('http://example.org/old')));
+  const next = note(paragraph(link('http://example.org/reading')));
+  const expected = edit(old, next);
+  const change = structuredClone(expected);
+  const save = request('T-01', { tool: 'note.save', edits: [change] });
+  void queue.perform(save);
+  await until(() => queue.entries.length === 1, 'the typed rich text edit');
+  change.old_value.data.blocks.length = 0;
+  change.new_value.data.blocks.length = 0;
+  assert.deepEqual((await net.store.all())[0].edits, [expected]);
+  queue.close();
+
+  setRichTextLinkSchemes(['https:']);
+  const reopened = await net.open();
+  assert.deepEqual(reopened.entries.map((entry) => entry.key), [save.key]);
+  net.online = true;
+  await reopened.flush();
+  assert.deepEqual(net.sent[0].edits, [expected]);
+  assertFrozenTree(net.sent[0].edits[0].old_value);
+  assertFrozenTree(net.sent[0].edits[0].new_value);
+  reopened.close();
 });
 
 test('the queue sends one action at a time', async () => {
@@ -378,6 +453,28 @@ test('the queue refuses a request that is not valid and keeps nothing', async ()
     assert.deepEqual(await queue.perform(value, element()), { ok: false, message });
   }
   assert.equal(net.sent.length, 0);
+  assert.deepEqual(await net.store.all(), []);
+  queue.close();
+});
+
+test('the queue refuses invalid rich text and a rich text record over the size limit', async () => {
+  const net = device();
+  const queue = await net.open();
+  const safe = note(paragraph(span('A note.')));
+  const refusedLink = note(paragraph(link('javascript:ignored')));
+  const malformed = { component: 'rich-text', version: '0.1.0' };
+  const large = note(...Array.from({ length: 100 }, () => paragraph(span('x'.repeat(2000)))));
+  for (const value of [refusedLink, malformed]) {
+    assert.deepEqual(await queue.perform(request('T-01', { arguments: { note: value } })),
+      { ok: false, message: 'The arguments are not valid.' });
+    assert.deepEqual(await queue.perform(request('T-01', { edits: [edit(safe, value)] })),
+      { ok: false, message: 'The edits are not valid.' });
+    assert.deepEqual(await queue.perform(request('T-01', { edits: [edit(value, safe)] })),
+      { ok: false, message: 'The edits are not valid.' });
+  }
+  assert.deepEqual(await queue.perform(request('T-01', { arguments: { note: large } })),
+    { ok: false, message: 'The action is too large for the queue.' });
+  assert.deepEqual(net.sent, []);
   assert.deepEqual(await net.store.all(), []);
   queue.close();
 });
@@ -670,6 +767,8 @@ test('only valid stored records of a known version are sent', async (t) => {
   before.close();
   const [record] = await net.store.all();
   const { version, ...legacy } = record;
+  const safe = note(paragraph(span('A note.')));
+  const refusedLink = note(paragraph(link('javascript:ignored')));
   for (const [name, change] of [
     ['unknown version', { version: 2 }],
     ['invalid tool name', { tool: 'Tool.Reserve' }],
@@ -677,6 +776,9 @@ test('only valid stored records of a known version are sent', async (t) => {
     ['large record', { arguments: { note: 'x'.repeat(200000) } }],
     ['extra key', { extra: true }],
     ['invalid arguments', { arguments: { tool: { id: 'T-01' } } }],
+    ['unsupported link scheme in an argument', { arguments: { note: refusedLink } }],
+    ['unsupported link scheme in an old value', { edits: [edit(refusedLink, safe)] }],
+    ['unsupported link scheme in a new value', { edits: [edit(safe, refusedLink)] }],
     ['credential name', { arguments: { token: 'synthetic' } }],
     ['invalid order', { order: NaN }],
     ['invalid principal', { principal: '' }],

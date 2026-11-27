@@ -3,11 +3,11 @@ import { MuElement } from '../primitives/base.js';
 import { APPROVAL_MARK_CSS, approvalMark, badgeLabel } from '../primitives/badge.js';
 import { ReadMoreElement, READ_MORE_CSS } from '../primitives/read-more.js';
 import { define as definePrimitives, FIELDS } from '../primitives/index.js';
-import { ActionState, bindingErrors, isActionValue, isEditType } from '../actions/action.js';
-import { copyValue } from '../offline/queue.js';
+import { ActionState, bindingErrors, copyActionValue, isActionValue, isEditType } from '../actions/action.js';
 import { PATIENCE, patienceOf, ReceiptTimer } from './pending.js';
 import { EDGE, LIFT, el, icon, setDisclosure, sheet } from '../render/dom.js';
 import { ACTION_RESULT_CSS, REFERENCE_CSS, showReference } from './receipt.js';
+import { sameRichTextValue } from '../render/rich-text.js';
 import { fillErrors } from '../render/validate.js';
 import { CONTRACTS, registeredTag } from '../render/registry.js';
 import { MuTable } from './table.js';
@@ -925,7 +925,7 @@ function fieldEnabled({ data, node }) {
 }
 
 function sameFieldValue(first, second) {
-  return first === second || (Array.isArray(first) && Array.isArray(second)
+  return first === second || sameRichTextValue(first, second) || (Array.isArray(first) && Array.isArray(second)
     && first.length === second.length && first.every((value, index) => value === second[index]));
 }
 
@@ -1012,7 +1012,7 @@ export class MuEditableForm extends ActionElement {
     if (!this.fill) return {};
     return Object.fromEntries(this.#fields.filter(fieldEnabled).map(({ data, node }) => {
       const value = node.value;
-      return [data.name, isActionValue(value) ? copyValue(value) : value];
+      return [data.name, isActionValue(value) ? copyActionValue(value) : value];
     }));
   }
 
@@ -1076,7 +1076,7 @@ export class MuEditableForm extends ActionElement {
       const field = { node, data: item.data, initial: undefined, editedAt: null };
       if (item.data.typed) {
         const value = node.value;
-        field.initial = isActionValue(value) ? copyValue(value) : undefined;
+        field.initial = isActionValue(value) ? copyActionValue(value) : undefined;
         node.addEventListener('mu-edit', () => { field.editedAt = new Date().toISOString(); });
       }
       return field;

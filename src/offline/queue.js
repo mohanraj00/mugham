@@ -4,6 +4,8 @@
 // The queue keeps no header, no cookie and no credential. It never shows an action as done: only a receipt does.
 // Each record belongs to one principal, the signed-in person that the application names. A queue takes and sends
 // only the records of its principal. The application checks the credentials in the send function.
+import { RICH_TEXT_SCHEMES, richTextValueErrors } from '../render/rich-text.js';
+
 const TOOL = /^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)*$/;
 const ID = /^[A-Za-z0-9._:-]{1,128}$/;
 const NAME = /^[a-z0-9_-]{1,64}$/;
@@ -70,7 +72,7 @@ export function receiptOf(value, request, ids) {
   return receipt;
 }
 
-// The action path and the queue use the same rules for text lists and copy each array before use.
+// The action path and the queue share this text list check. Both also check rich text with richTextValueErrors.
 export function isTextList(value) {
   if (!Array.isArray(value) || value.length > MAX_ITEMS) return false;
   for (let index = 0; index < value.length; index += 1) {
@@ -81,7 +83,14 @@ export function isTextList(value) {
   return true;
 }
 
+function freezeTree(value) {
+  if (value === null || typeof value !== 'object') return value;
+  if (Array.isArray(value)) return Object.freeze(Array.from({ length: value.length }, (_, index) => freezeTree(value[index])));
+  return Object.freeze(Object.fromEntries(Object.entries(value).map(([key, child]) => [key, freezeTree(child)])));
+}
+
 export function copyValue(value) {
+  if (value?.component === 'rich-text') return freezeTree(value);
   if (!Array.isArray(value)) return value;
   // Copy only the indexed entries of an array that passed the value check.
   return Object.freeze(Array.from({ length: value.length }, (_, index) => value[index]));
@@ -89,6 +98,12 @@ export function copyValue(value) {
 
 export function copyArgs(args) {
   return Object.freeze(Object.fromEntries(Object.entries(args).map(([name, value]) => [name, copyValue(value)])));
+}
+
+// The queue uses all supported link schemes. The action path checks the page policy for new values.
+function validArguments(args) {
+  return isPlain(args) && Object.values(args).every((value) => isScalar(value) || isOrderedPair(value) || isTextList(value)
+    || richTextValueErrors(value, RICH_TEXT_SCHEMES).length === 0);
 }
 
 // A deep copy of the typed edits of a request, or null.
@@ -99,9 +114,13 @@ function editsOf(edits) {
     if (!isPlain(edit)) return null;
     const item = {};
     for (const [name, value] of Object.entries(edit)) {
+      const fieldValue = name === 'old_value' || name === 'new_value';
       if (isScalar(value)) item[name] = value;
-      else if ((name === 'old_value' || name === 'new_value') && (isOrderedPair(value) || isTextList(value))) item[name] = copyValue(value);
-      else if (isPlain(value) && Object.values(value).every(isScalar)) item[name] = { ...value };
+      else if (fieldValue && (isOrderedPair(value) || isTextList(value))) item[name] = copyValue(value);
+      else if (fieldValue && value?.component === 'rich-text') {
+        if (richTextValueErrors(value, RICH_TEXT_SCHEMES).length) return null;
+        item[name] = copyValue(value);
+      } else if (isPlain(value) && Object.values(value).every(isScalar)) item[name] = { ...value };
       else return null;
     }
     copy.push(item);
@@ -109,26 +128,27 @@ function editsOf(edits) {
   return copy;
 }
 
-// Apply the same checks before the first write and before adoption. A record with no version is a version 1 record.
-function recordError(record) {
+// Check and copy a record before the first write and before adoption. A record with no version is a version 1 record.
+function checkedRecord(record) {
   if (!isPlain(record) || !REQUIRED_KEYS.every((key) => Object.hasOwn(record, key))
     || !Reflect.ownKeys(record).every((key) => RECORD_KEYS.has(key) && Object.prototype.propertyIsEnumerable.call(record, key))
-    || (Object.hasOwn(record, 'version') && record.version !== RECORD_VERSION)) return 'The record is not valid.';
+    || (Object.hasOwn(record, 'version') && record.version !== RECORD_VERSION)) return { error: 'The record is not valid.' };
   const { key, principal, owner, order, tool, arguments: args, label, queued, tries, state, message } = record;
-  if (typeof key !== 'string' || !ID.test(key)) return 'The request has no valid key.';
-  if (typeof tool !== 'string' || tool.length > 80 || !TOOL.test(tool)) return 'The tool name is not valid.';
-  if (!isPlain(args) || !Object.values(args).every((value) => isScalar(value) || isOrderedPair(value) || isTextList(value))) {
-    return 'The arguments are not valid.';
-  }
+  if (typeof key !== 'string' || !ID.test(key)) return { error: 'The request has no valid key.' };
+  if (typeof tool !== 'string' || tool.length > 80 || !TOOL.test(tool)) return { error: 'The tool name is not valid.' };
+  if (!validArguments(args)) return { error: 'The arguments are not valid.' };
   const secret = Object.keys(args).find((name) => CREDENTIAL.test(name));
-  if (secret !== undefined) return `The queue does not keep the argument ${secret.slice(0, 40)}. Its name looks like a credential.`;
-  if (Object.hasOwn(record, 'edits') && editsOf(record.edits) === null) return 'The edits are not valid.';
+  if (secret !== undefined) return { error: `The queue does not keep the argument ${secret.slice(0, 40)}. Its name looks like a credential.` };
+  const hasEdits = Object.hasOwn(record, 'edits');
+  const edits = hasEdits ? editsOf(record.edits) : undefined;
+  if (edits === null) return { error: 'The edits are not valid.' };
   if (!isPrincipal(principal) || typeof owner !== 'string' || !ID.test(owner) || !isCount(order) || !isCount(tries)
     || typeof label !== 'string' || label.length < 1 || label.length > MAX_LABEL
     || typeof queued !== 'string' || !ISO_TIME.test(queued) || !Number.isFinite(Date.parse(queued))
-    || !STATES.includes(state) || !shortText(message, MAX_MESSAGE)) return 'The record is not valid.';
-  if (JSON.stringify(record).length > MAX_RECORD) return 'The action is too large for the queue.';
-  return '';
+    || !STATES.includes(state) || !shortText(message, MAX_MESSAGE)) return { error: 'The record is not valid.' };
+  const copy = { ...record, arguments: copyArgs(args), ...(hasEdits ? { edits } : {}) };
+  if (JSON.stringify(copy).length > MAX_RECORD) return { error: 'The action is too large for the queue.' };
+  return { record: copy };
 }
 
 // Makes the record from selected fields. Nothing else from the request goes into the store.
@@ -139,11 +159,7 @@ function recordOf(request, label, { principal, owner, order, queued }) {
   const record = { version: RECORD_VERSION, key, principal, owner, order, tool, arguments: args,
     label: (typeof label === 'string' && label ? label : typeof tool === 'string' ? tool : '').slice(0, MAX_LABEL),
     queued, tries: 0, state: 'queued', message: '', ...(edits === undefined ? {} : { edits }) };
-  const error = recordError(record);
-  if (error) return { error };
-  record.arguments = copyArgs(args);
-  if (edits !== undefined) record.edits = editsOf(edits);
-  return { record };
+  return checkedRecord(record);
 }
 
 // A store that keeps the records in memory only. A reload loses them.
@@ -531,7 +547,8 @@ export class ActionQueue {
     const take = async () => {
       const held = this.#locks ? new Set(((await this.#locks.query()).held ?? []).map((lock) => lock.name)) : null;
       // The oldest records come first, so the queue takes them first if it has no room for all of them.
-      const stored = (await this.#store.all()).filter((record) => !recordError(record)).sort((a, b) => a.order - b.order);
+      const stored = (await this.#store.all()).map((record) => checkedRecord(record).record).filter(Boolean)
+        .sort((a, b) => a.order - b.order);
       for (const record of stored) {
         if (this.#closed) break;
         if (this.#find(record.key) || this.#gone.has(record.key)) continue;
@@ -584,9 +601,11 @@ export class ActionQueue {
       this.#changed();
       // The store knows about the try before the request leaves the device.
       await this.#keep(record);
+      // Keep the link schemes that passed the check when the queue took the record.
+      const edits = record.edits ? editsOf(record.edits) : undefined;
       const request = Object.freeze({ id: crypto.randomUUID(), key: record.key, tool: record.tool,
-        arguments: copyArgs(record.arguments), ...(record.edits ? { edits: Object.freeze(editsOf(record.edits)) } : {}) });
-      const receipt = await this.#try(request);
+        arguments: copyArgs(record.arguments), ...(edits ? { edits: Object.freeze(edits) } : {}) });
+      const receipt = edits === null || !validArguments(record.arguments) ? null : await this.#try(request);
       if (receipt === UNSENT) {
         // The queue closed before the request left the device, for example at a sign-out. The record stays for
         // its principal as it was before this try.

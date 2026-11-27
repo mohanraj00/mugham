@@ -24,6 +24,7 @@ import { POPOVER_PAGE, popoverExampleChecks } from '../tests/browser/popovers.js
 import { SETTINGS_PAGE, settingsExampleChecks } from '../tests/browser/settings.js';
 import { LIBRARY_PAGE, libraryExampleChecks } from '../tests/browser/library.js';
 import { RESEARCH_PAGE, researchExampleChecks } from '../tests/browser/research.js';
+import { RICH_TEXT_FIELD_PAGE, richTextFieldChecks } from '../tests/browser/rich-text-field.js';
 import { NEWSLETTER_PAGE, newsletterExampleChecks } from '../tests/browser/newsletter.js';
 import { RANGE_PAGE, rangeExampleChecks } from '../tests/browser/range-field.js';
 import { MULTI_CHOICE_PAGE, multiChoiceExampleChecks } from '../tests/browser/multi-choice-field.js';
@@ -114,6 +115,8 @@ const EXAMPLES = {
   [RESEARCH_PAGE]: [3, 0, [['main', ''], ['list', 'Research run'], ['list', 'Research plan'],
     ['button', 'Search the catalog'], ['button', 'Advance run'], ['StaticText', 'Pending'],
     ['StaticText', 'Research approvals'], ['StaticText', 'No items need a decision. Check again later.']], 'mu-approval-queue[data-state="empty"]'],
+  [RICH_TEXT_FIELD_PAGE]: [2, 0, [['heading', 'Library note editor'], ['form', 'Reading room note'],
+    ['toolbar', 'Text formats'], ['textbox', 'Note'], ['button', 'Save note']], 'mu-editable-form[data-state="default"]'],
   [NEWSLETTER_PAGE]: [1, 0, [['heading', 'Library newsletter'], ['group', 'Approval: Approved'],
     ['group', 'Approval: Pending approval'], ['group', 'Approval: Rejected']], 'mu-rich-text[data-state="default"]'],
   [RANGE_PAGE]: [3, 0, [['form', 'Loan limits'], ['slider', 'Loan period in days'], ['spinbutton', 'Loan period in days number'],
@@ -457,11 +460,11 @@ export async function pageRules(session, sessionId, where) {
   const markup = await evaluate(session, sessionId, `(() => {
     const ROLES = new Set(['alert', 'article', 'button', 'checkbox', 'combobox', 'dialog', 'form', 'grid', 'group', 'heading', 'img', 'link', 'list',
       'listbox', 'listitem', 'log', 'main', 'menu', 'menuitem', 'navigation', 'none', 'option', 'presentation', 'progressbar', 'radio', 'radiogroup', 'region', 'slider', 'status', 'switch',
-      'tab', 'tablist', 'tabpanel', 'textbox', 'tooltip']);
+      'tab', 'tablist', 'tabpanel', 'textbox', 'toolbar', 'tooltip']);
     const BOOLEAN = ['true', 'false'];
     const VALUES = { 'aria-invalid': BOOLEAN, 'aria-live': ['off', 'polite', 'assertive'], 'aria-disabled': BOOLEAN,
       'aria-expanded': BOOLEAN, 'aria-haspopup': [...BOOLEAN, 'menu', 'listbox', 'tree', 'grid', 'dialog'],
-      'aria-modal': BOOLEAN, 'aria-current': [...BOOLEAN, 'page', 'step', 'location', 'date', 'time'], 'aria-selected': BOOLEAN, 'aria-multiselectable': BOOLEAN, 'aria-autocomplete': ['none', 'inline', 'list', 'both'], tabindex: ['-1', '0'] };
+      'aria-modal': BOOLEAN, 'aria-multiline': BOOLEAN, 'aria-pressed': [...BOOLEAN, 'mixed'], 'aria-required': BOOLEAN, 'aria-current': [...BOOLEAN, 'page', 'step', 'location', 'date', 'time'], 'aria-selected': BOOLEAN, 'aria-multiselectable': BOOLEAN, 'aria-autocomplete': ['none', 'inline', 'list', 'both'], tabindex: ['-1', '0'] };
     const REFERENCES = ['aria-describedby', 'aria-labelledby', 'aria-controls', 'aria-activedescendant', 'for'];
     const problems = [];
     const check = (root, label) => {
@@ -1055,6 +1058,7 @@ async function main() {
       { evaluate, open, key, pageRules, axErrors }, problems));
     report.keyboard.push(...await researchExampleChecks(session, sessionId, base, MODES,
       { evaluate, open, key, pageRules }, problems));
+    report.keyboard.push(...await richTextFieldChecks(session, sessionId, base, MODES, { evaluate, open, key, pageRules }, problems));
     report.examples.push(...await newsletterExampleChecks(session, sessionId, base, MODES, { evaluate, open, pageRules }, problems));
     report.keyboard.push(...await rangeExampleChecks(session, sessionId, base, MODES, { evaluate, open, key }, problems));
     report.keyboard.push(...await selectExampleChecks(session, sessionId, base, MODES, { evaluate, open, key, pageRules }, problems));

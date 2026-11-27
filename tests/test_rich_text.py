@@ -19,7 +19,7 @@ def errors(blocks):
 
 class RichTextContractTest(unittest.TestCase):
     def test_the_node_types_are_a_fixed_list(self):
-        self.assertEqual(sorted(name for name in CATALOG if name.startswith('rich-')), sorted(['rich-text'] + NODES))
+        self.assertEqual(sorted(name for name in CATALOG if name.startswith('rich-') and not CATALOG[name].get('field')), sorted(['rich-text'] + NODES))
         self.assertEqual(CATALOG['rich-text']['data']['blocks']['items']['names'], BLOCKS)
         for name, key in [('rich-paragraph', 'content'), ('rich-heading', 'content')]:
             self.assertEqual(CATALOG[name]['data'][key]['items']['names'], INLINE)

@@ -108,6 +108,7 @@ VALID = {
     'chart': {'title': 'Weekly tickets', 'type': 'bar', 'categories': ['Week 1'], 'series': [fill('chart-series', {'label': 'Received', 'values': [12]})], 'units': 'tickets', 'x_label': 'Week', 'y_label': 'Count'},
     'chart-series': {'label': 'Received', 'values': [12]},
     'rich-text': {'blocks': [PARAGRAPH]},
+    'rich-text-field': {'name': 'note', 'label': 'Library note', 'value': fill('rich-text', {'blocks': [PARAGRAPH]})},
     'rich-paragraph': PARAGRAPH['data'],
     'rich-heading': {'level': 1, 'content': [SPAN]},
     'rich-list': {'ordered': True, 'items': [PARAGRAPH]},
@@ -367,7 +368,7 @@ class CatalogContractTest(unittest.TestCase):
 
     def test_a_form_accepts_each_input_type_and_no_other_component(self):
         inputs = ['field', 'long-text-field', 'number-field', 'date-field', 'choice-field', 'toggle-field',
-                  'range-field', 'select-field', 'multi-choice-field', 'date-range-field', 'time-field', 'date-time-field']
+                  'range-field', 'select-field', 'multi-choice-field', 'date-range-field', 'time-field', 'date-time-field', 'rich-text-field']
         self.assertEqual(set(inputs), {name for name, contract in CATALOG.items() if contract.get('field') is True})
         form = {'title': 'Loan details', 'submit_label': 'Save', 'fields': [fill(name, VALID[name]) for name in inputs]}
         self.assertEqual(catalog.fill_errors(outer('editable-form', form), CATALOG), [])

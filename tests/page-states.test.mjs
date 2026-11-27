@@ -29,6 +29,8 @@ class TestNode extends EventTarget {
   }
   setAttribute(name, value) { this.attributes.set(name, value); }
   getAttribute(name) { return this.attributes.get(name) ?? null; }
+  removeAttribute(name) { this.attributes.delete(name); }
+  get id() { return this.getAttribute('id'); }
   get textContent() { return this.children.map((child) => child.textContent).join(''); }
   set textContent(textContent) { this.replaceChildren({ textContent }); }
 }
@@ -61,6 +63,21 @@ function make(name, data) {
   element.fill = fill(name, data);
   return element;
 }
+
+test('Heading 3 on an empty note keeps the value and asks for Heading 1', () => {
+  const value = fill('rich-text', { blocks: [] });
+  const field = make('rich-text-field', { label: 'Note', value });
+  const [box] = field.shadowRoot.children;
+  const [controls] = box.children;
+  const toolbar = controls.children.find((node) => node.getAttribute('part') === 'toolbar');
+  const heading = toolbar.children.find((node) => node.textContent === 'Heading 3');
+  const status = controls.children.find((node) => node.getAttribute('part') === 'status');
+  heading.dispatchEvent(new Event('click'));
+  assert.deepEqual(field.value, value);
+  assert.equal(field.changed, false);
+  assert.equal(heading.getAttribute('aria-pressed'), 'false');
+  assert.equal(status.textContent, 'A heading cannot skip a level. Use Heading 1 first.');
+});
 
 test('empty state shows scalar text and a named slot for a page control', () => {
   const empty = make('empty-state', EMPTY);
