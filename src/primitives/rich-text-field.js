@@ -23,7 +23,8 @@ export class MuRichTextField extends FieldElement {
   static submitOnEnter = false;
   static styles = [...FieldElement.styles, sheet(`
     :host { min-inline-size: 0; overflow-wrap: anywhere; }
-    .toolbar, .link-editor { display: flex; flex-wrap: wrap; gap: var(--mu-space-2); }
+    .toolbar, .link-editor { display: flex; flex-wrap: wrap; }
+    .toolbar { gap: var(--mu-space-1); }
     [hidden] { display: none !important; }
     button, .link-editor input, .editor {
       min-block-size: 44px; min-inline-size: 44px; max-inline-size: 100%;
@@ -34,7 +35,8 @@ export class MuRichTextField extends FieldElement {
     .toolbar button, .link-editor button { cursor: pointer; }
     .toolbar button {
       display: inline-flex; align-items: center; justify-content: center;
-      padding: var(--mu-space-1); font-weight: var(--mu-type-weight-strong); white-space: nowrap;
+      box-sizing: border-box; inline-size: 44px; block-size: 44px;
+      padding: 0; font-weight: var(--mu-type-weight-strong); white-space: nowrap;
     }
     .toolbar .icon { inline-size: 16px; block-size: 16px; stroke-width: 1.5; }
     .toolbar [aria-pressed="true"] {
@@ -49,7 +51,7 @@ export class MuRichTextField extends FieldElement {
       font: var(--mu-type-caption); color: var(--mu-color-text); background: var(--mu-color-surface);
       border: 1px solid var(--mu-color-border); border-radius: var(--mu-radius-1);
     }
-    .link-editor { align-items: end; }
+    .link-editor { align-items: end; gap: var(--mu-space-2); }
     .link-label { display: flex; flex: 1 1 12rem; min-inline-size: 0; flex-direction: column; }
     .editor { min-block-size: 8rem; padding: var(--mu-space-3); white-space: pre-wrap; }
     .editor :is(p,h1,h2,h3,ul,ol,pre,blockquote) { margin: 0; }
@@ -199,9 +201,10 @@ export class MuRichTextField extends FieldElement {
     };
     this.#buttons = FORMATS.map(([format, label, key, glyph], index) => {
       const description = key ? id + '-shortcut-' + format : null;
+      const name = glyph && format !== 'paragraph' ? `${glyph} ${label}` : label;
       if (description) help.push(el('span', { id: description, class: 'description' }, 'Control or Command + ' + key));
       const button = el('button', { part: 'format', type: 'button', tabindex: index === 0 ? 0 : -1,
-        'aria-label': label, 'aria-pressed': 'false', 'aria-describedby': description }, glyph ?? formatIcon(format));
+        'aria-label': name, 'aria-pressed': 'false', 'aria-describedby': description }, glyph ?? formatIcon(format));
       if (key) button.setAttribute('aria-keyshortcuts', 'Control+' + key + ' Meta+' + key);
       button.addEventListener('mousedown', (event) => {
         // Keep the text selection when a pointer presses a format.

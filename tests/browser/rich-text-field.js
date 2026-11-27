@@ -61,10 +61,7 @@ function toolbarState() {
     probe.remove();
     return result;
   };
-  const size = (node) => {
-    const rect = node.getBoundingClientRect();
-    return rect.width >= 44 && rect.height >= 44;
-  };
+  const editorBox = editor.getBoundingClientRect();
   const name = (button) => button.getAttribute('aria-label');
   const strong = buttons.find((button) => name(button) === 'Strong')?.getBoundingClientRect();
   const tooltip = toolbar.querySelector('.action-tooltip[part="tooltip"]');
@@ -78,7 +75,10 @@ function toolbarState() {
     focus: active === editor ? 'editor' : active?.getAttribute('aria-label'),
     focusRing: style?.outlineStyle === 'solid' && parseFloat(style.outlineWidth) >= 2
       && style.outlineColor === color(forced ? 'Highlight' : 'var(--mu-color-focus)'),
-    targets: [editor, ...buttons].every(size),
+    targets: editorBox.width >= 44 && editorBox.height >= 44 && buttons.every((button) => {
+      const { width, height } = button.getBoundingClientRect();
+      return width === 44 && height === 44;
+    }),
     pressed: buttons.filter((button) => button.getAttribute('aria-pressed') === 'true').map(name),
     rows: new Set(buttons.map((button) => button.getBoundingClientRect().top)).size,
     iconsUseTextColor: buttons.slice(4).every((button) => {
@@ -136,8 +136,8 @@ async function exerciseEditor() {
   const initial = form.fill.data.fields[0];
   const empty = { ...initial.data.value, data: { blocks: [] } };
   field.fill = { ...initial, data: { ...initial.data, value: empty } };
-  button('Heading 3').click();
-  const headingOrder = JSON.stringify(field.value) === JSON.stringify(empty) && !field.changed && !pressed('Heading 3')
+  button('H3 Heading 3').click();
+  const headingOrder = JSON.stringify(field.value) === JSON.stringify(empty) && !field.changed && !pressed('H3 Heading 3')
     && root.querySelector('[part="status"]').textContent === 'A heading cannot skip a level. Use Heading 1 first.';
 
   for (const [key, name, mark] of [['b', 'Strong', 'strong'], ['i', 'Emphasis', 'emphasis'], ['e', 'Inline code', 'code']]) {
@@ -389,7 +389,7 @@ export async function richTextFieldChecks(session, sessionId, base, modes, { ope
           const first = await page(toolbarState);
           check(view, 'the toolbar has one tab stop and the keys move the focus',
             [next, last, wrap, back, first].every(({ focus, tabStops }) => tabStops.length === 1 && tabStops[0] === focus)
-            && [next.focus, last.focus, wrap.focus, back.focus, first.focus].join(',') === 'Heading 1,Link,Paragraph,Link,Paragraph'
+            && [next.focus, last.focus, wrap.focus, back.focus, first.focus].join(',') === 'H1 Heading 1,Link,Paragraph,Link,Paragraph'
             && first.toolbarRole === 'toolbar' && first.toolbarName === 'Text formats',
           'A key moved to the wrong control or the toolbar role, name or tab stop is incorrect.', first);
           check(view, 'the keyboard shows the focus ring', next.focusRing && last.focusRing && first.focusRing,

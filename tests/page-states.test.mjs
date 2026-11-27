@@ -71,7 +71,7 @@ test('Heading 3 on an empty note keeps the value and asks for Heading 1', () => 
   const [box] = field.shadowRoot.children;
   const [controls] = box.children;
   const toolbar = controls.children.find((node) => node.getAttribute('part') === 'toolbar');
-  const heading = toolbar.children.find((node) => node.getAttribute('aria-label') === 'Heading 3');
+  const heading = toolbar.children.find((node) => node.getAttribute('aria-label') === 'H3 Heading 3');
   const status = controls.children.find((node) => node.getAttribute('part') === 'status');
   heading.dispatchEvent(new Event('click'));
   assert.deepEqual(field.value, value);
@@ -80,13 +80,13 @@ test('Heading 3 on an empty note keeps the value and asks for Heading 1', () => 
   assert.equal(status.textContent, 'A heading cannot skip a level. Use Heading 1 first.');
 });
 
-test('each format button keeps its name and shows only a symbol', () => {
+test('each format button has a name and shows only a symbol', () => {
   const field = make('rich-text-field', { label: 'Note' });
   const [box] = field.shadowRoot.children;
   const [controls] = box.children;
   const toolbar = controls.children.find((node) => node.getAttribute('part') === 'toolbar');
   const buttons = toolbar.children.filter((node) => node.tag === 'button');
-  const names = ['Paragraph', 'Heading 1', 'Heading 2', 'Heading 3', 'Bulleted list', 'Numbered list',
+  const names = ['Paragraph', 'H1 Heading 1', 'H2 Heading 2', 'H3 Heading 3', 'Bulleted list', 'Numbered list',
     'Quote', 'Code block', 'Strong', 'Emphasis', 'Inline code', 'Link'];
   assert.deepEqual(buttons.map((button) => button.getAttribute('aria-label')), names);
   assert.deepEqual(buttons.map((button) => button.textContent), ['P', 'H1', 'H2', 'H3', '', '', '', '', '', '', '', '']);

@@ -9,7 +9,7 @@
     {"name": "copy-status", "description": "Result of the copy operation.", "guardrail": true},
     {"name": "details", "description": "Control and technical details of a refusal.", "guardrail": true},
     {"name": "edit-type", "description": "Choices for the type of edit.", "guardrail": true},
-    {"name": "format", "description": "Format button and its pressed state.", "guardrail": true},
+    {"name": "format", "description": "Format button and its pressed state. Each button is 44 by 44 CSS pixels. Each heading button name starts with its visible glyph.", "guardrail": true},
     {"name": "icon", "description": "Symbol on a format button.", "guardrail": true},
     {"name": "input", "description": "Editable text and its focus ring.", "guardrail": true},
     {"name": "label", "description": "Label of the field.", "guardrail": true},

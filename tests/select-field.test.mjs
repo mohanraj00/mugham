@@ -482,6 +482,17 @@ test('the form leaves a disabled registered field out of the request', () => {
   }
 });
 
+test('each format button with a glyph starts its accessible name with that glyph', () => {
+  const field = kit.mount('rich-text-field', { label: 'Note' });
+  const buttons = part(field.shadowRoot, 'toolbar').children.filter((node) => node.tag === 'button' && node.textContent);
+  assert.deepEqual(buttons.map((button) => button.textContent), ['P', 'H1', 'H2', 'H3']);
+  for (const button of buttons) {
+    const glyph = button.textContent;
+    const name = button.getAttribute('aria-label');
+    assert.ok(name?.startsWith(glyph), `The name of the ${glyph} button must start with ${glyph}.`);
+  }
+});
+
 test('an editable form sends a rich text field as a frozen rich text fill', () => {
   const note = fill('rich-text', { blocks: [
     fill('rich-paragraph', { content: [fill('rich-span', { text: 'A library note.', mark: 'strong' })] }),
