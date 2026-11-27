@@ -3,6 +3,7 @@
 - [Kit helpers](kit.md) in `kit.js` build fills, mount elements, send receipts and export JSON Schema.
 - `tokens/tokens.json`: the design tokens. Each token has a light value and a dark value. `tools/tokens.py --write` writes `tokens/tokens.css` from it.
 - `render/validate.js`: the browser validator of a fill and of a contract. It gives the same errors as `tools/catalog.py` for each case in `tests/vectors/fills.json` and `tests/vectors/contracts.json`.
+- `render/rich-text-value.js` checks nested rich text values for the editor, the action path and the offline queue. It also checks heading order, inline limits and link policy for the rich text display.
 - `render/dom.js`: the only way the kit makes DOM nodes. Data goes only into text nodes and into a short list of attributes.
 - `styles/page.css`: the default page style. It uses only the tokens. [docs/guides/theme.md](../docs/guides/theme.md#the-default-page-style) gives its rules.
 - `render/catalog.js`: the contracts that the kit knows, in the full form.

@@ -4,6 +4,7 @@ Each release has an entry. The newest entry is first.
 
 ## Unreleased
 
+- Check queued rich text without loading the catalog (#176).
 - Add a rich text field with a format toolbar, keyboard shortcuts and bounded paste and drop. An editable form sends its rich text data (#130).
 - Pass the rich text fill revision to `setApprovals` so a late response cannot mark a different fill (#172).
 - Page code can show the approval state of top-level rich text blocks with `setApprovals` after each fill. The library newsletter shows three states from a fixture API (#137).

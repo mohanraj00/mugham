@@ -4,6 +4,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { toolSchema } from '../src/kit.js';
 import { CATALOG } from '../src/render/catalog.js';
+import { RICH_TEXT_SCHEMES, richTextRules, richTextValueErrors } from '../src/render/rich-text-value.js';
 import { contractErrors, fillErrors } from '../src/render/validate.js';
 
 const BLOCKS = ['rich-paragraph', 'rich-heading', 'rich-list', 'rich-code', 'rich-quote'];
@@ -26,6 +27,45 @@ test('a tree with each node type is valid', () => {
     node('rich-paragraph', { content: ['emphasis', 'strong', 'code'].map((mark) => node('rich-span', { text: 'x', mark })) }),
   ]), []);
   assert.deepEqual(errors([]), []);
+});
+
+test('the queue value check agrees with the nested catalog check and the shared rich text rules', () => {
+  const value = (blocks, data = {}) => node('rich-text', { blocks, ...data });
+  const paragraph = (content) => node('rich-paragraph', { content });
+  const heading = (level) => node('rich-heading', { level, content: [SPAN] });
+  const quote = (paragraphs) => node('rich-quote', { paragraphs });
+  const maxParagraph = paragraph(Array(50).fill(SPAN));
+  const maxInline = [quote(Array(20).fill(maxParagraph)), node('rich-list', { items: Array(20).fill(maxParagraph) })];
+  const allNodes = [heading(1), heading(2), heading(3), heading(1), PARAGRAPH,
+    node('rich-list', { ordered: true, items: [PARAGRAPH] }), node('rich-code', { text: 'make check' }),
+    quote([PARAGRAPH]), paragraph(['emphasis', 'strong', 'code'].map((mark) => node('rich-span', { text: 'x', mark })))];
+
+  for (const [name, sample, shapeValid, valid = shapeValid] of [
+    ['each block and inline type', value(allNodes, { clamp: 20 }), true],
+    ['empty blocks', value([]), true],
+    ['inline count at the limit', value(maxInline), true],
+    ['text with 2000 code points', value([paragraph([node('rich-span', { text: '🌱'.repeat(2000) })])]), true],
+    ['mail link', value([paragraph([node('rich-link', { text: 'Mail', url: 'mailto:check@example.org' })])]), true],
+    ['heading skips a level', value([heading(1), heading(3)]), true, false],
+    ['inline count over the limit', value([...maxInline, paragraph([SPAN])]), true, false],
+    ['refused link scheme in a quote', value([quote([paragraph([node('rich-link', { text: 'File', url: 'file:///rules' })])])]), true, false],
+    ['unknown block field', value([node('rich-paragraph', { content: [SPAN], style: 'x' })]), false],
+    ['wrong node in a list', value([node('rich-list', { items: [SPAN] })]), false],
+    ['missing text', value([paragraph([node('rich-span', {})])]), false],
+    ['invalid span mark', value([paragraph([node('rich-span', { text: 'x', mark: 'underline' })])]), false],
+    ['text over the limit', value([paragraph([node('rich-span', { text: '🌱'.repeat(2001) })])]), false],
+    ['list over its item limit', value([node('rich-list', { items: Array(51).fill(PARAGRAPH) })]), false],
+    ['clamp over the limit', value([], { clamp: 21 }), false],
+    ['unknown value version', { ...value([]), version: '0.2.0' }, false],
+    ['slots on a nested value', { ...value([]), slots: {} }, false],
+    ['sparse inline list', value([paragraph(Array(1))]), false],
+  ]) {
+    const catalogValid = fillErrors(sample, CATALOG, 'value', 1).length === 0;
+    assert.equal(catalogValid, shapeValid, name);
+    const catalogAndRulesValid = catalogValid && richTextRules(sample.data, RICH_TEXT_SCHEMES).length === 0;
+    assert.equal(catalogAndRulesValid, valid, name);
+    assert.equal(richTextValueErrors(sample, RICH_TEXT_SCHEMES).length === 0, catalogAndRulesValid, name);
+  }
 });
 
 test('an unknown node type is refused', () => {

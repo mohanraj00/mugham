@@ -1,14 +1,13 @@
 // Read a bounded DOM tree as rich text. Never return or move a node from the source.
-import { CATALOG } from '../render/catalog.js';
 import { parseLinkURL } from '../render/validate.js';
-import { richHeadingLevel, richNode, richTextLinkSchemes, richTextValueErrors } from '../render/rich-text.js';
+import { RICH_TEXT_EDIT_LIMIT, RICH_TEXT_MAX_BLOCKS, richHeadingLevel, richNode, richTextLinkSchemes,
+  richTextValueErrors } from '../render/rich-text.js';
 
 const HTML = 'http://www.w3.org/1999/xhtml';
 const MAX_SOURCE = 262144;
 const MAX_NODES = 12000;
 const MAX_DEPTH = 32;
 const TOO_LARGE = 'The edit is too large. Use less text or formatting.';
-const INVALID = 'The edit does not fit the rich text rules. Use less text or formatting.';
 export const INLINE_MARKS = Object.freeze({ emphasis: 'em', strong: 'strong', code: 'code' });
 const MARK = new Map([['em', 'emphasis'], ['i', 'emphasis'], ['strong', 'strong'], ['b', 'strong'], ['code', 'code']]);
 const BLOCK = new Set(['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'blockquote', 'pre']);
@@ -122,7 +121,7 @@ function blocksOf(nodes, schemes, imported) {
 }
 
 function checked(value) {
-  return richTextValueErrors(value).length ? { problem: INVALID } : { value };
+  return richTextValueErrors(value).length ? { problem: RICH_TEXT_EDIT_LIMIT } : { value };
 }
 
 export function readRichTree(root, { imported = false, editorLink, ignoreText } = {}) {
@@ -151,8 +150,7 @@ export function readRichTransfer(transfer, parse = parseHTML) {
   }
   const plain = transfer?.getData('text/plain') ?? '';
   if (plain.length > MAX_SOURCE) return { problem: TOO_LARGE };
-  const max = CATALOG['rich-text'].data.blocks.max_items;
-  const lines = plain ? plain.split(/\r\n?|\n/, max + 1) : [];
-  if (lines.length > max) return { problem: TOO_LARGE };
+  const lines = plain ? plain.split(/\r\n?|\n/, RICH_TEXT_MAX_BLOCKS + 1) : [];
+  if (lines.length > RICH_TEXT_MAX_BLOCKS) return { problem: TOO_LARGE };
   return checked(richValue(lines.map((line) => richParagraph(line ? [richSpan(line)] : []))));
 }
