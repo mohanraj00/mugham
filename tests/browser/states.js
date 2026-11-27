@@ -173,6 +173,14 @@ export async function stateChecks(session, sessionId, { evaluate, key, pageRules
 }
 
 async function browserChecks() {
+  const controlSize = (node) => {
+    // The target size of a control (decision 0009): size.control of its host, and never less than 24 CSS pixels.
+    const host = node.getRootNode().host;
+    const name = host || !matchMedia('(pointer: coarse)').matches ? '--mu-size-control' : '--mu-size-control-touch';
+    const value = getComputedStyle(host ?? document.documentElement).getPropertyValue(name).trim();
+    const unit = value.endsWith('rem') ? parseFloat(getComputedStyle(document.documentElement).fontSize) : 1;
+    return Math.max(24, parseFloat(value) * unit) - 0.01;
+  };
   const { define } = await import('../../src/thread/index.js');
   const { COPIED_TIME } = await import('../../src/render/dom.js');
   define();
@@ -544,7 +552,7 @@ async function browserChecks() {
     done.element.style.inlineSize = '100px';
     const wraps = box(copy).top >= box(reference).bottom;
     done.element.style.inlineSize = '';
-    return { width: innerWidth, scroll, sameRow, wraps, target: initial.width >= 44 && initial.height >= 44 };
+    return { width: innerWidth, scroll, sameRow, wraps, target: initial.width >= controlSize(copy) && initial.height >= controlSize(copy) };
   };
   window.muCopyPoint = (name) => {
     const item = root(copies[name]).querySelector('[part="copy"]');

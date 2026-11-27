@@ -38,7 +38,7 @@
   "states": ["+expanded", "+collapsed"],
   "tokens": [
     "color.surface", "color.surface-subtle", "color.text", "color.text-muted", "color.border", "space.1", "space.2", "space.3",
-    "space.4", "radius.2", "type.body", "type.caption", "type.weight-strong", "color.focus", "motion.fast"
+    "space.4", "radius.2", "type.body", "type.caption", "type.weight-strong", "color.focus", "motion.fast", "size.control", "size.icon"
   ],
   "accessibility": {"role": "article", "name": {"field": "title"}, "keyboard": ["Tab", "Enter", "Space", "Escape"]}
 }

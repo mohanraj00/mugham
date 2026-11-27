@@ -8,7 +8,7 @@ export const REFERENCE_CSS = sheet(`
   .reference-row:empty { display: none; }
   .reference-row [part="reference"] { min-inline-size: 0; overflow-wrap: anywhere; }
   .reference-row .copy {
-    min-inline-size: var(--mu-target); min-block-size: var(--mu-target);
+    min-inline-size: var(--mu-size-control); min-block-size: var(--mu-size-control);
     border-color: var(--mu-color-border); background: transparent; color: var(--mu-color-text);
   }
   @media (forced-colors: active) {

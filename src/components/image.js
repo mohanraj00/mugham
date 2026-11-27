@@ -43,7 +43,7 @@ export class MuImage extends MuElement {
       border: 1px solid var(--mu-color-border); border-radius: var(--mu-radius-2);
     }
     dialog img { display: block; width: auto; height: auto; max-width: none; }
-    dialog button { display: block; min-height: var(--mu-target); padding: 0 var(--mu-space-2); margin-bottom: var(--mu-space-2); }
+    dialog button { display: block; min-height: var(--mu-size-control); padding: 0 var(--mu-space-2); margin-bottom: var(--mu-space-2); }
     @media (forced-colors: active) {
       button { color: ButtonText; background: ButtonFace; border-color: ButtonText; }
       dialog { color: CanvasText; background: Canvas; border-color: CanvasText; }

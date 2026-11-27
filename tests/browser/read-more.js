@@ -31,6 +31,14 @@ export async function readMoreKeyboardChecks(session, sessionId, { evaluate, key
 }
 
 async function browserChecks() {
+  const controlSize = (node) => {
+    // The target size of a control (decision 0009): size.control of its host, and never less than 24 CSS pixels.
+    const host = node.getRootNode().host;
+    const name = host || !matchMedia('(pointer: coarse)').matches ? '--mu-size-control' : '--mu-size-control-touch';
+    const value = getComputedStyle(host ?? document.documentElement).getPropertyValue(name).trim();
+    const unit = value.endsWith('rem') ? parseFloat(getComputedStyle(document.documentElement).fontSize) : 1;
+    return Math.max(24, parseFloat(value) * unit) - 0.01;
+  };
   const { define } = await import('../../src/thread/index.js');
   define();
   const results = [];
@@ -163,7 +171,7 @@ async function browserChecks() {
     const unit = parseFloat(getComputedStyle(document.documentElement).fontSize);
     check(`${node.localName}: the control fits its label and has a compact target`,
       bounds.width >= unit * 1.5 && bounds.width < content(node).getBoundingClientRect().width / 2
-      && bounds.height >= 44 && bounds.height < unit * 3.5,
+      && bounds.height >= controlSize(button) && bounds.height < unit * 3.5,
       JSON.stringify({ width: bounds.width, height: bounds.height }));
     if (mode !== 'forced-colors') {
       const style = getComputedStyle(button);

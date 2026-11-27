@@ -133,8 +133,12 @@ function controlState(state, index) {
     const value = getComputedStyle(node);
     return value.animationName === 'none' && value.transitionDuration.split(',').every((time) => parseFloat(time) === 0);
   };
+  // The icon display is a square of the control size (decision 0009, section 1).
+  const token = getComputedStyle(button.getRootNode().host).getPropertyValue('--mu-size-control').trim();
+  const size = parseFloat(token) * (token.endsWith('rem') ? parseFloat(getComputedStyle(document.documentElement).fontSize) : 1);
   return {
     ...state,
+    size,
     tooltipColors: !state.tooltip || (getComputedStyle(tooltip).color === color(forced ? 'CanvasText' : 'var(--mu-color-text)')
       && getComputedStyle(tooltip).backgroundColor === color(forced ? 'Canvas' : 'var(--mu-color-surface)')
       && getComputedStyle(tooltip).borderTopColor === color(forced ? 'CanvasText' : 'var(--mu-color-border)')
@@ -212,7 +216,7 @@ export async function compactControlChecks(session, sessionId, base, modes, { op
               const widths = await read(compareDisplays, index);
               const idle = await waitFor(state, (value) => !value.tooltip);
               report(name + ' has a fixed target that is narrower than the text button',
-                idle.width === 44 && idle.height === 44 && widths.icon < widths.text && name.startsWith(widths.label)
+                Math.abs(idle.width - idle.size) < 0.5 && Math.abs(idle.height - idle.size) < 0.5 && idle.size >= 24 && widths.icon < widths.text && name.startsWith(widths.label)
                 && widths.label.length > 0 && !idle.tooltip && idle.iconColor
                 && (width !== 375 || idle.fits) && (mode !== 'reduced-motion' || idle.noMotion), { widths, idle });
 

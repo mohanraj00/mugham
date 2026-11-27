@@ -101,6 +101,8 @@ globalThis.HTMLElement = class extends TestNode {
 globalThis.CSSStyleSheet = class { replaceSync() {} };
 globalThis.document = {
   createElement: (tag) => tag === 'dialog' ? new TestDialog(tag) : elements.has(tag) ? new (elements.get(tag))() : new TestNode(tag),
+  // The kit draws each icon as an SVG element.
+  createElementNS: (namespace, tag) => new TestNode(tag),
   createTextNode: (textContent) => ({ textContent }),
 };
 globalThis.customElements = {

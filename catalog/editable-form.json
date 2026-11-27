@@ -1,6 +1,6 @@
 {
   "name": "editable-form",
-  "description": "A form with up to 20 kit or registered fields. The form sends the values and the edit types as one action. A pending action offers retry and cancel.",
+  "description": "A form with up to 20 kit or registered fields. The form sends the values and the edit types as one action. A pending action offers retry and cancel. The binding can ask for an icon display of the save control. The submit label stays the name of the control and shows as its tooltip.",
   "parts": [
     {"name": "accept", "description": "Button that confirms the action.", "guardrail": true},
     {"name": "authorship", "description": "Type and ID of the author, with a name when available.", "guardrail": true},
@@ -13,6 +13,7 @@
     {"name": "details", "description": "Control and technical details of a refusal.", "guardrail": true},
     {"name": "exit", "description": "Controls for a pending action.", "guardrail": true},
     {"name": "form", "description": "Form that contains the fields and the submit button.", "guardrail": false},
+    {"name": "icon", "description": "Icon of the save control in icon display.", "guardrail": true},
     {"name": "locator", "description": "Location in the source.", "guardrail": true},
     {"name": "next", "description": "Next step after a refusal.", "guardrail": true},
     {"name": "open", "description": "Button that opens the source.", "guardrail": true},
@@ -20,7 +21,8 @@
     {"name": "reason", "description": "Reason for a refusal or an edit error.", "guardrail": true},
     {"name": "reference", "description": "Reference from the receipt.", "guardrail": true},
     {"name": "retry", "description": "Button that tries the pending action again.", "guardrail": true},
-    {"name": "status", "description": "State of the action.", "guardrail": true}
+    {"name": "status", "description": "State of the action.", "guardrail": true},
+    {"name": "tooltip", "description": "Submit label on hover or focus in icon display. Escape closes it.", "guardrail": true}
   ],
   "data": {
     "title": {"type": "text", "required": true, "min_length": 1, "size": "title"},
@@ -40,7 +42,7 @@
   "tokens": [
     "color.surface", "color.text", "color.text-muted", "color.border", "color.accent", "color.on-accent",
     "color.danger", "color.success", "color.focus", "space.1", "space.2", "space.3", "space.4", "radius.2", "type.body", "type.caption",
-    "type.weight-strong", "motion.fast"
+    "type.weight-strong", "motion.fast", "size.control", "radius.1", "color.on-success", "size.icon", "size.field"
   ],
   "accessibility": {"role": "form", "name": {"field": "title"}, "keyboard": ["Tab", "Shift+Tab", "Enter", "Space"]}
 }

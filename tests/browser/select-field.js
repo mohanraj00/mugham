@@ -19,7 +19,7 @@ export async function selectExampleChecks(session, sessionId, base, modes, { eva
     const active = root.getElementById(focused?.getAttribute('aria-activedescendant'));
     const target = (node) => {
       const { width, height } = node.getBoundingClientRect();
-      return width >= 44 && height >= 44;
+      return width >= muControlSize(node) && height >= muControlSize(node);
     };
     const style = getComputedStyle(control);
     const focus = focused && getComputedStyle(focused);

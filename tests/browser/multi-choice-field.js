@@ -21,7 +21,7 @@ export async function multiChoiceExampleChecks(session, sessionId, base, modes, 
     const active = root.getElementById(search.getAttribute('aria-activedescendant'));
     const target = (node) => {
       const {width, height} = node.getBoundingClientRect();
-      return width >= 44 && height >= 44;
+      return width >= muControlSize(node) && height >= muControlSize(node);
     };
     const forced = matchMedia('(forced-colors: active)').matches;
     const probe = document.body.appendChild(document.createElement('span'));
@@ -82,7 +82,7 @@ export async function multiChoiceExampleChecks(session, sessionId, base, modes, 
       check(mode, 'Tab reaches the first checkbox with a focus ring',
         closed.focusPart === 'checkbox' && closed.ring && !closed.open, closed);
       const fits = ({ width, scroll }) => width === 375 && scroll === 375;
-      check(mode, 'each checkbox and tag remove button has a 44 by 44 target',
+      check(mode, 'each checkbox and tag remove button has the target size',
         closed.checkboxTargets && closed.removeTargets && closed.searchTarget, closed);
       await space();
       const checked = await read();
@@ -97,7 +97,7 @@ export async function multiChoiceExampleChecks(session, sessionId, base, modes, 
       check(mode, 'Tab reaches the search box with a focus ring', search.focusPart === 'search' && search.ring, search);
       await press('ArrowDown', 'ArrowDown', 40);
       const opened = await read();
-      check(mode, 'the search opens the multiselect listbox and all options have a 44 by 44 target',
+      check(mode, 'the search opens the multiselect listbox and all options have the target size',
         opened.open && opened.controls && opened.listbox && opened.optionTargets && opened.optionRing
         && opened.active === 'Mist fern' && opened.selected.join() === 'Mist fern,Dune bell', opened);
       check(mode, 'the open and closed form fit at 375 CSS pixels', fits(closed) && fits(opened), { closed: closed.scroll, open: opened.scroll });

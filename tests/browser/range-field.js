@@ -10,7 +10,7 @@ export async function rangeExampleChecks(session, sessionId, base, modes, { eval
     const controls = fields.flatMap(({ shadowRoot }) => [...shadowRoot.querySelectorAll('.controls input')].map((input) => {
       const { width, height } = input.getBoundingClientRect();
       const style = getComputedStyle(input);
-      return { width, height, value: input.valueAsNumber, min: input.min, max: input.max,
+      return { width, height, least: muControlSize(input), value: input.valueAsNumber, min: input.min, max: input.max,
         focused: shadowRoot.activeElement === input,
         ring: [style.outlineStyle, style.outlineWidth, style.outlineOffset, style.outlineColor],
         appearance: style.appearance, accent: style.accentColor, border: style.borderStyle,
@@ -44,9 +44,9 @@ export async function rangeExampleChecks(session, sessionId, base, modes, { eval
         ready();
       })`);
       const start = await read();
-      check(mode, 'each control has a 44 by 44 CSS pixel target and the page fits without horizontal scroll',
+      check(mode, 'each control has the target size and the page fits without horizontal scroll',
         start.width === 375 && start.scroll === 375 && start.controls.length === 6
-        && start.controls.every(({ width, height }) => width >= 44 && height >= 44), start);
+        && start.controls.every(({ width, height, least }) => width >= least && height >= least), start);
       check(mode, 'the native slider and number box are visible in this mode',
         start.controls.every(({ appearance, border }, index) => index % 2 ? border === 'solid' : appearance !== 'none')
         && start.forced === (mode === 'forced-colors') && start.reduced === (mode === 'reduced-motion')

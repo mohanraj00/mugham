@@ -87,7 +87,7 @@ export class MuUpload extends MuElement {
     }
     .drop.over { border-style: solid; border-color: var(--mu-color-accent); }
     button {
-      font: var(--mu-type-body); min-height: var(--mu-target); min-width: var(--mu-target); padding: var(--mu-space-2) var(--mu-space-3);
+      font: var(--mu-type-body); min-height: var(--mu-size-control); min-width: var(--mu-size-control); padding: var(--mu-space-2) var(--mu-space-3);
       border-radius: var(--mu-radius-2); border: 1px solid var(--mu-color-accent); cursor: pointer;
       background: transparent; color: var(--mu-color-accent);
     }

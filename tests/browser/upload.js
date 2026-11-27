@@ -127,6 +127,14 @@ export async function uploadExampleChecks(session, sessionId, base, { evaluate, 
 }
 
 async function browserChecks() {
+  const controlSize = (node) => {
+    // The target size of a control (decision 0009): size.control of its host, and never less than 24 CSS pixels.
+    const host = node.getRootNode().host;
+    const name = host || !matchMedia('(pointer: coarse)').matches ? '--mu-size-control' : '--mu-size-control-touch';
+    const value = getComputedStyle(host ?? document.documentElement).getPropertyValue(name).trim();
+    const unit = value.endsWith('rem') ? parseFloat(getComputedStyle(document.documentElement).fontSize) : 1;
+    return Math.max(24, parseFloat(value) * unit) - 0.01;
+  };
   const { MuUpload, bytes } = await import('../../src/components/upload.js');
   const { define } = await import('../../src/thread/index.js');
   const { CATALOG } = await import('../../src/render/catalog.js');
@@ -451,7 +459,7 @@ async function browserChecks() {
   check(`${mode}: a file with no receipt shows the reason and both exits`, pending.dataset.state === 'pending'
     && rows(pending).every((row) => row.endsWith('Pending: No receipt came back.')) && !root(pending).textContent.includes('Done')
     && retry.getAttribute('aria-label') === 'Retry first.pdf' && cancel.getAttribute('aria-label') === 'Cancel first.pdf'
-    && [retry, cancel].every((button) => button.checkVisibility() && button.getBoundingClientRect().height >= 44));
+    && [retry, cancel].every((button) => button.checkVisibility() && button.getBoundingClientRect().height >= controlSize(button)));
   retry.focus();
   retry.click();
   const retried = last(pending);

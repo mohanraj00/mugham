@@ -15,7 +15,7 @@ const SURFACE = sheet(`
     max-block-size: var(--popup-height, 100%); overflow: auto;
   }
   button {
-    min-inline-size: var(--mu-target); min-block-size: var(--mu-target); max-inline-size: 100%;
+    min-inline-size: var(--mu-size-control); min-block-size: var(--mu-size-control); max-inline-size: 100%;
     padding: var(--mu-space-2); font: inherit; cursor: pointer; overflow-wrap: anywhere;
     color: inherit; background: var(--mu-color-surface);
     border: 1px solid var(--mu-color-border); border-radius: var(--mu-radius-2);
@@ -180,7 +180,7 @@ export class MuTooltip extends MuPopover {
   };
   static styles = [SURFACE, sheet(`
     .target { display: inline-block; max-inline-size: 100%; vertical-align: middle; }
-    ::slotted(*) { min-inline-size: var(--mu-target); min-block-size: var(--mu-target); max-inline-size: 100%; }
+    ::slotted(*) { min-inline-size: var(--mu-size-control); min-block-size: var(--mu-size-control); max-inline-size: 100%; }
     [role="tooltip"] {
       padding: var(--mu-space-2); max-inline-size: min(20rem, calc(100% - 16px)); overflow: clip;
     }

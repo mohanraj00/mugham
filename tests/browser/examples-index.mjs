@@ -129,6 +129,8 @@ export async function exampleIndexChecks(session, sessionId, base, { evaluate, o
   const servers = {};
   const checkCompact = async (where) => {
     await session.send('Emulation.setDeviceMetricsOverride', PHONE, sessionId);
+    // A phone has a coarse pointer, so each control has the touch size (decision 0009, section 1).
+    await session.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 }, sessionId);
     await evaluate(session, sessionId, 'document.documentElement.dataset.muDensity = "compact"');
     // Tab sets keyboard focus before the check moves focus to each control.
     await key(session, sessionId, 'Tab', 'Tab', 9);
@@ -138,10 +140,13 @@ export async function exampleIndexChecks(session, sessionId, base, { evaluate, o
       const small = await touchTargetProblems(session, sessionId, true);
       step(where, `compact ${mode}: the page fits at 375 CSS pixels`,
         view.spacing === '0.75rem' && view.width === PHONE.width && view.scrollWidth === PHONE.width, view);
-      step(where, `compact ${mode}: each touch target is at least 44 by 44 CSS pixels`, small.length === 0, small);
+      const coarse = await evaluate(session, sessionId, 'matchMedia("(pointer: coarse)").matches');
+      step(where, `compact ${mode}: with a coarse pointer, each touch target is at least 44 by 44 CSS pixels`, coarse && small.length === 0,
+        { coarse, small });
       step(where, `compact ${mode}: each control keeps its 2px focus ring`, view.focused > 0 && view.problems.length === 0, view.problems);
     }
     await session.send('Emulation.setEmulatedMedia', media('light'), sessionId);
+    await session.send('Emulation.setTouchEmulationEnabled', { enabled: false }, sessionId);
     await session.send('Emulation.clearDeviceMetricsOverride', {}, sessionId);
   };
   try {

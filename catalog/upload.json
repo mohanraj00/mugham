@@ -43,7 +43,7 @@
   "tokens": [
     "color.text", "color.text-muted", "color.surface", "color.border", "color.accent", "color.on-accent",
     "color.danger", "color.success", "space.1", "space.2", "space.3", "radius.1", "radius.2", "type.body", "type.caption",
-    "type.weight-strong"
+    "type.weight-strong", "size.control"
   ],
   "accessibility": {"role": "group", "name": {"field": "label"}, "keyboard": ["Tab", "Shift+Tab", "Enter", "Space"]}
 }

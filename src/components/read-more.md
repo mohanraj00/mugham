@@ -4,7 +4,7 @@
 
 If the text exceeds the limit, a native button shows `Read more`. A press shows the full text and changes the label to `Read less`. Enter and Space work. Focus stays on the same button. Its `aria-expanded` state and `aria-controls` target tell a screen reader what it controls. The text has the part `read-more-content`. The button has the part `read-more-toggle`.
 
-The control uses the caption font, the accent color and an underline. Its width fits its label. It has a minimum target size of 2.75 rem (44 CSS pixels) in each direction and no padding. When the text is clipped, the last visible line ends with an ellipsis. A gap of `space.1` separates it from the text. Long labels wrap within the available width. The focus ring stays visible. In forced colors, the control also has a visible border.
+The control uses the caption font, the accent color and an underline. Its width fits its label. It has the control size (`size.control`) as its minimum target size in each direction and no padding. When the text is clipped, the last visible line ends with an ellipsis. A gap of `space.1` separates it from the text. Long labels wrap within the available width. The focus ring stays visible. In forced colors, the control also has a visible border.
 
 The limit is visual only. All text stays in the DOM, the accessibility tree and page search. No text has `hidden`, `inert` or `aria-hidden`. Rich text controls outside the short view stay in the keyboard order. Focus on such a control opens the full text. Source and author details stay outside the limit.
 

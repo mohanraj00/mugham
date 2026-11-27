@@ -7,7 +7,7 @@ import { fill, mount, onAction, validateFill } from '../../src/kit.js';
 define();
 
 const API = '/api';
-const ACTIONS = [['approval.approve', 'Approve', 'check'], ['approval.reject', 'Reject', 'cross']];
+const ACTIONS = [['approval.approve', 'Approve'], ['approval.reject', 'Reject']];
 const main = document.getElementById('main');
 
 async function call(path, options) {
@@ -33,11 +33,9 @@ function decisionCard(decision) {
   const actor = validateFill(fill('card', data, { slots })).length === 0 ? author : null;
   const card = mount('card', data, { actor, slots });
   if (!card.fill) return card;
-  for (const [tool, word, icon] of ACTIONS) {
+  for (const [tool, word] of ACTIONS) {
     const label = `${word} ${decision.id}`;
-    const confirm = { message: `${word} ${decision.id}?`, label: `Confirm: ${word.toLowerCase()} ${decision.id}` };
-    mount('action-button', { label, icon, display: 'icon' }, { parent: card, slot: 'actions',
-      action: { tool, label, icon, display: 'icon', confirm, arguments: { decision_id: decision.id } } });
+    mount('action-button', { label }, { parent: card, slot: 'actions', action: { tool, label, arguments: { decision_id: decision.id } } });
   }
   return card;
 }

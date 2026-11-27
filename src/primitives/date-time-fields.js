@@ -4,7 +4,7 @@ import { FieldElement } from './fields.js';
 
 const DATE_TIME_CSS = sheet(`
   input:is([type="date"], [type="time"], [type="datetime-local"]) {
-    min-inline-size: var(--mu-target); min-block-size: var(--mu-target); max-inline-size: 100%;
+    min-inline-size: var(--mu-size-control); min-block-size: var(--mu-size-control); max-inline-size: 100%;
   }
   .dates { min-inline-size: 0; }
   .with-zone { display: flex; flex-wrap: wrap; align-items: center; gap: var(--mu-space-2); }

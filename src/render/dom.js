@@ -150,9 +150,6 @@ const FORMAT_ICONS = Object.freeze({
 const CONTROL_ICONS = Object.freeze({
   'expand-all': 'M3.5 3.5 8 7 12.5 3.5 M3.5 8.5 8 12 12.5 8.5',
   'collapse-all': 'M3.5 7.5 8 4 12.5 7.5 M3.5 12.5 8 9 12.5 12.5',
-  'sort-none': 'M5 6 8 3 11 6 M5 10 8 13 11 10',
-  'sort-up': 'M8 13V3 M4.5 6.5 8 3l3.5 3.5',
-  'sort-down': 'M8 3v10 M4.5 9.5 8 13l3.5-3.5',
 });
 const SVG = 'http://www.w3.org/2000/svg';
 
@@ -204,14 +201,16 @@ export function textDisplayOf(host) {
 export const COMPACT_CONTROL_CSS = sheet(`
   button[data-control-display="icon"] {
     display: inline-flex; align-items: center; justify-content: center; flex: none;
-    inline-size: var(--mu-target); block-size: var(--mu-target); min-inline-size: var(--mu-target); min-block-size: var(--mu-target); padding: 0;
+    inline-size: var(--mu-size-control); block-size: var(--mu-size-control); min-inline-size: var(--mu-size-control); min-block-size: var(--mu-size-control); padding: 0;
   }
-  [data-control-display="icon"] .icon { inline-size: var(--mu-size-icon, 1rem); block-size: var(--mu-size-icon, 1rem); }
+  [data-control-display="icon"] .icon { inline-size: var(--mu-size-icon); block-size: var(--mu-size-icon); }
 `);
 
 const openControlTooltip = new WeakMap();
 
-export function compactControls(host, area, tooltip, controls) {
+// With passEscape, Escape closes the tooltip and then goes on to the owner of the controls, for example a modal
+// that closes with Escape. A person then needs only one Escape to close the modal and its tooltip.
+export function compactControls(host, area, tooltip, controls, { passEscape = false } = {}) {
   const layer = floatingTooltip(area, tooltip);
   let textDisplay;
   let hovered;
@@ -236,7 +235,7 @@ export function compactControls(host, area, tooltip, controls) {
     const visible = tooltip.isConnected && tooltip.getClientRects().length > 0;
     dismiss();
     // Stop Escape only when it comes from the controls. Escape from other content still reaches its own handler.
-    if (visible && event.composedPath().includes(area)) {
+    if (visible && !passEscape && event.composedPath().includes(area)) {
       event.preventDefault();
       event.stopPropagation();
     }
@@ -342,9 +341,9 @@ export function copyControl(value, name) {
 // Shared rules for each primitive: the focus ring, the states of each control, forced colors and reduced motion.
 // A control shows hover and pressed with a layer of its own text color, so each theme gives the two states.
 export const BASE = sheet(`
-  /* The target size of each control: the control size with a mouse, the touch size with a coarse pointer. */
-  :host { box-sizing: border-box; --mu-target: var(--mu-size-control, 2rem); }
-  @media (pointer: coarse) { :host { --mu-target: var(--mu-size-control-touch, 2.75rem); } }
+  :host { box-sizing: border-box; }
+  /* Each control uses size.control as its target size. With a coarse pointer (a touch screen), size.control is the touch size. */
+  @media (pointer: coarse) { :host { --mu-size-control: var(--mu-size-control-touch); } }
   :host([hidden]) { display: none; }
   *, *::before, *::after { box-sizing: inherit; }
   :focus-visible { outline: 2px solid var(--mu-color-focus); outline-offset: 2px; }
@@ -366,13 +365,13 @@ export const BASE = sheet(`
     stroke-linecap: round; stroke-linejoin: round; transition: transform var(--mu-motion-fast); }
   .copy-box { display: inline-flex; align-items: center; }
   .copy {
-    font: var(--mu-type-caption); min-height: var(--mu-target); min-width: var(--mu-target); padding: 0 var(--mu-space-2); cursor: pointer;
+    font: var(--mu-type-caption); min-height: var(--mu-size-control); min-width: var(--mu-size-control); padding: 0 var(--mu-space-2); cursor: pointer;
     border: 1px solid currentColor; background: transparent; color: inherit;
   }
   .copy-status { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   .refused { font: var(--mu-type-caption); color: var(--mu-color-danger); }
   .refused [part="next"] { display: block; }
-  details[part="details"] > summary { min-height: var(--mu-target); min-width: var(--mu-target); padding-block: 0.625rem; cursor: pointer; }
+  details[part="details"] > summary { min-height: var(--mu-size-control); min-width: var(--mu-size-control); padding-block: 0.625rem; cursor: pointer; }
   details[part="details"]:not([open]) > :not(summary) { display: none; }
   details[part="details"] > div { white-space: pre-wrap; overflow-wrap: anywhere; }
   @media (prefers-reduced-motion: reduce) {

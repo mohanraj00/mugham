@@ -66,9 +66,11 @@ class TokensTest(unittest.TestCase):
                     with self.subTest(mode=mode, preset=preset, front=front, back=back):
                         self.assertGreaterEqual(tokens.contrast(palette[front], palette[back]), minimum)
 
-    def test_compact_changes_only_spacing_body_type_and_column_sizes(self):
+    def test_compact_changes_only_spacing_body_type_column_and_control_sizes(self):
+        # Decision 0009, section 1: the compact density also makes the controls, the icons and the fields smaller.
         expected = {'space.1': '0.1875rem', 'space.2': '0.375rem', 'space.3': '0.5625rem', 'space.4': '0.75rem',
-                    'size.column-narrow': '10rem', 'size.column-medium': '12rem', 'size.column-wide': '18rem'}
+                    'size.column-narrow': '10rem', 'size.column-medium': '12rem', 'size.column-wide': '18rem',
+                    'size.control': '1.75rem', 'size.icon': '0.875rem', 'size.field': '18rem'}
         for name, size in (('type.body', '0.875rem/1.45'), ('type.caption', '0.6875rem/1.4')):
             weight, _, family = self.data['tokens'][name]['light'].split(' ', 2)
             expected[name] = f'{weight} {size} {family}'

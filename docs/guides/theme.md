@@ -48,6 +48,10 @@ Each token has a light value and a dark value. The table gives the CSS property,
 | `--mu-easing-standard`, `--mu-easing-enter` | `cubic-bezier(0.2, 0, 0, 1)`, `cubic-bezier(0, 0, 0.2, 1)` | same | The curves of a standard transition and a transition that shows new content. |
 | `--mu-size-column-narrow`, `--mu-size-column-medium`, `--mu-size-column-wide` | `12rem`, `16rem`, `22rem` | same | The minimum column width of a grid. A table column is from half of the narrow size to the wide size. |
 | `--mu-size-page` | `64rem` | same | The maximum width of the content in the default page style. |
+| `--mu-size-control` | `2rem` | same | The target size of a control with a fine pointer (a mouse): the minimum height and width of a button, a select and a text input. |
+| `--mu-size-control-touch` | `2.75rem` | same | The target size of a control with a coarse pointer (a touch screen). Each kit element and the default page style use it in place of `--mu-size-control` when the pointer is coarse. |
+| `--mu-size-icon` | `1rem` | same | The size of an icon in a control. |
+| `--mu-size-field` | `20rem` | same | The maximum width of a single-line field in an editable form. |
 
 The font stack of the body, caption and heading tokens is `Instrument Sans, system-ui, -apple-system, Segoe UI, sans-serif`. The font stack of the code token is `Geist Mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace`. The kit loads no font. If the page does not supply the first font of a stack, the browser uses the next font of the stack. [docs/brand/](../brand/README.md) gives the base colors, spacing and type.
 
@@ -100,7 +104,7 @@ The style gives these rules:
 | `h1` to `h4` | The heading tokens. A `h4` has the body size and the strong weight. |
 | `a` | The accent color, always with an underline. |
 | `code`, `kbd`, `pre` | The code token on the surface color, with a subtle edge. |
-| `table`, `button`, `select` | A plain table has a line below each row. A plain button and a plain select have the control edge `--mu-color-border`, a minimum size of 44 by 44 CSS pixels, and a hover state. |
+| `table`, `button`, `select` | A plain table has a line below each row. A plain button and a plain select have the control edge `--mu-color-border`, the target size as the minimum size, and a hover state. |
 | `[data-mu-scroll]` | A box for wide content, for example a plain table. The box scrolls to the side, so the page does not. A table cell does not break its text, so a wide table keeps its columns and scrolls in the box. |
 | `p`, `li`, `dt`, `dd`, `blockquote`, `figcaption`, `caption` | A long token with no break point, for example a digest, breaks at the edge of the block. A heading wraps only at spaces, and a `pre` block scrolls. |
 | Focus | A ring of 2px in `--mu-color-focus` on each focused control of the page. |
@@ -123,9 +127,9 @@ To change only some rules, link your style sheet after `page.css`. The block spa
 
 Set `data-mu-density="compact"` on `<html>` to use compact density on the full page. To use it in one part of a page, set the attribute on the container of that part. The elements in the container use the compact tokens, also in their shadow roots.
 
-Compact density reduces the first four space tokens, the body and caption type sizes, and the minimum widths of grid columns. Use these tokens for gaps, content padding and text. The `compact` theme preset uses these density values on the full page. Use the density attribute to apply the same spacing to a container or to use compact density with high contrast.
+Compact density reduces the first four space tokens, the body and caption type sizes, the minimum widths of grid columns, the control size (`1.75rem`), the icon size (`0.875rem`) and the field width (`18rem`). The touch size does not change. Use these tokens for gaps, content padding and text. The `compact` theme preset uses these density values on the full page. Use the density attribute to apply the same spacing to a container or to use compact density with high contrast.
 
-Keep each control target at least 44 by 44 CSS pixels (`2.75rem` with a root size of 16px). Keep the root font size and the control minimum sizes. A radio or checkbox and its label make one target. Keep the 2px focus ring and the contrast ratios for text, control edges and focus rings.
+Keep each control target at the target size or larger. The target size is `--mu-size-control` with a fine pointer (32 by 32 CSS pixels by default, 28 in compact density) and `--mu-size-control-touch` with a coarse pointer (44 by 44 CSS pixels). Do not set `--mu-size-control` below `1.5rem` (24 CSS pixels, WCAG 2.5.8). To keep 44 by 44 CSS pixel targets with a mouse, set `--mu-size-control: 2.75rem` in your theme. Keep the root font size and the control minimum sizes. A radio or checkbox and its label make one target. Keep the 2px focus ring and the contrast ratios for text, control edges and focus rings.
 
 With `page.css`, set `data-mu-page="full"` on `<html>` to set `--mu-size-page` to `100%`. The header, main content and footer use the available width and keep the side space that `--mu-space-4` gives. You can use this option with either density.
 
@@ -215,9 +219,11 @@ The browser check opens the gallery at 375 CSS pixels in each preset and mode. S
 
 ## Control display
 
-The card toggle, the two card grid controls and the two rich text link buttons show icons by default. Set `control-display="text"` on a component or an ancestor to show the text labels. Set the ancestor attribute before the fill or before you attach the filled component. The closest setting applies, even across a shadow root. An empty value or `icon` selects icons. An attribute change on a component updates its controls. An attribute change on a card grid also updates its nested cards.
+These kit controls show icons by default: the card toggle, the two card grid controls, the two rich text link buttons, and the close of a dialog or a drawer. Each icon control keeps its text as its accessible name and shows the text as a tooltip on hover and on keyboard focus. Escape closes the tooltip. Set `control-display="text"` on a component or an ancestor to show the text labels. Set the ancestor attribute before the fill or before you attach the filled component. The closest setting applies, even across a shadow root. An empty value or `icon` selects icons. An attribute change on a component updates its controls. An attribute change on a card or a card grid also updates the controls of the elements in it. A change on a different ancestor applies at the next render or connection.
 
-Keep the icon buttons at 44 by 44 CSS pixels and keep their focus rings visible. Let each icon take the button text color. Keep the text and border of the `tooltip`, `card-tooltip` and `link-tooltip` parts visible in forced colors when the kit shows them. Keep the tooltips clear of the content and the editor.
+The action button and the editable form keep the `display` of their binding, because the application owns their label. The default is `text`. If the binding gives `icon` and `display: 'icon'`, the control shows the icon, and `control-display="text"` shows the label next to the icon.
+
+Keep the icon buttons at the target size and keep their focus rings visible. Let each icon take the button text color. Keep the text and border of the `tooltip`, `card-tooltip` and `link-tooltip` parts visible in forced colors when the kit shows them. Keep the tooltips clear of the content and the editor.
 
 `Read more`, `Read less` and the `Retry` and `Cancel` exits for pending actions keep their text.
 
@@ -247,10 +253,10 @@ An asterisk marks a guardrail part. Keep it visible when the kit shows it. Run `
 | `mu-date-field` | `copy`\*, `copy-status`\*, `details`\*, `edit-type`\*, `input`\*, `label`\*, `next`\*, `problem`\*, `reason`\* |
 | `mu-date-range-field` | `copy`\*, `copy-status`\*, `date-label`\*, `details`\*, `edit-type`\*, `end`\*, `group`\*, `label`\*, `next`\*, `problem`\*, `reason`\*, `start`\* |
 | `mu-date-time-field` | `copy`\*, `copy-status`\*, `details`\*, `edit-type`\*, `input`\*, `label`\*, `next`\*, `problem`\*, `reason`\*, `time-zone`\* |
-| `mu-dialog` | `body`\*, `close`\*, `copy`\*, `copy-status`\*, `details`\*, `dialog`\*, `next`\*, `reason`\*, `title`\* |
-| `mu-drawer` | `body`\*, `close`\*, `copy`\*, `copy-status`\*, `details`\*, `dialog`\*, `next`\*, `reason`\*, `title`\* |
+| `mu-dialog` | `body`\*, `close`\*, `copy`\*, `copy-status`\*, `details`\*, `dialog`\*, `icon`\*, `next`\*, `reason`\*, `title`\*, `tooltip`\* |
+| `mu-drawer` | `body`\*, `close`\*, `copy`\*, `copy-status`\*, `details`\*, `dialog`\*, `icon`\*, `next`\*, `reason`\*, `title`\*, `tooltip`\* |
 | `mu-diff` | `after`\*, `authorship`\*, `before`\*, `change`, `changes`, `citation`\*, `copy`\*, `copy-status`\*, `counts`, `details`\*, `diff`, `empty`, `kind`\*, `label`, `locator`\*, `next`\*, `open`\*, `part`, `provenance`\*, `reason`\*, `summary`, `title`, `value`, `version`\*, `versions` |
-| `mu-editable-form` | `accept`\*, `authorship`\*, `button`, `cancel`\*, `citation`\*, `confirm`\*, `copy`\*, `copy-status`\*, `details`\*, `exit`\*, `form`, `locator`\*, `next`\*, `open`\*, `provenance`\*, `reason`\*, `reference`\*, `retry`\*, `status`\* |
+| `mu-editable-form` | `accept`\*, `authorship`\*, `button`, `cancel`\*, `citation`\*, `confirm`\*, `copy`\*, `copy-status`\*, `details`\*, `exit`\*, `form`, `icon`\*, `locator`\*, `next`\*, `open`\*, `provenance`\*, `reason`\*, `reference`\*, `retry`\*, `status`\*, `tooltip`\* |
 | `mu-empty-state` | `action`\*, `copy`\*, `copy-status`\*, `details`\*, `next`\*, `reason`\*, `text`\*, `title`\* |
 | `mu-excerpt` | `authorship`\*, `citation`\*, `copy`\*, `copy-status`\*, `details`\*, `excerpt`, `locator`\*, `mark`, `next`\*, `open`\*, `passage`, `provenance`\*, `read-more-content`\*, `read-more-toggle`\*, `reason`\*, `span` |
 | `mu-field` | `copy`\*, `copy-status`\*, `details`\*, `edit-type`\*, `input`\*, `label`\*, `next`\*, `problem`\*, `reason`\* |
@@ -323,29 +329,29 @@ Each rule protects a principle of the [constitution](../../CONSTITUTION.md#princ
 
 A page can style these parts for layout, for example a margin or a width, if it keeps each rule above: `actions`, `button`, `card`, `choices`, `empty`, `excerpt`, `facts`, `form`, `input`, `label`, `layout`, `list`, `mark`, `passage`, `quote`, `span`, `table` and `text`. The form card adds the layout parts `section`, `lines`, `line`, `line-number`, `value`, `editor` and `save`. The diff adds the layout parts `diff`, `title`, `versions`, `counts`, `summary`, `changes`, `change` and `value`. `seed-tray` in [examples/cards/register.js](../../examples/cards/register.js) shows that an application element can add its own part, for example `tray`.
 
-Keep the `dialog`, `title`, `body` and `close` parts of a dialog or drawer visible while it is open. Keep the close button at least 44 by 44 CSS pixels and keep its focus ring visible. Let the browser hide the modal when it is closed.
+Keep the `dialog`, `title`, `body` and `close` parts of a dialog or drawer visible while it is open. Keep the close button at the target size or larger and keep its focus ring visible. Let the browser hide the modal when it is closed.
 
-Keep the menu `trigger` and each `item` at least 44 by 44 CSS pixels. Keep their focus rings visible. Let the `menu` scroll when it is too tall for the available space.
+Keep the menu `trigger` and each `item` at the target size or larger. Keep their focus rings visible. Let the `menu` scroll when it is too tall for the available space.
 
 Keep the `tooltip` text and border visible while it is open. Leave space for it above or below the target. Keep the target and its focus ring visible.
 
-Keep the `toast` and its `message` visible while the toast is open. If it has a `close` button, keep the button at least 44 by 44 CSS pixels and keep its focus ring visible.
+Keep the `toast` and its `message` visible while the toast is open. If it has a `close` button, keep the button at the target size or larger and keep its focus ring visible.
 
-Keep the `tablist` and each `tab` visible. Let the list wrap on narrow screens. Keep the selected tab easy to identify in each theme. Keep each tab and accordion `toggle` at least 44 by 44 CSS pixels and keep their focus rings visible. Keep each accordion `heading` visible and keep each `panel` visible when its control shows it.
+Keep the `tablist` and each `tab` visible. Let the list wrap on narrow screens. Keep the selected tab easy to identify in each theme. Keep each tab and accordion `toggle` at the target size or larger and keep their focus rings visible. Keep each accordion `heading` visible and keep each `panel` visible when its control shows it.
 
-Keep the app shell landmarks `top`, `side` and `main` visible in their active layout. Keep the `skip` part visible on focus and keep the `menu` part visible on narrow screens. Give each control in the top and side slots a 44 by 44 CSS pixel target and a visible focus ring.
+Keep the app shell landmarks `top`, `side` and `main` visible in their active layout. Keep the `skip` part visible on focus and keep the `menu` part visible on narrow screens. Give each control in the top and side slots a target at the target size or larger and a visible focus ring.
 
-Let the breadcrumb `list` and pagination `nav` wrap. Keep the current page distinct in each theme and in forced colors. Keep each `link`, `page`, `previous-page` and `next-page` target at least 44 by 44 CSS pixels and keep its focus ring visible.
+Let the breadcrumb `list` and pagination `nav` wrap. Keep the current page distinct in each theme and in forced colors. Keep each `link`, `page`, `previous-page` and `next-page` target at the target size or larger and keep its focus ring visible.
 
-Let the wizard `list` wrap and keep each `step`, its `position` and its `state` visible. Give each `back` button a target of at least 44 by 44 CSS pixels and keep its focus ring visible.
+Let the wizard `list` wrap and keep each `step`, its `position` and its `state` visible. Give each `back` button a target of at the target size or larger and keep its focus ring visible.
 
-Keep the run step and plan `list`, `authorship`, `name` and `state` visible. Keep the `announcement` in the accessibility tree. Keep each run step `toggle` at least 44 by 44 CSS pixels with a visible focus ring. Keep the `panel` and its text visible while the disclosure is open. Let long detail, arguments and result text wrap on narrow screens.
+Keep the run step and plan `list`, `authorship`, `name` and `state` visible. Keep the `announcement` in the accessibility tree. Keep each run step `toggle` at the target size or larger with a visible focus ring. Keep the `panel` and its text visible while the disclosure is open. Let long detail, arguments and result text wrap on narrow screens.
 
-Keep the approval `list`, `label`, `authorship`, `title`, `summary` and `state` visible. Keep the `announcement` in the accessibility tree. Let the item text and decisions wrap. Keep the action controls, confirmation, pending exits and receipt details visible when they are available. Keep the controls at least 44 by 44 CSS pixels with a visible focus ring.
+Keep the approval `list`, `label`, `authorship`, `title`, `summary` and `state` visible. Keep the `announcement` in the accessibility tree. Let the item text and decisions wrap. Keep the action controls, confirmation, pending exits and receipt details visible when they are available. Keep the controls at the target size or larger with a visible focus ring.
 
 Keep the progress `label` and `value` visible. Keep the `bar` edge and fill distinct in forced colors. Keep the `indicator` visible for unknown progress and stop its motion when the person asks for reduced motion.
 
-Keep the empty state `title` and `text` visible. Keep a named control in its `action` slot at least 44 by 44 CSS pixels and keep its focus ring visible.
+Keep the empty state `title` and `text` visible. Keep a named control in its `action` slot at the target size or larger and keep its focus ring visible.
 
 Keep each skeleton `line` visible in forced colors. Keep the `status` and its accessible name while content loads. Stop the motion of each line when the person asks for reduced motion.
 
@@ -355,25 +361,25 @@ The image parts are `image`, `box`, `caption` and `dialog`. Keep the box ratio a
 
 The card parts include `toggle`, `icon`, `body` and `collapsed-summary`. Keep the toggle, its border and its focus ring visible. The part `icon` is the chevron of the toggle, and it takes the text color of the toggle. The kit hides the body only when the card can collapse. Do not change this rule or hide a pending action with page styles. The short summary shows only while the card is collapsed.
 
-The action button uses the `icon` part in `icon` and `both` displays. Keep the icon visible and let its stroke take the button text color. In `icon` display, the `tooltip` part shows the button label on hover and focus. Keep its text and border visible in forced colors. Keep the `button` part at least 44 by 44 CSS pixels and keep its focus ring. The `status` and `reference` parts keep their text in each display.
+The action button uses the `icon` part in `icon` and `both` displays. Keep the icon visible and let its stroke take the button text color. In `icon` display, the `tooltip` part shows the button label on hover and focus. Keep its text and border visible in forced colors. Keep the `button` part at the target size or larger and keep its focus ring. The `status` and `reference` parts keep their text in each display.
 
-In a rich text field, keep the `format` buttons at least 44 by 44 CSS pixels. Keep their focus rings and pressed states visible. Let the `toolbar` wrap on narrow screens. Keep each format symbol visible and let the `icon` stroke take the button text color. Keep the `tooltip` text and border visible in forced colors. Keep the tooltip clear of the `input` part.
+In a rich text field, keep the `format` buttons at the target size or larger. Keep their focus rings and pressed states visible. Let the `toolbar` wrap on narrow screens. Keep each format symbol visible and let the `icon` stroke take the button text color. Keep the `tooltip` text and border visible in forced colors. Keep the tooltip clear of the `input` part.
 
-The toggle field parts are `target`, `input`, `label` and `state`. Keep the `target` at least 44 by 44 CSS pixels. Keep the `input`, its focus ring and the `label` visible. In switch display, keep the switch border visible in forced colors and the `On` or `Off` text in the `state` part visible in each theme.
+The toggle field parts are `target`, `input`, `label` and `state`. Keep the `target` at the target size or larger. Keep the `input`, its focus ring and the `label` visible. In switch display, keep the switch border visible in forced colors and the `On` or `Off` text in the `state` part visible in each theme.
 
-The select field parts are `label`, `control`, `value`, `popup`, `search`, `listbox`, `option`, `status` and `problem`. Keep the `control`, `search` and each `option` at least 44 by 44 CSS pixels. Keep the value, the focus rings and the active and selected options distinct in each theme and in forced colors. Let the listbox scroll inside the popup. Keep the status visible when the search has no match.
+The select field parts are `label`, `control`, `value`, `popup`, `search`, `listbox`, `option`, `status` and `problem`. Keep the `control`, `search` and each `option` at the target size or larger. Keep the value, the focus rings and the active and selected options distinct in each theme and in forced colors. Let the listbox scroll inside the popup. Keep the status visible when the search has no match.
 
 The multi-choice field parts shared by both displays are `label`, `group` and `problem`. The short display adds `checkbox-label` and `checkbox`. Keep the labels and native check marks visible. The tag picker adds `tags`, `tag`, `tag-text`, `remove`, `search`, `popup`, `listbox`, `option` and `status`. Let tags wrap and let the listbox scroll within the popup. Keep the selection check marks, the active option ring and the search status visible.
 
-Keep each `checkbox`, `remove`, `search` and `option` at least 44 by 44 CSS pixels. Keep each focus ring visible, also in forced colors. Let the field fit at 375 CSS pixels without horizontal scroll. The `edit-type` and `reason` parts use the shared rules for typed fields.
+Keep each `checkbox`, `remove`, `search` and `option` at the target size or larger. Keep each focus ring visible, also in forced colors. Let the field fit at 375 CSS pixels without horizontal scroll. The `edit-type` and `reason` parts use the shared rules for typed fields.
 
-The range field parts are `label`, `group`, `handle-label`, `controls`, `slider` and `number`. The `group` and `handle-label` parts show with two handles. Keep each slider next to its number box in `controls`. Keep the labels, slider track and thumb, number box border and focus rings visible in each theme and in forced colors. Keep each `slider` and `number` at least 44 by 44 CSS pixels. Let the field fit at 375 CSS pixels without horizontal scroll.
+The range field parts are `label`, `group`, `handle-label`, `controls`, `slider` and `number`. The `group` and `handle-label` parts show with two handles. Keep each slider next to its number box in `controls`. Keep the labels, slider track and thumb, number box border and focus rings visible in each theme and in forced colors. Keep each `slider` and `number` at the target size or larger. Let the field fit at 375 CSS pixels without horizontal scroll.
 
-The date range field parts are `label`, `group`, `date-label`, `start` and `end`. The time and date-time fields have `label` and `input` parts. The date-time field adds `time-zone`. Keep each label and the time zone visible. Let the time zone wrap. Keep the native controls, their borders and their focus rings visible in each theme and in forced colors. Keep each input at least 44 by 44 CSS pixels. Let the fields fit at 375 CSS pixels without horizontal scroll. Keep the `problem` part visible when it has text.
+The date range field parts are `label`, `group`, `date-label`, `start` and `end`. The time and date-time fields have `label` and `input` parts. The date-time field adds `time-zone`. Keep each label and the time zone visible. Let the time zone wrap. Keep the native controls, their borders and their focus rings visible in each theme and in forced colors. Keep each input at the target size or larger. Let the fields fit at 375 CSS pixels without horizontal scroll. Keep the `problem` part visible when it has text.
 
 The text limit parts are `read-more-content` and `read-more-toggle`. Keep the full text in the content part. Keep the compact toggle, its underline and its focus ring visible when the text exceeds the limit. Keep its border visible in forced colors. Do not add a fade or a height animation.
 
-Keep the rich text field `label`, `input` and `toolbar` visible. Let the `format` buttons wrap and keep each button at least 44 by 44 CSS pixels. Keep the pressed state distinct in each media mode. Keep focus rings visible on the format buttons, the editable area and the controls in `link-editor`. Keep the `problem`, `status` and `edit-type` parts visible when the field shows them. Let the field and its status text wrap at 375 CSS pixels.
+Keep the rich text field `label`, `input` and `toolbar` visible. Let the `format` buttons wrap and keep each button at the target size or larger. Keep the pressed state distinct in each media mode. Keep focus rings visible on the format buttons, the editable area and the controls in `link-editor`. Keep the `problem`, `status` and `edit-type` parts visible when the field shows them. Let the field and its status text wrap at 375 CSS pixels.
 
 Keep the `approval-mark` text visible in rich text and in the approval queue. The rich text also has `rich-text`, `code`, `link` and `target` parts. Keep the underline and the focus ring of the `link` part. Do not hide the `target` part, because it shows the address that a link opens.
 

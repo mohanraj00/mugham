@@ -5,7 +5,7 @@ import { FieldElement } from './fields.js';
 const SELECT_CSS = sheet(`
   :host { min-inline-size: 0; overflow-wrap: anywhere; }
   [part="control"] {
-    box-sizing: border-box; min-inline-size: var(--mu-target); min-block-size: var(--mu-target);
+    box-sizing: border-box; min-inline-size: var(--mu-size-control); min-block-size: var(--mu-size-control);
     font: var(--mu-type-body); padding: var(--mu-space-2);
   }
   [part="control"] {

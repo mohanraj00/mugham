@@ -21,7 +21,7 @@ export class MuDialog extends MuElement {
     button[part="close"][data-control-display="icon"] { border-color: transparent; background: transparent; margin-inline-end: calc(-1 * var(--mu-space-2)); }
     h2 { min-inline-size: 0; margin: 0; font: var(--mu-type-heading-3); }
     button {
-      min-inline-size: var(--mu-target); min-block-size: var(--mu-target); max-inline-size: 40%;
+      min-inline-size: var(--mu-size-control); min-block-size: var(--mu-size-control); max-inline-size: 40%;
       padding: var(--mu-space-2); font: inherit; cursor: pointer;
       color: inherit; background: var(--mu-color-surface);
       border: 1px solid var(--mu-color-border); border-radius: var(--mu-radius-2);
@@ -77,7 +77,8 @@ export class MuDialog extends MuElement {
     const title = el('h2', { id: 'title', part: 'title' }, data.title);
     const header = el('div', { class: 'header' }, title, close);
     const tooltip = el('span', { part: 'tooltip', 'aria-hidden': 'true' });
-    this.#controls = compactControls(this, header, tooltip, [{ button: close, label: data.close_label, graphic: icon('cross') }]);
+    this.#controls = compactControls(this, header, tooltip, [{ button: close, label: data.close_label, graphic: icon('cross') }],
+      { passEscape: true });
     const dialog = el('dialog', { part: 'dialog', 'aria-labelledby': 'title', 'aria-modal': 'true' },
       header,
       el('div', { class: 'body', part: 'body' }, el('slot')));

@@ -1,6 +1,14 @@
 export const DIALOG_PAGE = 'examples/cards/dialogs.html';
 
 function readModal(name) {
+  const controlSize = (node) => {
+    // The target size of a control (decision 0009): size.control of its host, and never less than 24 CSS pixels.
+    const host = node.getRootNode().host;
+    const name = host || !matchMedia('(pointer: coarse)').matches ? '--mu-size-control' : '--mu-size-control-touch';
+    const value = getComputedStyle(host ?? document.documentElement).getPropertyValue(name).trim();
+    const unit = value.endsWith('rem') ? parseFloat(getComputedStyle(document.documentElement).fontSize) : 1;
+    return Math.max(24, parseFloat(value) * unit) - 0.01;
+  };
   const modal = document.querySelector('mu-' + name);
   const root = modal.shadowRoot;
   const dialog = root.querySelector('dialog');
@@ -27,7 +35,7 @@ function readModal(name) {
     ring: focus?.outlineStyle === 'solid' && parseFloat(focus.outlineWidth) >= 2 && focus.outlineColor === expected.color,
     targets: [trigger, close, control].map((node) => {
       const { width, height } = node.getBoundingClientRect();
-      return width >= 44 && height >= 44;
+      return width >= controlSize(node) && height >= controlSize(node);
     }),
     surface: style.backgroundColor === expected.backgroundColor, border: style.borderStyle,
     forced, dark: matchMedia('(prefers-color-scheme: dark)').matches,
@@ -104,7 +112,7 @@ export async function dialogExampleChecks(session, sessionId, base, modes, { eva
         const opened = await read(name);
         check(mode, name + ' opens as a modal and puts focus on Close', !closed.open && opened.open
           && opened.state === 'open' && opened.focus === 'close' && opened.eventNames.join() === 'mu-dialog-open', opened);
-        check(mode, name + ' fits at 375 CSS pixels and shows 44 by 44 CSS pixel targets',
+        check(mode, name + ' fits at 375 CSS pixels and each control has the target size',
           [closed, opened].every(({ width, scroll }) => width === 375 && scroll === width)
           && opened.targets.every(Boolean) && opened.box.left >= 0 && opened.box.right <= opened.width
           && (name !== 'drawer' || Math.abs(opened.box.bottom - opened.height) < 1), opened);

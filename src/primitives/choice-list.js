@@ -5,7 +5,7 @@ export const CHOICE_LIST_CSS = sheet(`
   [part="popup"] { padding: var(--mu-space-1); }
   [part="popup"][hidden] { display: none; }
   [part="search"], [part="option"] {
-    box-sizing: border-box; min-inline-size: var(--mu-target); min-block-size: var(--mu-target);
+    box-sizing: border-box; min-inline-size: var(--mu-size-control); min-block-size: var(--mu-size-control);
     font: var(--mu-type-body); padding: var(--mu-space-2);
   }
   [part="option"] { overflow-wrap: anywhere; white-space: pre-wrap; }

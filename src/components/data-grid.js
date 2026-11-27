@@ -92,29 +92,17 @@ export class MuDataGrid extends MuElement {
   static styles = [REFERENCE_CSS, sheet(`
     :host { display: block; min-width: 0; }
     .grid { color: var(--mu-color-text); font: var(--mu-type-body); display: flex; flex-direction: column; gap: var(--mu-space-2); }
-    /* The frame fits the columns. A wide grid scrolls in the frame. */
     .scroll {
       overflow: auto; max-block-size: 30rem; background: var(--mu-color-surface);
-      inline-size: fit-content; max-inline-size: 100%;
-      border: 1px solid var(--mu-color-border-subtle); border-radius: var(--mu-radius-2);
+      border: 1px solid var(--mu-color-border); border-radius: var(--mu-radius-1);
     }
     table { border-collapse: separate; border-spacing: 0; }
     th, td {
       text-align: start; vertical-align: top; padding: var(--mu-space-2) var(--mu-space-3);
-      min-width: 5rem; max-width: 16rem; block-size: var(--mu-target); overflow-wrap: break-word; background: var(--mu-color-surface);
-      padding-block: var(--mu-space-1); vertical-align: middle;
-      border-block-end: 1px solid var(--mu-color-border-subtle);
+      min-width: 5rem; max-width: 16rem; block-size: 2.75rem; overflow-wrap: break-word; background: var(--mu-color-surface);
+      border-block-end: 1px solid var(--mu-color-border); border-inline-end: 1px solid var(--mu-color-border);
     }
-    tbody tr:last-child > * { border-block-end: 0; }
-    /* The header row is different from the body: a subtle surface, caption text and the muted color. */
-    thead th, thead td {
-      background: var(--mu-color-surface-subtle); color: var(--mu-color-text-muted);
-      font: var(--mu-type-caption); font-weight: var(--mu-type-weight-strong);
-      border-block-end: 1px solid var(--mu-color-border);
-    }
-    thead th.number { text-align: end; }
-    tbody th { font-weight: 400; }
-    tbody tr:hover > * { background: color-mix(in srgb, var(--mu-color-surface-subtle) 60%, var(--mu-color-surface)); }
+    th { font-weight: var(--mu-type-weight-strong); }
     thead th, thead td { position: sticky; inset-block-start: 0; z-index: 2; }
     tbody th, thead td { position: sticky; inset-inline-start: 0; z-index: 1; }
     thead td { z-index: 3; }
@@ -134,14 +122,13 @@ export class MuDataGrid extends MuElement {
     .pending-exits { display: flex; flex-wrap: wrap; gap: var(--mu-space-2); }
     .pending-exits[hidden] { display: none; }
     .pending-exits button {
-      min-width: var(--mu-target); min-height: var(--mu-target); padding: var(--mu-space-2) var(--mu-space-3);
+      min-width: 2.75rem; min-height: 2.75rem; padding: var(--mu-space-2) var(--mu-space-3);
       border: 1px solid var(--mu-color-border); border-radius: var(--mu-radius-1);
       background: var(--mu-color-surface); color: var(--mu-color-text); font: var(--mu-type-body); cursor: pointer;
     }
     .muted { font: var(--mu-type-caption); color: var(--mu-color-text-muted); }
     @media (forced-colors: active) {
       .scroll, th, td, .editor { border-color: CanvasText; }
-      thead th, thead td { color: CanvasText; }
       th, td { background: Canvas; }
       td[aria-readonly="true"], td[data-state="error"] .marker, .status.done, .status.error, .muted { color: CanvasText; }
       .pending-exits button { background: ButtonFace; color: ButtonText; border-color: ButtonText; forced-color-adjust: none; }
@@ -384,7 +371,7 @@ export class MuDataGrid extends MuElement {
       this.#current = null;
     }
     const table = el('table', { role: 'grid', 'aria-label': data.label, 'aria-readonly': bound ? 'false' : 'true' },
-      el('thead', {}, el('tr', {}, el('td'), ...this.#columns.map((column) => el('th', { scope: 'col', class: column.type }, column.label)))), body);
+      el('thead', {}, el('tr', {}, el('td'), ...this.#columns.map((column) => el('th', { scope: 'col' }, column.label)))), body);
     table.addEventListener('keydown', (event) => this.#key(event));
     table.addEventListener('focusin', (event) => this.#focused(event));
     table.addEventListener('focusout', (event) => {

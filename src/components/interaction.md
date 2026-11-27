@@ -25,7 +25,7 @@ The focus ring has two exceptions in its offset. A cell of a data grid has the r
 
 ## Touch targets
 
-Each touch target is 44 by 44 CSS pixels at the minimum. A radio and its label are one target. The cell of a data grid is the target of its editor, and each cell is 44 CSS pixels high at the minimum. The browser check measures each control in each shadow root, on each check page and each example page.
+Each control uses the control size token as its target size ([decision 0009](../../docs/decisions/0009-visual-design.md#1-target-size-and-density)). With a fine pointer, for example a mouse, `size.control` is 32 CSS pixels (28 in the compact density). With a coarse pointer, for example a touch screen, the base sheet of each kit element sets `size.control` to `size.control-touch`, 44 CSS pixels. A target is never less than 24 by 24 CSS pixels (WCAG 2.5.8). A radio and its label are one target. The cell of a data grid is the target of its editor, and each cell is 44 CSS pixels high at the minimum. The browser check measures each control in each shadow root, on each check page and each example page.
 
 Two items are not in this rule. A link in a sentence of a rich text has the size of its text. A point of a chart has the size that its data gives.
 
@@ -68,7 +68,7 @@ A table of more than 30rem scrolls in its own area, and its column headers stay 
 
 A code block, a receipt reference and the technical details of a refusal each have a `Copy` button. A press writes the text to the clipboard. The button shows `Copied` for 2 seconds, only after the browser accepts the text. The accessible name of the button does not change. A status with `role="status"` gives `Copied` to a screen reader. If the browser refuses, the button shows `Not copied`, and the status tells the person to select the text and copy it.
 
-The text goes only to the clipboard, and only after a person presses the button. The receipt reference and its copy control share a row below the action status. The control uses the standard control edge, which is less strong than its text. The target is at least 44 by 44 CSS pixels. If the row is too narrow, the control wraps below the reference. The action status stays in its own live region. The parts are `reference`, `copy` and `copy-status`.
+The text goes only to the clipboard, and only after a person presses the button. The receipt reference and its copy control share a row below the action status. The control uses the standard control edge, which is less strong than its text. The target has the control size. If the row is too narrow, the control wraps below the reference. The action status stays in its own live region. The parts are `reference`, `copy` and `copy-status`.
 
 ## Motion
 

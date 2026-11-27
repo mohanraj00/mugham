@@ -24,7 +24,7 @@ const FIELD_CSS = sheet(`
   input, textarea {
     font: var(--mu-type-body); color: var(--mu-color-text); background: var(--mu-color-surface);
     border: 1px solid var(--mu-color-border); border-radius: var(--mu-radius-1); padding: var(--mu-space-2);
-    min-height: var(--mu-target);
+    min-height: var(--mu-size-control);
   }
   textarea { min-height: 6rem; resize: vertical; }
   [aria-invalid="true"] { border-color: var(--mu-color-danger); border-width: 2px; }
@@ -38,10 +38,10 @@ const FIELD_CSS = sheet(`
   legend { font: var(--mu-type-caption); padding: 0 var(--mu-space-1); }
   legend.label { font: var(--mu-type-body); }
   /* The radio and its label are one target of 44 by 44 CSS pixels at the minimum. The row shows hover and pressed. */
-  .option { display: flex; flex-wrap: wrap; align-items: center; min-height: var(--mu-target); border-radius: var(--mu-radius-1);
+  .option { display: flex; flex-wrap: wrap; align-items: center; min-height: var(--mu-size-control); border-radius: var(--mu-radius-1);
     transition: box-shadow var(--mu-motion-fast); }
   .option input { min-height: auto; margin: 0; inline-size: 1.25rem; block-size: 1.25rem; cursor: pointer; }
-  .option label { display: inline-flex; align-items: center; min-height: var(--mu-target); min-width: var(--mu-target);
+  .option label { display: inline-flex; align-items: center; min-height: var(--mu-size-control); min-width: var(--mu-size-control);
     padding-inline: var(--mu-space-2); cursor: pointer; }
   /* A disabled option shows no hover and no pressed state. */
   .option:hover:not(:has(:disabled)) { box-shadow: inset 0 0 0 100vmax color-mix(in srgb, currentColor 8%, transparent); }
@@ -59,7 +59,7 @@ const FIELD_CSS = sheet(`
 const TOGGLE_CSS = sheet(`
   .toggle {
     display: flex; align-items: center; gap: var(--mu-space-2);
-    min-inline-size: var(--mu-target); min-block-size: var(--mu-target); padding-inline: var(--mu-space-2);
+    min-inline-size: var(--mu-size-control); min-block-size: var(--mu-size-control); padding-inline: var(--mu-space-2);
     border-radius: var(--mu-radius-1); overflow-wrap: anywhere; cursor: pointer;
     transition: box-shadow var(--mu-motion-fast);
   }

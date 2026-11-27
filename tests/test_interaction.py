@@ -100,6 +100,10 @@ class InteractionTest(unittest.TestCase):
                         check.index('if (data.icon !== icon)'))
         render_start = components.index('\n  render(data) {', button_start, button_end)
         render_end = components.index('\n  }', render_start, button_end)
+        # Decision 0009, section 7: the editable form shows the icon of its binding. The binding checks the name.
+        form_start = components.index('\nexport class MuEditableForm ')
+        form_render = components.index('\n  #showSubmit() {', form_start)
+        form_render_end = components.index('\n  }', form_render)
 
         declarations = {
             ROOT / 'src/actions/action.js': 'get icon(',
@@ -107,6 +111,7 @@ class InteractionTest(unittest.TestCase):
         }
         literal_call = re.compile(r"icon\('([^']*)'\)")
         fill_calls = 0
+        binding_calls = 0
         for path in SOURCES:
             source = text(path)
             for call in re.finditer(r'\b(?:(?:function|get)\s+)?icon\s*\(', source):
@@ -117,11 +122,16 @@ class InteractionTest(unittest.TestCase):
                     self.assertEqual(path, components_path)
                     self.assertTrue(render_start < start < render_end, 'icon(data.icon) must be in MuActionButton.render')
                     fill_calls += 1
+                elif source.startswith('icon(this.action.icon)', start):
+                    self.assertEqual(path, components_path)
+                    self.assertTrue(form_render < start < form_render_end, 'icon(this.action.icon) must be in MuEditableForm.#showSubmit')
+                    binding_calls += 1
                 else:
                     literal = literal_call.match(source, start)
                     self.assertIsNotNone(literal, f'{path.name}: {source[start:].splitlines()[0]}')
                     self.assertIn(literal.group(1), paths, path.name)
         self.assertEqual(fill_calls, 1)
+        self.assertEqual(binding_calls, 1)
 
         base = text(ROOT / 'src/primitives/base.js')
         fill_check = base.index('fillErrors(value, CONTRACTS)')

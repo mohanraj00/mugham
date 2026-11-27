@@ -20,7 +20,7 @@ export async function colorExampleChecks(session, sessionId, base, modes, { eval
     const controls = [select, submit].map((node) => {
       const { width, height } = node.getBoundingClientRect();
       const style = getComputedStyle(node);
-      return { width, height, focused: node.getRootNode().activeElement === node,
+      return { width, height, least: muControlSize(node), focused: node.getRootNode().activeElement === node,
         background: style.backgroundColor, border: style.borderStyle,
         ring: [style.outlineStyle, style.outlineWidth, style.outlineOffset, style.outlineColor],
         noMotion: style.transitionProperty === 'none' && style.animationName === 'none' };
@@ -44,9 +44,9 @@ export async function colorExampleChecks(session, sessionId, base, modes, { eval
         ready();
       })`);
       const view = await read();
-      check(mode, 'the controls are at least 44 by 44 CSS pixels and the page has no horizontal scroll',
+      check(mode, 'the controls have the target size and the page has no horizontal scroll',
         view.width === 375 && view.scroll === 375
-        && view.controls.every(({ width, height }) => width >= 44 && height >= 44), view);
+        && view.controls.every(({ width, height, least }) => width >= least && height >= least), view);
       check(mode, 'the select has a visible border and uses the theme colors and motion',
         view.controls[0].border === 'solid' && view.controls[0].background === view.surface
         && view.forced === (mode === 'forced-colors') && view.reduced === (mode === 'reduced-motion')
