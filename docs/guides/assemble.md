@@ -148,6 +148,27 @@ Expected result:
 5. A press on `Renew` in the thread shows `Pending`. After the receipt, it shows `Done: The loan is renewed.` and `Reference: R-0002`.
 6. At the end of the source, `thread.state` is `ended`.
 
+## One page with a region for each service
+
+A page can show the data of several services. Give each service its own region, its own fixture or API, and its own action handler. The kit gives no shell or panel for the regions. The page code owns the layout. The page is [examples/apps/services.html](../../examples/apps/services.html), and its code is [examples/apps/services.js](../../examples/apps/services.js). It has three synthetic services: a catalog service, a loans service and a notices service.
+
+1. Put the page in an `mu-app-shell`. Put one side link for each region in the `side` slot.
+   Expected result: the page has a skip link, a `navigation` landmark with the name `Services` and a `main` landmark.
+2. Put the regions in an `mu-stack` with the direction `row`. Make each region a `section` with `aria-labelledby` on its `h2`.
+   Expected result: each region is a `region` landmark with the name of its service, for example `Catalog service`.
+3. Read the data of each region only from the base URL of its service. Show the data as text.
+   Expected result: the catalog region shows only catalog data, and the other regions show only their own data.
+4. Bind the action of each region with `serviceHandler` and the base URL of that service. Use one handler for each region.
+   Expected result: `Reserve tray T-12` goes only to `https://catalog.example.test/api/`. `Renew loan L-7` goes only to `https://loans.example.test/v2/`.
+5. Press `Renew loan L-7`.
+   Expected result: the button shows `Pending`, then `Not done: The loan has two renewals. Service: Loans service. Code: renewal-limit.`
+6. Press Tab from the page heading.
+   Expected result: the focus goes through the catalog region, then the loans region, then the notices region. Each focused control shows a focus ring. The page order is the keyboard order, so do not use a positive `tabindex`.
+7. Make the window 375 px wide.
+   Expected result: the side links move into a drawer that the `Menu` button opens. Each region uses the full width, one region below the other, with no horizontal scroll.
+
+The page CSS sets the width of each region with `flex: 1 1 11rem`. At a wide width, the three regions show side by side. At a narrow width, the stack puts them in one column. In forced colors, each region border uses `CanvasText`. `tests/browser/services.js` checks each expected result at 1280 px and 375 px, on hover and on keyboard focus, with forced colors and reduced motion.
+
 ## Show run steps
 
 Import `createRunSteps` from `src/kit.js` and give it the actor from trusted page data. Push each original event to the thread, then push the snapshots that the helper returns for that event. The thread can check each snapshot actor with `actorFor`. [Helper details](../../src/envelope/run-steps-events.md) and [run steps example](../../examples/thread/run-steps.html).
