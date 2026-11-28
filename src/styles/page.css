@@ -95,10 +95,12 @@ p, li, dt, dd, blockquote, figcaption, caption { overflow-wrap: anywhere; }
 /* The plain controls of the page. A kit element styles its own controls. */
 button, input, select, textarea { font: inherit; color: inherit; }
 button, select {
-  min-height: 2.75rem; min-width: 2.75rem; padding: 0 var(--mu-space-3); cursor: pointer;
-  background: var(--mu-color-surface); border: 1px solid var(--mu-color-border); border-radius: var(--mu-radius-2);
+  min-height: var(--mu-size-control); min-width: var(--mu-size-control); padding: 0 var(--mu-space-3); cursor: pointer;
+  background: var(--mu-color-surface); border: 1px solid var(--mu-color-border); border-radius: var(--mu-radius-1);
   transition: border-color var(--mu-motion-fast) var(--mu-easing-standard);
 }
+/* With a coarse pointer (a touch screen), a plain control has the touch size. */
+@media (pointer: coarse) { button, select { min-height: var(--mu-size-control-touch); min-width: var(--mu-size-control-touch); } }
 button:hover:where(:not(:disabled)), select:hover:where(:not(:disabled)) {
   background: var(--mu-color-hover); color: var(--mu-color-on-hover); border-color: var(--mu-color-on-hover);
 }

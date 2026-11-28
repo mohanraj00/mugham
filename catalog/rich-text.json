@@ -34,7 +34,7 @@
   "tokens": [
     "color.text", "color.text-muted", "color.surface", "color.border", "color.accent", "color.focus", "space.1",
     "space.2", "space.3", "space.4", "radius.1", "type.body", "type.caption", "type.weight-strong",
-    "color.success", "color.on-success", "color.warning", "color.on-warning", "color.danger", "radius.2"
+    "color.success", "color.on-success", "color.warning", "color.on-warning", "color.danger", "radius.2", "size.control"
   ],
   "accessibility": {"keyboard": ["Tab", "Shift+Tab", "Enter", "Space", "Escape"]}
 }

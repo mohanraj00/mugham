@@ -46,7 +46,7 @@ function readLibrary() {
     ring: focus.outlineStyle === 'solid' && parseFloat(focus.outlineWidth) >= 2 && focus.outlineColor === ringColor,
     targets: controls.every((node) => {
       const { width, height } = node.getBoundingClientRect();
-      return width >= 44 && height >= 44;
+      return width >= muControlSize(node) && height >= muControlSize(node);
     }),
     surface: getComputedStyle(top).backgroundColor === surface,
     dark: matchMedia('(prefers-color-scheme: dark)').matches, forced,
@@ -93,7 +93,7 @@ function readLoanStatus() {
       && focus.outlineColor === color(forced ? 'Highlight' : 'var(--mu-color-focus)'),
     targets: [search, submit, ...(shown(empty) ? [clear] : [])].every((node) => {
       const box = node?.getBoundingClientRect();
-      return box?.width >= 44 && box?.height >= 44;
+      return Boolean(node) && box.width >= muControlSize(node) && box.height >= muControlSize(node);
     }),
     query: search?.value, scroll: document.documentElement.scrollWidth,
     skeleton: shown(skeleton), list: shown(list), empty: shown(empty), pager: shown(document.querySelector('mu-pagination')),
@@ -232,7 +232,7 @@ function readWizard() {
       && focus.outlineColor === themeColor(forced ? 'Highlight' : 'var(--mu-color-focus)'),
     targets: controls.every((node) => {
       const { width, height } = node.getBoundingClientRect();
-      return width >= 44 && height >= 44;
+      return width >= muControlSize(node) && height >= muControlSize(node);
     }),
     scroll: document.documentElement.scrollWidth,
     states: stepNodes.map((step) => part(step, 'state')?.textContent),
@@ -445,7 +445,7 @@ export async function libraryExampleChecks(session, sessionId, base, modes, { ev
         })()`);
         await tab();
         const start = await read();
-        check(view, 'the shell has three landmarks and fits with 44 by 44 CSS pixel targets',
+        check(view, 'the shell has three landmarks and fits with targets of the control size',
           start.width === width && start.scroll <= width && start.targets && start.landmarks.join() === 'header,nav,main'
           && start.menuVisible === phone && start.inDrawer === phone && start.besideMain === !phone && !start.modal, start);
         check(view, 'the surface follows the theme and respects reduced motion', start.surface

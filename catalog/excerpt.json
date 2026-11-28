@@ -29,7 +29,7 @@
   "states": ["+refused"],
   "tokens": [
     "color.text", "color.text-muted", "color.border", "color.accent", "space.1", "space.2", "space.3", "radius.2",
-    "type.body", "type.caption", "type.weight-strong", "color.focus"
+    "type.body", "type.caption", "type.weight-strong", "color.focus", "size.control"
   ],
   "accessibility": {
     "role": "group",

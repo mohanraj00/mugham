@@ -4,14 +4,16 @@
   "ai_content": false,
   "parts": [
     {"name": "body", "description": "Container for the page content.", "guardrail": true},
-    {"name": "close", "description": "Button that closes the modal.", "guardrail": true},
+    {"name": "close", "description": "Button that closes the modal. In icon display it shows an x, and the close label is its name and its tooltip.", "guardrail": true},
     {"name": "copy", "description": "Button that copies text.", "guardrail": true},
     {"name": "copy-status", "description": "Result of the copy operation.", "guardrail": true},
     {"name": "details", "description": "Control and technical details of a refusal.", "guardrail": true},
     {"name": "dialog", "description": "Modal surface with its title, content and close control.", "guardrail": true},
+    {"name": "icon", "description": "Cross of the close control in icon display.", "guardrail": true},
     {"name": "next", "description": "Next step after a refusal.", "guardrail": true},
     {"name": "reason", "description": "Reason for a refusal.", "guardrail": true},
-    {"name": "title", "description": "Visible title that gives the modal its accessible name.", "guardrail": true}
+    {"name": "title", "description": "Visible title that gives the modal its accessible name.", "guardrail": true},
+    {"name": "tooltip", "description": "Close label on hover or focus in icon display. Escape closes it.", "guardrail": true}
   ],
   "data": {
     "title": {"type": "text", "required": true, "min_length": 1, "size": "title"},

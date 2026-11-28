@@ -15,7 +15,7 @@ export const READ_MORE_CSS = sheet(`
     display: block; width: fit-content; max-width: 100%; align-self: start;
     font: var(--mu-type-caption); color: var(--mu-color-accent); background: transparent;
     border: 0; padding: 0; margin-block-start: var(--mu-space-1);
-    min-height: 2.75rem; min-width: 2.75rem; text-align: start;
+    min-height: var(--mu-size-control); min-width: var(--mu-size-control); text-align: start;
     text-decoration: underline; text-underline-offset: 0.2em; overflow-wrap: anywhere; cursor: pointer;
   }
   .read-more-toggle[hidden] { display: none; }

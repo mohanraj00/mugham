@@ -28,7 +28,7 @@
   "states": ["+disabled", "+confirm", "+pending", "+done", "+error"],
   "tokens": [
     "color.accent", "color.on-accent", "color.surface", "color.text", "color.border", "color.text-muted", "color.danger", "color.success", "color.focus", "space.1", "space.2",
-    "space.3", "radius.2", "type.body", "type.caption", "motion.fast"
+    "space.3", "radius.2", "type.body", "type.caption", "motion.fast", "size.control", "radius.1", "color.on-success", "size.icon"
   ],
   "accessibility": {"role": "button", "name": {"field": "label"}, "keyboard": ["Tab", "Shift+Tab", "Enter", "Space", "Escape"]}
 }

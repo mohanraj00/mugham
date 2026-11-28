@@ -22,7 +22,7 @@
   "states": ["+empty", "+refused"],
   "tokens": [
     "color.text", "color.text-muted", "color.border", "space.1", "space.2", "space.3", "radius.2", "type.body",
-    "type.caption"
+    "type.caption", "size.control"
   ],
   "accessibility": {"role": "group", "name": {"text": "Citation"}, "keyboard": ["Tab", "Shift+Tab", "Enter", "Space"]}
 }

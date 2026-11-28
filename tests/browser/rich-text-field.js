@@ -77,9 +77,9 @@ function toolbarState() {
     focus: active === editor ? 'editor' : active?.getAttribute('aria-label'),
     focusRing: style?.outlineStyle === 'solid' && parseFloat(style.outlineWidth) >= 2
       && style.outlineColor === color(forced ? 'Highlight' : 'var(--mu-color-focus)'),
-    targets: editorBox.width >= 44 && editorBox.height >= 44 && buttons.every((button) => {
+    targets: editorBox.width >= muControlSize(editor) && editorBox.height >= muControlSize(editor) && buttons.every((button) => {
       const { width, height } = button.getBoundingClientRect();
-      return width === 44 && height === 44;
+      return Math.abs(width - muControlSize(button) - 0.01) < 0.5 && Math.abs(height - muControlSize(button) - 0.01) < 0.5;
     }),
     pressed: buttons.filter((button) => button.getAttribute('aria-pressed') === 'true').map(name),
     rows: new Set(buttons.map((button) => button.getBoundingClientRect().top)).size,
@@ -193,8 +193,8 @@ async function exerciseEditor() {
     check(!panel.hidden && root.activeElement === input, 'The link address did not take focus.');
     check([input, ...panel.querySelectorAll('button')].every((target) => {
       const rect = target.getBoundingClientRect();
-      return rect.width >= 44 && rect.height >= 44;
-    }), 'A link control is smaller than 44 by 44 CSS pixels.');
+      return rect.width >= muControlSize(target) && rect.height >= muControlSize(target);
+    }), 'A link control is smaller than the target size.');
     input.value = 'http://example.org/reading';
     button('Apply link').click();
     check(!panel.hidden && input.getAttribute('aria-invalid') === 'true' && !editor().querySelector('a'),

@@ -920,14 +920,32 @@ misnamedForm.action = { tool: 'library.update_loan', label: 'Save', title: 'Loan
 check('editable-form: a submit label that is not the label of the application is refused', misnamedForm.dataset.state === 'refused'
   && refusedText(misnamedForm).includes('data.submit_label: the label is not the label of the application'),
   misnamedForm.shadowRoot.textContent);
-for (const name of ['editable-form', 'form-card']) {
+// Decision 0009, section 7: the editable form accepts icon and display, the same as the action button.
+for (const name of ['form-card']) {
   const node = document.createElement(TAGS[name]);
   for (const fields of [{ icon: 'check' }, { display: 'icon' }]) {
     let reason = '';
     try { node.action = { tool: 'library.update_loan', label: 'Save', ...fields }; } catch (error) { reason = error.message; }
     check(`${name}: a binding with ${Object.keys(fields)[0]} is refused`,
-      reason === 'action: only an action button accepts icon and display' && node.action.state === 'disabled', reason);
+      reason === 'action: only an action button or an editable form accepts icon and display'
+      && node.action.state === 'disabled', reason);
   }
+}
+{
+  const iconForm = mount('editable-form', FORM);
+  iconForm.action = { tool: 'library.update_loan', label: 'Save', title: 'Loan details', arguments: { loan_id: 'L-0001' },
+    editable: EDITABLE, icon: 'check', display: 'icon' };
+  const save = iconForm.shadowRoot.querySelector('[part="button"]');
+  check('editable-form: an icon binding shows the save control as a check with the submit label as its name',
+    iconForm.dataset.state !== 'refused' && save?.dataset.icon === 'check' && save.dataset.controlDisplay === 'icon'
+    && save.getAttribute('aria-label') === 'Save' && save.querySelector('svg[aria-hidden="true"]') !== null
+    && !save.textContent.includes('Save') && iconForm.shadowRoot.querySelector('[part="tooltip"]') !== null,
+    save?.outerHTML);
+  iconForm.setAttribute('control-display', 'text');
+  check('editable-form: control-display="text" shows the submit label next to the check',
+    save.dataset.controlDisplay === 'text' && save.textContent === 'Save' && save.querySelector('svg') !== null
+    && save.getAttribute('aria-label') === 'Save', save.outerHTML);
+  iconForm.remove();
 }
 // The application gives the title of the form. A fill cannot show a different target for the bound arguments.
 const retitled = mount('editable-form', { ...FORM, title: 'Loan L-0002' });
@@ -1819,6 +1837,8 @@ window.muActionIcon = async (waitForTransitions = false) => {
   const svg = control.querySelector('svg');
   const tooltip = iconTarget.shadowRoot.querySelector('[part="tooltip"]');
   const box = control.getBoundingClientRect();
+  const least = parseFloat(getComputedStyle(iconTarget).getPropertyValue('--mu-size-control'))
+    * parseFloat(getComputedStyle(document.documentElement).fontSize) - 0.01;
   const style = getComputedStyle(control);
   const tooltipStyle = getComputedStyle(tooltip);
   const forcedColorsActive = matchMedia('(forced-colors: active)').matches;
@@ -1835,7 +1855,7 @@ window.muActionIcon = async (waitForTransitions = false) => {
   const noMotion = (node) => ['transitionDuration', 'animationDuration'].every((property) =>
     getComputedStyle(node)[property].split(',').every((value) => parseFloat(value) === 0));
   return {
-    x: box.x + box.width / 2, y: box.y + box.height / 2, width: box.width, height: box.height,
+    x: box.x + box.width / 2, y: box.y + box.height / 2, width: box.width, height: box.height, least,
     hovered: control.matches(':hover'), focused: iconTarget.shadowRoot.activeElement === control,
     tooltip: tooltip.checkVisibility() ? tooltip.innerText : '',
     focusRing: control.matches(':focus-visible') && style.outlineStyle === 'solid' && style.outlineWidth === '2px',

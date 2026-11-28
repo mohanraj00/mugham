@@ -15,7 +15,7 @@ export class MuEmptyState extends MuElement {
     p { margin: 0; }
     slot { display: contents; }
     ::slotted(:is(button, a)) {
-      display: inline-flex; align-items: center; min-inline-size: 44px; min-block-size: 44px; max-inline-size: 100%;
+      display: inline-flex; align-items: center; min-inline-size: var(--mu-size-control); min-block-size: var(--mu-size-control); max-inline-size: 100%;
     }
     ::slotted(:is(button, a):focus-visible) { outline: 2px solid var(--mu-color-focus); outline-offset: 2px; }
     @media (forced-colors: active) {

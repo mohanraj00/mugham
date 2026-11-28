@@ -36,7 +36,7 @@ function readResearch() {
       && getComputedStyle(node).animationName === 'none'),
     targets: [toggle, advance].every((node) => {
       const sizes = node?.getBoundingClientRect();
-      return sizes?.width >= 44 && sizes?.height >= 44;
+      return Boolean(node) && sizes.width >= muControlSize(node) && sizes.height >= muControlSize(node);
     }),
     focus: active === toggle ? 'toggle' : active === advance ? 'advance' : '',
     ring: focus.outlineStyle === 'solid' && parseFloat(focus.outlineWidth) >= 2
@@ -88,7 +88,7 @@ function readApprovals() {
       && focus.outlineColor === color(forced ? 'Highlight' : 'var(--mu-color-focus)'),
     targets: controls.length >= 4 && controls.every((button) => {
       const { width, height } = button.getBoundingClientRect();
-      return width >= 44 && height >= 44;
+      return width >= muControlSize(button) && height >= muControlSize(button);
     }),
     colors: primary?.backgroundColor === color(forced ? 'ButtonFace' : 'var(--mu-color-accent)')
       && primary?.color === color(forced ? 'ButtonText' : 'var(--mu-color-on-accent)')
@@ -164,7 +164,7 @@ export async function researchExampleChecks(session, sessionId, base, modes, { e
     await tab();
     const ready = await approvals();
     const readyAX = await ax();
-    check(view, 'the approval list has named decisions, theme colors and 44 by 44 CSS pixel targets',
+    check(view, 'the approval list has named decisions, theme colors and targets of the control size',
       ready.states.join() === 'Awaiting decision,Awaiting decision' && readyAX.approvals
       && ready.polite && ready.live === '' && ready.targets && ready.colors && ready.scroll <= width
       && hasFocus(ready, '0,0,button') && (mode !== 'reduced-motion' || ready.noMotion), { ready, readyAX });
@@ -272,7 +272,7 @@ export async function researchExampleChecks(session, sessionId, base, modes, { e
           await tab();
           const start = await read();
           const startAX = await ax();
-          check(view, 'the views fit, use theme colors and have 44 by 44 CSS pixel controls',
+          check(view, 'the views fit, use theme colors and have controls of the control size',
             start.width === width && start.scroll <= width && start.targets && start.surface
             && start.forced === (mode === 'forced-colors') && (start.forced || start.dark === (mode === 'dark'))
             && start.reduced === (mode === 'reduced-motion') && (!start.reduced || start.noMotion), start);

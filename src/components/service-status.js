@@ -27,7 +27,7 @@ export class MuServiceStatus extends MuElement {
     p { margin: 0; }
     .summary {
       display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
-      gap: var(--mu-space-1) var(--mu-space-2); inline-size: 100%; min-block-size: 44px;
+      gap: var(--mu-space-1) var(--mu-space-2); inline-size: 100%; min-block-size: var(--mu-size-control);
       padding: var(--mu-space-1) var(--mu-space-2); border: 1px solid var(--mu-color-border);
       border-radius: var(--mu-radius-2); background: var(--mu-color-surface); color: inherit;
       font: var(--mu-type-caption); text-align: start; overflow-wrap: anywhere;

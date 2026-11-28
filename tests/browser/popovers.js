@@ -31,7 +31,7 @@ function readPopovers() {
     .map((id) => document.getElementById(id)?.textContent).filter(Boolean).join(' ');
   const targetSize = (node) => {
     const { width, height } = box(node);
-    return width >= 44 && height >= 44;
+    return width >= muControlSize(node) && height >= muControlSize(node);
   };
   const result = {
     open, states: [menu, tooltip, toast].map((node) => node.dataset.state),

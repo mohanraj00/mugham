@@ -41,7 +41,7 @@ function readSettings() {
     ring: focus.outlineStyle === 'solid' && parseFloat(focus.outlineWidth) >= 2 && focus.outlineColor === ringColor,
     targets: controls.every((node) => {
       const { width, height } = node.getBoundingClientRect();
-      return width >= 44 && height >= 44;
+      return width >= muControlSize(node) && height >= muControlSize(node);
     }),
     surfaces: [...tabs, ...toggles].every((node) => {
       const css = getComputedStyle(node);

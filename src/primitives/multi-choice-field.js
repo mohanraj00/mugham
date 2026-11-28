@@ -8,10 +8,10 @@ const MULTI_CHOICE_CSS = sheet(`
   [part="group"] { display: grid; gap: var(--mu-space-1); min-inline-size: 0; }
   [part="checkbox-label"] {
     display: flex; align-items: center; gap: var(--mu-space-2);
-    min-inline-size: 44px; min-block-size: 44px; cursor: pointer;
+    min-inline-size: var(--mu-size-control); min-block-size: var(--mu-size-control); cursor: pointer;
   }
   [part="checkbox"] {
-    flex: none; inline-size: 44px; block-size: 44px; margin: 0; padding: 0;
+    flex: none; inline-size: var(--mu-size-control); block-size: var(--mu-size-control); margin: 0; padding: 0;
     accent-color: var(--mu-color-accent); cursor: inherit;
   }
   [part="tags"] { display: flex; flex-wrap: wrap; gap: var(--mu-space-1); }
@@ -23,7 +23,7 @@ const MULTI_CHOICE_CSS = sheet(`
   }
   [part="tag-text"], [part="checkbox-label"] > span { min-inline-size: 0; white-space: pre-wrap; }
   [part="remove"] {
-    flex: none; min-inline-size: 44px; min-block-size: 44px; padding: var(--mu-space-1);
+    flex: none; min-inline-size: var(--mu-size-control); min-block-size: var(--mu-size-control); padding: var(--mu-space-1);
     font: var(--mu-type-body); color: var(--mu-color-text); background: transparent;
     border: 1px solid transparent; border-radius: var(--mu-radius-1); cursor: pointer;
   }

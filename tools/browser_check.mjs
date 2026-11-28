@@ -278,13 +278,21 @@ async function noticeSwitchChecks(session, sessionId, base, problems) {
     requestAnimationFrame(checkWidth);
   })`);
   const read = () => evaluate(session, sessionId, `(() => {
+    const controlSize = (node) => {
+      // The target size of a control (decision 0009): size.control of its host, and never less than 24 CSS pixels.
+      const host = node.getRootNode().host;
+      const name = host || !matchMedia('(pointer: coarse)').matches ? '--mu-size-control' : '--mu-size-control-touch';
+      const value = getComputedStyle(host ?? document.documentElement).getPropertyValue(name).trim();
+      const unit = value.endsWith('rem') ? parseFloat(getComputedStyle(document.documentElement).fontSize) : 1;
+      return Math.max(24, parseFloat(value) * unit) - 0.01;
+    };
     const form = document.querySelector('mu-editable-form').shadowRoot;
     const switches = [...form.querySelectorAll('mu-toggle-field')].map(({ shadowRoot }) => {
       const control = shadowRoot.querySelector('input');
       const style = getComputedStyle(control);
       const target = control.labels[0].getBoundingClientRect();
       return { checked: control.checked, text: shadowRoot.querySelector('[part="state"]').textContent,
-        width: target.width, height: target.height, focused: shadowRoot.activeElement === control,
+        width: target.width, height: target.height, least: controlSize(control), focused: shadowRoot.activeElement === control,
         ring: [style.outlineStyle, style.outlineWidth, style.outlineOffset, style.outlineColor],
         border: style.borderTopStyle, background: style.backgroundColor,
         noMotion: style.transitionDuration.split(',').every((time) => parseFloat(time) === 0) };
@@ -306,9 +314,9 @@ async function noticeSwitchChecks(session, sessionId, base, problems) {
       await waitForWidth(375);
       const start = await read();
       const [first, second] = start.switches;
-      check(mode, 'the page has no horizontal scroll and each switch has a 44 by 44 CSS pixel target',
+      check(mode, 'the page has no horizontal scroll and each switch has the target size',
         start.width === 375 && start.scrollWidth === 375 && start.switches.length === 2
-        && start.switches.every(({ width, height }) => width >= 44 && height >= 44), start);
+        && start.switches.every(({ width, height, least }) => width >= least && height >= least), start);
       check(mode, 'the two switch states have visible borders and different grounds',
         first.checked && first.text === 'On' && !second.checked && second.text === 'Off'
         && first.border === 'solid' && second.border === 'solid' && first.background !== second.background, start.switches);
@@ -362,7 +370,7 @@ async function actionIconChecks(session, sessionId, page, mode) {
   await evaluate(session, sessionId, 'window.muFocusBeforeIcon()');
   await move(0, 0);
   const idle = await read();
-  check('The icon button has a 44 by 44 CSS pixel target', idle.width >= 44 && idle.height >= 44, idle);
+  check('The icon button has the target size', idle.width >= idle.least && idle.height >= idle.least, idle);
   check('The icon takes the button text color', idle.iconColor, idle);
   check('The tooltip is hidden at rest', idle.tooltip === '', idle);
   await move(idle.x, idle.y);
@@ -443,7 +451,24 @@ export async function coverSteps(session, sessionId) {
     ok: missing.size === 0, detail: JSON.stringify({ missing: [...missing], seen: [...seen] }) }));
 }
 
+// The target size of a control (decision 0009): size.control of its host, and never less than 24 CSS pixels. With a
+// coarse pointer, a control in the page itself uses size.control-touch. The page checks call window.muControlSize.
+const CONTROL_SIZE = `window.muControlSize = (node) => {
+  const host = node.getRootNode().host;
+  const name = host || !matchMedia('(pointer: coarse)').matches ? '--mu-size-control' : '--mu-size-control-touch';
+  const value = getComputedStyle(host ?? document.documentElement).getPropertyValue(name).trim();
+  const unit = value.endsWith('rem') ? parseFloat(getComputedStyle(document.documentElement).fontSize) : 1;
+  return Math.max(24, parseFloat(value) * unit) - 0.01;
+};`;
+const controlSizeSessions = new Set();
+
 export async function open(session, sessionId, url, problems) {
+  if (!controlSizeSessions.has(sessionId)) {
+    controlSizeSessions.add(sessionId);
+    await session.send('Page.addScriptToEvaluateOnNewDocument', { source: CONTROL_SIZE }, sessionId);
+  }
+  // With MUGHAM_TRACE set, write each page to stderr, so that a stalled run names its page.
+  if (process.env.MUGHAM_TRACE) process.stderr.write(`${new Date().toISOString()} open ${url}\n`);
   await cover(session, sessionId);
   const loaded = session.once('Page.loadEventFired', sessionId);
   await session.send('Page.navigate', { url }, sessionId);
@@ -506,24 +531,40 @@ export async function pageRules(session, sessionId, where) {
   return [{ page: where, step: 'each control has a name', ok: unnamed.length === 0, detail: unnamed.join(' ') },
     { page: where, step: 'each id is unique, each id reference finds its target, and each role and ARIA value is valid',
       ok: markup.length === 0, detail: markup.slice(0, 10).join('; ') },
-    { page: where, step: 'each touch target in a shadow root is 44 by 44 CSS pixels at the minimum',
+    { page: where, step: 'each target in a shadow root has the control size and 24 by 24 CSS pixels at the minimum',
       ok: small.length === 0, detail: small.slice(0, 10).join('; ') }];
 }
 
 async function touchTargetProblems(session, sessionId, includePage = false) {
-  // Each touch target is 44 by 44 CSS pixels at the minimum (src/components/interaction.md).
+  // Each target has the control size of its host at the minimum, and never less than 24 by 24 CSS pixels
+  // (src/components/interaction.md, decision 0009). With a coarse pointer, the control size is the touch size (44 CSS pixels).
   // A radio or a checkbox and its label are one target. The cell of a data grid is the target of its editor.
   // A link in a sentence of a rich text and a point of a chart are not in this rule.
   return evaluate(session, sessionId, `(() => {
     const problems = [];
     const join = (a, b) => ({ width: Math.max(a.right, b.right) - Math.min(a.left, b.left), height: Math.max(a.bottom, b.bottom) - Math.min(a.top, b.top) });
+    const rootSize = parseFloat(getComputedStyle(document.documentElement).fontSize);
+    const pixels = (node, name) => {
+      const value = getComputedStyle(node).getPropertyValue(name).trim();
+      const number = parseFloat(value);
+      if (value.endsWith('rem')) return number * rootSize;
+      if (value.endsWith('px')) return number;
+      return NaN;
+    };
+    const coarse = matchMedia('(pointer: coarse)').matches;
+    const minimum = (root) => {
+      const host = root.host ?? document.documentElement;
+      const size = root.host || !coarse ? pixels(host, '--mu-size-control') : pixels(host, '--mu-size-control-touch');
+      return Math.max(24, Number.isFinite(size) ? size : 44);
+    };
     const check = (root, label) => {
+      const least = minimum(root) - 0.01;
       for (const node of root.querySelectorAll('button, input, textarea, select, summary, td[part="cell"], [role="option"]')) {
         if (!node.getClientRects().length || node.matches('[part="link"]') || (node.matches('input') && node.closest('td[part="cell"]'))) continue;
         let box = node.getBoundingClientRect();
         const text = node.matches('input[type="radio"], input[type="checkbox"]') && node.id ? root.querySelector('label[for="' + node.id + '"]') : null;
         if (text) box = join(box, text.getBoundingClientRect());
-        if (box.width < 43.99 || box.height < 43.99) {
+        if (box.width < least || box.height < least) {
           problems.push(label + ': ' + node.tagName.toLowerCase() + ' ' + (node.getAttribute('aria-label') || node.textContent.trim().slice(0, 30))
             + ' is ' + Math.round(box.width) + ' by ' + Math.round(box.height));
         }

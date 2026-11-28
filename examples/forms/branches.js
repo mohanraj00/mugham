@@ -6,7 +6,7 @@ define();
 const { mount } = createKit({ actor: { type: 'agent', id: 'agent-library', name: 'Library helper' } });
 const choices = Array.from({ length: 40 }, (_, index) => 'Branch ' + String(index + 1).padStart(2, '0'));
 const editable = { branch: 'Pickup branch' };
-const action = { tool: 'library.set_pickup_branch', label: 'Save', title: 'Pickup details', editable };
+const action = { tool: 'library.set_pickup_branch', label: 'Save', title: 'Pickup details', editable, icon: 'check', display: 'icon' };
 const form = mount('editable-form', { title: action.title, submit_label: action.label, fields: [
   fill('select-field', { name: 'branch', label: editable.branch, choices, value: choices[0], hint: 'Choose a branch for pickup.' }),
 ] }, { action });

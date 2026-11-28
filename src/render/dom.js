@@ -1,7 +1,7 @@
 // The only way the kit makes DOM nodes. Data goes into text nodes and into a short list of attributes.
 // No function here parses a string as markup. tests/test_sinks.py refuses markup sinks in src/.
 const ATTRIBUTES = new Set(['id', 'class', 'part', 'role', 'type', 'for', 'name', 'autocomplete', 'tabindex',
-  'aria-label', 'aria-describedby', 'aria-invalid', 'aria-live', 'aria-disabled', 'data-state', 'scope', 'aria-sort', 'aria-hidden',
+  'aria-label', 'aria-describedby', 'aria-invalid', 'aria-live', 'aria-disabled', 'data-state', 'data-icon', 'scope', 'aria-sort', 'aria-hidden',
   'aria-labelledby', 'aria-modal', 'aria-expanded', 'aria-haspopup', 'aria-controls', 'aria-readonly', 'aria-autocomplete',
   'aria-selected', 'aria-pressed', 'aria-multiline', 'aria-required', 'aria-multiselectable', 'aria-current', 'aria-valuemin', 'aria-valuemax', 'aria-valuenow']);
 
@@ -189,17 +189,28 @@ function svgIcon() {
 }
 
 export const CONTROL_DISPLAY = 'control-display';
+
+// True if the closest control-display setting of the host or an ancestor is "text". The walk crosses shadow roots.
+export function textDisplayOf(host) {
+  for (let node = host; node; node = node.assignedSlot ?? node.parentNode ?? node.host) {
+    const display = node.getAttribute?.(CONTROL_DISPLAY) ?? null;
+    if (display !== null) return display === 'text';
+  }
+  return false;
+}
 export const COMPACT_CONTROL_CSS = sheet(`
   button[data-control-display="icon"] {
     display: inline-flex; align-items: center; justify-content: center; flex: none;
-    inline-size: 44px; block-size: 44px; min-inline-size: 44px; min-block-size: 44px; padding: 0;
+    inline-size: var(--mu-size-control); block-size: var(--mu-size-control); min-inline-size: var(--mu-size-control); min-block-size: var(--mu-size-control); padding: 0;
   }
-  [data-control-display="icon"] .icon { inline-size: 16px; block-size: 16px; }
+  [data-control-display="icon"] .icon { inline-size: var(--mu-size-icon); block-size: var(--mu-size-icon); }
 `);
 
 const openControlTooltip = new WeakMap();
 
-export function compactControls(host, area, tooltip, controls) {
+// With passEscape, Escape closes the tooltip and then goes on to the owner of the controls, for example a modal
+// that closes with Escape. A person then needs only one Escape to close the modal and its tooltip.
+export function compactControls(host, area, tooltip, controls, { passEscape = false } = {}) {
   const layer = floatingTooltip(area, tooltip);
   let textDisplay;
   let hovered;
@@ -224,7 +235,7 @@ export function compactControls(host, area, tooltip, controls) {
     const visible = tooltip.isConnected && tooltip.getClientRects().length > 0;
     dismiss();
     // Stop Escape only when it comes from the controls. Escape from other content still reaches its own handler.
-    if (visible && event.composedPath().includes(area)) {
+    if (visible && !passEscape && event.composedPath().includes(area)) {
       event.preventDefault();
       event.stopPropagation();
     }
@@ -331,6 +342,8 @@ export function copyControl(value, name) {
 // A control shows hover and pressed with a layer of its own text color, so each theme gives the two states.
 export const BASE = sheet(`
   :host { box-sizing: border-box; }
+  /* Each control uses size.control as its target size. With a coarse pointer (a touch screen), size.control is the touch size. */
+  @media (pointer: coarse) { :host { --mu-size-control: var(--mu-size-control-touch); } }
   :host([hidden]) { display: none; }
   *, *::before, *::after { box-sizing: inherit; }
   :focus-visible { outline: 2px solid var(--mu-color-focus); outline-offset: 2px; }
@@ -352,13 +365,13 @@ export const BASE = sheet(`
     stroke-linecap: round; stroke-linejoin: round; transition: transform var(--mu-motion-fast); }
   .copy-box { display: inline-flex; align-items: center; }
   .copy {
-    font: var(--mu-type-caption); min-height: 2.75rem; min-width: 2.75rem; padding: 0 var(--mu-space-2); cursor: pointer;
+    font: var(--mu-type-caption); min-height: var(--mu-size-control); min-width: var(--mu-size-control); padding: 0 var(--mu-space-2); cursor: pointer;
     border: 1px solid currentColor; background: transparent; color: inherit;
   }
   .copy-status { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   .refused { font: var(--mu-type-caption); color: var(--mu-color-danger); }
   .refused [part="next"] { display: block; }
-  details[part="details"] > summary { min-height: 2.75rem; min-width: 2.75rem; padding-block: 0.625rem; cursor: pointer; }
+  details[part="details"] > summary { min-height: var(--mu-size-control); min-width: var(--mu-size-control); padding-block: 0.625rem; cursor: pointer; }
   details[part="details"]:not([open]) > :not(summary) { display: none; }
   details[part="details"] > div { white-space: pre-wrap; overflow-wrap: anywhere; }
   @media (prefers-reduced-motion: reduce) {

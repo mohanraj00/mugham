@@ -20,7 +20,7 @@ export async function bookingExampleChecks(session, sessionId, base, modes, { ev
         const { width, height } = input.getBoundingClientRect();
         const style = getComputedStyle(input);
         const label = input.labels[0];
-        return { width, height, label: label?.getClientRects().length ? label.innerText : null,
+        return { width, height, least: muControlSize(input), label: label?.getClientRects().length ? label.innerText : null,
           type: input.type, required: input.required,
           focused: input.getRootNode().activeElement === input,
           ring: [style.outlineStyle, style.outlineWidth, style.outlineOffset, style.outlineColor],
@@ -50,7 +50,7 @@ export async function bookingExampleChecks(session, sessionId, base, modes, { ev
         view.width === 375 && view.scroll === 375
         && JSON.stringify(view.controls.map(({ label, type }) => [label, type]))
           === JSON.stringify(labels.map((label, index) => [label, ['date', 'date', 'time', 'datetime-local'][index]]))
-        && view.controls.every(({ width, height, required }) => width >= 44 && height >= 44 && required), view);
+        && view.controls.every(({ width, height, least, required }) => width >= least && height >= least && required), view);
       check(mode, 'the inputs keep their native display, border and surface in this mode',
         view.controls.every(({ background, border, appearance }) => (view.forced || background === view.surface)
           && border === 'solid' && appearance !== 'none')

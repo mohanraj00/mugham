@@ -59,6 +59,8 @@ globalThis.HTMLElement = class extends TestNode {
 globalThis.CSSStyleSheet = class { replaceSync() {} };
 globalThis.document = {
   createElement: (tag) => tag === 'dialog' ? new TestDialog(tag) : new TestNode(tag),
+  // The kit draws each icon as an SVG element.
+  createElementNS: (namespace, tag) => new TestNode(tag),
   createTextNode: (textContent) => ({ textContent }),
 };
 globalThis.customElements = {
@@ -102,7 +104,10 @@ for (const name of ['dialog', 'drawer']) {
     assert.equal(dialog.getAttribute('aria-labelledby'), title.getAttribute('id'));
     assert.equal(title.textContent, DATA.title);
     assert.equal(close.tag, 'button');
-    assert.equal(close.textContent, DATA.close_label);
+    // Decision 0009, section 3: the close control shows an x. The close label is its name and its tooltip.
+    assert.equal(close.getAttribute('aria-label'), DATA.close_label);
+    assert.equal(close.getAttribute('data-control-display'), 'icon');
+    assert.deepEqual(close.children.map((child) => child.tag), ['svg']);
     assert.equal(findPart(dialog, 'body').children[0].tag, 'slot');
     assert.equal(modal.dataset.state, 'default');
     modal.isConnected = false;
@@ -127,6 +132,19 @@ for (const name of ['dialog', 'drawer']) {
     }
     assert.equal(dialog.showCount, 3);
     assert.equal(dialog.closeCount, 3);
+  });
+
+  test(name + ' reads control-display of an ancestor when it connects after its fill', () => {
+    const modal = new Element();
+    modal.fill = fill(name, DATA);
+    const close = findPart(modal.shadowRoot.children[0], 'close');
+    assert.equal(close.getAttribute('data-control-display'), 'icon');
+    const page = new TestNode('main');
+    page.setAttribute('control-display', 'text');
+    modal.parentNode = page;
+    modal.connectedCallback();
+    assert.equal(close.getAttribute('data-control-display'), 'text');
+    assert.deepEqual(close.children, [DATA.close_label]);
   });
 
   test(name + ' refuses a nested fill and closes the active modal', async () => {

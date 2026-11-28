@@ -4,7 +4,7 @@ import { el, setDisclosure, sheet } from '../render/dom.js';
 const PANEL_CSS = sheet(`
   :host { display: block; min-inline-size: 0; color: var(--mu-color-text); font: var(--mu-type-body); }
   button {
-    min-inline-size: 44px; min-block-size: 44px; max-inline-size: 100%;
+    min-inline-size: var(--mu-size-control); min-block-size: var(--mu-size-control); max-inline-size: 100%;
     padding: var(--mu-space-2); font: inherit; color: inherit; cursor: pointer;
     overflow-wrap: anywhere; background: var(--mu-color-surface);
     border: 1px solid var(--mu-color-border); border-radius: var(--mu-radius-2);
