@@ -41,7 +41,7 @@
   "states": ["+empty", "+disabled", "+pending", "+error", "+refused"],
   "tokens": [
     "color.text", "color.text-muted", "color.surface", "color.border", "color.danger", "color.success", "space.1", "space.2", "space.3",
-    "radius.1", "type.body", "type.caption", "type.weight-strong", "size.control"
+    "radius.1", "type.body", "type.caption", "type.weight-strong", "size.control", "color.border-subtle", "color.surface-subtle", "radius.2"
   ],
   "accessibility": {
     "role": "group",

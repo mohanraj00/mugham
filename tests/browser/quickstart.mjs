@@ -7,7 +7,7 @@
 import { mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { ROOT, open, pythonServer, sleep, startChrome } from '../../tools/browser_check.mjs';
+import { ROOT, newPage, open, pythonServer, sleep, startChrome } from '../../tools/browser_check.mjs';
 
 const COMMAND = 'python3 tools/serve.py';
 const SERVED = ['/src/', '/catalog/', '/examples/'];
@@ -71,8 +71,7 @@ async function main() {
     const started = await startChrome(profile);
     chrome = started.chrome;
     const { session } = started;
-    const { targetId } = await session.send('Target.createTarget', { url: 'about:blank' });
-    const { sessionId } = await session.send('Target.attachToTarget', { targetId, flatten: true });
+    const { sessionId } = await newPage(session);
     for (const method of ['Page.enable', 'Runtime.enable', 'Network.enable']) await session.send(method, {}, sessionId);
     // Each page asks for each file again, as on a first visit.
     await session.send('Network.setCacheDisabled', { cacheDisabled: true }, sessionId);
