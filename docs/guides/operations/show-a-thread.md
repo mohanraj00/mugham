@@ -12,7 +12,9 @@ Show the messages of people and agents in one conversation. Each message names i
 - `thread.read(source)` reads events from an async iterable or from any iterable. `thread.push(event)` adds one event.
 - `thread.bind = (fill, message) => binding` gives the binding of each `action-button` or `editable-form` part. With no binding, the part shows as disabled.
 - `thread.perform = async (request, message, element) => receipt` sends the request to your API and gives the receipt.
-- `thread.actorFor` is optional. It gives the trusted actor of a message from your own context.
+- `thread.actorFor = (envelope) => actor` gives the trusted actor of a message from your own context.
+
+Set `actorFor`, or let your transport write `metadata.mugham.actor` from authenticated context. The kit checks only the shape of the actor in an event. Without one of these controls, an agent can claim `type: human`, and the thread shows its content as the content of a person. [SECURITY.md](../../../SECURITY.md#what-the-application-must-do) gives this duty of the application.
 
 ## Example
 

@@ -12,6 +12,14 @@ Keep each action on the device while the device is offline. Show it as pending, 
 - `queueActions(root, queue)` from `src/kit.js` sends each action below `root` through the queue, online and offline.
 - `queueFill(label, entries)` from `src/offline/queue.js` makes a fill of `mu-action-queue` from `queue.entries`.
 
+The queue does not check the session. Your application must do these steps:
+
+1. In `send`, read the active session at the time of each try. Compare it with the `principal` argument. If a different person is signed in, throw an error and send nothing.
+2. Before a sign-out or an account change, call `queue.close()`. To remove the waiting actions, call `await queue.clear()` first.
+3. After the next sign-in, open a new queue with the new principal.
+
+[SECURITY.md](../../../SECURITY.md#what-the-application-must-do) and [the principal rules](../../contracts/offline-queue.md#the-principal) give these duties.
+
 ## Example
 
 <!-- source: examples/cards/queue.js -->
