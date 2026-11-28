@@ -12,7 +12,7 @@
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { coverSteps, evaluate, open, pythonServer, sleep, startChrome } from '../../tools/browser_check.mjs';
+import { coverSteps, evaluate, newPage, open, pythonServer, sleep, startChrome } from '../../tools/browser_check.mjs';
 
 // Helpers in the page: find kit elements in shadow roots, read the state of an action element, edit a field.
 const HELPERS = `window.mu = {
@@ -52,8 +52,7 @@ async function main() {
     const started = await startChrome(profile);
     chrome = started.chrome;
     const { session } = started;
-    const { targetId } = await session.send('Target.createTarget', { url: 'about:blank' });
-    const { sessionId } = await session.send('Target.attachToTarget', { targetId, flatten: true });
+    const { sessionId } = await newPage(session);
     session.listeners.push((message) => {
       if (message.sessionId !== sessionId) return;
       if (message.method === 'Runtime.exceptionThrown') problems.push(message.params.exceptionDetails.exception?.description || message.params.exceptionDetails.text);

@@ -3,7 +3,7 @@ import { execFileSync } from 'node:child_process';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { ROOT, evaluate, sleep, startChrome } from '../../tools/browser_check.mjs';
+import { ROOT, evaluate, newPage, sleep, startChrome } from '../../tools/browser_check.mjs';
 
 function padding(css, overrides) {
   document.documentElement.dataset.muMode = 'light';
@@ -41,8 +41,7 @@ try {
   const started = await startChrome(profile);
   chrome = started.chrome;
   const { session } = started;
-  const { targetId } = await session.send('Target.createTarget', { url: 'about:blank' });
-  const { sessionId } = await session.send('Target.attachToTarget', { targetId, flatten: true });
+  const { sessionId } = await newPage(session);
   const overrides = cases.map(([, value]) => value);
   const values = await evaluate(session, sessionId, `(${padding})(${JSON.stringify(css)}, ${JSON.stringify(overrides)})`);
   const steps = cases.map(([step, , expected], i) => ({ step, ok: values[i] === expected, expected, value: values[i] }));
