@@ -1065,6 +1065,10 @@ export class MuEditableForm extends ActionElement {
     form > :is(mu-field, mu-select-field, mu-number-field, mu-date-field, mu-time-field, mu-date-time-field,
       mu-date-range-field, mu-choice-field, mu-multi-choice-field, mu-range-field) { max-inline-size: var(--mu-size-field); }
     .field-error { display: block; color: var(--mu-color-danger); overflow-wrap: anywhere; }
+    /* An empty confirm area and an empty error take no space, so the card ends below the save row.
+       The empty error stays in the accessibility tree, because it is a live region. */
+    .confirm-area:empty { display: none; }
+    .field-error:empty { margin-block-start: calc(-1 * var(--mu-space-3)); }
     @media (forced-colors: active) { .field-error { color: CanvasText; } }
   `)];
 
