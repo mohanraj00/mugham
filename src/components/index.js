@@ -81,6 +81,8 @@ const CARD_CSS = sheet(`
   dl { margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: var(--mu-space-2) var(--mu-space-3); }
   dd { margin: 0; }
   .actions { display: flex; flex-wrap: wrap; gap: var(--mu-space-2); }
+  /* The confirm step and the exits of an action go on a row of their own below the actions, at the start of the row. */
+  ::slotted(mu-action-button:is([data-state="confirm"], [data-wait="queued"], [data-wait="stalled"]):not([hidden])) { display: contents; }
   .provenance p { margin: 0; overflow-wrap: anywhere; }
   .provenance button {
     font: var(--mu-type-caption); min-height: var(--mu-size-control); padding: 0 var(--mu-space-2); cursor: pointer;
@@ -100,7 +102,7 @@ const ACTION_CSS = sheet(`
   }
   /* A check (save, approve, accept) is a filled success control. A cross (reject, cancel, close) is a quiet control. */
   button[data-icon="check"] { background: var(--mu-color-success); border-color: var(--mu-color-success); color: var(--mu-color-on-success); }
-  button[data-icon="cross"] {
+  button:is([data-icon="cross"], [data-icon="retry"]) {
     background: transparent; color: var(--mu-color-text); border-color: color-mix(in srgb, var(--mu-color-border) 60%, transparent);
   }
   button .icon { inline-size: var(--mu-size-icon); block-size: var(--mu-size-icon); }
@@ -118,8 +120,13 @@ const ACTION_CSS = sheet(`
   .result { display: flex; flex-direction: column; gap: var(--mu-space-1); }
   .copy { border-radius: var(--mu-radius-2); }
   .step { display: flex; flex-wrap: wrap; align-items: center; gap: var(--mu-space-2); }
+  /* In a card, the host of an action with a step has no box. These parts then go after all the actions of the card. */
+  :host(mu-action-button:is([data-state="confirm"], [data-wait="queued"], [data-wait="stalled"])) :is(.confirm-area, .result, .muted) {
+    order: 1; flex-basis: 100%;
+  }
   .step p { flex-basis: 100%; min-inline-size: 0; margin: 0; overflow-wrap: anywhere; }
   .step button[part="cancel"] { background: transparent; color: var(--mu-color-accent); }
+  .step button[part="cancel"][data-icon] { color: var(--mu-color-text); }
   @media (forced-colors: active) {
     button { background: ButtonFace; color: ButtonText; border-color: ButtonText; forced-color-adjust: none; }
     .step button[part="cancel"], button[data-icon] { background: ButtonFace; color: ButtonText; border-color: ButtonText; }
@@ -192,6 +199,8 @@ class ActionElement extends MuElement {
   #timer = new ReceiptTimer();
   #patience = PATIENCE;
   #blocked = false;
+  // The icon controls of the confirm step or the exits, while they show.
+  #stepControls = null;
 
   // The state of the action can only be read. Only bind(), start() and receipt() change it.
   get action() {
@@ -313,13 +322,20 @@ class ActionElement extends MuElement {
       this.#start(extra, started, false, edits);
       return;
     }
-    const cancel = el('button', { type: 'button', part: 'cancel' }, 'Cancel');
-    const accept = el('button', { type: 'button', part: 'accept' }, confirm.label);
+    const icons = this.#stepIcons('confirm');
+    const cancel = el('button', { type: 'button', part: 'cancel', 'data-icon': icons ? 'cross' : null,
+      'aria-label': icons ? 'Cancel' : null }, 'Cancel');
+    const accept = el('button', { type: 'button', part: 'accept', 'data-icon': icons ? 'check' : null,
+      'aria-label': icons ? confirm.label : null }, confirm.label);
     const nameControl = this[APPROVAL_CONTROL]?.nameControl;
     nameControl?.(cancel, 'Cancel');
     nameControl?.(accept, confirm.label);
     const step = el('div', { class: 'step', role: 'group', 'aria-label': confirm.message, part: 'confirm' },
       el('p', {}, confirm.message), cancel, accept);
+    this.#compactStep(step, icons && [
+      { button: cancel, label: 'Cancel', graphic: icon('cross') },
+      { button: accept, label: confirm.label, graphic: icon('check') },
+    ]);
     cancel.addEventListener('click', () => this.#close());
     accept.addEventListener('click', () => {
       this.#close(false);
@@ -342,6 +358,7 @@ class ActionElement extends MuElement {
     if (!this.#asking) return;
     const focused = this.#asking.contains(this.shadowRoot?.activeElement);
     this.#asking = null;
+    this.#compactStep(null);
     this.#area.replaceChildren();
     if (update) this.#update();
     if (focused) this.#control.focus();
@@ -384,20 +401,52 @@ class ActionElement extends MuElement {
     this.#exit = kind;
     if (this.#asking) return;
     if (!kind) {
+      this.#compactStep(null);
       this.#area.replaceChildren();
       if (focused) this.#control.focus();
       return;
     }
     const name = this.fill.data[this.constructor.labelField];
-    const retry = kind === 'stalled' ? el('button', { type: 'button', part: 'retry', 'aria-label': `Retry ${name}` }, 'Retry') : null;
-    const cancel = el('button', { type: 'button', part: 'cancel', 'aria-label': `Cancel ${name}` }, 'Cancel');
+    const icons = this.#stepIcons('exit');
+    const retry = kind === 'stalled' ? el('button', { type: 'button', part: 'retry', 'aria-label': `Retry ${name}`,
+      'data-icon': icons ? 'retry' : null }, 'Retry') : null;
+    const cancel = el('button', { type: 'button', part: 'cancel', 'aria-label': `Cancel ${name}`, 'data-icon': icons ? 'cross' : null }, 'Cancel');
     const nameControl = this[APPROVAL_CONTROL]?.nameControl;
     if (retry) nameControl?.(retry, 'Retry ' + name);
     nameControl?.(cancel, 'Cancel ' + name);
     retry?.addEventListener('click', () => this.#retry());
     cancel.addEventListener('click', () => this.#cancel());
-    this.#area.replaceChildren(el('div', { class: 'step', role: 'group', 'aria-label': `Pending: ${name}`, part: 'exit' }, retry, cancel));
+    const step = el('div', { class: 'step', role: 'group', 'aria-label': `Pending: ${name}`, part: 'exit' }, retry, cancel);
+    this.#compactStep(step, icons && [
+      ...(retry ? [{ button: retry, label: 'Retry', graphic: icon('retry') }] : []),
+      { button: cancel, label: 'Cancel', graphic: icon('cross') },
+    ]);
+    this.#area.replaceChildren(step);
     if (focused) (retry ?? cancel).focus();
+  }
+
+  // The confirm step and the exits follow the icon display of the binding (decision 0009, section 3). The confirm
+  // step shows icons only for a check action. A check that confirms a rejection or a deletion is not clear.
+  #stepIcons(kind) {
+    const { icon: name, display } = this.#action;
+    return display === 'icon' && Boolean(name) && (kind === 'exit' || name === 'check');
+  }
+
+  // One Escape closes the tooltip and the step, because the step also closes with Escape.
+  #compactStep(step, controls) {
+    this.#stepControls?.dismiss();
+    this.#stepControls = step && controls
+      ? compactControls(this, step, el('span', { part: 'tooltip', 'aria-hidden': 'true' }), controls, { passEscape: true })
+      : null;
+  }
+
+  // A subclass calls this when control-display changes.
+  refreshSteps() {
+    this.#stepControls?.render();
+  }
+
+  dismissSteps() {
+    this.#stepControls?.dismiss();
   }
 
   #update() {
@@ -455,6 +504,7 @@ export class MuActionButton extends ActionElement {
 
   disconnectedCallback() {
     this.#dismissTooltip?.();
+    this.dismissSteps();
   }
 
   attributeChangedCallback() {
@@ -464,6 +514,7 @@ export class MuActionButton extends ActionElement {
   // In the icon display of the binding, control-display="text" on the element or an ancestor shows the label
   // next to the icon. The label is the accessible name in each display.
   [UPDATE_CONTROL_DISPLAY]() {
+    this.refreshSteps();
     const button = this.#button;
     if (!button || !this.#iconDisplay) return;
     const iconOnly = !textDisplayOf(this);
@@ -515,7 +566,11 @@ export class MuActionButton extends ActionElement {
       'data-icon': this.#graphic ? data.icon : null }, ...(iconDisplay ? [] : [this.#graphic, data.label]));
     this.#button = button;
     approval?.nameControl(button, data.label);
-    button.addEventListener('click', () => this.send());
+    // A click closes the tooltip, so that it does not cover the confirm step.
+    button.addEventListener('click', () => {
+      this.#dismissTooltip?.();
+      this.send();
+    });
     const control = iconDisplay ? this.#withTooltip(button, data.label) : button;
     this[UPDATE_CONTROL_DISPLAY]();
     return [approval?.title, control,
@@ -1090,6 +1145,7 @@ export class MuEditableForm extends ActionElement {
 
   disconnectedCallback() {
     this.#controls?.dismiss();
+    this.dismissSteps();
   }
 
   attributeChangedCallback() {
@@ -1105,6 +1161,7 @@ export class MuEditableForm extends ActionElement {
 
   [UPDATE_CONTROL_DISPLAY]() {
     this.#controls?.render();
+    this.refreshSteps();
   }
 
   rebound() {
