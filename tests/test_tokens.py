@@ -9,6 +9,7 @@ import catalog  # noqa: E402
 import tokens  # noqa: E402
 
 BRAND = Path(__file__).resolve().parents[1] / 'docs' / 'brand' / 'tokens.json'
+RENAMED = Path(__file__).resolve().parent / 'vectors' / 'renamed-tokens.json'
 # Each kit color takes its value from one brand color. The kit border is the edge of a control, so it needs 3:1.
 # Thus it takes border-strong, not the decorative border. The kit danger color is the brand error color.
 COLORS = {'color.surface': 'surface', 'color.surface-subtle': 'surface-raised',
@@ -162,6 +163,23 @@ class TokensTest(unittest.TestCase):
         data = {'format': 1, 'tokens': {'color.text-muted': {'light': '#000000', 'dark': '#000000'},
                                         'color.text.muted': {'light': '#000000', 'dark': '#000000'}}}
         self.assertIn('color.text.muted: has the same CSS name as another token', tokens.errors(data))
+
+    def test_renamed_token_keeps_its_defaults_under_the_old_name(self):
+        data = tokens.load(RENAMED)
+        self.assertEqual(tokens.errors(data), [])
+        css = tokens.css(data)
+        self.assertIn('--mu-space-1: 12px;', css)
+        self.assertIn('--mu-space-1: 16px;', css)
+        self.assertIn('--mu-space-1: 8px;', css)
+        self.assertNotIn('--mu-space-new-name:', css)
+
+    def test_invalid_token_renames_are_refused(self):
+        data = tokens.load(RENAMED)
+        for renamed in ([], {'space.1': []}, {'space.1': 'space.unknown'},
+                        {'space.bad;': 'space.new-name'}, {'space.new.name': 'space.new-name'},
+                        {'space.1': 'space.new-name', 'space.2': 'space.new-name'}):
+            with self.subTest(renamed=renamed):
+                self.assertTrue(tokens.errors(data | {'renamed': renamed, 'compact': {}}))
 
     def test_the_css_file_agrees_with_the_tokens(self):
         self.assertEqual(tokens.CSS.read_text(encoding='utf-8'), tokens.css(self.data))

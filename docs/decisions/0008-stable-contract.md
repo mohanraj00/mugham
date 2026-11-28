@@ -198,7 +198,7 @@ Implementation issue I1 copies this draft to `docs/COMPATIBILITY.md`.
 >
 > 1. A minor release adds the replacement, if one exists.
 > 2. The same release marks the old item as deprecated. The contract or the token file gives the mark and the replacement. The changelog lists the item under `Deprecated`.
-> 3. The old item keeps its behavior until the next major release. A part with a new name carries the two names in its `part` attribute, for example `part="card-title title-text"`. A token with a new name keeps the old name as an alias, for example `--mu-old-name: var(--mu-new-name)`.
+> 3. The old item keeps its behavior until the next major release. A part with a new name carries the two names in its `part` attribute, for example `part="card-title title-text"`. For a renamed token, the token stylesheet sets the default under the old name. The component reads the new name first, for example `gap: var(--mu-new-name, var(--mu-old-name, 1rem))`. A page can set either name. If the page sets both names, the new name takes priority.
 > 4. The check tools warn about a deprecated item.
 > 5. Only a major release removes the item. The item is deprecated in at least one earlier minor release.
 
@@ -347,7 +347,7 @@ The owner files these issues. They use the owner answers. Each change of `catalo
 ### I5. Add deprecation marks
 
 - [ ] The contract format accepts an optional `deprecated` text on a contract, a data field and a part. The two validators accept it, with shared vectors.
-- [ ] `tokens.json` accepts a deprecated token with its replacement. `tools/tokens.py` writes the alias.
+- [x] The `renamed` object in `tokens.json` maps each old name to its replacement in `tokens`. Each replacement can have one old name. `tools/tokens.py` writes the default and preset values under the old name. The component uses the fallback in step 3. Run `node tests/browser/token-alias.mjs` to check the page overrides.
 - [ ] `tools/theme_parts.py` warns about a deprecated part and a deprecated token.
 - [ ] The changelog template has a `Deprecated` section.
 
