@@ -1,0 +1,8 @@
+{
+  "format": 1,
+  "tokens": {
+    "space.new-name": {"light": "12px", "dark": "16px"}
+  },
+  "renamed": {"space.1": "space.new-name"},
+  "compact": {"space.new-name": "8px"}
+}

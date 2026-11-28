@@ -14,6 +14,7 @@ check:
 	$(NODE) tests/browser/approval.mjs
 	$(NODE) tests/browser/apps.mjs
 	$(NODE) tests/browser/quickstart.mjs
+	$(NODE) tests/browser/token-alias.mjs
 
 # Write the README screenshots to docs/screenshots/ again.
 screenshots:
