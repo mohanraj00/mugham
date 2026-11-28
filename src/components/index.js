@@ -851,7 +851,10 @@ export class MuCard extends MuElement {
 
   [UPDATE_CONTROL_DISPLAY]() {
     this.#controls?.render();
-    for (const control of this.shadowRoot.querySelectorAll('mu-action-button, mu-editable-form')) control[UPDATE_CONTROL_DISPLAY]?.();
+    // The application puts its actions in the light DOM through the actions slot, so search both trees.
+    for (const root of [this.shadowRoot, this]) {
+      for (const control of root.querySelectorAll('mu-action-button, mu-editable-form')) control[UPDATE_CONTROL_DISPLAY]?.();
+    }
   }
 
   get collapsed() {

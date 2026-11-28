@@ -21,6 +21,14 @@ class TestNode extends EventTarget {
     this.children = [];
     this.append(...children);
   }
+  // As in the DOM, a node with no parent stays where it is.
+  replaceWith(node) {
+    const index = this.parentNode?.children.indexOf(this) ?? -1;
+    if (index < 0) return;
+    this.parentNode.children[index] = node;
+    node.parentNode = this.parentNode;
+    this.parentNode = null;
+  }
   setAttribute(name, value) {
     const before = this.getAttribute(name);
     this.attributes.set(name, String(value));
@@ -38,7 +46,8 @@ class TestNode extends EventTarget {
   set textContent(value) { this.replaceChildren({ textContent: String(value) }); }
   querySelector(selector) { return this.querySelectorAll(selector)[0] ?? null; }
   querySelectorAll(selector) {
-    const matches = (node) => node instanceof TestNode && (selector === '*' || node.tag === selector
+    const tags = selector.split(', ');
+    const matches = (node) => node instanceof TestNode && (selector === '*' || tags.includes(node.tag)
       || (selector === 'input:checked' && node.tag === 'input' && node.checked));
     return this.children.flatMap((node) => [...(matches(node) ? [node] : []), ...(node.querySelectorAll?.(selector) ?? [])]);
   }
@@ -568,6 +577,20 @@ test('the card and grid controls keep their names and states in both displays', 
   }
   grid.removeAttribute('control-display');
   checkControl(nestedToggle, 'Expand Seed tray', 'Expand', true);
+});
+
+test('a card refreshes the display of its slotted action buttons', () => {
+  const card = kit.mount('card', { title: 'Seed tray' });
+  const action = { tool: 'tray.approve', label: 'Approve', icon: 'check', display: 'icon' };
+  const approve = kit.mount('action-button', { label: 'Approve', icon: 'check', display: 'icon' }, { parent: card, slot: 'actions', action });
+  const button = part(approve.shadowRoot, 'button');
+  assert.equal(button.getAttribute('data-control-display'), 'icon');
+  card.setAttribute('control-display', 'text');
+  assert.equal(button.getAttribute('data-control-display'), 'text');
+  assert.equal(button.textContent, 'Approve');
+  card.setAttribute('control-display', 'icon');
+  assert.equal(button.getAttribute('data-control-display'), 'icon');
+  assert.equal(button.getAttribute('aria-label'), 'Approve');
 });
 
 test('the link controls keep their names and work in both displays', () => {
