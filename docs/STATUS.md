@@ -1,6 +1,13 @@
 # Status
 
-2026-11-27. Release 0.8.0 is ready for the owner to tag. The v0.8 scope is complete. The kit has contract format 2, the tokens, the primitives, the catalog components, the message envelope and the thread for people and agents. An application can register its own contract and element. The kit has no workbench shell and no panels. [Decision 0001](decisions/0001-build-tools.md) gives the build tools and the dependency rule.
+2026-11-28. Release 0.9.0 is ready for the owner to tag. The v0.9 scope is complete. The kit has contract format 2, the tokens, the primitives, the catalog components, the message envelope and the thread for people and agents. An application can register its own contract and element. The kit has no workbench shell and no panels. [Decision 0001](decisions/0001-build-tools.md) gives the build tools and the dependency rule.
+
+## In release 0.9.0
+
+- A compact visual design (decision 0009). New tokens set the control size, the touch size, the icon size and the field width. Each control is 32 CSS pixels with a mouse and 44 CSS pixels on a touch screen. The dialog and drawer close is an x, and the editable form can save with an icon (#204).
+- The table and the data grid have a lighter style, and the table sort control has a sort mark (#204). Each table column takes the width of its text, and a narrow table scrolls in its own area (#193).
+- The approvals example has an icon approve, an icon reject and a confirm step. The confirm step of a reject keeps its text (#204).
+- A page override of an old token name still applies after a rename (#195).
 
 ## In release 0.8.0
 
@@ -67,10 +74,14 @@ The GitHub milestones hold the issues of each release.
 | v0.6 | New form fields, support for registered fields and a rich text editor. Theme presets and a gallery, an application shell and page controls, views for agent work and document approvals, clearer thread cards and refusals, a long thread benchmark, declared part names, a distinct done style, and exits for pending grid and upload actions. Complete, in release 0.6.0 |
 | v0.7 | Compact icon controls with floating tooltips, action and queue checks, link and image rules, a run steps helper and waits in browser checks. Complete, in release 0.7.0 |
 | v0.8 | Service names and reason codes in refusals, a service handler, a service status strip, a page with one region for each service and page width rules. Complete, in release 0.8.0 |
+| v0.9 | A compact visual design with icon controls, a lighter table and data grid, table column widths from the text, an icon approve and reject with a confirm step, and old token names after a rename. Complete, in release 0.9.0 |
 | v1.0 | A stable envelope and catalog contract, with a compatibility statement |
 
 ## Next
 
-1. The owner tags release 0.8.0 after this PR merges.
-2. Keep a minimum column width in a narrow table (#193). PR 202 has the change, and it merges after the release.
-3. Make the envelope and the catalog contract stable for v1.0 (#17).
+1. The owner tags release 0.9.0 after this PR merges.
+2. Make the envelope and the catalog contract stable for v1.0 (#17).
+3. Run the offline queue check on a phone width with a service worker (#205).
+4. Check each component with forced colors and reduced motion (#206).
+5. Review the security of the kit on the release candidate (#207).
+6. Make the docs short, current and complete for a new user (#208).
