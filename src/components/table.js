@@ -20,10 +20,12 @@ export class MuTable extends MuElement {
     thead th { position: sticky; inset-block-start: 0; z-index: 1; background: var(--mu-color-surface-subtle);
       font: var(--mu-type-caption); font-weight: var(--mu-type-weight-strong); color: var(--mu-color-text-muted);
       vertical-align: middle; padding-block: var(--mu-space-1); }
-    /* The sort control is the header text with a small sort mark. It has no frame. */
+    /* The sort control is the header text with a small sort mark. It has no frame.
+       Its negative margin puts its padding in the cell padding, so its maximum width includes that margin. */
     thead button { display: inline-flex; align-items: center; gap: var(--mu-space-1); font: inherit; color: inherit;
       background: transparent; border: 0; border-radius: var(--mu-radius-1); margin-inline: calc(-1 * var(--mu-space-1));
-      min-height: var(--mu-size-control); min-width: var(--mu-size-control); padding: 0 var(--mu-space-1); cursor: pointer; overflow-wrap: anywhere; max-width: 100%; text-align: start; }
+      min-height: var(--mu-size-control); min-width: var(--mu-size-control); padding: 0 var(--mu-space-1); cursor: pointer;
+      overflow-wrap: anywhere; max-width: calc(100% + 2 * var(--mu-space-1)); text-align: start; }
     thead button:hover { color: var(--mu-color-text); }
     .sort-mark { display: inline-flex; flex: none; opacity: 0.45; }
     .sort-mark .icon { inline-size: calc(var(--mu-size-icon) * 0.875); block-size: calc(var(--mu-size-icon) * 0.875); }
