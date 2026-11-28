@@ -1,4 +1,4 @@
-// The envelope reader gives the expected result for each conformance case in tests/vectors/envelope/.
+// The envelope reader gives the expected result for each conformance case in conformance/v1/envelope/.
 // Each result agrees with docs/contracts/envelope-v1.schema.json.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -9,8 +9,8 @@ import { createReader, readEnvelope, readStream, FALLBACK_TEXT, FILL_FORMAT } fr
 const load = (path) => JSON.parse(readFileSync(new URL(path, import.meta.url), 'utf8'));
 const SCHEMA = load('../docs/contracts/envelope-v1.schema.json');
 const CONTRACT = load('../catalog/schema/contract.schema.json');
-const ENVELOPES = load('./vectors/envelope/envelopes.json');
-const STREAMS = load('./vectors/envelope/streams.json');
+const ENVELOPES = load('../conformance/v1/envelope/envelopes.json');
+const STREAMS = load('../conformance/v1/envelope/streams.json');
 const EVENT = { $ref: '#/$defs/event' };
 const READ_TYPES = ['RUN_STARTED', 'RUN_FINISHED', 'RUN_ERROR', 'TEXT_MESSAGE_START', 'TEXT_MESSAGE_CONTENT',
   'TEXT_MESSAGE_END', 'ACTIVITY_SNAPSHOT'];

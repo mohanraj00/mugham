@@ -15,6 +15,7 @@ The repository has source code and the release `v0.9.0`. This is the layout:
 - `catalog/`: one contract file for each component, and the schema of the contract format.
 - `src/`: the kit.
 - `tests/`: the contract tests, the accessibility checks and the build check.
+- `conformance/`: the versioned conformance set of the stable contract and its runner.
 - `examples/`: neutral synthetic examples.
 - `tools/`: the project check and the local cross review.
 - `docs/`: the status and the review rules.

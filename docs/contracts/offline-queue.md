@@ -4,6 +4,8 @@ An application can let a person do an action while the device is offline. The ki
 
 The kit side is `src/offline/queue.js` and `src/offline/worker.js`. The tests are `tests/queue.test.mjs`, `tests/worker.test.mjs`, `tests/action.test.mjs` and the browser checks of `examples/cards/queue.html`.
 
+From release 1.0.0, the [compatibility statement](../COMPATIBILITY.md) tells which parts of this contract are stable and which changes need a major release.
+
 The queue and the [offline data source](data-source.md) are separate parts. The queue sends actions. The data source reads records. An application uses the data source for each read that it shows offline.
 
 ## The request

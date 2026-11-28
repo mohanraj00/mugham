@@ -7,7 +7,7 @@ import { contractErrors, fillErrors } from '../src/render/validate.js';
 import { CATALOG } from '../src/render/catalog.js';
 import { CONTRACTS, register } from '../src/render/registry.js';
 
-const vectors = JSON.parse(readFileSync(new URL('./vectors/contracts.json', import.meta.url), 'utf8'));
+const vectors = JSON.parse(readFileSync(new URL('../conformance/v1/catalog/contracts.json', import.meta.url), 'utf8'));
 // The valid contract of the vectors, with no component field. The kit catalog has no loan-card contract.
 const VALID = structuredClone(vectors.cases[0].contract);
 delete VALID.data.loan;

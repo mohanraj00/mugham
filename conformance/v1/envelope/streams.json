@@ -3,6 +3,7 @@
  "cases": [
   {
    "name": "two people and two agents in one thread",
+   "since": "1.0.0",
    "events": [
     {
      "type": "RUN_STARTED",
@@ -230,6 +231,7 @@
   },
   {
    "name": "a message with no actor or an invalid actor is refused",
+   "since": "1.0.0",
    "events": [
     {
      "type": "RUN_STARTED",
@@ -344,6 +346,7 @@
   },
   {
    "name": "an undeclared component shows as a refusal",
+   "since": "1.0.0",
    "events": [
     {
      "type": "ACTIVITY_SNAPSHOT",
@@ -478,6 +481,7 @@
   },
   {
    "name": "markup in a text delta stays text",
+   "since": "1.0.0",
    "events": [
     {
      "type": "TEXT_MESSAGE_START",
@@ -536,6 +540,7 @@
   },
   {
    "name": "a message with no end marker stays partial after the run ends",
+   "since": "1.0.0",
    "events": [
     {
      "type": "RUN_STARTED",
@@ -603,6 +608,7 @@
   },
   {
    "name": "a run error marks each open message of the run",
+   "since": "1.0.0",
    "events": [
     {
      "type": "TEXT_MESSAGE_START",
@@ -755,6 +761,7 @@
   },
   {
    "name": "invalid events are ignored with an error and the order stays",
+   "since": "1.0.0",
    "events": [
     {
      "type": "TEXT_MESSAGE_CONTENT",
@@ -902,6 +909,7 @@
   },
   {
    "name": "a snapshot replaces a component and cannot change the actor",
+   "since": "1.0.0",
    "events": [
     {
      "type": "ACTIVITY_SNAPSHOT",
@@ -1152,6 +1160,7 @@
   },
   {
    "name": "a text after a run error comes after the status",
+   "since": "1.0.0",
    "events": [
     {
      "type": "RUN_STARTED",
@@ -1240,6 +1249,7 @@
   },
   {
    "name": "a run error with no active run and a second run with one runId are errors",
+   "since": "1.0.0",
    "events": [
     {
      "type": "TEXT_MESSAGE_START",
@@ -1317,6 +1327,7 @@
   },
   {
    "name": "a replaced snapshot keeps its run ids and a refused snapshot stays refused",
+   "since": "1.0.0",
    "events": [
     {
      "type": "RUN_STARTED",

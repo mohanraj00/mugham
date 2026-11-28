@@ -1,9 +1,9 @@
 {
   "version": 1,
-  "code": ["src/*", "catalog/*", "examples/*", "tests/*", "tools/*", "Makefile", ".github/workflows/ci.yml"],
-  "security_sources": ["src/render/*", "src/actions/*", "src/offline/*", "tools/*.py"],
+  "code": ["src/*", "catalog/*", "conformance/*", "examples/*", "tests/*", "tools/*", "Makefile", ".github/workflows/ci.yml"],
+  "security_sources": ["src/render/*", "src/actions/*", "src/offline/*", "tools/*.py", "conformance/*.py", "conformance/*.mjs"],
   "not_security": ["*/test_*", "tests/*"],
   "boundaries": ["tools/*", "src/render/*", "src/actions/*", "src/offline/*"],
-  "level1": ["tools/claude_review.py", "catalog/schema/*", "docs/contracts/*"],
+  "level1": ["tools/claude_review.py", "catalog/schema/*", "docs/contracts/*", "conformance/*"],
   "generated": []
 }

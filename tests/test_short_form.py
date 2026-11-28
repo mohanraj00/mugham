@@ -1,7 +1,7 @@
 """The short form of a contract (format 3) and the defaults of the catalog. See catalog/schema/README.md.
 
-tests/vectors/short.json holds the cases that the Python resolver and the browser resolver share.
-tests/vectors/resolved.json holds the full form of each catalog contract. It started as the exact content of
+conformance/v1/catalog/short.json holds the cases that the Python resolver and the browser resolver share.
+conformance/v1/catalog/resolved.json holds the full form of each catalog contract. It started as the exact content of
 the catalog files before issue 103, which were in the full form.
 """
 import copy
@@ -13,7 +13,7 @@ import unittest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'tools'))
 import catalog  # noqa: E402
 
-VECTORS = Path(__file__).parent / 'vectors'
+VECTORS = Path(__file__).resolve().parents[1] / 'conformance' / 'v1' / 'catalog'
 SHORT = json.loads((VECTORS / 'short.json').read_text(encoding='utf-8'))
 RESOLVED = json.loads((VECTORS / 'resolved.json').read_text(encoding='utf-8'))
 FILES = {path.stem: json.loads(path.read_text(encoding='utf-8')) for path in sorted((catalog.ROOT / 'catalog').glob('*.json'))}

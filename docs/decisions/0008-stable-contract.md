@@ -320,17 +320,17 @@ The items have no separate issues. Each item is a part of #17, and each done lin
 
 - [x] `docs/COMPATIBILITY.md` has the statement of section 2, with each rule of #17 about parts ([#220](https://github.com/mohanraj00/mugham/pull/220)).
 - [x] The file lists the stable items of section 1, or links to this note for them ([#220](https://github.com/mohanraj00/mugham/pull/220)).
-- [ ] The README, `docs/contracts/envelope.md`, `docs/contracts/data-source.md`, `docs/contracts/offline-queue.md` and `catalog/schema/README.md` link to the statement.
-- [ ] `make check` passes.
+- [ ] The README, `docs/contracts/envelope.md`, `docs/contracts/data-source.md`, `docs/contracts/offline-queue.md` and `catalog/schema/README.md` link to the statement. The contract documents and the schema guide have the link ([#222](https://github.com/mohanraj00/mugham/pull/222)). The README link comes with I8.
+- [x] `make check` passes ([#220](https://github.com/mohanraj00/mugham/pull/220)).
 
 ### I2. Version the conformance set
 
-- [ ] The vectors move to `conformance/v1/` with the layout of section 3. The kit tests read them there.
-- [ ] Each case has a `since` key. `manifest.json` gives a SHA-256 for each file, and a test checks it.
-- [ ] `conformance/run.py` runs the set against the kit and against a command, with `--since`. It uses only the Python standard library.
-- [ ] The release workflow attaches `mugham-conformance-<version>.tar` and its SHA-256 file. The byte check covers the asset.
-- [ ] `.github/gates.json` lists `conformance/*` as a level 1 path.
-- [ ] `conformance/README.md` gives the steps for a consumer with a pinned release.
+- [x] The vectors move to `conformance/v1/` with the layout of section 3. The kit tests read them there ([#222](https://github.com/mohanraj00/mugham/pull/222)). The `surface/` files come with I6 and I7.
+- [x] Each case has a `since` key. `manifest.json` gives a SHA-256 for each file, and a test checks it ([#222](https://github.com/mohanraj00/mugham/pull/222)).
+- [x] `conformance/run.py` runs the set against the kit and against a command, with `--since`. It uses only the Python standard library ([#222](https://github.com/mohanraj00/mugham/pull/222)). The driver `conformance/kit.mjs` lets the runner use the validator of a kit with Node.js.
+- [x] The release workflow attaches `mugham-conformance-<version>.tar` and its SHA-256 file. The byte check covers the asset ([#222](https://github.com/mohanraj00/mugham/pull/222)).
+- [x] `.github/gates.json` lists `conformance/*` as a level 1 path ([#222](https://github.com/mohanraj00/mugham/pull/222)).
+- [x] `conformance/README.md` gives the steps for a consumer with a pinned release ([#222](https://github.com/mohanraj00/mugham/pull/222)).
 
 ### I3. Match the fill version by the major version (Q2, option A)
 
@@ -342,9 +342,9 @@ The items have no separate issues. Each item is a part of #17, and each done lin
 
 ### I4. Make the error paths stable (Q3, option A)
 
-- [ ] `catalog/schema/README.md` gives the grammar of an error path.
-- [ ] The conformance runner compares the paths by default, and the full text with a flag.
-- [ ] A test checks that each error of the two validators starts with a path and `: `.
+- [x] `catalog/schema/README.md` gives the grammar of an error path ([#222](https://github.com/mohanraj00/mugham/pull/222)).
+- [x] The conformance runner compares the paths by default, and the full text with a flag ([#222](https://github.com/mohanraj00/mugham/pull/222)).
+- [x] A test checks that each error of the two validators starts with a path and `: ` ([#222](https://github.com/mohanraj00/mugham/pull/222)).
 
 ### I5. Add deprecation marks
 

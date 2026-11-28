@@ -86,7 +86,7 @@ A nested fill, for example the fact, has no `slots` key. It takes the slots of i
 
 ## The check and the refusal
 
-Use `validateFill` from `src/kit.js` to check a fill and get a list of errors with paths. Each element uses the same catalog checks before it renders. `tools/catalog.py` gives the same errors for each case in `tests/vectors/fills.json`.
+Use `validateFill` from `src/kit.js` to check a fill and get a list of errors with paths. Each element uses the same catalog checks before it renders. `tools/catalog.py` gives the same errors for each case in `conformance/v1/catalog/fills.json`.
 
 <!-- source: examples/guides/contracts.js -->
 ```js

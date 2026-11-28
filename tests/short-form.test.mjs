@@ -1,5 +1,5 @@
 // The short form of a contract (format 3). The expected results come from catalog/schema/README.md.
-// tests/vectors/short.json holds the cases that this resolver and tools/catalog.py share.
+// conformance/v1/catalog/short.json holds the cases that this resolver and tools/catalog.py share.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -8,7 +8,7 @@ import { BRAND, CONTRACTS, register } from '../src/render/registry.js';
 import { labelOf, resolveContract } from '../src/render/resolve.js';
 import { contractErrors, fillErrors } from '../src/render/validate.js';
 
-const vectors = (name) => JSON.parse(readFileSync(new URL(`./vectors/${name}`, import.meta.url), 'utf8'));
+const vectors = (name) => JSON.parse(readFileSync(new URL(`../conformance/v1/catalog/${name}`, import.meta.url), 'utf8'));
 const SHORT = vectors('short.json');
 const RESOLVED = vectors('resolved.json');
 // Two values with the same JSON text have the same keys in the same order.

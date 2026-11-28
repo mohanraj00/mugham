@@ -2,6 +2,8 @@
 
 This folder is a level 1 path. It holds the format of a component contract and the format of a fill. The owner merges each change.
 
+From release 1.0.0, the [compatibility statement](../../docs/COMPATIBILITY.md) tells which parts of these formats are stable. The [conformance set](../../conformance/README.md) holds the shared cases of the two validators.
+
 - [contract.schema.json](contract.schema.json): the shape of a contract in the full form, which is format 2.
 - [short.schema.json](short.schema.json): the shape of a contract in the short form, which is format 3, and the shape of the defaults file.
 - [defaults.json](defaults.json): the defaults of the catalog for the short form.
@@ -102,7 +104,7 @@ The short form is a second way to write a contract. It omits each value that is 
 
 A contract with no `format` key, or with `format` set to `3`, has the short form. A contract with `format` set to `2` has the full form, and it stays valid. Each contract in `catalog/` has the short form. `register` accepts the two forms for an application contract.
 
-The resolvers are `resolve` in `tools/catalog.py` and `resolveContract` in `src/render/resolve.js`. `tests/vectors/short.json` shows that the two give the same full form and the same errors. The full form has the key order of [contract.schema.json](contract.schema.json).
+The resolvers are `resolve` in `tools/catalog.py` and `resolveContract` in `src/render/resolve.js`. `conformance/v1/catalog/short.json` shows that the two give the same full form and the same errors. The full form has the key order of [contract.schema.json](contract.schema.json).
 
 ### Defaults of the catalog
 
@@ -179,11 +181,14 @@ This is its full form:
 4. In each field, remove `required` and `label` if the value is equal to the default. Replace `max_length` with `size` if a size has that value.
 5. Run `make check`.
 
-`python3 -B tools/catalog.py --resolved` prints the full form of each catalog contract, one contract on each line. `tests/vectors/resolved.json` holds that output, and a test compares the two key for key. The file started as the exact content of the catalog before the short form. After a change to a contract, write the file again and read its diff:
+`python3 -B tools/catalog.py --resolved` prints the full form of each catalog contract, one contract on each line. `conformance/v1/catalog/resolved.json` holds that output, and a test compares the two key for key. The file started as the exact content of the catalog before the short form. After a change to a contract, write the file again and read its diff:
 
 ```sh
-python3 -B tools/catalog.py --resolved > tests/vectors/resolved.json
+python3 -B tools/catalog.py --resolved > conformance/v1/catalog/resolved.json
+python3 -B conformance/run.py --write-manifest
 ```
+
+The second command writes the manifest of the conformance set again.
 
 A test also refuses a catalog file that states a default.
 
@@ -198,3 +203,26 @@ A fill has the keys `component`, `version` and `data`, and the optional key `slo
 - A fill never contains markup, style or script. The validator does not read a string as markup. The kit shows each text value as text.
 
 The validator gives each error with a path, for example `data.title`. It does not change a fill.
+
+### Error paths
+
+Each error of the two validators is one text: a path, then a colon and a space, then words for a person. An example is `data.items[1].id: must be unique`. The path is stable from release 1.0.0. The words after the path can change in a minor release. In a test, compare the path and not the full text.
+
+The path is the text before the first colon and space. This is its grammar:
+
+```text
+path  = root / step *( "." step / index )
+root  = "(fill)" / "(contract)"
+step  = key / cut-key
+index = "[" number "]"
+```
+
+- `root` is the path of an error about the full fill or the full contract, for example `(fill): must be an object`.
+- `key` is a key of the fill or of the contract. The first step of a fill error is `component`, `version`, `data` or `slots`, or a key that the fill must not have.
+- `index` is the position of an item in a list. The first position is 0.
+- A nested fill adds its steps to the path of its field, for example `data.cards[0].data.due`.
+- `cut-key` is the first 40 characters of a longer key, then `...`. A declared name has 40 characters at most, so only a key that the contract does not declare can be cut.
+
+An error for a key that the contract does not declare can have that key in its path. Such a key comes from the input and can contain each character. If it contains a colon and a space, the path ends before them. The error for an unknown key below a path names the key in the words, for example `slots: unknown key stamp`.
+
+The envelope reader gives its errors in the same form, for example `actor.type: must be human, agent or system` and `events[1]: no run is active`. `tests/test_conformance.py` checks the form of each expected error of the conformance set. `conformance/run.py` compares the paths by default, and the full texts with `--full-text`.

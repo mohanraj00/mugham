@@ -1,5 +1,5 @@
 name: Release archive
-# This workflow attaches the build archive to a GitHub release. It publishes no package.
+# This workflow attaches the build archive and the conformance set to a GitHub release. It publishes no package.
 # The owner makes the release by hand. See docs/decisions/0004-package.md.
 on:
   release:
@@ -21,13 +21,22 @@ jobs:
       # Two builds of one commit must give the same bytes. The job stops if they differ.
       - name: Build two times and compare the bytes
         run: python3 -B tools/build.py --check
-      - name: Build the archive
+      - name: Build the archives
+        env:
+          TAG: ${{ github.event.release.tag_name }}
         run: |
           set -euo pipefail
           python3 -B tools/build.py --out "$RUNNER_TEMP/archive"
           cd "$RUNNER_TEMP/archive"
+          # The name of the conformance archive has the kit release of its manifest. It must be the release of the tag.
+          SET="mugham-conformance-${TAG#v}.tar"
+          if [ ! -f "$SET" ]; then
+            echo "The manifest of the conformance set does not name the release of the tag $TAG." >&2
+            exit 1
+          fi
           sha256sum mugham.tar | tee mugham.tar.sha256
-      - name: Attach the archive to the release
+          sha256sum "$SET" | tee "$SET.sha256"
+      - name: Attach the archives to the release
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
@@ -35,4 +44,5 @@ jobs:
         run: |
           set -euo pipefail
           cd "$RUNNER_TEMP/archive"
-          gh release upload "$TAG" mugham.tar mugham.tar.sha256
+          SET="mugham-conformance-${TAG#v}.tar"
+          gh release upload "$TAG" mugham.tar mugham.tar.sha256 "$SET" "$SET.sha256"

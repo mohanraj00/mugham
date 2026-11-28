@@ -4,6 +4,8 @@ An application can show data that it holds on the device. An application module,
 
 The kit side is `src/offline/source.js`. The tests are `tests/source.test.mjs` and the browser checks of `examples/cards/offline.html`.
 
+From release 1.0.0, the [compatibility statement](../COMPATIBILITY.md) tells which parts of this contract are stable and which changes need a major release.
+
 ## The source
 
 A source is an object with two methods. Each method returns a promise of a result.

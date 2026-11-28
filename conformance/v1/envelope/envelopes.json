@@ -4,6 +4,7 @@
  "cases": [
   {
    "name": "a final text message of a person",
+   "since": "1.0.0",
    "schema": true,
    "envelope": {
     "envelope": 1,
@@ -46,6 +47,7 @@
   },
   {
    "name": "a message with no actor is refused",
+   "since": "1.0.0",
    "schema": false,
    "envelope": {
     "envelope": 1,
@@ -74,6 +76,7 @@
   },
   {
    "name": "an actor with an unknown type and an empty id is refused",
+   "since": "1.0.0",
    "schema": false,
    "envelope": {
     "envelope": 1,
@@ -99,6 +102,7 @@
   },
   {
    "name": "an unknown part type shows as a text fallback with no data",
+   "since": "1.0.0",
    "schema": true,
    "envelope": {
     "envelope": 1,
@@ -142,6 +146,7 @@
   },
   {
    "name": "a long unknown part type name is cut to 40 characters",
+   "since": "1.0.0",
    "schema": true,
    "envelope": {
     "envelope": 1,
@@ -180,6 +185,7 @@
   },
   {
    "name": "a declared component",
+   "since": "1.0.0",
    "schema": true,
    "envelope": {
     "envelope": 1,
@@ -246,6 +252,7 @@
   },
   {
    "name": "an undeclared component shows as a refusal",
+   "since": "1.0.0",
    "schema": true,
    "envelope": {
     "envelope": 1,
@@ -291,6 +298,7 @@
   },
   {
    "name": "a component part of fill format 1 shows as a refusal",
+   "since": "1.0.0",
    "schema": false,
    "envelope": {
     "envelope": 1,
@@ -345,6 +353,7 @@
   },
   {
    "name": "markup in a text part stays text",
+   "since": "1.0.0",
    "schema": true,
    "envelope": {
     "envelope": 1,
@@ -383,6 +392,7 @@
   },
   {
    "name": "a text part that is not a string shows as a refusal",
+   "since": "1.0.0",
    "schema": false,
    "envelope": {
     "envelope": 1,
@@ -423,6 +433,7 @@
   },
   {
    "name": "a part that is not an object shows as a refusal",
+   "since": "1.0.0",
    "schema": false,
    "envelope": {
     "envelope": 1,
@@ -460,6 +471,7 @@
   },
   {
    "name": "a partial message with an error status",
+   "since": "1.0.0",
    "schema": true,
    "envelope": {
     "envelope": 1,
@@ -516,6 +528,7 @@
   },
   {
    "name": "a different envelope version is refused",
+   "since": "1.0.0",
    "schema": false,
    "envelope": {
     "envelope": 2,
@@ -541,6 +554,7 @@
   },
   {
    "name": "a different AG-UI version and an unknown state are refused",
+   "since": "1.0.0",
    "schema": false,
    "envelope": {
     "envelope": 1,
@@ -567,6 +581,7 @@
   },
   {
    "name": "a refusal error longer than 300 characters is cut to 300 characters",
+   "since": "1.0.0",
    "schema": false,
    "envelope": {
     "envelope": 1,
@@ -609,6 +624,7 @@
   },
   {
    "name": "a refused envelope from the history keeps its errors",
+   "since": "1.0.0",
    "schema": true,
    "envelope": {
     "envelope": 1,
@@ -633,6 +649,7 @@
   },
   {
    "name": "a refused envelope keeps no actor and no parts",
+   "since": "1.0.0",
    "schema": false,
    "envelope": {
     "envelope": 1,
@@ -666,6 +683,7 @@
   },
   {
    "name": "a refused envelope with no errors is refused again",
+   "since": "1.0.0",
    "schema": false,
    "envelope": {
     "envelope": 1,
@@ -686,6 +704,7 @@
   },
   {
    "name": "a refused envelope with an id that is not valid keeps its errors after the id error",
+   "since": "1.0.0",
    "schema": false,
    "envelope": {
     "envelope": 1,
@@ -710,6 +729,7 @@
   },
   {
    "name": "a refused envelope keeps 20 errors maximum after the id error",
+   "since": "1.0.0",
    "schema": false,
    "envelope": {
     "envelope": 1,
@@ -771,6 +791,7 @@
   },
   {
    "name": "a value that is not an object is refused",
+   "since": "1.0.0",
    "schema": false,
    "envelope": "<p>hello</p>",
    "result": {

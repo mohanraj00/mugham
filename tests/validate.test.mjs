@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { actorErrors, authorErrors, dateRangeProblem, fillErrors, schemaErrors } from '../src/render/validate.js';
 
-const vectors = JSON.parse(readFileSync(new URL('./vectors/fills.json', import.meta.url), 'utf8'));
+const vectors = JSON.parse(readFileSync(new URL('../conformance/v1/catalog/fills.json', import.meta.url), 'utf8'));
 
 for (const item of vectors.cases) {
   test(item.name, () => {

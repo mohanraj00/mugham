@@ -1,4 +1,7 @@
-"""Tests of tools/build.py. Each expected result comes from docs/decisions/0001-build-tools.md."""
+"""Tests of tools/build.py. Each expected result comes from docs/decisions/0001-build-tools.md.
+
+The expected results of the conformance archive come from docs/decisions/0008-stable-contract.md, section 3.
+"""
 import hashlib
 import posixpath
 import re
@@ -33,14 +36,26 @@ class BuildTest(unittest.TestCase):
         (self.root / 'src/kit/a.js').write_text('export const a = 1;\n')
         (self.root / 'catalog/card.json').write_text('{"name": "card"}\n')
         (self.root / 'src/untracked.js').write_text('not in git\n')
+        (self.root / 'conformance/v1/catalog').mkdir(parents=True)
+        (self.root / 'conformance/run.py').write_text('print(1)\n')
+        (self.root / 'conformance/v1/catalog/fills.json').write_text('{"cases": []}\n')
+        (self.root / 'conformance/untracked.json').write_text('not in git\n')
+        self.write_set_manifest()
         git(self.root, 'init', '-q')
-        git(self.root, 'add', 'LICENSE', 'src/kit', 'catalog')
+        git(self.root, 'add', 'LICENSE', 'src/kit', 'catalog', 'conformance/run.py', 'conformance/v1')
 
     def tearDown(self):
         self.tmp.cleanup()
 
     def out(self, name):
         return Path(self.tmp.name) / name
+
+    def write_set_manifest(self, kit='1.2.3', files=None):
+        if files is None:
+            data = (self.root / 'conformance/v1/catalog/fills.json').read_bytes()
+            files = {'catalog/fills.json': hashlib.sha256(data).hexdigest()}
+        manifest = {'format': 1, 'set': 1, 'kit': kit, 'files': files}
+        (self.root / 'conformance/v1/manifest.json').write_text(json.dumps(manifest))
 
     def test_two_builds_give_the_same_bytes(self):
         first = build.build(self.root, self.out('one'), epoch=1700000000)
@@ -93,10 +108,58 @@ class BuildTest(unittest.TestCase):
             build.build = real
         report = json.loads(stream.getvalue())
         self.assertFalse(report['passed'])
-        self.assertEqual(len(report['kept']), 2)
+        # Two archives of each build: the kit and the conformance set.
+        self.assertEqual(len(report['kept']), 4)
         for path in report['kept']:
             self.assertTrue(Path(path).is_file())
         shutil.rmtree(Path(report['kept'][0]).parents[1])
+
+    def test_the_conformance_set_is_a_second_archive_with_the_kit_release_in_its_name(self):
+        kit, archive = build.build_all(self.root, self.out('one'), epoch=1234)
+        self.assertEqual((kit.name, archive.name), ('mugham.tar', 'mugham-conformance-1.2.3.tar'))
+        with tarfile.open(archive) as tar:
+            self.assertEqual(tar.getnames(), ['conformance/run.py', 'conformance/v1/catalog/fills.json',
+                                              'conformance/v1/manifest.json'])
+            for member in tar.getmembers():
+                self.assertEqual((member.uid, member.gid, member.uname, member.gname), (0, 0, '', ''))
+                self.assertEqual((member.mode, member.mtime), (0o644, 1234))
+        # The kit archive does not contain the conformance set (decision 0004).
+        with tarfile.open(kit) as tar:
+            self.assertFalse([name for name in tar.getnames() if 'conformance' in name])
+
+    def test_two_builds_of_the_conformance_set_give_the_same_bytes(self):
+        first = build.build_set(self.root, self.out('one'), epoch=1700000000)
+        os.utime(self.root / 'conformance/run.py', (1, 1))
+        second = build.build_set(self.root, self.out('two'), epoch=1700000000)
+        self.assertEqual(first.read_bytes(), second.read_bytes())
+
+    def test_check_gives_the_digests_of_the_two_archives(self):
+        stream = io.StringIO()
+        self.assertEqual(build.check(self.root, epoch=0, stream=stream), 0)
+        report = json.loads(stream.getvalue())
+        self.assertEqual(report['archives'], ['mugham.tar', 'mugham-conformance-1.2.3.tar'])
+        self.assertEqual(report['conformance_sha256'][0], report['conformance_sha256'][1])
+        self.assertNotEqual(report['conformance_sha256'][0], report['sha256'][0])
+
+    def test_a_manifest_that_is_not_current_stops_the_build(self):
+        (self.root / 'conformance/v1/catalog/fills.json').write_text('{"cases": [1]}\n')
+        with self.assertRaisesRegex(SystemExit, 'the manifest does not agree with the tracked files of its set'):
+            build.build_set(self.root, self.out('one'), epoch=0)
+        self.write_set_manifest(files={})
+        with self.assertRaisesRegex(SystemExit, 'the manifest does not agree with the tracked files of its set'):
+            build.build_set(self.root, self.out('two'), epoch=0)
+
+    def test_a_manifest_with_no_kit_release_stops_the_build(self):
+        for kit in ('1.2', '01.2.3', '1.2.3-rc.1', '../x', None):
+            with self.subTest(kit=kit):
+                self.write_set_manifest(kit=kit)
+                with self.assertRaisesRegex(SystemExit, 'do not give one kit release'):
+                    build.build_set(self.root, self.out('one'), epoch=0)
+
+    def test_a_conformance_set_with_no_manifest_stops_the_build(self):
+        git(self.root, 'rm', '-q', '--cached', 'conformance/v1/manifest.json')
+        with self.assertRaisesRegex(SystemExit, 'the conformance set has no manifest'):
+            build.build_set(self.root, self.out('one'), epoch=0)
 
     def test_source_date_epoch_from_the_environment(self):
         with mock.patch.dict(os.environ, {'SOURCE_DATE_EPOCH': '1234'}):

@@ -1,5 +1,6 @@
 // The browser validator of a fill and of a contract. It gives the same errors as tools/catalog.py for each
-// case in tests/vectors/fills.json and tests/vectors/contracts.json. A fill with an error is refused.
+// case in conformance/v1/catalog/fills.json and conformance/v1/catalog/contracts.json. A fill with an error is
+// refused.
 // The validator never changes the fill or the contract.
 import CONTRACT_SCHEMA from '../../catalog/schema/contract.schema.json' with { type: 'json' };
 import FILL_SCHEMA from '../../catalog/schema/fill.schema.json' with { type: 'json' };

@@ -1,5 +1,5 @@
 // The message envelope, version 1, and the reader of an AG-UI 1.0 stream.
-// docs/contracts/envelope.md gives the rules. tests/vectors/envelope/ gives the conformance cases.
+// docs/contracts/envelope.md gives the rules. conformance/v1/envelope/ gives the conformance cases.
 // The reader never changes its input. Each text stays text: the reader never reads it as Markdown or markup.
 import { fillErrors } from '../render/validate.js';
 import { CONTRACTS } from '../render/registry.js';
