@@ -1,5 +1,5 @@
-"""The Python validator gives the expected errors for each shared case in tests/vectors/fills.json and
-tests/vectors/contracts.json."""
+"""The Python validator gives the expected errors for each shared case in conformance/v1/catalog/fills.json
+and conformance/v1/catalog/contracts.json."""
 import json
 from pathlib import Path
 import sys
@@ -8,8 +8,9 @@ import unittest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'tools'))
 import catalog  # noqa: E402
 
-VECTORS = json.loads((Path(__file__).parent / 'vectors' / 'fills.json').read_text(encoding='utf-8'))
-CONTRACTS = json.loads((Path(__file__).parent / 'vectors' / 'contracts.json').read_text(encoding='utf-8'))
+SET = Path(__file__).resolve().parents[1] / 'conformance' / 'v1' / 'catalog'
+VECTORS = json.loads((SET / 'fills.json').read_text(encoding='utf-8'))
+CONTRACTS = json.loads((SET / 'contracts.json').read_text(encoding='utf-8'))
 
 
 class VectorTest(unittest.TestCase):

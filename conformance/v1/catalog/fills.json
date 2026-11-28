@@ -330,130 +330,155 @@
   }
  },
  "cases": [
-  {"name": "a block fill cannot set an approval mark", "fill": {"component": "rich-paragraph", "version": "0.1.0", "data": {"content": [], "approval": {"state": "approved", "by": "Branch reviewer", "at": "2026-11-26T10:00:00Z"}}, "slots": {"authorship": {"type": "agent", "id": "newsletter-agent"}}}, "errors": ["data.approval: the contract does not declare this field"]},
-  {"name": "a block refuses an undeclared data field", "fill": {"component": "rich-paragraph", "version": "0.1.0", "data": {"content": [], "review": {"state": "pending"}}, "slots": {"authorship": {"type": "agent", "id": "newsletter-agent"}}}, "errors": ["data.review: the contract does not declare this field"]},
+  {"name": "a block fill cannot set an approval mark", "since": "1.0.0", "fill": {"component": "rich-paragraph", "version": "0.1.0", "data": {"content": [], "approval": {"state": "approved", "by": "Branch reviewer", "at": "2026-11-26T10:00:00Z"}}, "slots": {"authorship": {"type": "agent", "id": "newsletter-agent"}}}, "errors": ["data.approval: the contract does not declare this field"]},
+  {"name": "a block refuses an undeclared data field", "since": "1.0.0", "fill": {"component": "rich-paragraph", "version": "0.1.0", "data": {"content": [], "review": {"state": "pending"}}, "slots": {"authorship": {"type": "agent", "id": "newsletter-agent"}}}, "errors": ["data.review: the contract does not declare this field"]},
   {
    "name": "run steps take a tool call as text",
+   "since": "1.0.0",
    "fill": {"component": "run-steps", "version": "0.1.0", "data": {"label": "Library research", "steps": [{"id": "search", "name": "Search the catalog", "state": "pending", "tool_name": "catalog.search", "tool_arguments": "<q>moss</q>", "tool_result": "One match"}]}, "slots": {"authorship": {"type": "agent", "id": "catalog-assistant"}}},
    "errors": []
   },
   {
    "name": "run steps refuse a repeated id with a different state",
+   "since": "1.0.0",
    "fill": {"component": "run-steps", "version": "0.1.0", "data": {"label": "Library research", "steps": [{"id": "search", "name": "Search the catalog", "state": "pending"}, {"id": "search", "name": "Search the catalog", "state": "done"}]}, "slots": {"authorship": {"type": "agent", "id": "catalog-assistant"}}},
    "errors": ["data.steps[1].id: must be unique"]
   },
   {
    "name": "run steps require a tool name for tool output",
+   "since": "1.0.0",
    "fill": {"component": "run-steps", "version": "0.1.0", "data": {"label": "Library research", "steps": [{"id": "search", "name": "Search the catalog", "state": "pending", "tool_result": "One match"}]}, "slots": {"authorship": {"type": "agent", "id": "catalog-assistant"}}},
    "errors": ["data.steps[0].tool_name: give a name for the tool call"]
   },
   {
    "name": "run steps refuse a blank step name",
+   "since": "1.0.0",
    "fill": {"component": "run-steps", "version": "0.1.0", "data": {"label": "Library research", "steps": [{"id": "search", "name": " \t", "state": "pending"}]}, "slots": {"authorship": {"type": "agent", "id": "catalog-assistant"}}},
    "errors": ["data.steps[0].name: give text"]
   },
   {
    "name": "a plan takes a task in progress",
+   "since": "1.0.0",
    "fill": {"component": "plan", "version": "0.1.0", "data": {"label": "Library research", "tasks": [{"id": "find", "name": "Find a book", "state": "in_progress"}]}, "slots": {"authorship": {"type": "agent", "id": "catalog-assistant"}}},
    "errors": []
   },
   {
    "name": "a plan refuses a repeated id with a different name",
+   "since": "1.0.0",
    "fill": {"component": "plan", "version": "0.1.0", "data": {"label": "Library research", "tasks": [{"id": "find", "name": "Find a book", "state": "in_progress"}, {"id": "find", "name": "Check availability", "state": "in_progress"}]}, "slots": {"authorship": {"type": "agent", "id": "catalog-assistant"}}},
    "errors": ["data.tasks[1].id: must be unique"]
   },
   {
    "name": "approval queue takes a titled proposal as text",
+   "since": "1.0.0",
    "fill": {"component": "approval-queue", "version": "0.1.0", "data": {"label": "Library approvals", "items": [{"id": "hold", "title": "Place a hold", "summary": "Keep <one> book at the east branch."}]}, "slots": {"authorship": {"type": "agent", "id": "catalog-assistant"}}},
    "errors": []
   },
   {
    "name": "approval queue refuses a repeated id with a different title",
+   "since": "1.0.0",
    "fill": {"component": "approval-queue", "version": "0.1.0", "data": {"label": "Library approvals", "items": [{"id": "hold", "title": "First hold", "summary": "Keep the first book."}, {"id": "hold", "title": "Second hold", "summary": "Keep the second book."}]}, "slots": {"authorship": {"type": "agent", "id": "catalog-assistant"}}},
    "errors": ["data.items[1].id: must be unique"]
   },
   {
    "name": "approval queue refuses blank names, ids and summaries",
+   "since": "1.0.0",
    "fill": {"component": "approval-queue", "version": "0.1.0", "data": {"label": " ", "items": [{"id": "\t", "title": " ", "summary": " "}]}, "slots": {"authorship": {"type": "agent", "id": "catalog-assistant"}}},
    "errors": ["data.label: give text", "data.items[0].id: give text", "data.items[0].title: give text", "data.items[0].summary: give text"]
   },
   {
    "name": "approval queue refuses a proposal with a claimed result",
+   "since": "1.0.0",
    "fill": {"component": "approval-queue", "version": "0.1.0", "data": {"label": "Library approvals", "items": [{"id": "hold", "title": "Place a hold", "summary": "Keep the book.", "state": "approved"}]}, "slots": {"authorship": {"type": "agent", "id": "catalog-assistant"}}},
    "errors": ["data.items[0].state: the contract does not declare this field"]
   },
   {
    "name": "a plan refuses a run step state",
+   "since": "1.0.0",
    "fill": {"component": "plan", "version": "0.1.0", "data": {"label": "Library research", "tasks": [{"id": "find", "name": "Find a book", "state": "running"}]}, "slots": {"authorship": {"type": "agent", "id": "catalog-assistant"}}},
    "errors": ["data.tasks[0].state: must be one of pending, in_progress, done, failed, skipped"]
   },
   {
    "name": "empty-state accepts scalar text",
+   "since": "1.0.0",
    "fill": {"component": "empty-state", "version": "0.1.0", "data": {"title": "No loans <found>", "text": "Try another search."}},
    "errors": []
   },
   {
    "name": "empty-state refuses blank text and title",
+   "since": "1.0.0",
    "fill": {"component": "empty-state", "version": "0.1.0", "data": {"title": "\u2003", "text": "\ufeff"}},
    "errors": ["data.title: give text", "data.text: give text"]
   },
   {
    "name": "empty-state refuses a control in a fill",
+   "since": "1.0.0",
    "fill": {"component": "empty-state", "version": "0.1.0", "data": {"title": "No loans <found>", "text": "Try another search.", "action": "Search"}},
    "errors": ["data.action: the contract does not declare this field"]
   },
   {
    "name": "skeleton accepts six lines",
+   "since": "1.0.0",
    "fill": {"component": "skeleton", "version": "0.1.0", "data": {"label": "Loading loans", "lines": 6}},
    "errors": []
   },
   {
    "name": "skeleton refuses a blank name",
+   "since": "1.0.0",
    "fill": {"component": "skeleton", "version": "0.1.0", "data": {"label": "\ufeff", "lines": 6}},
    "errors": ["data.label: give text"]
   },
   {
    "name": "skeleton refuses a fractional line count",
+   "since": "1.0.0",
    "fill": {"component": "skeleton", "version": "0.1.0", "data": {"label": "Loading loans", "lines": 2.5}},
    "errors": ["data.lines: must be an integer"]
   },
   {
    "name": "skeleton refuses more than six lines",
+   "since": "1.0.0",
    "fill": {"component": "skeleton", "version": "0.1.0", "data": {"label": "Loading loans", "lines": 7}},
    "errors": ["data.lines: more than the maximum 6"]
   },
   {
    "name": "badge accepts text and tone",
+   "since": "1.0.0",
    "fill": {"component": "badge", "version": "0.1.0", "data": {"text": "On loan", "tone": "info"}},
    "errors": []
   },
   {
    "name": "badge refuses a blank label",
+   "since": "1.0.0",
    "fill": {"component": "badge", "version": "0.1.0", "data": {"text": "\u00a0", "tone": "info"}},
    "errors": ["data.text: give text"]
   },
   {
    "name": "badge refuses an undeclared tone",
+   "since": "1.0.0",
    "fill": {"component": "badge", "version": "0.1.0", "data": {"text": "On loan", "tone": "urgent"}},
    "errors": ["data.tone: must be one of neutral, info, success, warning, danger"]
   },
   {
    "name": "avatar accepts a name with no letter",
+   "since": "1.0.0",
    "fill": {"component": "avatar", "version": "0.1.0", "data": {"name": "123 ..."}},
    "errors": []
   },
   {
    "name": "avatar refuses a blank name",
+   "since": "1.0.0",
    "fill": {"component": "avatar", "version": "0.1.0", "data": {"name": "\u2003"}},
    "errors": ["data.name: give text"]
   },
   {
    "name": "avatar refuses a URL field",
+   "since": "1.0.0",
    "fill": {"component": "avatar", "version": "0.1.0", "data": {"name": "Sample Reader", "url": "https://example.org/reader"}},
    "errors": ["data.url: the contract does not declare this field"]
   },
   {
    "name": "breadcrumbs accept relative paths and HTTPS addresses",
+   "since": "1.0.0",
    "fill": {"component": "breadcrumbs", "version": "0.1.0", "data": {"label": "Path", "items": [
     {"label": "Library", "href": "https://example.org/"},
     {"label": "Annex", "href": "https://xn--bcher-kva.example/"},
@@ -468,6 +493,7 @@
   },
   {
    "name": "breadcrumbs refuse a javascript address",
+   "since": "1.0.0",
    "fill": {"component": "breadcrumbs", "version": "0.1.0", "data": {"label": "Path", "items": [
     {"label": "Loans", "href": "javascript:alert(1)"}, {"label": "Current page"}
    ]}},
@@ -475,6 +501,7 @@
   },
   {
    "name": "breadcrumbs refuse a data address",
+   "since": "1.0.0",
    "fill": {"component": "breadcrumbs", "version": "0.1.0", "data": {"label": "Path", "items": [
     {"label": "Loans", "href": "data:text/html,x"}, {"label": "Current page"}
    ]}},
@@ -482,6 +509,7 @@
   },
   {
    "name": "breadcrumbs refuse an HTTP address",
+   "since": "1.0.0",
    "fill": {"component": "breadcrumbs", "version": "0.1.0", "data": {"label": "Path", "items": [
     {"label": "Loans", "href": "http://example.org/a"}, {"label": "Current page"}
    ]}},
@@ -489,6 +517,7 @@
   },
   {
    "name": "breadcrumbs refuse a host without a scheme",
+   "since": "1.0.0",
    "fill": {"component": "breadcrumbs", "version": "0.1.0", "data": {"label": "Path", "items": [
     {"label": "Loans", "href": "//example.org/a"}, {"label": "Current page"}
    ]}},
@@ -496,6 +525,7 @@
   },
   {
    "name": "breadcrumbs refuse a path with a space",
+   "since": "1.0.0",
    "fill": {"component": "breadcrumbs", "version": "0.1.0", "data": {"label": "Path", "items": [
     {"label": "Loans", "href": "/staff loans"}, {"label": "Current page"}
    ]}},
@@ -503,6 +533,7 @@
   },
   {
    "name": "breadcrumbs refuse an HTTPS address with a user name on the last item",
+   "since": "1.0.0",
    "fill": {"component": "breadcrumbs", "version": "0.1.0", "data": {"label": "Path", "items": [
     {"label": "Loans", "href": "/loans"}, {"label": "Current page", "href": "https://reader@example.org/a"}
    ]}},
@@ -510,6 +541,7 @@
   },
   {
    "name": "breadcrumbs give link errors in item order",
+   "since": "1.0.0",
    "fill": {"component": "breadcrumbs", "version": "0.1.0", "data": {"label": "Path", "items": [
     {"label": "Library"},
     {"label": "Staff", "href": "/staff\\loans"},
@@ -547,59 +579,70 @@
   },
   {
    "name": "pagination refuses a page above the page count",
+   "since": "1.0.0",
    "fill": {"component": "pagination", "version": "0.1.0", "data": {"label": "Pages", "page": 3, "page_count": 2}},
    "errors": ["data.page: must be at most page_count"]
   },
   {
    "name": "steps accept the first step at index zero",
+   "since": "1.0.0",
    "fill": {"component": "steps", "version": "0.1.0", "data": {"label": "Member steps", "labels": ["Details"], "current": 0}},
    "errors": []
   },
   {
    "name": "steps refuse an index outside the list",
+   "since": "1.0.0",
    "fill": {"component": "steps", "version": "0.1.0", "data": {"label": "Member steps", "labels": ["Details"], "current": 1}},
    "errors": ["data.current: must be within labels"]
   },
   {
    "name": "steps refuse blank list and step labels",
+   "since": "1.0.0",
    "fill": {"component": "steps", "version": "0.1.0", "data": {"label": "\u00a0", "labels": ["Details", "\t\ufeff"], "current": 1}},
    "errors": ["data.label: give text", "data.labels[1]: give text"]
   },
   {
    "name": "progress accepts a known decimal value",
+   "since": "1.0.0",
    "fill": {"component": "progress", "version": "0.1.0", "data": {"label": "Files copied", "maximum": 2.5, "value": 1.5}},
    "errors": []
   },
   {
    "name": "progress accepts an omitted value",
+   "since": "1.0.0",
    "fill": {"component": "progress", "version": "0.1.0", "data": {"label": "Files copied", "maximum": 2}},
    "errors": []
   },
   {
    "name": "progress refuses a blank name",
+   "since": "1.0.0",
    "fill": {"component": "progress", "version": "0.1.0", "data": {"label": "\u2003", "maximum": 2}},
    "errors": ["data.label: give text"]
   },
   {
    "name": "progress refuses a value above the maximum",
+   "since": "1.0.0",
    "fill": {"component": "progress", "version": "0.1.0", "data": {"label": "Files copied", "maximum": 2.5, "value": 3}},
    "errors": ["data.value: must be at most maximum"]
   },
   {
    "name": "progress refuses a zero maximum and a negative value",
+   "since": "1.0.0",
    "fill": {"component": "progress", "version": "0.1.0", "data": {"label": "Files copied", "maximum": 0, "value": -1}},
    "errors": ["data.maximum: less than the minimum 5e-324", "data.value: less than the minimum 0"]
   },
   {
    "name": "progress refuses a value that is not finite",
+   "since": "1.0.0",
    "fill": {"component": "progress", "version": "0.1.0", "data": {"label": "Files copied", "maximum": 3, "value": 1e309}},
    "errors": ["data.value: must be a number"]
   },
-  {"name": "a component reference accepts a field contract", "fill": {"component": "sample-form", "version": "0.1.0", "data": {"fields": [{"component": "sample-color", "version": "0.1.0", "data": {}}]}}, "errors": []},
-  {"name": "a component reference refuses a contract with field false", "fill": {"component": "sample-form", "version": "0.1.0", "data": {"fields": [{"component": "sample-label", "version": "0.1.0", "data": {}}]}}, "errors": ["data.fields[0].component: must be a field"]},
-  {"name": "a component reference refuses an undeclared component", "fill": {"component": "sample-form", "version": "0.1.0", "data": {"fields": [{"component": "other", "version": "0.1.0", "data": {}}]}}, "errors": ["data.fields[0].component: no contract has the name other"]},
+  {"name": "a component reference accepts a field contract", "since": "1.0.0", "fill": {"component": "sample-form", "version": "0.1.0", "data": {"fields": [{"component": "sample-color", "version": "0.1.0", "data": {}}]}}, "errors": []},
+  {"name": "a component reference refuses a contract with field false", "since": "1.0.0", "fill": {"component": "sample-form", "version": "0.1.0", "data": {"fields": [{"component": "sample-label", "version": "0.1.0", "data": {}}]}}, "errors": ["data.fields[0].component: must be a field"]},
+  {"name": "a component reference refuses an undeclared component", "since": "1.0.0", "fill": {"component": "sample-form", "version": "0.1.0", "data": {"fields": [{"component": "other", "version": "0.1.0", "data": {}}]}}, "errors": ["data.fields[0].component: no contract has the name other"]},
   {
    "name": "a date-time fill accepts a two-part time zone",
+   "since": "1.0.0",
    "fill": {
     "component": "date-time-field",
     "version": "0.1.0",
@@ -613,6 +656,7 @@
   },
   {
    "name": "a date-time fill accepts a three-part time zone",
+   "since": "1.0.0",
    "fill": {
     "component": "date-time-field",
     "version": "0.1.0",
@@ -626,6 +670,7 @@
   },
   {
    "name": "a date-time fill accepts an unknown time zone with the correct form",
+   "since": "1.0.0",
    "fill": {
     "component": "date-time-field",
     "version": "0.1.0",
@@ -639,6 +684,7 @@
   },
   {
    "name": "a date-time fill refuses a UTC offset as a time zone",
+   "since": "1.0.0",
    "fill": {
     "component": "date-time-field",
     "version": "0.1.0",
@@ -654,6 +700,7 @@
   },
   {
    "name": "a date-time fill refuses a one-part time zone",
+   "since": "1.0.0",
    "fill": {
     "component": "date-time-field",
     "version": "0.1.0",
@@ -669,6 +716,7 @@
   },
   {
    "name": "a date-time fill refuses an empty time zone",
+   "since": "1.0.0",
    "fill": {
     "component": "date-time-field",
     "version": "0.1.0",
@@ -684,6 +732,7 @@
   },
   {
    "name": "valid loan",
+   "since": "1.0.0",
    "fill": {
     "component": "loan-card",
     "version": "0.1.0",
@@ -707,6 +756,7 @@
   },
   {
    "name": "undeclared component",
+   "since": "1.0.0",
    "fill": {
     "component": "banner",
     "version": "0.1.0",
@@ -732,6 +782,7 @@
   },
   {
    "name": "final newline in name",
+   "since": "1.0.0",
    "fill": {
     "component": "loan-card\n",
     "version": "0.1.0",
@@ -757,6 +808,7 @@
   },
   {
    "name": "not an object",
+   "since": "1.0.0",
    "fill": [],
    "errors": [
     "(fill): must be an object"
@@ -764,6 +816,7 @@
   },
   {
    "name": "null fill",
+   "since": "1.0.0",
    "fill": null,
    "errors": [
     "(fill): must be an object"
@@ -771,6 +824,7 @@
   },
   {
    "name": "integral float",
+   "since": "1.0.0",
    "fill": {
     "component": "loan-card",
     "version": "0.1.0",
@@ -794,6 +848,7 @@
   },
   {
    "name": "version = \"0.2.0\"",
+   "since": "1.0.0",
    "fill": {
     "component": "loan-card",
     "version": "0.2.0",
@@ -819,6 +874,7 @@
   },
   {
    "name": "data.script = \"x\"",
+   "since": "1.0.0",
    "fill": {
     "component": "loan-card",
     "version": "0.1.0",
@@ -845,6 +901,7 @@
   },
   {
    "name": "data.title = removed",
+   "since": "1.0.0",
    "fill": {
     "component": "loan-card",
     "version": "0.1.0",
@@ -869,6 +926,7 @@
   },
   {
    "name": "data.title = \"xxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+   "since": "1.0.0",
    "fill": {
     "component": "loan-card",
     "version": "0.1.0",
@@ -894,6 +952,7 @@
   },
   {
    "name": "data.title = 7",
+   "since": "1.0.0",
    "fill": {
     "component": "loan-card",
     "version": "0.1.0",
@@ -919,6 +978,7 @@
   },
   {
    "name": "data.due = \"2026-02-30\"",
+   "since": "1.0.0",
    "fill": {
     "component": "loan-card",
     "version": "0.1.0",
@@ -944,6 +1004,7 @@
   },
   {
    "name": "data.due = \"2026-2-3\"",
+   "since": "1.0.0",
    "fill": {
     "component": "loan-card",
     "version": "0.1.0",
@@ -969,6 +1030,7 @@
   },
   {
    "name": "data.due = \"0000-01-01\"",
+   "since": "1.0.0",
    "fill": {
     "component": "loan-card",
     "version": "0.1.0",
@@ -994,6 +1056,7 @@
   },
   {
    "name": "data.due = \"2024-02-29\"",
+   "since": "1.0.0",
    "fill": {
     "component": "loan-card",
     "version": "0.1.0",
@@ -1017,6 +1080,7 @@
   },
   {
    "name": "data.renewals = true",
+   "since": "1.0.0",
    "fill": {
     "component": "loan-card",
     "version": "0.1.0",
@@ -1042,6 +1106,7 @@
   },
   {
    "name": "data.renewals = 1.5",
+   "since": "1.0.0",
    "fill": {
     "component": "loan-card",
     "version": "0.1.0",
@@ -1067,6 +1132,7 @@
   },
   {
    "name": "data.renewals = 9",
+   "since": "1.0.0",
    "fill": {
     "component": "loan-card",
     "version": "0.1.0",
@@ -1092,6 +1158,7 @@
   },
   {
    "name": "data.status = \"lost\"",
+   "since": "1.0.0",
    "fill": {
     "component": "loan-card",
     "version": "0.1.0",
@@ -1118,6 +1185,7 @@
   },
   {
    "name": "data.facts = [\"a\", \"b\", \"c\"]",
+   "since": "1.0.0",
    "fill": {
     "component": "loan-card",
     "version": "0.1.0",
@@ -1144,6 +1212,7 @@
   },
   {
    "name": "data.facts = [\"a\", 5]",
+   "since": "1.0.0",
    "fill": {
     "component": "loan-card",
     "version": "0.1.0",
@@ -1169,6 +1238,7 @@
   },
   {
    "name": "style = \"x\"",
+   "since": "1.0.0",
    "fill": {
     "component": "loan-card",
     "version": "0.1.0",
@@ -1195,6 +1265,7 @@
   },
   {
    "name": "data.__proto__ = {\"x\": 1}",
+   "since": "1.0.0",
    "fill": {
     "component": "loan-card",
     "version": "0.1.0",
@@ -1223,6 +1294,7 @@
   },
   {
    "name": "data.constructor = \"x\"",
+   "since": "1.0.0",
    "fill": {
     "component": "loan-card",
     "version": "0.1.0",
@@ -1249,6 +1321,7 @@
   },
   {
    "name": "data.title = \"\\ud83d\\ude00\\ud83d\\ude00\\ud83",
+   "since": "1.0.0",
    "fill": {
     "component": "loan-card",
     "version": "0.1.0",
@@ -1272,6 +1345,7 @@
   },
   {
    "name": "data.title = \"\\ud83d\\ude00\\ud83d\\ude00\\ud83",
+   "since": "1.0.0",
    "fill": {
     "component": "loan-card",
     "version": "0.1.0",
@@ -1297,6 +1371,7 @@
   },
   {
    "name": "markup stays text: <img src=x onerror=alert(1)>",
+   "since": "1.0.0",
    "fill": {
     "component": "loan-card",
     "version": "0.1.0",
@@ -1320,6 +1395,7 @@
   },
   {
    "name": "markup stays text: <script>alert(1)</script>",
+   "since": "1.0.0",
    "fill": {
     "component": "loan-card",
     "version": "0.1.0",
@@ -1343,6 +1419,7 @@
   },
   {
    "name": "markup stays text: &lt;b&gt;",
+   "since": "1.0.0",
    "fill": {
     "component": "loan-card",
     "version": "0.1.0",
@@ -1366,6 +1443,7 @@
   },
   {
    "name": "markup stays text: javascript:alert(1)",
+   "since": "1.0.0",
    "fill": {
     "component": "loan-card",
     "version": "0.1.0",
@@ -1389,6 +1467,7 @@
   },
   {
    "name": "nested valid",
+   "since": "1.0.0",
    "fill": {
     "component": "loan-grid",
     "version": "0.1.0",
@@ -1428,6 +1507,7 @@
   },
   {
    "name": "nested wrong component",
+   "since": "1.0.0",
    "fill": {
     "component": "loan-grid",
     "version": "0.1.0",
@@ -1470,6 +1550,7 @@
   },
   {
    "name": "nested bad date",
+   "since": "1.0.0",
    "fill": {
     "component": "loan-grid",
     "version": "0.1.0",
@@ -1512,6 +1593,7 @@
   },
   {
    "name": "nested not an object",
+   "since": "1.0.0",
    "fill": {
     "component": "loan-grid",
     "version": "0.1.0",
@@ -1541,6 +1623,7 @@
   },
   {
    "name": "a fill with 11 unknown keys gets one error",
+   "since": "1.0.0",
    "fill": {
     "component": "loan-card",
     "version": "0.1.0",
@@ -1577,6 +1660,7 @@
   },
   {
    "name": "a fill with 10 unknown keys gets an error for each key",
+   "since": "1.0.0",
    "fill": {
     "component": "loan-card",
     "version": "0.1.0",
@@ -1621,6 +1705,7 @@
   },
   {
    "name": "an unknown key of 50 characters shows as its first 40 characters",
+   "since": "1.0.0",
    "fill": {
     "component": "loan-card",
     "version": "0.1.0",
@@ -1647,6 +1732,7 @@
   },
   {
    "name": "an undeclared field of 50 characters shows as its first 40 characters",
+   "since": "1.0.0",
    "fill": {
     "component": "loan-card",
     "version": "0.1.0",
@@ -1673,6 +1759,7 @@
   },
   {
    "name": "an undeclared field of 40 characters shows in full",
+   "since": "1.0.0",
    "fill": {
     "component": "loan-card",
     "version": "0.1.0",
@@ -1699,6 +1786,7 @@
   },
   {
    "name": "format 2 refuses a fill with actions",
+   "since": "1.0.0",
    "fill": {
     "component": "loan-card",
     "version": "0.1.0",
@@ -1727,6 +1815,7 @@
   },
   {
    "name": "a fill with no slots leaves the required authorship slot empty",
+   "since": "1.0.0",
    "fill": {
     "component": "loan-card",
     "version": "0.1.0",
@@ -1746,6 +1835,7 @@
   },
   {
    "name": "a fill with only a citation leaves the required authorship slot empty",
+   "since": "1.0.0",
    "fill": {
     "component": "loan-card",
     "version": "0.1.0",
@@ -1771,6 +1861,7 @@
   },
   {
    "name": "a fill with both slots filled",
+   "since": "1.0.0",
    "fill": {
     "component": "loan-card",
     "version": "0.1.0",
@@ -1799,6 +1890,7 @@
   },
   {
    "name": "markup in a slot stays text",
+   "since": "1.0.0",
    "fill": {
     "component": "loan-card",
     "version": "0.1.0",
@@ -1827,6 +1919,7 @@
   },
   {
    "name": "an authorship slot with an unknown actor type",
+   "since": "1.0.0",
    "fill": {
     "component": "loan-card",
     "version": "0.1.0",
@@ -1852,6 +1945,7 @@
   },
   {
    "name": "an authorship slot with an empty id",
+   "since": "1.0.0",
    "fill": {
     "component": "loan-card",
     "version": "0.1.0",
@@ -1877,6 +1971,7 @@
   },
   {
    "name": "a citation with no locator",
+   "since": "1.0.0",
    "fill": {
     "component": "loan-card",
     "version": "0.1.0",
@@ -1905,6 +2000,7 @@
   },
   {
    "name": "a citation with the locator \"http://example.org/rules\"",
+   "since": "1.0.0",
    "fill": {
     "component": "loan-card",
     "version": "0.1.0",
@@ -1934,6 +2030,7 @@
   },
   {
    "name": "a citation with the locator \"javascript:alert(1)\"",
+   "since": "1.0.0",
    "fill": {
     "component": "loan-card",
     "version": "0.1.0",
@@ -1963,6 +2060,7 @@
   },
   {
    "name": "a citation with the locator \"https://person@example.org/rules\"",
+   "since": "1.0.0",
    "fill": {
     "component": "loan-card",
     "version": "0.1.0",
@@ -1992,6 +2090,7 @@
   },
   {
    "name": "a citation with the locator \"https://example.org/a b\"",
+   "since": "1.0.0",
    "fill": {
     "component": "loan-card",
     "version": "0.1.0",
@@ -2021,6 +2120,7 @@
   },
   {
    "name": "a citation with the locator \"https://example.org/\\u202egnp.exe\"",
+   "since": "1.0.0",
    "fill": {
     "component": "loan-card",
     "version": "0.1.0",
@@ -2050,6 +2150,7 @@
   },
   {
    "name": "an unknown slot",
+   "since": "1.0.0",
    "fill": {
     "component": "loan-card",
     "version": "0.1.0",
@@ -2076,6 +2177,7 @@
   },
   {
    "name": "a slot that the contract does not declare",
+   "since": "1.0.0",
    "fill": {
     "component": "loan-grid",
     "version": "0.1.0",
@@ -2123,6 +2225,7 @@
   },
   {
    "name": "a nested fill with slots",
+   "since": "1.0.0",
    "fill": {
     "component": "loan-grid",
     "version": "0.1.0",
@@ -2170,6 +2273,7 @@
   },
   {
    "name": "a list of named components takes each named component",
+   "since": "1.0.0",
    "fill": {
     "component": "loan-shelf",
     "version": "0.1.0",
@@ -2216,6 +2320,7 @@
   },
   {
    "name": "a list of named components refuses a component that it does not name",
+   "since": "1.0.0",
    "fill": {
     "component": "loan-shelf",
     "version": "0.1.0",

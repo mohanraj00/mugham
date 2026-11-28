@@ -32,5 +32,8 @@ The defaults give the other values: the version `0.1.0`, the kind `component`, A
 After a change to a contract, write the full form of the catalog again, and read the diff of that file:
 
 ```sh
-python3 -B tools/catalog.py --resolved > tests/vectors/resolved.json
+python3 -B tools/catalog.py --resolved > conformance/v1/catalog/resolved.json
+python3 -B conformance/run.py --write-manifest
 ```
+
+The second command writes the manifest of the conformance set again. `conformance/` is a level 1 path, so the owner merges the change.

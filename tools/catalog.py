@@ -678,7 +678,7 @@ def main():
     contracts, errors = load_catalog(ROOT / 'catalog')
     errors = ['schema/defaults.json: ' + error for error in defaults_errors()] + errors
     if sys.argv[1:] == ['--resolved']:
-        # The full form of each contract, one line for each. tests/vectors/resolved.json holds this output.
+        # The full form of each contract, one line for each. conformance/v1/catalog/resolved.json holds this output.
         lines = ['  %s: %s' % (json.dumps(name), json.dumps(contracts[name])) for name in sorted(contracts)]
         print('{\n%s\n}' % ',\n'.join(lines))
         return 1 if errors else 0

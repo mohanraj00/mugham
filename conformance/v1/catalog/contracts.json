@@ -83,6 +83,7 @@
   "cases": [
     {
       "name": "a valid contract",
+      "since": "1.0.0",
       "contract": {
         "format": 2,
         "name": "seed-tray",
@@ -138,6 +139,7 @@
     },
     {
       "name": "no contract",
+      "since": "1.0.0",
       "contract": null,
       "errors": [
         "(contract): must be an object"
@@ -145,6 +147,7 @@
     },
     {
       "name": "an unknown key",
+      "since": "1.0.0",
       "contract": {
         "format": 2,
         "name": "seed-tray",
@@ -203,6 +206,7 @@
     },
     {
       "name": "a different format",
+      "since": "1.0.0",
       "contract": {
         "format": 1,
         "name": "seed-tray",
@@ -260,6 +264,7 @@
     },
     {
       "name": "a name that does not agree with the pattern",
+      "since": "1.0.0",
       "contract": {
         "format": 2,
         "name": "Seed_Tray",
@@ -317,6 +322,7 @@
     },
     {
       "name": "no default state",
+      "since": "1.0.0",
       "contract": {
         "format": 2,
         "name": "seed-tray",
@@ -373,6 +379,7 @@
     },
     {
       "name": "ai content with no authorship slot",
+      "since": "1.0.0",
       "contract": {
         "format": 2,
         "name": "seed-tray",
@@ -425,6 +432,7 @@
     },
     {
       "name": "an accessible name from a number field",
+      "since": "1.0.0",
       "contract": {
         "format": 2,
         "name": "seed-tray",
@@ -482,6 +490,7 @@
     },
     {
       "name": "the role none with an accessible name",
+      "since": "1.0.0",
       "contract": {
         "format": 2,
         "name": "seed-tray",
@@ -539,6 +548,7 @@
     },
     {
       "name": "min_length more than max_length",
+      "since": "1.0.0",
       "contract": {
         "format": 2,
         "name": "seed-tray",
@@ -597,6 +607,7 @@
     },
     {
       "name": "minimum more than maximum",
+      "since": "1.0.0",
       "contract": {
         "format": 2,
         "name": "seed-tray",
@@ -654,6 +665,7 @@
     },
     {
       "name": "a component field with an unknown name",
+      "since": "1.0.0",
       "contract": {
         "format": 2,
         "name": "seed-tray",
@@ -711,6 +723,7 @@
     },
     {
       "name": "a list of an unknown component",
+      "since": "1.0.0",
       "contract": {
         "format": 2,
         "name": "seed-tray",
@@ -774,6 +787,7 @@
     },
     {
       "name": "a component field with its own name",
+      "since": "1.0.0",
       "contract": {
         "format": 2,
         "name": "seed-tray",
@@ -831,6 +845,7 @@
     },
     {
       "name": "a contract that contains itself through the catalog",
+      "since": "1.0.0",
       "contract": {
         "format": 2,
         "name": "loan-card",
@@ -888,6 +903,7 @@
     },
     {
       "name": "a text field with no max_length",
+      "since": "1.0.0",
       "contract": {
         "format": 2,
         "name": "seed-tray",
@@ -944,6 +960,7 @@
     },
     {
       "name": "a component field can name a list of components",
+      "since": "1.0.0",
       "contract": {
         "format": 2,
         "name": "seed-tray",
@@ -1002,8 +1019,8 @@
         "data.loan: no contract has the name seed-tray-label"
       ]
     },
-    {"name": "the full contract has field set to true", "contract": {"format": 2, "name": "loan-card", "version": "0.1.0", "kind": "component", "description": "A synthetic library loan.", "ai_content": true, "slots": {"authorship": {"required": true}, "citation": {"required": false}}, "data": {"title": {"type": "text", "label": "Title", "required": true, "max_length": 80}, "due": {"type": "date", "label": "Due date", "required": true}, "renewals": {"type": "integer", "label": "Renewals", "required": false, "minimum": 0, "maximum": 3}, "status": {"type": "enum", "label": "Status", "required": false, "values": ["on_loan", "late"]}, "facts": {"type": "list", "label": "Facts", "required": false, "max_items": 2, "items": {"type": "text", "label": "Fact", "required": true, "max_length": 40}}}, "states": ["default", "pending", "done", "error"], "tokens": ["color.surface", "space.2"], "accessibility": {"role": "article", "name": {"field": "title"}, "keyboard": ["Tab"], "forced_colors": true, "reduced_motion": true}, "field": true}, "errors": []},
-    {"name": "the full contract has field set to false", "contract": {"format": 2, "name": "loan-card", "version": "0.1.0", "kind": "component", "description": "A synthetic library loan.", "ai_content": true, "slots": {"authorship": {"required": true}, "citation": {"required": false}}, "data": {"title": {"type": "text", "label": "Title", "required": true, "max_length": 80}, "due": {"type": "date", "label": "Due date", "required": true}, "renewals": {"type": "integer", "label": "Renewals", "required": false, "minimum": 0, "maximum": 3}, "status": {"type": "enum", "label": "Status", "required": false, "values": ["on_loan", "late"]}, "facts": {"type": "list", "label": "Facts", "required": false, "max_items": 2, "items": {"type": "text", "label": "Fact", "required": true, "max_length": 40}}}, "states": ["default", "pending", "done", "error"], "tokens": ["color.surface", "space.2"], "accessibility": {"role": "article", "name": {"field": "title"}, "keyboard": ["Tab"], "forced_colors": true, "reduced_motion": true}, "field": false}, "errors": []},
-    {"name": "the full contract has field set to \"true\"", "contract": {"format": 2, "name": "loan-card", "version": "0.1.0", "kind": "component", "description": "A synthetic library loan.", "ai_content": true, "slots": {"authorship": {"required": true}, "citation": {"required": false}}, "data": {"title": {"type": "text", "label": "Title", "required": true, "max_length": 80}, "due": {"type": "date", "label": "Due date", "required": true}, "renewals": {"type": "integer", "label": "Renewals", "required": false, "minimum": 0, "maximum": 3}, "status": {"type": "enum", "label": "Status", "required": false, "values": ["on_loan", "late"]}, "facts": {"type": "list", "label": "Facts", "required": false, "max_items": 2, "items": {"type": "text", "label": "Fact", "required": true, "max_length": 40}}}, "states": ["default", "pending", "done", "error"], "tokens": ["color.surface", "space.2"], "accessibility": {"role": "article", "name": {"field": "title"}, "keyboard": ["Tab"], "forced_colors": true, "reduced_motion": true}, "field": "true"}, "errors": ["field: must be true or false"]}
+    {"name": "the full contract has field set to true", "since": "1.0.0", "contract": {"format": 2, "name": "loan-card", "version": "0.1.0", "kind": "component", "description": "A synthetic library loan.", "ai_content": true, "slots": {"authorship": {"required": true}, "citation": {"required": false}}, "data": {"title": {"type": "text", "label": "Title", "required": true, "max_length": 80}, "due": {"type": "date", "label": "Due date", "required": true}, "renewals": {"type": "integer", "label": "Renewals", "required": false, "minimum": 0, "maximum": 3}, "status": {"type": "enum", "label": "Status", "required": false, "values": ["on_loan", "late"]}, "facts": {"type": "list", "label": "Facts", "required": false, "max_items": 2, "items": {"type": "text", "label": "Fact", "required": true, "max_length": 40}}}, "states": ["default", "pending", "done", "error"], "tokens": ["color.surface", "space.2"], "accessibility": {"role": "article", "name": {"field": "title"}, "keyboard": ["Tab"], "forced_colors": true, "reduced_motion": true}, "field": true}, "errors": []},
+    {"name": "the full contract has field set to false", "since": "1.0.0", "contract": {"format": 2, "name": "loan-card", "version": "0.1.0", "kind": "component", "description": "A synthetic library loan.", "ai_content": true, "slots": {"authorship": {"required": true}, "citation": {"required": false}}, "data": {"title": {"type": "text", "label": "Title", "required": true, "max_length": 80}, "due": {"type": "date", "label": "Due date", "required": true}, "renewals": {"type": "integer", "label": "Renewals", "required": false, "minimum": 0, "maximum": 3}, "status": {"type": "enum", "label": "Status", "required": false, "values": ["on_loan", "late"]}, "facts": {"type": "list", "label": "Facts", "required": false, "max_items": 2, "items": {"type": "text", "label": "Fact", "required": true, "max_length": 40}}}, "states": ["default", "pending", "done", "error"], "tokens": ["color.surface", "space.2"], "accessibility": {"role": "article", "name": {"field": "title"}, "keyboard": ["Tab"], "forced_colors": true, "reduced_motion": true}, "field": false}, "errors": []},
+    {"name": "the full contract has field set to \"true\"", "since": "1.0.0", "contract": {"format": 2, "name": "loan-card", "version": "0.1.0", "kind": "component", "description": "A synthetic library loan.", "ai_content": true, "slots": {"authorship": {"required": true}, "citation": {"required": false}}, "data": {"title": {"type": "text", "label": "Title", "required": true, "max_length": 80}, "due": {"type": "date", "label": "Due date", "required": true}, "renewals": {"type": "integer", "label": "Renewals", "required": false, "minimum": 0, "maximum": 3}, "status": {"type": "enum", "label": "Status", "required": false, "values": ["on_loan", "late"]}, "facts": {"type": "list", "label": "Facts", "required": false, "max_items": 2, "items": {"type": "text", "label": "Fact", "required": true, "max_length": 40}}}, "states": ["default", "pending", "done", "error"], "tokens": ["color.surface", "space.2"], "accessibility": {"role": "article", "name": {"field": "title"}, "keyboard": ["Tab"], "forced_colors": true, "reduced_motion": true}, "field": "true"}, "errors": ["field: must be true or false"]}
   ]
 }

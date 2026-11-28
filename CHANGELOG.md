@@ -5,6 +5,8 @@ Each release has an entry. The newest entry is first.
 ## Unreleased
 
 - Add the compatibility statement for release 1.0.0. `docs/COMPATIBILITY.md` lists the stable items and tells which changes a patch release, a minor release and a major release can make (#17).
+- Add the versioned conformance set in `conformance/`. The shared cases of `tests/vectors/` are now in `conformance/v1/`, each with a `since` key, and a manifest gives the SHA-256 of each file. `conformance/run.py` runs the set against a kit or against the command of a second validator. It compares the error paths by default. A release gets the second asset `mugham-conformance-<version>.tar` with its SHA-256 file, and the byte check covers it. `conformance/README.md` gives the steps for a pinned release (#17).
+- The schema guide gives the grammar of an error path. The path of a validator error is stable from release 1.0.0, and the words after it can change (#17).
 
 ## 0.9.0, 2026-11-28
 

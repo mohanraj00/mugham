@@ -1,0 +1,14 @@
+{
+  "files": {
+    "catalog/contracts.json": "b28226bbce7bf354d28bb016392ba33c1131e12361691992ac5e8045a6b8e6b1",
+    "catalog/fills.json": "2d1fb7112f0dfe0369cdcb4f71686ec10d57a47af483312e92bdcf31d3b94d94",
+    "catalog/resolved.json": "2cb2e4dde03d6fcd9e721f7eb5f371b45df55807e1bfe6e2d8e2e147b5006e98",
+    "catalog/short.json": "eb92192032881f9a8dc8d5394dd9bd9737a4d96790fdf0db2a8a716e6345d07e",
+    "envelope/envelopes.json": "76f2ca0d9ec15821cca0be7013ad89ab8a455f7ab7d24f6010bd541b16817dd2",
+    "envelope/generate.py": "b5ccde181253e0a015ed9c38a42d16329fc1900574a2e6ecf02762c39a386c62",
+    "envelope/streams.json": "bc76649b78e4c4a69ac317c26c3d958e373c563380177272db9b471daf53e8c9"
+  },
+  "format": 1,
+  "kit": "1.0.0",
+  "set": 1
+}

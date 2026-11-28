@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
-"""Write the envelope vectors in tests/vectors/envelope/, or check that the committed files agree.
+"""Write the envelope cases in conformance/v1/envelope/, or check that the committed files agree.
 
 Each expected result comes from the rules in docs/contracts/envelope.md. This script does not run the reader.
-Change a case here, run this script with --write, and commit the two JSON files. The data is synthetic.
+Change a case here, run this script with --write, and commit the two JSON files. Then write the manifest again
+with conformance/run.py --write-manifest. The data is synthetic.
+
+Each case gets the release that added it in its "since" key. A case with no since argument is from release 1.0.0.
+Give a new case the argument since='<release>'. Do not change the expected result of an earlier case.
 """
 import argparse
 import json
@@ -10,6 +14,8 @@ from pathlib import Path
 import sys
 
 HERE = Path(__file__).resolve().parent
+# The release of each case that states no release.
+SINCE = '1.0.0'
 
 H={'envelope':1,'agui':'1.0'}
 def actor(t,i,n=None):
@@ -256,6 +262,12 @@ streams=[
 note='Conformance cases for src/envelope/ and docs/contracts/envelope-v1.schema.json. tests/envelope.test.mjs checks each case. The data is synthetic.'
 
 
+def dated(cases):
+    """Return each case with its since key after its name."""
+    return [{'name': case['name'], 'since': case.get('since', SINCE),
+             **{key: value for key, value in case.items() if key not in ('name', 'since')}} for case in cases]
+
+
 def render(value):
     return json.dumps(value, indent=1) + '\n'
 
@@ -263,9 +275,9 @@ def render(value):
 def files():
     return {
         'envelopes.json': render({'note': note + ' "schema" tells if the input agrees with the schema. "result" is'
-                                  ' the envelope that readEnvelope gives.', 'fallback': FALLBACK, 'cases': envelopes}),
+                                  ' the envelope that readEnvelope gives.', 'fallback': FALLBACK, 'cases': dated(envelopes)}),
         'streams.json': render({'note': note + ' "expected" is the result of readStream with the catalog of the kit.',
-                                'cases': streams}),
+                                'cases': dated(streams)}),
     }
 
 
@@ -279,7 +291,7 @@ def main():
         if args.write:
             path.write_text(text, encoding='utf-8')
         elif not path.is_file() or path.read_text(encoding='utf-8') != text:
-            found.append(f'tests/vectors/envelope/{name} does not agree with generate.py. Run it with --write.')
+            found.append(f'conformance/v1/envelope/{name} does not agree with generate.py. Run it with --write.')
     print(json.dumps({'passed': not found, 'files': len(files()), 'errors': found}, indent=2))
     return 1 if found else 0
 

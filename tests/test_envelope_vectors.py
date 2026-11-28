@@ -1,4 +1,4 @@
-"""The committed envelope vectors agree with tests/vectors/envelope/generate.py.
+"""The committed envelope vectors agree with conformance/v1/envelope/generate.py.
 
 A hand edit of envelopes.json or streams.json without a change to the generator fails this test.
 """
@@ -6,7 +6,7 @@ from pathlib import Path
 import sys
 import unittest
 
-HERE = Path(__file__).resolve().parent / 'vectors' / 'envelope'
+HERE = Path(__file__).resolve().parents[1] / 'conformance' / 'v1' / 'envelope'
 sys.path.insert(0, str(HERE))
 import generate  # noqa: E402
 

@@ -1,5 +1,5 @@
 // The resolver of the short form of a contract (format 3, catalog/schema/README.md). It gives the same
-// result and the same errors as resolve in tools/catalog.py for each case in tests/vectors/short.json.
+// result and the same errors as resolve in tools/catalog.py for each case in conformance/v1/catalog/short.json.
 // The catalog, the registry and the validator read only the full form (format 2).
 import CONTRACT_SCHEMA from '../../catalog/schema/contract.schema.json' with { type: 'json' };
 import DEFAULTS from '../../catalog/schema/defaults.json' with { type: 'json' };

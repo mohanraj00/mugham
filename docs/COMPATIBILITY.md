@@ -68,7 +68,7 @@ A new optional data field increases the minor version of its contract. Thus a fi
 
 ## The validator errors
 
-Each validator error starts with a path, for example `data.title`, then `: `, then words for a person. The path is stable. The words after the path are provisional. Match the path in a test, not the full text.
+Each validator error starts with a path, for example `data.title`, then `: `, then words for a person. The path is stable. The words after the path are provisional. Match the path in a test, not the full text. [The schema guide](../catalog/schema/README.md#error-paths) gives the grammar of a path.
 
 The refusal that a person sees is a different item. Its sentence, its next step and its label `Technical details` are stable.
 
@@ -85,6 +85,16 @@ A deprecation follows these steps:
 3. The old item keeps its behavior until the next major release. A part with a new name carries the two names in its `part` attribute, for example `part="card-title title-text"`. For a renamed token, the token stylesheet sets the default under the old name. The component reads the new name first, for example `gap: var(--mu-new-name, var(--mu-old-name, 1rem))`. A page can set either name. If the page sets both names, the new name takes priority.
 4. The check tools warn about a deprecated item.
 5. Only a major release removes the item. The item is deprecated in at least one earlier minor release.
+
+## The conformance set
+
+The folder [`conformance/`](../conformance/README.md) holds the conformance set of the stable contract. Each release has the set as a second asset, `mugham-conformance-<version>.tar`. A consumer runs the set against the kit of a pinned release, or against a second validator. These rules apply to the set:
+
+- Each case has a `since` key with the release that added it.
+- A minor release adds cases. It does not change the expected result of an earlier case.
+- A security fix can change the expected result of a case. The case then gets a `changed` key with the release, and the changelog lists it.
+- A major release starts a new folder, for example `v2/`. The old folder stays in the tree for one major release.
+- The runner compares the error paths by default.
 
 ## The stable surface
 
