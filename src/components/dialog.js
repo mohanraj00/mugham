@@ -57,6 +57,12 @@ export class MuDialog extends MuElement {
     if (dialog === this.#dialog && !dialog.open && this.dataset.state === 'open') this.dataset.state = 'default';
   }
 
+  // Read control-display again when the element connects. An ancestor can set it before a filled modal joins the page
+  // (decision 0009, section 7).
+  connectedCallback() {
+    this.#controls?.render();
+  }
+
   disconnectedCallback() {
     this.close();
   }

@@ -134,6 +134,19 @@ for (const name of ['dialog', 'drawer']) {
     assert.equal(dialog.closeCount, 3);
   });
 
+  test(name + ' reads control-display of an ancestor when it connects after its fill', () => {
+    const modal = new Element();
+    modal.fill = fill(name, DATA);
+    const close = findPart(modal.shadowRoot.children[0], 'close');
+    assert.equal(close.getAttribute('data-control-display'), 'icon');
+    const page = new TestNode('main');
+    page.setAttribute('control-display', 'text');
+    modal.parentNode = page;
+    modal.connectedCallback();
+    assert.equal(close.getAttribute('data-control-display'), 'text');
+    assert.deepEqual(close.children, [DATA.close_label]);
+  });
+
   test(name + ' refuses a nested fill and closes the active modal', async () => {
     const modal = new Element();
     const trigger = new TestNode('button');
