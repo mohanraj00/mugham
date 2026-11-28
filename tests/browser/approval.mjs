@@ -8,7 +8,7 @@ import { spawn } from 'node:child_process';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { ROOT, coverSteps, evaluate, open, sleep, startChrome } from '../../tools/browser_check.mjs';
+import { ROOT, coverSteps, evaluate, newPage, open, sleep, startChrome } from '../../tools/browser_check.mjs';
 
 async function fixtureApi() {
   const server = spawn(process.env.PYTHON || 'python3', ['-B', join(ROOT, 'tools', 'approval_server.py'), '--port', '0'],
@@ -56,8 +56,7 @@ async function main() {
     const started = await startChrome(profile);
     chrome = started.chrome;
     const { session } = started;
-    const { targetId } = await session.send('Target.createTarget', { url: 'about:blank' });
-    const { sessionId } = await session.send('Target.attachToTarget', { targetId, flatten: true });
+    const { sessionId } = await newPage(session);
     session.listeners.push((message) => {
       if (message.sessionId !== sessionId) return;
       if (message.method === 'Runtime.exceptionThrown') problems.push(message.params.exceptionDetails.exception?.description || message.params.exceptionDetails.text);

@@ -6,7 +6,7 @@
 import { mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { ROOT, evaluate, open, pythonServer, sleep, startChrome } from './browser_check.mjs';
+import { ROOT, evaluate, newPage, open, pythonServer, sleep, startChrome } from './browser_check.mjs';
 
 const OUT = join(ROOT, 'docs', 'screenshots');
 const MODES = ['light', 'dark'];
@@ -74,8 +74,7 @@ async function main() {
     const started = await startChrome(profile);
     chrome = started.chrome;
     const { session } = started;
-    const { targetId } = await session.send('Target.createTarget', { url: 'about:blank' });
-    const { sessionId } = await session.send('Target.attachToTarget', { targetId, flatten: true });
+    const { sessionId } = await newPage(session);
     for (const method of ['Page.enable', 'Runtime.enable']) await session.send(method, {}, sessionId);
     await session.send('Emulation.setDeviceMetricsOverride', { width: 720, height: 900, deviceScaleFactor: 1.5, mobile: false }, sessionId);
     mkdirSync(OUT, { recursive: true });

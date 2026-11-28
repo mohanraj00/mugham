@@ -191,12 +191,23 @@ export function serve(imageRedirect = null) {
   });
 }
 
-class Session {
-  constructor(socket) {
+// The time limits of the check (issue 214). A lost DevTools answer or a hidden page must give a failure that names the
+// page, not a run that never ends. The thread bench has its own limit of 30 s for one call, so the call limit is longer.
+// In a normal local run, the longest time on one page is about 11 s.
+export const CALL_LIMIT_MS = 45000;
+export const PAGE_LIMIT_MS = 100000;
+const seconds = (ms) => `${ms / 1000} s`;
+
+export class Session {
+  constructor(socket, { callLimit = CALL_LIMIT_MS, pageLimit = PAGE_LIMIT_MS } = {}) {
     this.socket = socket;
+    this.callLimit = callLimit;
+    this.pageLimit = pageLimit;
     this.next = 1;
     this.pending = new Map();
     this.listeners = [];
+    // For each target session: the page that it shows, the start time of the page and the last step.
+    this.pages = new Map();
     socket.addEventListener('message', (event) => {
       const message = JSON.parse(event.data);
       if (message.id && this.pending.has(message.id)) {
@@ -208,17 +219,49 @@ class Session {
         for (const listener of this.listeners) listener(message);
       }
     });
+    socket.addEventListener('close', () => {
+      for (const [id, { fail, method, sessionId }] of this.pending) {
+        this.pending.delete(id);
+        fail(new Error(`${this.where(sessionId)}: the DevTools socket closed before the answer to ${method}`));
+      }
+    });
+  }
+
+  // Start the clock of a page. open() calls it for each navigation.
+  startPage(sessionId, name) {
+    this.pages.set(sessionId, { name, start: Date.now(), step: 'open' });
+  }
+
+  where(sessionId) {
+    const page = this.pages.get(sessionId);
+    if (page) return `page ${page.name}`;
+    return sessionId ? 'the blank page' : 'the browser';
   }
 
   send(method, params = {}, sessionId) {
+    const page = this.pages.get(sessionId);
+    const left = page ? page.start + this.pageLimit - Date.now() : Infinity;
+    const overdue = () => new Error(`${this.where(sessionId)}: the page passed its time limit of ${seconds(this.pageLimit)}; last step: ${page.step}`);
+    if (left <= 0) return Promise.reject(overdue());
+    if (page) page.step = method === 'Runtime.evaluate' ? `${method} ${String(params.expression).replace(/\s+/g, ' ').slice(0, 80)}` : method;
     const id = this.next++;
-    this.socket.send(JSON.stringify({ id, method, params, ...(sessionId ? { sessionId } : {}) }));
-    return new Promise((done, fail) => this.pending.set(id, { done, fail }));
+    const limit = Math.min(this.callLimit, left);
+    return new Promise((done, fail) => {
+      const timer = setTimeout(() => {
+        this.pending.delete(id);
+        fail(limit < this.callLimit ? overdue() : new Error(`${this.where(sessionId)}: ${method} had no answer in ${seconds(limit)}`));
+      }, limit);
+      const settle = (next) => (value) => {
+        clearTimeout(timer);
+        next(value);
+      };
+      this.pending.set(id, { done: settle(done), fail: settle(fail), method, sessionId });
+      this.socket.send(JSON.stringify({ id, method, params, ...(sessionId ? { sessionId } : {}) }));
+    });
   }
 
   once(method, sessionId, timeout = 15000) {
     return new Promise((done, fail) => {
-      const timer = setTimeout(() => fail(new Error('timeout: ' + method)), timeout);
       const listener = (message) => {
         if (message.method === method && message.sessionId === sessionId) {
           clearTimeout(timer);
@@ -226,9 +269,30 @@ class Session {
           done(message.params);
         }
       };
+      const timer = setTimeout(() => {
+        this.listeners = this.listeners.filter((item) => item !== listener);
+        fail(new Error(`${this.where(sessionId)}: no ${method} event in ${seconds(timeout)}`));
+      }, timeout);
       this.listeners.push(listener);
     });
   }
+}
+
+// Bring the page to the front if it is hidden. A hidden page gets no animation frames, so a check that waits for a
+// frame or a transition never ends.
+export async function ensureVisible(session, sessionId) {
+  if (await evaluate(session, sessionId, 'document.visibilityState') === 'visible') return;
+  await session.send('Page.bringToFront', {}, sessionId);
+  const state = await evaluate(session, sessionId, 'document.visibilityState');
+  if (state !== 'visible') throw new Error(`${session.where(sessionId)}: the page is ${state}, so it gets no animation frames`);
+}
+
+// A new page target for a check, at the front. Each browser script uses it.
+export async function newPage(session) {
+  const { targetId } = await session.send('Target.createTarget', { url: 'about:blank' });
+  const { sessionId } = await session.send('Target.attachToTarget', { targetId, flatten: true });
+  await session.send('Page.bringToFront', {}, sessionId);
+  return { targetId, sessionId };
 }
 
 export async function startChrome(profile) {
@@ -252,11 +316,28 @@ export async function startChrome(profile) {
   const [port, path] = readFileSync(portFile, 'utf8').trim().split('\n');
   const socket = new WebSocket(`ws://127.0.0.1:${port}${path}`);
   await new Promise((done, fail) => { socket.onopen = done; socket.onerror = () => fail(new Error('no DevTools socket')); });
-  return { chrome, session: new Session(socket) };
+  const session = new Session(socket);
+  // Close each Chrome page that a check did not open, for example chrome://help/. Such a tab comes to the front and
+  // hides the page of the check (issue 214). The report lists each closed tab.
+  session.closedTabs = [];
+  session.listeners.push((message) => {
+    const info = message.params?.targetInfo;
+    if (!['Target.targetCreated', 'Target.targetInfoChanged'].includes(message.method) || info?.type !== 'page') return;
+    if (!info.url.startsWith('chrome://') || session.closedTabs.some((tab) => tab.targetId === info.targetId)) return;
+    session.closedTabs.push({ targetId: info.targetId, url: info.url, page: [...session.pages.values()].at(-1)?.name ?? null });
+    session.send('Target.closeTarget', { targetId: info.targetId }).catch(() => {});
+  });
+  await session.send('Target.setDiscoverTargets', { discover: true });
+  return { chrome, session };
 }
 
+// On macOS, Chrome gives a key down with a native key code and no text to its menu. For Escape, the menu opened
+// chrome://help/ in front of the check page, and the hidden page got no animation frames (issue 214). With no native
+// code, the page gets the same key, code and keyCode, and the menu does not open.
+const nativeKey = (keyCode) => (process.platform === 'darwin' ? {} : { nativeVirtualKeyCode: keyCode });
+
 async function key(session, sessionId, name, code, keyCode, text) {
-  const base = { key: name, code, windowsVirtualKeyCode: keyCode, nativeVirtualKeyCode: keyCode };
+  const base = { key: name, code, windowsVirtualKeyCode: keyCode, ...nativeKey(keyCode) };
   await session.send('Input.dispatchKeyEvent', { type: 'keyDown', ...base, ...(text ? { text } : {}) }, sessionId);
   await session.send('Input.dispatchKeyEvent', { type: 'keyUp', ...base }, sessionId);
 }
@@ -470,13 +551,18 @@ export async function open(session, sessionId, url, problems) {
   // With MUGHAM_TRACE set, write each page to stderr, so that a stalled run names its page.
   if (process.env.MUGHAM_TRACE) process.stderr.write(`${new Date().toISOString()} open ${url}\n`);
   await cover(session, sessionId);
+  const { pathname, search } = new URL(url);
+  session.startPage(sessionId, pathname.slice(1) + search);
   const loaded = session.once('Page.loadEventFired', sessionId);
+  // If the navigation fails first, the wait for the load event must not give an unhandled rejection later.
+  loaded.catch(() => {});
   await session.send('Page.navigate', { url }, sessionId);
   await loaded;
   for (let i = 0; i < 50; i += 1) {
     if (await evaluate(session, sessionId, 'document.readyState === "complete"')) break;
     await sleep(50);
   }
+  await ensureVisible(session, sessionId);
   if (new URL(url).pathname.includes('/examples/')) await evaluate(session, sessionId, WATCH);
 }
 
@@ -879,6 +965,7 @@ async function main() {
     chrome = started.chrome;
     const session = started.session;
     report.chrome = (await session.send('Browser.getVersion')).product;
+    report.closedTabs = session.closedTabs;
     try {
       const { runThreadBench } = await import('./thread_bench.mjs');
       report.threadBench = await runThreadBench(session, base);
@@ -886,8 +973,7 @@ async function main() {
     } catch (error) {
       report.errors.push(`Thread bench: ${error.message}`);
     }
-    const { targetId } = await session.send('Target.createTarget', { url: 'about:blank' });
-    const { sessionId } = await session.send('Target.attachToTarget', { targetId, flatten: true });
+    const { sessionId } = await newPage(session);
     const problems = [];
     session.listeners.push((message) => {
       if (message.sessionId !== sessionId) return;
@@ -903,7 +989,6 @@ async function main() {
       }
     });
     for (const method of ['Page.enable', 'Runtime.enable', 'Log.enable', 'Accessibility.enable']) await session.send(method, {}, sessionId);
-    await session.send('Page.bringToFront', {}, sessionId);
 
     for (const [page, expected] of Object.entries(PAGES)) {
       report.pages[page] = {};
