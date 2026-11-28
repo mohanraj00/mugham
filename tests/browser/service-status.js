@@ -175,16 +175,21 @@ export async function serviceStatusChecks(session, id, base, modes, { open, eval
         // The fill [Store, Search, Queue] keeps Store and Queue in place and moves the Search row.
         const before = await readRows();
         await move(before.rows.Search.point);
-        const hovered = await waitFor(readRows, (value) => value.rows.Search.text);
+        const hovered = await waitFor(readRows, (value) => value.rows.Search.text, { retries: 80 });
         await evaluate(session, id, `(() => {
           const host = ${strip};
           const [search, store, queue] = host.fill.data.services;
           host.fill = { ...host.fill, data: { services: [store, search, queue] } };
         })()`);
         const moved = await readRows();
+        // The reorder puts the Store row under the pointer. Chrome sends the hover of Store after a delay, and that
+        // hover can come after the click below and close Search (#210). A person must move the pointer to click
+        // Search, so move the pointer off the strip and wait until no details show.
+        await move({ x: 0, y: 0 });
+        await waitFor(readRows, (value) => value.open === 0, { retries: 80 });
         await evaluate(session, id, `[...${strip}.shadowRoot.querySelectorAll('[part="service"] button')]
           .find((button) => button.querySelector('[part="label"]').textContent === 'Search').click()`);
-        const clicked = await waitFor(readRows, (value) => value.rows.Search.text);
+        const clicked = await waitFor(readRows, (value) => value.rows.Search.text, { retries: 80 });
         check('A reorder during hover leaves the details shown or closed, and a click shows them again',
           hovered.rows.Search.text.includes('Checked: 2026-11-27T09:30Z')
           && moved.order.join(',') === 'Store,Search,Queue' && moved.open <= 1
