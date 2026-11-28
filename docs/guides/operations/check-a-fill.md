@@ -30,6 +30,10 @@ All helpers are in `src/kit.js`:
 - A fill with no `label` gives `['data.label: a required field is missing']`.
 - `describe('card').properties.title.maxLength` is `120`, from the card contract.
 
+## Security
+
+Give `createKit` the actor from trusted application context, not from the fill. A valid fill agrees with its contract, but it does not prove that its facts are true. [SECURITY.md](../../../SECURITY.md#renderer) gives the limits of the checks.
+
 ## Errors
 
 - `fill`, `describe` and `toolSchema` throw `TypeError: component: no contract has the name <name>` for an unknown name.

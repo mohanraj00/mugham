@@ -30,6 +30,10 @@ Open `http://localhost:8000/examples/thread/run-steps.html` after `python3 tools
 - The thread shows one `mu-run-steps` list for each run, with the state of each step and each tool call.
 - `RUN_ERROR` marks each unfinished row as failed. `RUN_FINISHED` marks each unfinished row as failed with `The run ended before this step finished.`
 
+## Security
+
+Give `createRunSteps` the actor from trusted page data, not from the events. The tool text shows as plain text only. [SECURITY.md](../../../SECURITY.md#what-the-application-must-do) gives the actor duty.
+
 ## Errors
 
 - `createRunSteps` throws a `TypeError` if the actor is not valid.

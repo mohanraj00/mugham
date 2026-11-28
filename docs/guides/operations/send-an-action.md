@@ -31,6 +31,10 @@ onAction(renew, (tool, args, id, request) => api(request));
 2. A receipt with `ok: true` shows `Done: <message>` and `Reference: <reference>`.
 3. A receipt with `ok: false` shows `Not done: <message>`. If the receipt gives `service` and `code`, the button shows them as text.
 
+## Security
+
+The service authorizes each action, and it does an action only one time for each key. A valid receipt matches the request, but it does not authenticate the service, and Cancel does not undo a request that reached the service. Keep credentials in your transport, not in bound arguments. [SECURITY.md](../../../SECURITY.md#action-path) gives these rules, and [What the application must do](../../../SECURITY.md#what-the-application-must-do) gives the duties.
+
 ## Errors
 
 - If the handler throws, its promise rejects or the receipt is not valid, the action stays `Pending: No receipt came back.` The element offers Retry and Cancel. Retry sends the same key with a new id.

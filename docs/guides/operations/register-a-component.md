@@ -30,13 +30,17 @@ const valid = mount('seed-tray', { label: 'Tray A1', sown: '2026-03-02', seedlin
 const invalid = mount('seed-tray', { label: 'Tray A2', sown: '2026-03-02', seedlings: 500, stage: 'sown' });
 ```
 
-The contract is [seed-tray.json](../../../examples/cards/seed-tray.json). The element is in [register.js](../../../examples/cards/register.js). Make each node with `el` from `src/render/dom.js`, so that each value stays text.
+The contract is [seed-tray.json](../../../examples/cards/seed-tray.json). The element is in [register.js](../../../examples/cards/register.js).
 
 ## Result
 
 - `mu-app-seed-tray` shows tray A1.
 - Tray A2 shows a refusal, because 500 is more than the maximum of 200.
 - A thread accepts a `seed-tray` part, and still refuses an undeclared component.
+
+## Security
+
+The code of a registered element can write to the DOM, and the application owns that code. Make each node with `el` and `text` from `src/render/dom.js`, and never put a fill value into markup, a style or a script. [SECURITY.md](../../../SECURITY.md#renderer) gives this boundary.
 
 ## Errors
 

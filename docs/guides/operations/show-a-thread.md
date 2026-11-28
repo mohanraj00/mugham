@@ -14,8 +14,6 @@ Show the messages of people and agents in one conversation. Each message names i
 - `thread.perform = async (request, message, element) => receipt` sends the request to your API and gives the receipt.
 - `thread.actorFor = (envelope) => actor` gives the trusted actor of a message from your own context.
 
-Set `actorFor`, or let your transport write `metadata.mugham.actor` from authenticated context. The kit checks only the shape of the actor in an event. Without one of these controls, an agent can claim `type: human`, and the thread shows its content as the content of a person. [SECURITY.md](../../../SECURITY.md#what-the-application-must-do) gives this duty of the application.
-
 ## Example
 
 <!-- source: examples/thread/thread.js -->
@@ -38,6 +36,10 @@ Run it with `python3 tools/thread_server.py`, then open the URL that the server 
 - A message shows `Partial` while its text streams, and no state text after its end event.
 - A component part is an `ACTIVITY_SNAPSHOT` with `activityType` set to `mugham.fill`. The thread shows the part only if its contract accepts the fill.
 - `thread.state` is `idle`, `reading`, `ended` or `failed`.
+
+## Security
+
+Set `actorFor`, or let your transport write `metadata.mugham.actor` from authenticated context. Apply the same rule to history. The kit checks only the shape of the actor in an event. Without one of these controls, an agent can claim `type: human`, and the thread shows its content as the content of a person. The service of `perform` authorizes each action. [SECURITY.md](../../../SECURITY.md#what-the-application-must-do) gives these duties.
 
 ## Errors
 

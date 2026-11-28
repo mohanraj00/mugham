@@ -30,6 +30,10 @@ Open `http://localhost:8000/examples/cards/offline.html` after `python3 tools/se
 - If `maxAge` is set and the data is older, a `ready` result becomes `stale`.
 - `mu-source-status` shows the state as text. Show the records only for `ready` or `stale`.
 
+## Security
+
+`read` has no principal and no cache. Your source must authorize each read for the signed-in person, and keep each copy on the device for one person only. When the credentials change, clear or replace each copy before the next read. [SECURITY.md](../../../SECURITY.md#offline-queue-and-data-source) gives this duty.
+
 ## Errors
 
 `read` gives `state: 'error'` with one of these reasons:

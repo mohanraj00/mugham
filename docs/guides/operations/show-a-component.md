@@ -26,6 +26,10 @@ const grid = mount('grid', { label: 'Current loans', min_column: 'medium' }, { p
 - The element shows the data as text. It never reads the data as markup.
 - If the data does not agree with the contract, the element shows a refusal as text. It sets `data-state="refused"` and sends a `mu-refused` event. `event.detail.errors` gives each error with its path.
 
+## Security
+
+Give `actor` only from trusted application or transport context, never from the data of a model. To show model-supplied images, set the allowed origins of `mu-image` and a matching `img-src` Content Security Policy. [SECURITY.md](../../../SECURITY.md#what-the-application-must-do) gives these duties.
+
 ## Errors
 
 `mount` throws a `TypeError` and appends nothing if:

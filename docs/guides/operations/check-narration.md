@@ -24,6 +24,10 @@ The cases are in [narration.json](../../../examples/evidence/narration.json). Op
 
 For a card with `Count` 12, `Status` ready and `Date` 2026-11-15, the text `The tray has [Count: 12] items, with [Status: ready] on [Date: 2026-11-15].` gives `ok: true` and `checked: 3`.
 
+## Security
+
+The check compares only explicit claims with the card. It cannot verify the facts in free text, so do not show a pass as proof of the whole text. [SECURITY.md](../../../SECURITY.md#renderer) gives this limit.
+
 ## Errors
 
 The call does not throw. It gives `ok: false` and errors if:
