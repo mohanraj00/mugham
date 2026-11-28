@@ -467,6 +467,8 @@ export async function open(session, sessionId, url, problems) {
     controlSizeSessions.add(sessionId);
     await session.send('Page.addScriptToEvaluateOnNewDocument', { source: CONTROL_SIZE }, sessionId);
   }
+  // With MUGHAM_TRACE set, write each page to stderr, so that a stalled run names its page.
+  if (process.env.MUGHAM_TRACE) process.stderr.write(`${new Date().toISOString()} open ${url}\n`);
   await cover(session, sessionId);
   const loaded = session.once('Page.loadEventFired', sessionId);
   await session.send('Page.navigate', { url }, sessionId);
