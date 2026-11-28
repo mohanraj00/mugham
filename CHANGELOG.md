@@ -2,6 +2,10 @@
 
 Each release has an entry. The newest entry is first.
 
+## Unreleased
+
+- Add the compatibility statement for release 1.0.0. `docs/COMPATIBILITY.md` lists the stable items and tells which changes a patch release, a minor release and a major release can make (#17).
+
 ## 0.9.0, 2026-11-28
 
 When you upgrade from 0.8.0, each control of the kit is 32 by 32 CSS pixels with a mouse and stays 44 by 44 CSS pixels on a touch screen. If your page needs 44 by 44 CSS pixel targets with a mouse, set `--mu-size-control: 2.75rem` in your theme. The dialog and drawer close shows an x by default. If your page needs the text close, set `control-display="text"` on the component or an ancestor. The accessible name of each control does not change. If your page styles the sort control of a table, use the new parts `sort-mark` and `icon`. If your page styles the confirm step or the exits of an icon action in a card, use the new `icon` and `tooltip` parts of `mu-form-card`. No kit file is new. If your service worker lists kit files for offline use, change its cache version.

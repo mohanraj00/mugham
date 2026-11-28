@@ -159,7 +159,7 @@ Each row gives the item, the proposal and the reason. "Q1", "Q2" and "Q3" refer 
 
 ## 2. Compatibility statement (draft)
 
-Implementation issue I1 copies this draft to `docs/COMPATIBILITY.md`.
+Implementation issue I1 copies this draft to [`docs/COMPATIBILITY.md`](../COMPATIBILITY.md). That file uses the owner answers, so it has no condition on Q1.
 
 > The kit follows semantic versions from 1.0.0. The stable surface is the list in decision 0008. Other items are provisional.
 >
@@ -314,10 +314,12 @@ On 2026-11-27, the owner answered the three questions with the words "Accept the
 
 The owner files these issues. They use the owner answers. Each change of `catalog/schema/*`, `docs/contracts/*` or `.github/` is level 1.
 
+The items have no separate issues. Each item is a part of #17, and each done line links its PR.
+
 ### I1. Write the compatibility statement
 
-- [ ] `docs/COMPATIBILITY.md` has the statement of section 2, with each rule of #17 about parts.
-- [ ] The file lists the stable items of section 1, or links to this note for them.
+- [x] `docs/COMPATIBILITY.md` has the statement of section 2, with each rule of #17 about parts ([#220](https://github.com/mohanraj00/mugham/pull/220)).
+- [x] The file lists the stable items of section 1, or links to this note for them ([#220](https://github.com/mohanraj00/mugham/pull/220)).
 - [ ] The README, `docs/contracts/envelope.md`, `docs/contracts/data-source.md`, `docs/contracts/offline-queue.md` and `catalog/schema/README.md` link to the statement.
 - [ ] `make check` passes.
 
