@@ -1,5 +1,7 @@
 # For coding agents
 
+Release: v0.9.0
+
 This guide is for a coding agent that builds a UI with the kit. Obey each rule. Read the file of the task before you write code. Verify the page with the checklist.
 
 ## Rules
@@ -18,12 +20,13 @@ This guide is for a coding agent that builds a UI with the kit. Obey each rule. 
 | Task | Read |
 |---|---|
 | Build a page | [assemble.md](assemble.md), then [examples/guides/assemble.js](../../examples/guides/assemble.js) |
+| Use one operation of the kit | The page of the operation in [Operations](README.md#operations) |
 | Fill a component | The contract in [catalog/](../../catalog/README.md), then [contracts.md](contracts.md) |
-| Build a tool schema or check a fill | [Kit helpers](../../src/kit.md) |
+| Build a tool schema or check a fill | [Check a fill](operations/check-a-fill.md), then [Kit helpers](../../src/kit.md) |
 | Know the contract format | [catalog/schema/README.md](../../catalog/schema/README.md) |
 | Bind an action, a confirm step or a form | [catalog/README.md#actions](../../catalog/README.md#actions) |
-| Add a domain component | [catalog/README.md#application-contracts](../../catalog/README.md#application-contracts), then [examples/cards/register.js](../../examples/cards/register.js) |
-| Show a thread or read agent events | [src/thread/README.md](../../src/thread/README.md), then [docs/contracts/envelope.md](../contracts/envelope.md) |
+| Add a domain component | [Register a component](operations/register-a-component.md), then [catalog/README.md#application-contracts](../../catalog/README.md#application-contracts) |
+| Show a thread or read agent events | [Show a thread](operations/show-a-thread.md), then [src/thread/README.md](../../src/thread/README.md) |
 | Theme the page | [theme.md](theme.md) |
 | Change the kit itself | [AGENTS.md](../../AGENTS.md) and [.agents/skills/component-workflow/SKILL.md](../../.agents/skills/component-workflow/SKILL.md) |
 

@@ -1,5 +1,7 @@
 # Chart
 
+Release: v0.9.0
+
 `mu-chart` draws a bar chart, a line chart or a stacked bar chart as SVG. Its type is `bar`, `line` or `stacked_bar`. It uses no chart library. [The contract](../catalog/chart.json) declares the title, type, categories, series, units and axis labels. Each series uses [chart-series](../catalog/chart-series.json).
 
 Use 1 to 50 categories and 1 to 6 series. Each series has one value for each category, in the same order. A category can be a date as text. A value must be a finite number from -1000000000000 to 1000000000000. The element refuses empty lists, a different value count, values of another type and data above these limits. The application or its service gives the data. The kit makes no decision.

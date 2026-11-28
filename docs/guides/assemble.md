@@ -1,22 +1,20 @@
 # Assemble a page
 
+Release: v0.9.0
+
 This guide builds one page with a stack, a grid of two cards, an action with a receipt and a thread for people and agents. The page is [examples/guides/assemble.html](../../examples/guides/assemble.html), and its code is [examples/guides/assemble.js](../../examples/guides/assemble.js). `tools/browser_check.mjs` opens the page and checks each expected result of this guide.
 
 The page acts as the application. A synthetic function acts as the API. All data is synthetic.
 
 ## Before you start
 
-1. Install Python 3 and Git. Use a browser from the [browser support](../../README.md#browser-support) list.
-2. Clone the repository and go to its root.
-3. Start a static server at the root:
+Do the [quickstart](../../README.md#quickstart) to the file server step:
 
 ```sh
 python3 tools/serve.py
 ```
 
-4. Open `http://localhost:8000/examples/guides/assemble.html`.
-
-The kit imports JSON files as ES modules, and a browser blocks module imports from a `file:` page. Thus the page needs an HTTP server. Serve `src/` and `catalog/` from the same origin as the page. The kit has no dependency and no build step.
+Then open `http://localhost:8000/examples/guides/assemble.html`.
 
 ## Step 1: load the tokens
 
@@ -104,9 +102,7 @@ Expected result:
 1. A press on `Renew` shows `Pending` at once.
 2. After the receipt, the button shows `Done: The loan is renewed.` and `Reference: R-0001`.
 
-The helper checks each supplied `id` and `key` against the request. A valid receipt with `ok: false` gives `Not done` and the message. A valid receipt with `ok: true` can give `Done`. A failure before send gives its own reason. If the handler throws, its promise rejects or its result is invalid, the action stays pending. When the button offers Retry, it sends the same key with a new id. Cancel clears the pending action.
-
-If the page talks to several services, give `service` and `code` in a refusal. The button then shows which service refused the action, and why, for example `Not done: The tray is full. Service: Seed orders. Code: tray-full.` The kit shows both values only as text. `serviceHandler` in [src/kit.md](../../src/kit.md) binds one handler to one base URL and one service name, and it maps the HTTP response of the service to a receipt.
+[Send an action](operations/send-an-action.md) gives the receipt rules, the retry and `serviceHandler` for a page with several services.
 
 ## Step 6: add the thread
 
@@ -171,7 +167,7 @@ The page CSS sets the width of each region with `flex: 1 1 11rem`. At a wide wid
 
 ## Show run steps
 
-Import `createRunSteps` from `src/kit.js` and give it the actor from trusted page data. Push each original event to the thread, then push the snapshots that the helper returns for that event. The thread can check each snapshot actor with `actorFor`. [Helper details](../../src/envelope/run-steps-events.md) and [run steps example](../../examples/thread/run-steps.html).
+[Show run steps](operations/show-run-steps.md) gives the helper and an example.
 
 ## Choose a form
 

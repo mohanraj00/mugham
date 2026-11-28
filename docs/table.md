@@ -1,5 +1,7 @@
 # Table
 
+Release: v0.9.0
+
 [table.json](../catalog/table.json) declares `mu-table`. [table-row.json](../catalog/table-row.json) declares each nested row. A row has no separate element, the same as a fact in a card. [examples/tables/table.html](../examples/tables/table.html) shows synthetic rows and an empty table.
 
 The table has a required `label`, one to 12 text headers in `columns`, and zero to 500 fills in `rows`. Each row has a `cells` list with one text value per column, in column order. A cell can be blank. A header cannot be blank. All values show as text.
@@ -8,7 +10,7 @@ The optional `status_values` list declares up to 20 allowed status texts. If it 
 
 The optional `sort_key` is a zero-based index in `columns`. The optional `sort_direction` is `ascending` or `descending`. It needs a sort key and defaults to `ascending`. Without a sort key, the rows keep their input order. Sorting compares the cell strings in JavaScript string order. It does not convert text to numbers or dates. Equal cells keep their input order in each direction. Sorting changes no fill data. A new fill resets the sort to the values in that fill.
 
-Each data column header has a native button. Tab and Shift+Tab move between buttons. Enter or Space sorts the column. A press on an unsorted column starts in ascending order. A press on the sorted column changes the direction. Only the sorted header has `aria-sort`. A polite status gives the header and direction as text. Focus stays on the button. The status column has no sort button.
+Each data column header has a native button with the header text and a sort mark. The mark shows up, down, or no sort. Tab and Shift+Tab move between buttons. Enter or Space sorts the column. A press on an unsorted column starts in ascending order. A press on the sorted column changes the direction. Only the sorted header has `aria-sort`. A polite status gives the header and direction as text. Focus stays on the button. The status column has no sort button.
 
 The named group holds a native table with a caption, `thead`, `th` with `scope="col"`, and `tbody`. Thus each data cell has a column header. The group can take focus so that a keyboard can scroll a wide table. Forced colors keep the borders and buttons visible. The table has no motion. A table of more than 30rem scrolls in the group, and the column headers stay in view. The author stays in view at the bottom of the group.
 
