@@ -97,7 +97,9 @@ for (const sorted of [false, true]) {
   check(`table: markup stays text in every cell and header, sorted=${sorted}`, unsafe.dataset.state === 'default'
     && !unsafe.shadowRoot.querySelector('img, script')
     && [...unsafe.shadowRoot.querySelectorAll('td')].every((td) => td.textContent === MARKUP && td.childElementCount === 0)
-    && [...unsafe.shadowRoot.querySelectorAll('th button')].every((b) => b.textContent === MARKUP && b.childElementCount === 0)
+    // The only element in a header button is the sort mark, and the mark holds only the kit icon.
+    && [...unsafe.shadowRoot.querySelectorAll('th button')].every((b) => b.textContent === MARKUP
+      && [...b.children].every((child) => child.matches('[part="sort-mark"]') && [...child.children].every((svg) => svg.localName === 'svg')))
     && unsafe.shadowRoot.querySelector('caption').textContent === MARKUP && window.muUnsafe === undefined);
 }
 

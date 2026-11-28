@@ -281,7 +281,7 @@ An asterisk marks a guardrail part. Keep it visible when the kit shows it. Run `
 | `mu-stack` | `copy`\*, `copy-status`\*, `details`\*, `layout`, `next`\*, `reason`\* |
 | `mu-status` | `authorship`\*, `copy`\*, `copy-status`\*, `details`\*, `label`\*, `next`\*, `reason`\*, `status`\*, `text`\* |
 | `mu-steps` | `back`\*, `copy`\*, `copy-status`\*, `details`\*, `list`\*, `next`\*, `position`\*, `reason`\*, `state`\*, `step`\* |
-| `mu-table` | `authorship`\*, `copy`\*, `copy-status`\*, `details`\*, `empty`, `next`\*, `reason`\*, `sort-status`\*, `table` |
+| `mu-table` | `authorship`\*, `copy`\*, `copy-status`\*, `details`\*, `empty`, `icon`, `next`\*, `reason`\*, `sort-mark`, `sort-status`\*, `table` |
 | `mu-tabs` | `copy`\*, `copy-status`\*, `details`\*, `next`\*, `panel`\*, `reason`\*, `tab`\*, `tablist`\* |
 | `mu-text` | `copy`\*, `copy-status`\*, `details`\*, `next`\*, `read-more-content`\*, `read-more-toggle`\*, `reason`\*, `text` |
 | `mu-thread` | `copy`\*, `copy-status`\*, `details`\*, `list`, `next`\*, `read-more-content`\*, `read-more-toggle`\*, `reason`\*, `source`\*, `state`\*, `stream`\* |
@@ -316,7 +316,7 @@ Use these names on the outer element. Each alias starts with the name of the inn
 Each rule protects a principle of the [constitution](../../CONSTITUTION.md#principles).
 
 - **Do not hide, cover or recolor the state text.** The parts `status`, `reference` and `state` show `Pending`, `Done`, `Not done`, `Partial` and the reference of a receipt. The parts `source` and `checked` of `mu-source-status` show the state of an offline data source and the time of its last confirmed read. Principle 6 needs the true state in words. The color is never the only signal.
-- **Keep the table sort text visible.** The part `sort-status` gives the sorted column and its direction.
+- **Keep the table sort text visible.** The part `sort-status` gives the sorted column and its direction. The part `sort-mark` is decoration: the arrow shows the direction, and a faint double arrow shows a column that can sort. The header cell keeps the state in `aria-sort`.
 - **Keep the chart labels and focus visible.** The parts `chart`, `point`, `bar`, `segment` and `value` show the data and the current point. Keep the series numbers and line patterns distinct.
 - **Do not remove the focus ring.** Do not set `outline: none` on a part. If you set `--mu-color-focus`, keep 3:1 against the surface. The kit draws the ring with `:focus-visible` in each shadow root.
 - **Do not hide or change the provenance.** The parts `provenance`, `authorship`, `citation`, `locator` and `open` show the actor and the source of the content. Principle 3 needs the actor of each content.

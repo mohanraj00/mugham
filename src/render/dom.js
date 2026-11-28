@@ -146,10 +146,13 @@ const FORMAT_ICONS = Object.freeze({
   code: 'M5 5 2 8l3 3 M11 5l3 3-3 3 M9.5 3l-3 10',
   link: 'M6 9.5 10 5.5 M5.5 6.5l-2 2a2.8 2.8 0 0 0 4 4l2-2 M6.5 5.5l2-2a2.8 2.8 0 0 1 4 4l-2 2',
 });
-// Only the grid controls use these paths.
+// Only the grid controls and the sort mark of the table use these paths.
 const CONTROL_ICONS = Object.freeze({
   'expand-all': 'M3.5 3.5 8 7 12.5 3.5 M3.5 8.5 8 12 12.5 8.5',
   'collapse-all': 'M3.5 7.5 8 4 12.5 7.5 M3.5 12.5 8 9 12.5 12.5',
+  'sort-none': 'M5 6 8 3 11 6 M5 10 8 13 11 10',
+  'sort-up': 'M8 13V3 M4.5 6.5 8 3l3.5 3.5',
+  'sort-down': 'M8 3v10 M4.5 9.5 8 13l3.5-3.5',
 });
 const SVG = 'http://www.w3.org/2000/svg';
 

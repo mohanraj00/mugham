@@ -7,8 +7,10 @@
     {"name": "copy-status", "description": "Result of the copy operation.", "guardrail": true},
     {"name": "details", "description": "Control and technical details of a refusal.", "guardrail": true},
     {"name": "empty", "description": "Message that shows when there are no items.", "guardrail": false},
+    {"name": "icon", "description": "Decorative SVG icon of a sort mark.", "guardrail": false},
     {"name": "next", "description": "Next step after a refusal.", "guardrail": true},
     {"name": "reason", "description": "Reason for a refusal or an edit error.", "guardrail": true},
+    {"name": "sort-mark", "description": "Mark after a column label. It shows that the column can sort, and the sort direction.", "guardrail": false},
     {"name": "sort-status", "description": "Text that gives the sort column and direction.", "guardrail": true},
     {"name": "table", "description": "Scroll area that contains the table.", "guardrail": false}
   ],
@@ -39,7 +41,8 @@
   "states": ["+empty", "+refused"],
   "tokens": [
     "color.text", "color.text-muted", "color.border", "color.surface", "size.column-narrow", "size.column-wide",
-    "space.2", "space.3", "type.body", "type.caption", "type.weight-strong"
+    "space.1", "space.2", "space.3", "type.body", "type.caption", "type.weight-strong", "color.surface-subtle", "radius.1", "size.control",
+    "size.icon"
   ],
   "accessibility": {"role": "group", "name": {"field": "label"}, "keyboard": ["Tab", "Shift+Tab", "Enter", "Space"]}
 }

@@ -95,6 +95,12 @@ async function browserChecks() {
   const results = [];
   const check = (name, ok, detail = '') => results.push({ name, ok: Boolean(ok), detail: String(detail) });
   const mode = new URLSearchParams(location.search).get('mode') || 'light';
+  // The target size of a control (decision 0009): size.control of its host, and never less than 24 CSS pixels.
+  const controlSize = (node) => {
+    const value = getComputedStyle(node.getRootNode().host).getPropertyValue('--mu-size-control').trim();
+    const unit = value.endsWith('rem') ? parseFloat(getComputedStyle(document.documentElement).fontSize) : 1;
+    return Math.max(24, parseFloat(value) * unit) - 0.01;
+  };
   const AUTHOR = { type: 'agent', id: 'agent-budget', name: 'Budget helper' };
   const MARKUP = '<img src=x onerror="window.muUnsafe=1"><script>window.muUnsafe=1</script>';
   // The application binds the tool, and the key, the label and the type of each row and column that a person can edit.
@@ -661,7 +667,7 @@ async function browserChecks() {
   check(`${mode}: a try with no receipt shows the reason and both exits`, pending.dataset.wait === 'stalled'
     && exit(pending, 'pending').textContent === 'Pending: No receipt came back.' && at(pending, 'rent', 'jan').textContent === '910Pending'
     && !root(pending).textContent.includes('Done') && [retry, cancel].every((button) => button.checkVisibility()
-      && button.getBoundingClientRect().height >= 44));
+      && button.getBoundingClientRect().height >= controlSize(button)));
   retry.focus();
   retry.click();
   const secondTry = last(pending);
