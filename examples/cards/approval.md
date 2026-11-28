@@ -1,6 +1,6 @@
 # Approval example
 
-The page [approval.html](approval.html) lists the open decisions as cards. Each card shows the evidence of its decision. A person approves or rejects a decision with an action button.
+The page [approval.html](approval.html) lists the open decisions as cards. Each card shows the evidence of its decision. A person approves or rejects a decision with an action button, then confirms it.
 
 ## Run the example
 
@@ -16,11 +16,12 @@ The fixture API uses the Python standard library only. It serves synthetic decis
 
 ## The action path
 
-1. The page binds the tool `approval.approve` or `approval.reject` and the argument `decision_id` to each button.
-2. A click sends the request to `POST /api/actions`. The button shows `Pending`.
-3. The API decides and gives a receipt. The button shows `Done` only after a receipt with `ok` set to `true` comes back.
-4. A receipt with `ok` set to `false` shows as an error with the message of the API. A second action on a decision gets this refusal.
-5. The page reads the decision again from `GET /api/decisions/<id>`, and the card shows the new status.
+1. The page binds the tool `approval.approve` or `approval.reject` and the argument `decision_id` to each button. The approve shows a check and the reject shows a cross. The label of each button is its name and its tooltip.
+2. A click opens a confirm step. The confirm step of the approve shows a check and a cross. The confirm step of the reject shows its text, because a check for a rejection is not clear (decision 0009).
+3. The accept of the confirm step sends the request to `POST /api/actions`. The button shows `Pending`.
+4. The API decides and gives a receipt. The button shows `Done` only after a receipt with `ok` set to `true` comes back.
+5. A receipt with `ok` set to `false` shows as an error with the message of the API. A second action on a decision gets this refusal.
+6. The page reads the decision again from `GET /api/decisions/<id>`, and the card shows the new status.
 
 The page keeps no approval state of its own. The fixture API owns the state of each decision.
 

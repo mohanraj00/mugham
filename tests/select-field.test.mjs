@@ -593,6 +593,57 @@ test('a card refreshes the display of its slotted action buttons', () => {
   assert.equal(button.getAttribute('aria-label'), 'Approve');
 });
 
+test('the confirm step and the exits of an icon action show icons, but a cross action confirms with text', () => {
+  const card = kit.mount('card', { title: 'Seed tray' });
+  const mountAction = (label, icon) => {
+    const confirm = { message: `${label} the tray?`, label: `Confirm: ${label.toLowerCase()} the tray` };
+    return kit.mount('action-button', { label, icon, display: 'icon' },
+      { parent: card, slot: 'actions', action: { tool: 'tray.decide', label, icon, display: 'icon', confirm } });
+  };
+  const approve = mountAction('Approve', 'check');
+  const reject = mountAction('Reject', 'cross');
+
+  part(approve.shadowRoot, 'button').click();
+  assert.equal(approve.dataset.state, 'confirm');
+  const accept = part(approve.shadowRoot, 'accept');
+  const cancel = part(approve.shadowRoot, 'cancel');
+  assert.equal(accept.getAttribute('data-icon'), 'check');
+  assert.equal(cancel.getAttribute('data-icon'), 'cross');
+  checkControl(accept, 'Confirm: approve the tray', '', true);
+  checkControl(cancel, 'Cancel', '', true);
+  card.setAttribute('control-display', 'text');
+  assert.equal(accept.textContent, 'Confirm: approve the tray');
+  assert.equal(cancel.textContent, 'Cancel');
+  card.setAttribute('control-display', 'icon');
+  checkControl(accept, 'Confirm: approve the tray', '', true);
+  cancel.click();
+  assert.equal(approve.dataset.state, 'default');
+  assert.equal(part(approve.shadowRoot, 'accept'), undefined);
+
+  // A check that confirms a rejection is not clear, so the confirm step of a cross action keeps its text.
+  part(reject.shadowRoot, 'button').click();
+  const confirmReject = part(reject.shadowRoot, 'accept');
+  assert.equal(confirmReject.getAttribute('data-icon'), null);
+  assert.equal(confirmReject.textContent, 'Confirm: reject the tray');
+  assert.equal(part(reject.shadowRoot, 'cancel').textContent, 'Cancel');
+
+  let request;
+  reject.addEventListener('mu-action', ({ detail }) => { request = detail; });
+  confirmReject.click();
+  assert.equal(reject.dataset.state, 'pending');
+  assert.equal(reject.hold({ key: request.key, wait: 'stalled' }), true);
+  const retry = part(reject.shadowRoot, 'retry');
+  const exit = part(reject.shadowRoot, 'cancel');
+  assert.equal(retry.getAttribute('data-icon'), 'retry');
+  assert.equal(exit.getAttribute('data-icon'), 'cross');
+  assert.equal(retry.textContent, '');
+  assert.equal(exit.textContent, '');
+  assert.ok(retry.children.some((node) => node.tag === 'svg'));
+  card.setAttribute('control-display', 'text');
+  assert.equal(retry.textContent, 'Retry');
+  assert.equal(exit.textContent, 'Cancel');
+});
+
 test('the link controls keep their names and work in both displays', () => {
   for (const display of ['icon', 'text']) {
     const field = kit.mount('rich-text-field', { label: 'Note' });

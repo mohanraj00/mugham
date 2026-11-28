@@ -15,6 +15,7 @@
     {"name": "editor", "description": "Group that contains the field and its controls.", "guardrail": false},
     {"name": "exit", "description": "Controls for a pending action.", "guardrail": true},
     {"name": "form", "description": "Form that contains the fields and the submit button.", "guardrail": false},
+    {"name": "icon", "description": "Icon of a confirm or exit control in icon display.", "guardrail": true},
     {"name": "label", "description": "Label of a form line.", "guardrail": false},
     {"name": "line", "description": "Row for one field.", "guardrail": false},
     {"name": "line-number", "description": "Number of a form line.", "guardrail": false},
@@ -31,6 +32,7 @@
     {"name": "save", "description": "Button that saves a field edit.", "guardrail": false},
     {"name": "section", "description": "Group of related fields.", "guardrail": false},
     {"name": "status", "description": "State of the action.", "guardrail": true},
+    {"name": "tooltip", "description": "Name of a confirm or exit control on hover or focus in icon display.", "guardrail": true},
     {"name": "value", "description": "Value of a form line.", "guardrail": false}
   ],
   "data": {

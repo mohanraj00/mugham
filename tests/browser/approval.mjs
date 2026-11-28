@@ -38,10 +38,23 @@ const STATE = `(() => [...document.querySelectorAll('mu-card')].map((card) => ({
       reference: button.shadowRoot.querySelector('[part="reference"]')?.textContent }])),
 })))()`;
 // The click and the read run in one task, before the response of the API can come back.
+// Each action of the example has a confirm step. The press reads the step, then accepts it.
 const press = (label) => `(() => {
   const button = [...document.querySelectorAll('mu-action-button')].find((node) => node.fill.data.label === ${JSON.stringify(label)});
-  button.shadowRoot.querySelector('button').click();
-  return { state: button.dataset.state, status: button.shadowRoot.querySelector('.status').textContent };
+  button.shadowRoot.querySelector('[part="button"]').click();
+  const accept = button.shadowRoot.querySelector('[part="accept"]');
+  const cancel = button.shadowRoot.querySelector('[part="cancel"]');
+  const control = (node) => node && { name: node.getAttribute('aria-label') ?? node.textContent, icon: node.dataset.icon ?? null,
+    svg: Boolean(node.querySelector('svg')), text: node.textContent };
+  // The step starts at the start of the action row, below all the actions of the card.
+  const step = button.shadowRoot.querySelector('[part="confirm"]')?.getBoundingClientRect();
+  const actions = [...button.closest('mu-card').querySelectorAll('mu-action-button')]
+    .map((node) => node.shadowRoot.querySelector('[part="button"]').getBoundingClientRect());
+  const confirm = { state: button.dataset.state, accept: control(accept), cancel: control(cancel),
+    message: button.shadowRoot.querySelector('[part="confirm"] p')?.textContent,
+    start: step && Math.abs(step.left - actions[0].left) < 1 && actions.every((box) => step.top >= box.bottom) };
+  accept?.click();
+  return { confirm, state: button.dataset.state, status: button.shadowRoot.querySelector('.status').textContent };
 })()`;
 
 async function main() {
@@ -83,6 +96,12 @@ async function main() {
     step('each action waits for a person', cards.every((card) => Object.values(card.buttons).every((button) => button.state === 'default')), cards);
 
     const pending = await evaluate(session, sessionId, press('Approve D-0001'));
+    // Decision 0009, sections 3 and 4: the confirm step of a check action shows a check and a cross.
+    const { accept, cancel } = pending.confirm;
+    step('the approve asks for a confirm step with a check and a cross', pending.confirm.state === 'confirm'
+      && pending.confirm.message === 'Approve D-0001?' && accept?.icon === 'check' && accept.svg && accept.text === ''
+      && accept.name === 'Confirm: approve D-0001' && cancel?.icon === 'cross' && cancel.svg && cancel.name === 'Cancel', pending.confirm);
+    step('the approve confirm step starts below the actions, at the start of the row', pending.confirm.start, pending.confirm);
     step('the approve is pending before the receipt', pending.state === 'pending' && pending.status === 'Pending', pending);
     cards = await until((value) => value[0].buttons['Approve D-0001'].state !== 'pending' && value[0].text.includes('approved'));
     const approve = cards[0].buttons['Approve D-0001'];
@@ -90,7 +109,12 @@ async function main() {
       && /^Reference: A-\d{4}$/.test(approve.reference), approve);
     step('the card shows the new status of the API', cards[0].text.includes('approved'), cards[0].text);
 
-    await evaluate(session, sessionId, press('Reject D-0001'));
+    const rejected = await evaluate(session, sessionId, press('Reject D-0001'));
+    // A check for a rejection is not clear, so the confirm step of the reject keeps its text.
+    step('the reject confirm step shows its text and no check', rejected.confirm.state === 'confirm'
+      && rejected.confirm.accept?.text === 'Confirm: reject D-0001' && !rejected.confirm.accept.svg && rejected.confirm.accept.icon === null
+      && rejected.confirm.cancel?.text === 'Cancel' && !rejected.confirm.cancel.svg, rejected.confirm);
+    step('the reject confirm step has no indent', rejected.confirm.start, rejected.confirm);
     cards = await until((value) => value[0].buttons['Reject D-0001'].state !== 'pending');
     const reject = cards[0].buttons['Reject D-0001'];
     step('the refusal of the API shows as an error', reject.state === 'error' && reject.status.includes('already approved'), reject);

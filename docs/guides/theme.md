@@ -260,7 +260,7 @@ An asterisk marks a guardrail part. Keep it visible when the kit shows it. Run `
 | `mu-empty-state` | `action`\*, `copy`\*, `copy-status`\*, `details`\*, `next`\*, `reason`\*, `text`\*, `title`\* |
 | `mu-excerpt` | `authorship`\*, `citation`\*, `copy`\*, `copy-status`\*, `details`\*, `excerpt`, `locator`\*, `mark`, `next`\*, `open`\*, `passage`, `provenance`\*, `read-more-content`\*, `read-more-toggle`\*, `reason`\*, `span` |
 | `mu-field` | `copy`\*, `copy-status`\*, `details`\*, `edit-type`\*, `input`\*, `label`\*, `next`\*, `problem`\*, `reason`\* |
-| `mu-form-card` | `accept`\*, `authorship`\*, `button`, `cancel`\*, `changed`\*, `citation`\*, `confirm`\*, `copy`\*, `copy-status`\*, `details`\*, `editor`, `exit`\*, `form`, `label`, `line`, `line-number`, `lines`, `locator`\*, `next`\*, `note`\*, `open`\*, `provenance`\*, `read-only`\*, `reason`\*, `reference`\*, `retry`\*, `save`, `section`, `status`\*, `value` |
+| `mu-form-card` | `accept`\*, `authorship`\*, `button`, `cancel`\*, `changed`\*, `citation`\*, `confirm`\*, `copy`\*, `copy-status`\*, `details`\*, `editor`, `exit`\*, `form`, `icon`\*, `label`, `line`, `line-number`, `lines`, `locator`\*, `next`\*, `note`\*, `open`\*, `provenance`\*, `read-only`\*, `reason`\*, `reference`\*, `retry`\*, `save`, `section`, `status`\*, `tooltip`\*, `value` |
 | `mu-grid` | `copy`\*, `copy-status`\*, `details`\*, `layout`, `next`\*, `reason`\* |
 | `mu-image` | `authorship`\*, `box`\*, `caption`\*, `copy`\*, `copy-status`\*, `details`\*, `dialog`\*, `image`, `next`\*, `open`\*, `reason`\*, `status`\* |
 | `mu-long-text-field` | `copy`\*, `copy-status`\*, `details`\*, `edit-type`\*, `input`\*, `label`\*, `next`\*, `problem`\*, `reason`\* |

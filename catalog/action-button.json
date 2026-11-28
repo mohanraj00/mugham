@@ -3,7 +3,7 @@
   "description": "A button that can ask for confirmation. A pending action can offer retry and cancel. The icon and display must match the binding. The icon display shows the label on hover and focus. After a successful receipt, the button shows Done and uses a check in an icon display.",
   "ai_content": false,
   "parts": [
-    {"name": "accept", "description": "Button that confirms the action.", "guardrail": true},
+    {"name": "accept", "description": "Button that confirms the action. In the icon display, it is a check only for a check action. For a different action, it keeps its text.", "guardrail": true},
     {"name": "button", "description": "Button that starts the action.", "guardrail": false},
     {"name": "cancel", "description": "Button that cancels a confirmation or an action.", "guardrail": true},
     {"name": "confirm", "description": "Question and controls for confirmation.", "guardrail": true},
