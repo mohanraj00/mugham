@@ -40,6 +40,8 @@ export class MuTable extends MuElement {
       thead th { background: Canvas; }
       thead th { color: CanvasText; }
       thead button { color: ButtonText; background: ButtonFace; }
+      /* The sort control has no border, so hover shows a line, as a summary does. */
+      thead button:hover:not(:focus-visible) { outline: 1px solid Highlight; outline-offset: -1px; }
       .sort-mark { opacity: 1; }
     }
   `)];
